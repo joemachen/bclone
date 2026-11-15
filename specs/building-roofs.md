@@ -4,6 +4,8 @@
 > with it off the map is byte-identical to the build before. Art lane (CLAUDE.md *Two tracks*). Nothing in the sim,
 > `data/` or `tests/` changes.
 
+> ⭐ **A86 (2026-11-15) builds on this:** the roof now stands on part of the ground with a yard beside it, the pen draws the material and hatches the shade, and the textures carry the wash (`building-yards.md`). §2–§3 here still hold for the roof itself; the colour is mixed 12 % toward the paper, and §5's runs now put fills and pen lines in one mesh.
+
 ## 1. What and why
 
 The buildings were the least finished thing on the map: every one a flat rectangle in its kind's colour with an ink edge

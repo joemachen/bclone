@@ -25,13 +25,16 @@ internal enum RoofForm
     Mill,
     Well,
 
+    /// <summary>A parked handcart (A86, `building-yards.md §4.2`): drawn where its chip stood.</summary>
+    Cart,
+
     /// <summary>A trade whose building is a store (the market, the barn, the trading post): the store paints it.</summary>
     ByItsStore,
 }
 
 /// <summary>A kind's look from above: its form, its material, its chimneys and extras, and how high it stands.</summary>
 internal readonly record struct RoofLook(
-    RoofForm Form, RoofMaterial Material, int Chimneys = 0, bool Turret = false, bool UpperStorey = false, float Lift = 1f);
+    RoofForm Form, RoofMaterial Material, int Chimneys = 0, bool Turret = false, bool UpperStorey = false, float Lift = 1f, YardKind Yard = YardKind.None);
 
 /// <summary>One thing a painted building is drawn with: a filled shape, a shape painted in a material, or a pen line.</summary>
 internal enum RoofPieceKind
@@ -54,7 +57,8 @@ internal sealed record RoofPiece(
     Vector2[]? Uvs = null,
     float Width = 1f,
     bool Closed = false,
-    bool Dashed = false);
+    bool Dashed = false,
+    float Spacing = 0f);
 
 /// <remarks>
 /// ⭐⭐ THE BUILDINGS PAINTED, SEEN STRAIGHT DOWN (A85, `specs/building-roofs.md`; Joe's pick, *"A, roofs"*, of three mocks on
@@ -121,24 +125,24 @@ public partial class VillageMap
     /// <summary>A house, the library, the town hall or a well.</summary>
     internal static RoofLook RoofOf(BuildingKind kind) => kind switch
     {
-        BuildingKind.Home => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1),
-        BuildingKind.Cottage => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1),
-        BuildingKind.Manor => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 2, UpperStorey: true, Lift: 1.4f),
-        BuildingKind.Library => new(RoofForm.Roof, RoofMaterial.Slate),
-        BuildingKind.TownHall => new(RoofForm.Roof, RoofMaterial.StoneSlab, Turret: true, Lift: 1.5f),
-        BuildingKind.Well => new(RoofForm.Well, RoofMaterial.StoneSlab),
+        BuildingKind.Home => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1, Yard: YardKind.Cabin),
+        BuildingKind.Cottage => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1, Yard: YardKind.Cottage),
+        BuildingKind.Manor => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 2, UpperStorey: true, Lift: 1.4f, Yard: YardKind.Manor),
+        BuildingKind.Library => new(RoofForm.Roof, RoofMaterial.Slate, Yard: YardKind.Library),
+        BuildingKind.TownHall => new(RoofForm.Roof, RoofMaterial.StoneSlab, Turret: true, Lift: 1.5f, Yard: YardKind.TownHall),
+        BuildingKind.Well => new(RoofForm.Well, RoofMaterial.StoneSlab, Yard: YardKind.Well),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
     };
 
     /// <summary>A store; the founders' cart is not a building and is not painted (null).</summary>
     internal static RoofLook? RoofOf(StoreKind kind) => kind switch
     {
-        StoreKind.Granary => new(RoofForm.Roof, RoofMaterial.Thatch),
-        StoreKind.Warehouse => new(RoofForm.Roof, RoofMaterial.Shingle),
-        StoreKind.Market => new(RoofForm.Market, RoofMaterial.Shingle),
+        StoreKind.Granary => new(RoofForm.Roof, RoofMaterial.Thatch, Yard: YardKind.Granary),
+        StoreKind.Warehouse => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Warehouse),
+        StoreKind.Market => new(RoofForm.Market, RoofMaterial.Shingle, Yard: YardKind.Market),
         StoreKind.Pile => new(RoofForm.Yard, RoofMaterial.Shingle),
-        StoreKind.Barn => new(RoofForm.Roof, RoofMaterial.Tile, Lift: 1.3f),
-        StoreKind.TradingPost => new(RoofForm.Roof, RoofMaterial.Slate),
+        StoreKind.Barn => new(RoofForm.Roof, RoofMaterial.Tile, Lift: 1.3f, Yard: YardKind.Barn),
+        StoreKind.TradingPost => new(RoofForm.Roof, RoofMaterial.Slate, Yard: YardKind.TradingPost),
         StoreKind.Cart => null,
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
     };
@@ -146,14 +150,20 @@ public partial class VillageMap
     /// <summary>A workplace, by its trade.</summary>
     internal static RoofLook RoofOf(JobKind kind) => kind switch
     {
-        JobKind.Forager or JobKind.Forester => new(RoofForm.Roof, RoofMaterial.Turf),
-        JobKind.Fisher => new(RoofForm.Roof, RoofMaterial.Boards),
-        JobKind.Smith => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 1),
-        JobKind.Miner => new(RoofForm.Roof, RoofMaterial.Tile),
-        JobKind.Baker or JobKind.Tailor => new(RoofForm.Roof, RoofMaterial.Tile, Chimneys: 1),
-        JobKind.Farmer => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1),
-        JobKind.Carpenter => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1),
-        JobKind.Miller => new(RoofForm.Mill, RoofMaterial.Shingle),
+        JobKind.Forager => new(RoofForm.Roof, RoofMaterial.Turf, Yard: YardKind.Forager),
+        JobKind.Forester => new(RoofForm.Roof, RoofMaterial.Turf, Yard: YardKind.Forester),
+        JobKind.Fisher => new(RoofForm.Roof, RoofMaterial.Boards, Yard: YardKind.Fisher),
+        JobKind.Smith => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 1, Yard: YardKind.Smith),
+        JobKind.Miner => new(RoofForm.Roof, RoofMaterial.Tile, Yard: YardKind.Mine),
+        JobKind.Baker => new(RoofForm.Roof, RoofMaterial.Tile, Chimneys: 1, Yard: YardKind.Bakery),
+        JobKind.Tailor => new(RoofForm.Roof, RoofMaterial.Tile, Chimneys: 1, Yard: YardKind.Tailor),
+        JobKind.Farmer => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1, Yard: YardKind.Farmhouse),
+        JobKind.Carpenter => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1, Yard: YardKind.Workshop),
+        JobKind.Miller => new(RoofForm.Mill, RoofMaterial.Shingle, Yard: YardKind.Mill),
+        JobKind.Woodcutter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Woodcutter),
+        JobKind.Builder => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Builder),
+        JobKind.Hunter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Hunter),
+        JobKind.Quarrier => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Quarry),
         JobKind.Marketer or JobKind.Herdsman or JobKind.Merchant => new(RoofForm.ByItsStore, RoofMaterial.Shingle),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
     };
@@ -173,7 +183,8 @@ public partial class VillageMap
     /// <paramref name="wide"/> and <paramref name="deep"/> are the drawn size in tiles (already × 0.8, or the kind's share).
     /// </summary>
     private bool DrawPaintedBuilding(
-        RoofLook? look, Vector2 centre, float wide, float deep, ushort facing, Color colour, Condition worn, Door? door, int seed, float alpha = 1f)
+        RoofLook? look, Vector2 centre, float wide, float deep, ushort facing, Color colour, Condition worn, Door? door, int seed, float alpha = 1f,
+        YardState yard = default, Func<Vector2, Vector2[]>? homeYard = null)
     {
         if (!PaintsBuildings || look is not RoofLook roof)
         {
@@ -185,7 +196,7 @@ public partial class VillageMap
         Vector2 doorAt = door is Door d ? RoofRounded(new Vector2(d.Tile.X, d.Tile.Y)) : at;
         ulong frame = Engine.GetProcessFrames();
         ForgetGoneRoofs(frame);
-        RoofCache held = CachedRoof(new RoofSignature(roof, at, wide, deep, facing, colour, worn == Condition.Ruin, door, doorAt, seed));
+        RoofCache held = CachedRoof(new RoofSignature(roof, at, wide, deep, facing, colour, worn == Condition.Ruin, door, doorAt, seed, yard), homeYard);
         held.LastSeen = frame;
         DrawRoofRuns(held, alpha);
         return true;
@@ -195,7 +206,7 @@ public partial class VillageMap
 
     /// <summary>Everything a painted building's look depends on — its pieces are laid again only when one of these changes.</summary>
     internal readonly record struct RoofSignature(
-        RoofLook Look, Vector2 At, float Wide, float Deep, ushort Facing, Color Colour, bool FallenIn, Door? Door, Vector2 DoorAt, int Seed);
+        RoofLook Look, Vector2 At, float Wide, float Deep, ushort Facing, Color Colour, bool FallenIn, Door? Door, Vector2 DoorAt, int Seed, YardState Yard = default);
 
     /// <summary>
     /// A run of pieces drawn as one mesh: filled, painted in one material, or pen lines — the lines laid for one zoom
@@ -227,7 +238,7 @@ public partial class VillageMap
     /// ⭐ A building's runs — the cached ones while nothing it depends on has changed, laid again (and counted) when anything
     /// has. A pan or a zoom changes nothing here: the runs are in tile space and the frame's transform puts them on screen.
     /// </summary>
-    internal RoofCache CachedRoof(RoofSignature signature)
+    internal RoofCache CachedRoof(RoofSignature signature, Func<Vector2, Vector2[]>? homeYard = null)
     {
         if (_roofCache.TryGetValue(signature.At, out RoofCache? held) && held.Signature == signature)
         {
@@ -237,7 +248,7 @@ public partial class VillageMap
         RoofLayings++;
         List<RoofPiece> pieces = RoofDrawing(
             signature.Look, signature.At, signature.Wide, signature.Deep, signature.Facing, signature.Colour, 1f,
-            signature.Door, signature.DoorAt, signature.Seed, signature.FallenIn);
+            signature.Door, signature.DoorAt, signature.Seed, signature.FallenIn, signature.Yard, homeYard?.Invoke(signature.At));
         var laid = new RoofCache { Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile) };
         _roofCache[signature.At] = laid;
         return laid;
@@ -255,15 +266,17 @@ public partial class VillageMap
         while (i < pieces.Count)
         {
             RoofPiece first = pieces[i];
-            if (first.Kind is RoofPieceKind.Line or RoofPieceKind.Lines)
+            if (first.Kind != RoofPieceKind.Textured)
             {
-                var lines = new List<RoofPiece>();
-                while (i < pieces.Count && pieces[i].Kind is RoofPieceKind.Line or RoofPieceKind.Lines)
+                // ⭐ A86: fills and pen lines in one mesh, in their order — a yard alternates them thing by thing, and a run
+                // each was a draw call each (A85's cost). Laid for the zoom when it holds a line.
+                var mixed = new List<RoofPiece>();
+                while (i < pieces.Count && pieces[i].Kind != RoofPieceKind.Textured)
                 {
-                    lines.Add(pieces[i++]);
+                    mixed.Add(pieces[i++]);
                 }
 
-                runs.Add(RoofLineRun(lines, ppt));
+                runs.Add(RoofLineRun(mixed, ppt));
                 continue;
             }
 
@@ -350,15 +363,33 @@ public partial class VillageMap
             Quad(a - (n * core), b - (n * core), b - (n * (core + feather)), a - (n * (core + feather)), colour, faded);
         }
 
+        bool anyLine = false;
         foreach (RoofPiece line in lines)
         {
             Vector2[] p = line.Points;
+            if (line.Kind == RoofPieceKind.Fill)
+            {
+                for (int k = 1; k + 1 < p.Length; k++)
+                {
+                    vertices.AddRange(new[] { p[0], p[k], p[k + 1] });
+                    colours.AddRange(new[] { line.Colour, line.Colour, line.Colour });
+                }
+
+                continue;
+            }
+
+            anyLine = true;
             var segments = new List<(Vector2, Vector2)>();
             if (line.Kind == RoofPieceKind.Lines)
             {
+                // ⭐ The pen's texture thins with the zoom (A86 §5): never closer than PenMinPixels on screen.
+                int stride = line.Spacing > 0f && line.Spacing * ppt < PenMinPixels ? Mathf.CeilToInt(PenMinPixels / (line.Spacing * ppt)) : 1;
                 for (int k = 0; k + 1 < p.Length; k += 2)
                 {
-                    segments.Add((p[k], p[k + 1]));
+                    if ((k / 2) % stride == 0)
+                    {
+                        segments.Add((p[k], p[k + 1]));
+                    }
                 }
             }
             else
@@ -396,7 +427,7 @@ public partial class VillageMap
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         }
 
-        return new RoofRun(mesh, null, lines, vertices.Count / 3, ppt);
+        return new RoofRun(mesh, null, anyLine ? lines : null, vertices.Count / 3, ppt);
     }
 
     /// <summary>Draw a building's runs, each mesh through the frame's one transform; its lines laid again if the zoom has moved.</summary>
@@ -471,7 +502,8 @@ public partial class VillageMap
     /// same list (`building-roofs.md §5`). <paramref name="colour"/> is the kind's colour, weathered.
     /// </summary>
     internal static List<RoofPiece> RoofDrawing(
-        RoofLook look, Vector2 centre, float wide, float deep, ushort facing, Color colour, float ppt, Door? door, Vector2 doorAt, int seed, bool fallenIn)
+        RoofLook look, Vector2 centre, float wide, float deep, ushort facing, Color colour, float ppt, Door? door, Vector2 doorAt, int seed, bool fallenIn,
+        YardState yard = default, Vector2[]? homeTiles = null)
     {
         var pieces = new List<RoofPiece>();
         if (look.Form == RoofForm.ByItsStore)
@@ -480,58 +512,90 @@ public partial class VillageMap
         }
 
         var frame = new RoofFrame(centre, facing, ppt);
+        if (look.Form == RoofForm.Cart)
+        {
+            var kit = new YardKit(pieces, frame);
+            kit.Shade("cart shadow", Box(Vector2.Zero, 0.34f, 0.3f, 0f), 0.3f);
+            Handcart(kit, "cart", Vector2.Zero, 0f);
+            return pieces;
+        }
+
         float hw = wide / 2f;
         float hd = deep / 2f;
+        (Vector2 Out, Vector2 Middle) doorIn = door is Door dd ? DoorInFrame(frame, wide, deep, facing, dd, doorAt, ppt) : (new Vector2(0, 1), new Vector2(0, hd));
+        YardLayout layout = LayoutOf(look.Yard, hw, hd, doorIn.Out, doorIn.Middle, seed);
+        bool home = look.Yard is YardKind.Cabin or YardKind.Cottage or YardKind.Manor;
+        bool yarded = look.Yard != YardKind.None && !home;
         switch (look.Form)
         {
             case RoofForm.Market:
                 Market(pieces, frame, hw, hd, colour, fallenIn);
+                YardUnder(pieces, frame, look.Yard, layout, yard, seed);
                 break;
             case RoofForm.Yard:
                 Yard(pieces, frame, hw, hd, colour, fallenIn);
                 break;
             case RoofForm.Mill:
+                YardUnder(pieces, frame, look.Yard, layout, yard, seed);
                 Mill(pieces, frame, hw, hd, colour, fallenIn);
                 break;
             case RoofForm.Well:
+                YardUnder(pieces, frame, look.Yard, layout, yard, seed);
                 Well(pieces, frame, hw, hd, colour, fallenIn);
                 break;
             default:
-                float ew = hw + RoofEaves;
-                float ed = hd + RoofEaves;
-                Shadow(pieces, frame, ew, ed, Vector2.Zero, look.Lift);
+                // ⭐ A86: the yard first (`building-yards.md §3`), then the roof on its own part of the ground.
+                if (yarded)
+                {
+                    YardUnder(pieces, frame, look.Yard, layout, yard, seed);
+                }
+                else if (home && homeTiles is not null)
+                {
+                    HomeYard(pieces, frame, TierOf(look.Yard), homeTiles, doorIn.Out, hw, hd, yard, seed);
+                }
+
+                Vector2 roofAt = yarded ? layout.RoofAt : Vector2.Zero;
+                float ew = (yarded ? layout.RoofHw : hw) + RoofEaves;
+                float ed = (yarded ? layout.RoofHd : hd) + RoofEaves;
+                Shadow(pieces, frame, ew, ed, roofAt, look.Lift);
                 if (door is Door d)
                 {
-                    Step(pieces, frame, wide, deep, facing, d, doorAt, ppt);
+                    Step(pieces, frame, wide, deep, facing, d, doorAt, ppt, roofAt, ew - RoofEaves, ed - RoofEaves);
                 }
 
                 bool mirrored = (seed & 1) == 1;
-                RoofFaces(pieces, frame, ew, ed, Vector2.Zero, colour, look.Material, mirrored, fallenIn, "face");
+                Color wash = Washed(colour);
+                RoofFaces(pieces, frame, ew, ed, roofAt, wash, look.Material, mirrored, fallenIn, "face", seed);
                 if (look.UpperStorey)
                 {
-                    Shadow(pieces, frame, ew * 0.55f, ed * 0.62f, Vector2.Zero, 0.5f);
-                    RoofFaces(pieces, frame, ew * 0.55f, ed * 0.62f, Vector2.Zero, colour.Lightened(0.12f), look.Material, !mirrored, fallenIn, "storey");
+                    Shadow(pieces, frame, ew * 0.55f, ed * 0.62f, roofAt, 0.5f);
+                    RoofFaces(pieces, frame, ew * 0.55f, ed * 0.62f, roofAt, wash.Lightened(0.12f), look.Material, !mirrored, fallenIn, "storey", seed + 1);
                 }
 
                 bool alongX = ew >= ed;
                 float ridge = alongX ? ew : ed;
                 if (look.Chimneys == 1)
                 {
-                    Chimney(pieces, frame, alongX ? new Vector2(0.3f * ridge, 0f) : new Vector2(0f, 0.3f * ridge));
+                    Chimney(pieces, frame, roofAt + (alongX ? new Vector2(0.3f * ridge, 0f) : new Vector2(0f, 0.3f * ridge)));
                 }
                 else if (look.Chimneys >= 2)
                 {
                     foreach (float s in new[] { -0.62f, 0.62f })
                     {
-                        Chimney(pieces, frame, alongX ? new Vector2(s * ridge, 0f) : new Vector2(0f, s * ridge));
+                        Chimney(pieces, frame, roofAt + (alongX ? new Vector2(s * ridge, 0f) : new Vector2(0f, s * ridge)));
                     }
                 }
 
                 if (look.Turret)
                 {
                     const float half = 0.23f;
-                    Shadow(pieces, frame, half, half, Vector2.Zero, 1.2f);
-                    RoofFaces(pieces, frame, half, half, Vector2.Zero, TurretColour, RoofMaterial.Tile, false, false, "turret");
+                    Shadow(pieces, frame, half, half, roofAt, 1.2f);
+                    RoofFaces(pieces, frame, half, half, roofAt, TurretColour, RoofMaterial.Tile, false, false, "turret", seed + 2);
+                }
+
+                if (yarded)
+                {
+                    YardOver(pieces, frame, look.Yard, layout);
                 }
 
                 break;
@@ -592,18 +656,23 @@ public partial class VillageMap
         {
             pieces.Add(new RoofPiece(RoofPieceKind.Fill, "shadow", frame.Box(at + off, hw + grow, hd + grow), RoofShadow));
         }
+
+        // ⭐ A86 §5: the pen hatches the cast shadow, as the concept sheets do.
+        Vector2 c = at + off;
+        HatchInto(pieces, frame, new[] { c + new Vector2(-hw, -hd), c + new Vector2(hw, -hd), c + new Vector2(hw, hd), c + new Vector2(-hw, hd) }, "shadow", 1f);
     }
 
-    private static void Step(List<RoofPiece> pieces, RoofFrame frame, float wide, float deep, ushort facing, Door door, Vector2 doorAt, float ppt)
+    private static void Step(
+        List<RoofPiece> pieces, RoofFrame frame, float wide, float deep, ushort facing, Door door, Vector2 doorAt, float ppt, Vector2 roofAt, float roofHw, float roofHd)
     {
-        // The notch the rectangles drew is on the door's own wall (`DoorQuadAt`); the step is it, pushed out past the eave.
-        Vector2 centre = frame.At(Vector2.Zero);
-        Vector2[] notch = DoorQuadAt(centre, wide, deep, facing, door, doorAt, ppt);
-        int round = ((int)door.Faces - (int)door.Front) & 3;
-        Vector2 outward = round switch { 1 => new Vector2(1, 0), 2 => new Vector2(0, 1), 3 => new Vector2(-1, 0), _ => new Vector2(0, -1) };
-        Vector2 notchMiddle = (notch[0] + notch[1] + notch[2] + notch[3]) / 4f;
-        Vector2 local = frame.Local((notchMiddle - centre) / ppt);
-        Vector2 stepAt = local + (outward * ((DoorDeep / 2f) + RoofEaves + 0.06f));
+        // The notch the rectangles drew is on the door's own wall (`DoorQuadAt`); the step is it, pushed out past the eave —
+        // of the roof's own wall, slid along it no further than the roof reaches (A86: the roof may stand on part of the ground).
+        (Vector2 outward, Vector2 middle) = DoorInFrame(frame, wide, deep, facing, door, doorAt, ppt);
+        var along = new Vector2(-outward.Y, outward.X);
+        float alongHalf = Mathf.Abs(along.X) > 0.5f ? roofHw : roofHd;
+        float outHalf = Mathf.Abs(outward.X) > 0.5f ? roofHw : roofHd;
+        float slide = Mathf.Clamp((middle - roofAt).Dot(along), -Mathf.Max(0f, alongHalf - 0.15f), Mathf.Max(0f, alongHalf - 0.15f));
+        Vector2 stepAt = roofAt + (along * slide) + (outward * (outHalf + RoofEaves + 0.06f));
         Vector2 half = outward.X == 0 ? new Vector2(0.15f, 0.06f) : new Vector2(0.06f, 0.15f);
         Vector2[] step = frame.Box(stepAt, half.X, half.Y);
         Color stone = door.Shut ? RoofStepColour with { A = 0.3f } : RoofStepColour;
@@ -616,8 +685,9 @@ public partial class VillageMap
     /// each painted in its material, lit by its facing; then the ridge, the hips and the inked eave.
     /// </summary>
     private static void RoofFaces(
-        List<RoofPiece> pieces, RoofFrame frame, float hw, float hd, Vector2 at, Color colour, RoofMaterial material, bool mirrored, bool fallenIn, string part)
+        List<RoofPiece> pieces, RoofFrame frame, float hw, float hd, Vector2 at, Color colour, RoofMaterial material, bool mirrored, bool fallenIn, string part, int seed = 0)
     {
+        var pen = new List<RoofPiece>();
         bool alongX = hw >= hd;
         float longHalf = alongX ? hw : hd;
         float shortHalf = alongX ? hd : hw;
@@ -628,7 +698,7 @@ public partial class VillageMap
         Vector2 Out(Vector2 v) => alongX ? v : new Vector2(v.Y, v.X);
         float flip = mirrored ? -1f : 1f;
 
-        void Face(Vector2[] corners, Vector2[] eaveAlong, Vector2 outward)
+        void Face(Vector2[] corners, Vector2[] eaveAlong, Vector2 outward, float height)
         {
             // eaveAlong[i] = (t, e): along the eave in tiles, and up from it.
             var points = new Vector2[corners.Length];
@@ -642,6 +712,10 @@ public partial class VillageMap
             float light = FaceLight(frame.Turn(Out(outward)));
             Color lit = new(colour.R * light / RoofTextureMean, colour.G * light / RoofTextureMean, colour.B * light / RoofTextureMean, colour.A);
             pieces.Add(new RoofPiece(RoofPieceKind.Textured, part, points, lit, material, uvs));
+
+            // ⭐ A86 §5: the pen draws the material up the slope from the eave (corners 0 → 1), and hatches a face in shade.
+            PenTexture(pen, frame, part, material, corners, corners[0], corners[1], -Out(outward), height, seed + (pen.Count * 7));
+            HatchInto(pen, frame, corners, part, (1f - light) / RoofLitStrength);
         }
 
         float r = gable ? longHalf : longHalf - shortHalf;
@@ -649,31 +723,32 @@ public partial class VillageMap
         {
             Face(new[] { L(-longHalf, -shortHalf), L(longHalf, -shortHalf), L(longHalf, 0), L(-longHalf, 0) },
                 new[] { new Vector2(-longHalf, 0), new Vector2(longHalf, 0), new Vector2(longHalf, shortHalf), new Vector2(-longHalf, shortHalf) },
-                new Vector2(0, -1));
+                new Vector2(0, -1), shortHalf);
             Face(new[] { L(longHalf, shortHalf), L(-longHalf, shortHalf), L(-longHalf, 0), L(longHalf, 0) },
                 new[] { new Vector2(-longHalf, 0), new Vector2(longHalf, 0), new Vector2(longHalf, shortHalf), new Vector2(-longHalf, shortHalf) },
-                new Vector2(0, 1));
+                new Vector2(0, 1), shortHalf);
         }
         else
         {
             Face(new[] { L(-longHalf, -shortHalf), L(longHalf, -shortHalf), L(r, 0), L(-r, 0) },
                 new[] { new Vector2(-longHalf, 0), new Vector2(longHalf, 0), new Vector2(r, shortHalf), new Vector2(-r, shortHalf) },
-                new Vector2(0, -1));
+                new Vector2(0, -1), shortHalf);
             Face(new[] { L(longHalf, shortHalf), L(-longHalf, shortHalf), L(-r, 0), L(r, 0) },
                 new[] { new Vector2(-longHalf, 0), new Vector2(longHalf, 0), new Vector2(r, shortHalf), new Vector2(-r, shortHalf) },
-                new Vector2(0, 1));
+                new Vector2(0, 1), shortHalf);
             Face(new[] { L(longHalf, -shortHalf), L(longHalf, shortHalf), L(r, 0) },
                 new[] { new Vector2(-shortHalf, 0), new Vector2(shortHalf, 0), new Vector2(0, shortHalf) },
-                new Vector2(1, 0));
+                new Vector2(1, 0), longHalf - r);
             Face(new[] { L(-longHalf, shortHalf), L(-longHalf, -shortHalf), L(-r, 0) },
                 new[] { new Vector2(-shortHalf, 0), new Vector2(shortHalf, 0), new Vector2(0, shortHalf) },
-                new Vector2(-1, 0));
+                new Vector2(-1, 0), longHalf - r);
         }
 
         // The ridge: a faint darker band and a fine pen; the hips a fine pen from each corner.
         float band = material == RoofMaterial.Thatch ? 0.05f : 0.03f;
         pieces.Add(new RoofPiece(RoofPieceKind.Fill, part + " ridge", new[] { frame.At(L(-r, -band)), frame.At(L(r, -band)), frame.At(L(r, band)), frame.At(L(-r, band)) },
             Ink with { A = material == RoofMaterial.Thatch ? 0.16f : 0.1f }));
+        pieces.AddRange(pen);
         if (r > 0.001f)
         {
             pieces.Add(new RoofPiece(RoofPieceKind.Line, part + " ridge", new[] { frame.At(L(-r, 0)), frame.At(L(r, 0)) }, Ink with { A = 0.55f }, Width: 1f));
@@ -967,8 +1042,9 @@ public partial class VillageMap
                         continue;
                     }
 
-                    // Lit by its facing: the face toward the upper left the lightest, its opposite the darkest, the mean 1.
-                    float Light(RoofPiece p) => p.Colour.R * RoofTextureMean / kind.R;
+                    // Lit by its facing: the face toward the upper left the lightest, its opposite the darkest, the mean 1 — of the
+                    // kind's colour as a wash, 12 % of the paper #efe6d0 in it (A86, `building-yards.md §5`).
+                    float Light(RoofPiece p) => p.Colour.R * RoofTextureMean / kind.Lerp(new Color("#efe6d0"), 0.12f).R;
                     Vector2 Toward(RoofPiece p) => (p.Points.Aggregate(Vector2.Zero, (s, q) => s + q) / p.Points.Length) - centre;
                     RoofPiece lightest = face.MaxBy(Light)!;
                     RoofPiece darkest = face.MinBy(Light)!;
@@ -1034,25 +1110,28 @@ public partial class VillageMap
             _roofCache.Remove(far);
             List<RoofPiece> cabin = RoofDrawing(RoofOf(BuildingKind.Home), far, 1.6f, 0.8f, 8192, kind, 1f, null, far, 3, false);
             List<RoofRun> runs = RoofRuns(cabin, 40f);
+            // A86: a textured run per material; the fills and the pen lines between them one run, in order, laid for the zoom.
             int wantTriangles = cabin.Where(p => p.Kind is RoofPieceKind.Fill or RoofPieceKind.Textured).Sum(p => p.Points.Length - 2);
-            int gotTriangles = runs.Where(r => r.Lines is null).Sum(r => r.Triangles);
-            bool linesInOrder = runs.Where(r => r.Lines is not null).SelectMany(r => r.Lines!)
+            bool linesInOrder = runs.Where(r => r.Lines is not null).SelectMany(r => r.Lines!).Where(p => p.Kind != RoofPieceKind.Fill)
                 .SequenceEqual(cabin.Where(p => p.Kind is RoofPieceKind.Line or RoofPieceKind.Lines));
-            int meshTriangles = runs.Where(r => r.Lines is null).Sum(r => r.Mesh.SurfaceGetArrayLen(0) / 3);
-            // Each pen segment: a core and two feathers, six triangles (a 1-pixel line has no core: four).
-            int lineSegments = cabin.Where(p => p.Kind is RoofPieceKind.Line or RoofPieceKind.Lines)
-                .Sum(p => p.Kind == RoofPieceKind.Lines ? p.Points.Length / 2 : p.Closed ? p.Points.Length : p.Points.Length - 1);
-            int wideSegments = cabin.Where(p => (p.Kind is RoofPieceKind.Line or RoofPieceKind.Lines) && p.Width > 1f)
-                .Sum(p => p.Kind == RoofPieceKind.Lines ? p.Points.Length / 2 : p.Closed ? p.Points.Length : p.Points.Length - 1);
-            int lineTriangles = runs.Where(r => r.Lines is not null).Sum(r => r.Mesh.SurfaceGetArrayLen(0) / 3);
+            // Each pen segment: a core and two feathers, six triangles (a 1-pixel line has no core: four); a texture's strokes
+            // kept no closer than 3 px at this zoom (§5): every n-th, n = ⌈3 ÷ (spacing × 40)⌉.
+            static int Kept(RoofPiece p) => p.Kind == RoofPieceKind.Lines
+                ? (p.Spacing > 0f && p.Spacing * 40f < 3f ? ((p.Points.Length / 2) + Mathf.CeilToInt(3f / (p.Spacing * 40f)) - 1) / Mathf.CeilToInt(3f / (p.Spacing * 40f)) : p.Points.Length / 2)
+                : p.Closed ? p.Points.Length : p.Points.Length - 1;
+            int lineSegments = cabin.Where(p => p.Kind is RoofPieceKind.Line or RoofPieceKind.Lines).Sum(Kept);
+            int wideSegments = cabin.Where(p => (p.Kind is RoofPieceKind.Line or RoofPieceKind.Lines) && p.Width > 1f).Sum(Kept);
+            int meshTriangles = runs.Sum(r => r.Mesh.GetSurfaceCount() == 0 ? 0 : r.Mesh.SurfaceGetArrayLen(0) / 3);
+            int gotTriangles = meshTriangles - (4 * lineSegments) - (2 * wideSegments);
+            int lineTriangles = (4 * lineSegments) + (2 * wideSegments);
             bool linesLaidForTheZoom = runs.Where(r => r.Lines is not null).All(r => r.LinePpt == 40f);
             // A face's vertex colour is its piece's × the textures' mean (drawn × 1 ÷ the mean), read back from the mesh.
             RoofPiece firstFace = cabin.First(p => p.Kind == RoofPieceKind.Textured);
             var faceColours = runs.First(r => r.Material is not null).Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Color].AsColorArray();
             bool facesScaled = Mathf.Abs(faceColours[0].R - (firstFace.Colour.R * RoofTextureMean)) < 0.01f;
             if (!ReferenceEquals(firstLaid, again) || ReferenceEquals(again, recoloured) || laid != 2
-                || gotTriangles != wantTriangles || meshTriangles != wantTriangles || !linesInOrder
-                || lineTriangles != (4 * lineSegments) + (2 * wideSegments) || !linesLaidForTheZoom || !facesScaled)
+                || gotTriangles != wantTriangles || meshTriangles != wantTriangles + lineTriangles || !linesInOrder
+                || !linesLaidForTheZoom || !facesScaled)
             {
                 faults.Add($"the cache: the same building {(ReferenceEquals(firstLaid, again) ? "kept" : "laid again")}, recoloured {(ReferenceEquals(again, recoloured) ? "kept" : "laid again")}, {laid} layings (want kept, laid again, 2); the runs {gotTriangles} triangles, the meshes {meshTriangles} (want {wantTriangles}), the lines in order {linesInOrder}, as {lineTriangles} triangles (want {(4 * lineSegments) + (2 * wideSegments)}) laid for the zoom {linesLaidForTheZoom}; a face's colour × the mean {facesScaled}");
             }

@@ -96,6 +96,8 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 
 ## 5. Buildings
 
+> ⭐ **A86 (2026-11-15): with the watercolour on, every building has a yard** of its own things (stock only while held), homes are dressed on their plots with fences by tier, and the roofs are drawn in pen and wash (`specs/building-yards.md`).
+
 > ⭐ **A85 (2026-11-15): with the watercolour on, every finished building is painted** — its roof seen straight down, by material, lit by its facing, with a shadow and a door step; the market, stockpile, mill and well drawn by shape (`specs/building-roofs.md`). The rows below describe the tick off, which is unchanged.
 
 **Every building today is the same thing**: a rotated footprint quad at 0.8× its extent, filled with its colour, a 2px

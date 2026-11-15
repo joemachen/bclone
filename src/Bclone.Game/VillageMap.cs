@@ -3970,7 +3970,10 @@ public partial class VillageMap : Control
             Condition worn = world.ConditionOf(building);
             colour = Weathered(colour, worn);
             // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
-            if (!DrawPaintedBuilding(RoofOf(building.Kind), centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, colour, worn, world.DoorOf(building), building.Id))
+            // ⭐ With its yard (A86, `building-yards.md`): its stock read from its own store, in levels.
+            RoofLook? storeLook = RoofOf(building.Kind);
+            YardState storeYard = PaintsBuildings && storeLook is RoofLook sl ? YardStateOf(building, sl.Yard) : default;
+            if (!DrawPaintedBuilding(storeLook, centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, colour, worn, world.DoorOf(building), building.Id, yard: storeYard))
             {
                 DrawFootprint(
                     centre,
@@ -4561,6 +4564,10 @@ public partial class VillageMap : Control
         _outlinesTracedAtWalls = zones.WallGeneration;
         _outlinesTracedAtStanding = _world.StandingGeneration;
         _zoneOutlines.Clear();
+        _householdFences.Clear();
+        _householdFenceLoops.Clear();
+        _plotTilesByOwner.Clear();
+        _fenceRuns = null;
         _zoneFills.Clear();
         _fieldFills.Clear();
         _fieldEdges.Clear();
@@ -4693,7 +4700,12 @@ public partial class VillageMap : Control
             Color fence = owner?.HomeKind == BuildingKind.Manor ? StoneWallEdge : FenceEdge;
             Color edge = standing ? fence : fence with { A = 0.35f };
             HashSet<GridPos> ground = plotsByOwner[plotOwners[i]];
-            foreach (GridPos tile in ground)
+
+            // ⭐ A86: the plot's tiles, in order, for its yard (`building-yards.md §4.1`) — a list, never the set's order.
+            var plotTiles = ground.OrderBy(g => g.Y).ThenBy(g => g.X).ToList();
+            _plotTilesByOwner[plotOwners[i]] = plotTiles;
+            BuildingKindTier tier = TierOf(owner?.HomeKind ?? BuildingKind.Home);
+            foreach (GridPos tile in plotTiles)
             {
                 byte walls = zones.WallsOn(tile);
                 if (walls == 0)
@@ -4701,10 +4713,10 @@ public partial class VillageMap : Control
                     continue;
                 }
 
-                AddFenceSide(tile, 0, -1, 1, ground, walls, edge);
-                AddFenceSide(tile, 1, 0, 2, ground, walls, edge);
-                AddFenceSide(tile, 0, 1, 4, ground, walls, edge);
-                AddFenceSide(tile, -1, 0, 8, ground, walls, edge);
+                AddFenceSide(tile, 0, -1, 1, ground, walls, edge, tier, standing);
+                AddFenceSide(tile, 1, 0, 2, ground, walls, edge, tier, standing);
+                AddFenceSide(tile, 0, 1, 4, ground, walls, edge, tier, standing);
+                AddFenceSide(tile, -1, 0, 8, ground, walls, edge, tier, standing);
             }
         }
 
@@ -5113,7 +5125,7 @@ public partial class VillageMap : Control
     /// One side of a fenced tile as a line, if a wall stands on it and the ground beyond is not
     /// this household's own (D404) — in sub-tile space, like every other outline.
     /// </summary>
-    private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge)
+    private void AddFenceSide(GridPos tile, int dx, int dy, byte bit, HashSet<GridPos> ground, byte walls, Color edge, BuildingKindTier tier, bool standing)
     {
         if ((walls & bit) == 0 || ground.Contains(new GridPos(tile.X + dx, tile.Y + dy)))
         {
@@ -5121,8 +5133,16 @@ public partial class VillageMap : Control
         }
 
         (Vector2 from, Vector2 to) = FenceSide(tile, dx, dy);
-        _zoneOutlines.Add((Layer.Built, edge, new[] { from, to }));
+        var side = new[] { from, to };
+        _zoneOutlines.Add((Layer.Built, edge, side));
+
+        // ⭐ A86 §4.3: the same side, kept for the painted fence by tier, in tile space.
+        _householdFenceLoops.Add(side);
+        _householdFences.Add((InTileSpace(from, SubTile.PerTile), InTileSpace(to, SubTile.PerTile), tier, standing));
     }
+
+    /// <summary>The household fences' sides in <see cref="_zoneOutlines"/>, so the painted map draws them by tier instead.</summary>
+    private readonly HashSet<Vector2[]> _householdFenceLoops = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>
     /// The side of <paramref name="tile"/> toward (dx, dy), in sub-tile space.
@@ -5155,7 +5175,7 @@ public partial class VillageMap : Control
         for (int i = 0; i < _zoneOutlines.Count; i++)
         {
             (Layer layer, Color edge, Vector2[] loop) = _zoneOutlines[i];
-            if (!Showing(layer))
+            if (!Showing(layer) || (PaintsBuildings && _householdFenceLoops.Contains(loop)))
             {
                 continue;
             }
@@ -5176,6 +5196,12 @@ public partial class VillageMap : Control
             {
                 DrawPolyline(onScreen, edge, width, antialiased: true);
             }
+        }
+
+        // ⭐ A86 §4.3: with the watercolour, the household fences by tier — wattle, post and rail, dry stone.
+        if (PaintsBuildings && Showing(Layer.Built))
+        {
+            DrawPaintedFences();
         }
 
         for (int i = 0; i < _palisadePosts.Count; i++)
@@ -7520,7 +7546,10 @@ public partial class VillageMap : Control
             Condition worn = world.ConditionOf(workplace);
             Color paint = Weathered(colour, worn);
             // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
-            if (!DrawPaintedBuilding(RoofOf(workplace.Kind), centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id))
+            // ⭐ With its yard (A86, `building-yards.md`): stock from its own store where it keeps one, else whether it is working.
+            RoofLook workLook = RoofOf(workplace.Kind);
+            YardState workYard = PaintsBuildings ? YardStateOf(world, workplace, workLook.Yard) : default;
+            if (!DrawPaintedBuilding(workLook, centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id, yard: workYard))
             {
                 DrawFootprint(
                     centre,
@@ -8046,8 +8075,10 @@ public partial class VillageMap : Control
             // edge, as every building does (D556).
             Vector2[] house = FootprintQuad(centre, wide, deep, facing);
             // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            // ⭐ With its yard on its own plot (A86, `building-yards.md §4`): its firewood and its food in levels.
             bool roofed = DrawPaintedBuilding(
-                RoofOf(kind), centre, wide, deep, facing, Weathered(DwellingRoofColourOf(kind), worn), worn, world.DoorOf(household), household.Id, alpha);
+                RoofOf(kind), centre, wide, deep, facing, Weathered(DwellingRoofColourOf(kind), worn), worn, world.DoorOf(household), household.Id, alpha,
+                PaintsBuildings ? YardStateOf(household) : default, at => HomeYardTiles(household, at, facing, wide, deep));
             if (!roofed)
             {
                 DrawColoredPolygon(house, weathered with { A = alpha });
@@ -8593,6 +8624,12 @@ public partial class VillageMap : Control
     /// <summary>A cart seen from above: a bed in the cart colour, inked round like a heap, with its axle across it.</summary>
     private void DrawTheCartChip(Rect2 box)
     {
+        // ⭐ A86 §4.2: with the watercolour, the cart itself where its chip stood — laid once, kept (A85's cache).
+        if (DrawPaintedBuilding(new RoofLook(RoofForm.Cart, RoofMaterial.Boards), box.GetCenter(), 0.34f, 0.22f, 0, HandcartColour, Condition.Sound, null, 0))
+        {
+            return;
+        }
+
         DrawRect(box, HandcartColour);
         DrawRect(box, HeapEdge, filled: false, width: 2f);
         float y = box.Position.Y + (box.Size.Y / 2f);
