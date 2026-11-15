@@ -21,6 +21,16 @@ icon is the stock Godot logo.
 
 ## 1. The calls that block the style
 
+> ⭐ **The concept sheets are a STYLE source only, not a projection (A80, 2026-11-14; Joe: *"Style only, top-down"*).** Thirty
+> images in `art/concept art/` (committed on `art` at his *"yes"*, A81): twelve numbered sheets (visual target, shape
+> language, building design sheet, tier progression, material studies, vegetation and terrain kit, seasonal colour script, path
+> and road tiers, villager lineup, props, UI style frame, readability test) and eighteen single buildings. Every building in them
+> is drawn at an angle; **A31 stands — the valley, its trees and its buildings are drawn straight down.** What is taken from them:
+> the timber framing and the roof and wall colours (sheet 03's palette: *terra umbra*, *tectum rubrum*, *lignum quercus*,
+> *ferrum veteris*, *paries dealbatus*), the ink line, and later the parchment. Sheet 08 (meadow, trampled trail, worn footpath,
+> rutted cart track, cobbled road) **bears on the path look (Joe: *"yes"*, A81)** — set beside the A/B/C mocks and the painted
+> paths he picked (B, A72–A74), perhaps as a progression the wear grades step through; the pick is his, with the art lane.
+
 These are what decide *what kind* of art each row needs. Most rows below cannot be drawn finally until B1–B4 are answered.
 
 | # | The call | Where it stands | What it blocks |
@@ -193,7 +203,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 Zone fills and dashed edges (residential, harvest, destroy, work ground — `VillageMap.cs:295–369`, `:4643–4840`); the
 **paths** — worn `#8c7457` and packed `#8a7056` trail meshes with tapered ends and junction discs (`Meshes.cs:761–883`),
 which are world art as much as overlay (B6) — 🔨 **with the watercolour on, painted into the ground as worn dirt tracks
-with a pen line down each side (A72, `specs/painted-paths.md`, Joe's *"B, painted track"*), the pen lightened (A73), ⭐ merged (A74); the mesh stays the
+with a pen line down each side (A72, `specs/painted-paths.md`, Joe's *"B, painted track"*), the pen lightened (A73), ⭐ merged (A74); 🔨 **A82: lightly worn ground a trampled trail (concept sheet 08, tier II), packed the footpath (III)**; the mesh stays the
 flat map's; the wear debug wash; the brush preview; the selection outline; the
 gathering-radius ring; home-to-work route lines. All 🟨, all functional. Whether paths become painted ground is B6's.
 
