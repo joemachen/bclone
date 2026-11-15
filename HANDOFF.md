@@ -10311,6 +10311,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15), JOE'S TO CALL.** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
+  `DESIGN.md §4` Phase 6. **Recommended:** a seventh exit-gate item (the phase ends when everything on the reviewed list is
+  built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
+  hall's tabs stay last; warm clothing stops being optional unless he moves it out at the review. The review itself is not
+  started. ⭐ From now on every systems spec names the buildings, goods and villager states the art lane will have to draw.
 - ⏸️ **TWO SMALL SCHOOL WORDINGS HIS ASHBOURNE LOG SHOWED (D773), JOE'S TO CALL, NOT BUILT.** (a) *"5 children of school age have no
   place at school — another teacher … would bring 6 more"* was said before the teacher had started: 5 children, 6 places, nobody in
   them yet. (b) A child who turns 12 inside the first year *"leaves school 1 after 0 years"* (Moswyld, Eldar). He said there was no
