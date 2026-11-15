@@ -2,7 +2,7 @@
 
 **Status:** ✍️ **SPECCED AND 🔨 BUILT on `art` (A76, 2026-11-14)** at Joe's *"Build it"* on a mock; **reworked at his first
 look in his own game (A77, the same day)** — the flakes fall into the valley, are drawn crystals, and the snow lies by the
-land's shape; **✅ MERGED into `main` at his word (A78, *"Yes, merge it"*, merge `77a9ee5`); not pushed.** Art lane, view only. Neighbours: `terrain-shader.md` (the snow's first build, A4, A9, A23, A41 — §5.3's
+land's shape; **✅ MERGED into `main` at his word (A78, *"Yes, merge it"*, merge `77a9ee5`); pushed at his word (A79, *"Push main"*, `origin/main` = `332a115`).** Art lane, view only. Neighbours: `terrain-shader.md` (the snow's first build, A4, A9, A23, A41 — §5.3's
 *"falling snow, not in this slice"* is this), `green-ground.md` (the land the drifts read), `painted-paths.md` (the tracks
 the snow lies thin on).
 
