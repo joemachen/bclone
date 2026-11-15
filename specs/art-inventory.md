@@ -22,13 +22,14 @@ icon is the stock Godot logo.
 ## 1. The calls that block the style
 
 > ⭐ **The concept sheets are a STYLE source only, not a projection (A80, 2026-11-14; Joe: *"Style only, top-down"*).** Thirty
-> images in `art/concept art/` (untracked — whether they go into git is his call): twelve numbered sheets (visual target, shape
+> images in `art/concept art/` (committed on `art` at his *"yes"*, A81): twelve numbered sheets (visual target, shape
 > language, building design sheet, tier progression, material studies, vegetation and terrain kit, seasonal colour script, path
 > and road tiers, villager lineup, props, UI style frame, readability test) and eighteen single buildings. Every building in them
 > is drawn at an angle; **A31 stands — the valley, its trees and its buildings are drawn straight down.** What is taken from them:
 > the timber framing and the roof and wall colours (sheet 03's palette: *terra umbra*, *tectum rubrum*, *lignum quercus*,
 > *ferrum veteris*, *paries dealbatus*), the ink line, and later the parchment. Sheet 08 (meadow, trampled trail, worn footpath,
-> rutted cart track, cobbled road) sits beside the painted paths Joe picked (B, A72–A74): whether it changes them is his to say.
+> rutted cart track, cobbled road) **bears on the path look (Joe: *"yes"*, A81)** — set beside the A/B/C mocks and the painted
+> paths he picked (B, A72–A74), perhaps as a progression the wear grades step through; the pick is his, with the art lane.
 
 These are what decide *what kind* of art each row needs. Most rows below cannot be drawn finally until B1–B4 are answered.
 
