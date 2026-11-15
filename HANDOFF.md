@@ -1,5 +1,11 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), UNPLAYED, PUSHED AT HIS WORD (D770, `origin/main` = d387750). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. NO BRANCH OPEN BUT `art`.**
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), UNPLAYED, PUSHED AT HIS WORD (D770, `origin/main` = d387750). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. 🐞 `slice/clearing-haul` OPEN (D771): OAKMONT'S BOUNCE, D768's OWN BUG, FIXED — MERGE AT HIS WORD.** *(Read "NO BRANCH OPEN BUT `art`" at D769–D770.)*
 
+> **🐞 `slice/clearing-haul` (D771, 2026-11-15) — OAKMONT'S BOUNCE, D768's OWN BUG, FIXED; ⏸️ MERGE AT JOE'S WORD.** Joe saw
+> Oakmont, Ullow and Wileth step one tile and back with the cart's firewood all summer (Hollowmere, Y4). D768's
+> `ClearingAStore` stuck to the armful; the arrival now sets `HaulingToStore`. His save frozen at
+> `side-session-notes\…\oakmont-save\`. Guard `WhoeverCarriesAnArmfulOutHaulsIt`, 1 mutant 1 red.
+> - **Four checks:** suite **2048 / 0 / 5 of 2053 in 17m04**; view build 0 warnings (`--no-incremental`); probe 159 `[widths]` lines, 120 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 418 → 418, identical — **none moved**.
+>
 > **⬆️ PUSHED AT JOE'S WORD (D770, 2026-11-15: *"Push main"*): `origin/main` a1faeb2..d387750** — the school and its merge are
 > on origin; the block below saying *not pushed* is left as written and corrected here. *(This record's own commit is local.)*
 >
@@ -9485,6 +9491,19 @@ Read `git status` after staging, every time.
   name is a claim about its scope; read where it is incremented before building a gate on it.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
+
+## ⛔ THE TRAP D771 PAID FOR — A STATE FIX MUST FOLLOW THE ERRAND PAST ITS ARRIVAL
+
+- **D768 set the clearing errand's state for the walk out and its guard asked only about the walk out** — empty-handed
+  villagers walking to the store. The state then rode on through the arrival onto the armful, whose continuation turned
+  them for home: a one-tile bounce, game-breaking, on `main` and pushed. **When you set a state at the start of an
+  errand, read every place the errand hands over** (here `HaulOrSetDown`, which calls `Travel` but sets nothing) **and
+  guard the hand-over too.** Every older Relocate test was green under the mutant, because their fixtures' homes lay on
+  the way to the other store.
+- ⚠️ **`HaulOrSetDown` still sets no state of its own**: four callers do not set `HaulingToStore` just before it (the trading
+  post's and the barn's lost-workplace cases, the harvest that will not fit in its farm, the lodge-less hunt — the herd
+  and the two trade sites do). Each keeps whatever state it had; none is known to bounce. Moving the line into `HaulOrSetDown` is the root fix but may move
+  goldens — Joe's call, not taken here.
 
 ## ⛔ THE TRAPS D769 PAID FOR — UNTRACKED COPIES BLOCK A CHECKOUT, AND BOTH LANES APPEND TO §7
 

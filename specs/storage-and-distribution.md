@@ -777,6 +777,11 @@ pair, the two skill hashes).
 > last armful left and was refilled the same tick. Guards: `AnEmptiedStoreStaysClosedUntilOpened`,
 > `AStoreMarkedForEmptyingIsCarriedOutAndThenCanMove` (no workaround now). The rest of this section
 > — one three-state control, hashed sparsely — stands.
+>
+> ⛔ **The errand's two walks have two names (D768, D771).** The walk out, empty-handed, is `ClearingAStore`
+> (D768 — it set no state, and Gargard bounced at his door); the walk away with the armful is `HaulingToStore`
+> (D771 — D768's state stuck to the armful, and Joe's Oakmont, Ullow and Wileth stepped one tile and back all
+> summer). Guards: `WhoeverSetsOutToEmptyAStoreSaysSo`, `WhoeverCarriesAnArmfulOutHaulsIt`.
 
 Joe, playing D386: *"when emptying a storage building, once it is empty, it should automatically go
 back to being able to be stocked. presently the user has to click 'empty' again in the menu — which
