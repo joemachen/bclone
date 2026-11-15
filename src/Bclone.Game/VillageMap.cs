@@ -3792,15 +3792,19 @@ public partial class VillageMap : Control
             // `extent` column. One tile today, so this draws exactly what the rect did.
             Condition worn = world.ConditionOf(library);
             Color paint = Weathered(LibraryColour, worn);
-            DrawFootprint(
-                centre,
-                library.ExtentWidth * 0.8f,
-                library.ExtentHeight * 0.8f,
-                library.Facing.Raw,
-                paint with { A = 0.85f },
-                Ink,
-                worn == Condition.Ruin);
-            DrawDoor(centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, world.DoorOf(library), DoorColour);
+            // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            if (!DrawPaintedBuilding(RoofOf(BuildingKind.Library), centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, paint, worn, world.DoorOf(library), i))
+            {
+                DrawFootprint(
+                    centre,
+                    library.ExtentWidth * 0.8f,
+                    library.ExtentHeight * 0.8f,
+                    library.Facing.Raw,
+                    paint with { A = 0.85f },
+                    Ink,
+                    worn == Condition.Ruin);
+                DrawDoor(centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, world.DoorOf(library), DoorColour);
+            }
 
             // ⭐ A FULL LIBRARY SAYS SO ON THE MAP, for the same reason a full store does (D140):
             // the consequence of a full shelf is a technique dying with somebody years from now,
@@ -3833,14 +3837,18 @@ public partial class VillageMap : Control
         Vector2 centre = ToScreen(hall.Position);
         float size = Mathf.Max(9f, _pixelsPerTile * 0.95f);
         // ⭐ Through the footprint like every other building (D325).
-        DrawFootprint(
-            centre,
-            hall.ExtentWidth * 0.95f,
-            hall.ExtentHeight * 0.95f,
-            hall.Facing.Raw,
-            TownHallColour with { A = 0.9f },
-            Ink);
-        DrawDoor(centre, hall.ExtentWidth * 0.95f, hall.ExtentHeight * 0.95f, hall.Facing.Raw, _world.DoorOf(hall), DoorColour);
+        // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+        if (!DrawPaintedBuilding(RoofOf(BuildingKind.TownHall), centre, hall.ExtentWidth * 0.95f, hall.ExtentHeight * 0.95f, hall.Facing.Raw, TownHallColour, Condition.Sound, _world.DoorOf(hall), 0))
+        {
+            DrawFootprint(
+                centre,
+                hall.ExtentWidth * 0.95f,
+                hall.ExtentHeight * 0.95f,
+                hall.Facing.Raw,
+                TownHallColour with { A = 0.9f },
+                Ink);
+            DrawDoor(centre, hall.ExtentWidth * 0.95f, hall.ExtentHeight * 0.95f, hall.Facing.Raw, _world.DoorOf(hall), DoorColour);
+        }
     }
 
     /// <summary>The wells (D427): a ring of stone with water at its heart.</summary>
@@ -3858,15 +3866,19 @@ public partial class VillageMap : Control
             Vector2 centre = ToScreen(well.Position);
             Condition worn = world.ConditionOf(well);
             Color paint = Weathered(WellColour, worn);
-            DrawFootprint(
-                centre,
-                well.ExtentWidth * 0.7f,
-                well.ExtentHeight * 0.7f,
-                well.Facing.Raw,
-                paint with { A = 0.9f },
-                Ink,
-                worn == Condition.Ruin);
-            DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
+            // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            if (!DrawPaintedBuilding(RoofOf(BuildingKind.Well), centre, well.ExtentWidth * 0.7f, well.ExtentHeight * 0.7f, well.Facing.Raw, paint, worn, null, i))
+            {
+                DrawFootprint(
+                    centre,
+                    well.ExtentWidth * 0.7f,
+                    well.ExtentHeight * 0.7f,
+                    well.Facing.Raw,
+                    paint with { A = 0.9f },
+                    Ink,
+                    worn == Condition.Ruin);
+                DrawCircle(centre, Mathf.Max(2f, _pixelsPerTile * 0.2f), FisheryColour);
+            }
         }
     }
 
@@ -3957,15 +3969,19 @@ public partial class VillageMap : Control
             // learned it. *A feature can be correct in the sim and absent from the game.*
             Condition worn = world.ConditionOf(building);
             colour = Weathered(colour, worn);
-            DrawFootprint(
-                centre,
-                building.ExtentWidth * 0.8f,
-                building.ExtentHeight * 0.8f,
-                building.Facing.Raw,
-                colour with { A = 0.85f },
-                Ink,
-                worn == Condition.Ruin);
-            DrawDoor(centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, world.DoorOf(building), DoorColour);
+            // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            if (!DrawPaintedBuilding(RoofOf(building.Kind), centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, colour, worn, world.DoorOf(building), building.Id))
+            {
+                DrawFootprint(
+                    centre,
+                    building.ExtentWidth * 0.8f,
+                    building.ExtentHeight * 0.8f,
+                    building.Facing.Raw,
+                    colour with { A = 0.85f },
+                    Ink,
+                    worn == Condition.Ruin);
+                DrawDoor(centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, world.DoorOf(building), DoorColour);
+            }
 
             if (ShowsItsStock(building))
             {
@@ -7503,15 +7519,19 @@ public partial class VillageMap : Control
             // separate things rather than one continuous slab.
             Condition worn = world.ConditionOf(workplace);
             Color paint = Weathered(colour, worn);
-            DrawFootprint(
-                centre,
-                workplace.ExtentWidth * 0.8f,
-                workplace.ExtentHeight * 0.8f,
-                workplace.Facing.Raw,
-                paint,
-                Ink,
-                worn == Condition.Ruin);
-            DrawDoor(centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, world.DoorOf(workplace), DoorColour);
+            // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            if (!DrawPaintedBuilding(RoofOf(workplace.Kind), centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id))
+            {
+                DrawFootprint(
+                    centre,
+                    workplace.ExtentWidth * 0.8f,
+                    workplace.ExtentHeight * 0.8f,
+                    workplace.Facing.Raw,
+                    paint,
+                    Ink,
+                    worn == Condition.Ruin);
+                DrawDoor(centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, world.DoorOf(workplace), DoorColour);
+            }
 
             // ⭐ AND A BUILDING THAT CANNOT DO ITS JOB SAYS SO (Joe, D147). The same shape as
             // D140's full-store ring, for the same reason and with the same switches — and it
@@ -8025,11 +8045,17 @@ public partial class VillageMap : Control
             // A house whose family has died still stands, and reads as abandoned. One that has fallen in has a broken
             // edge, as every building does (D556).
             Vector2[] house = FootprintQuad(centre, wide, deep, facing);
-            DrawColoredPolygon(house, weathered with { A = alpha });
+            // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
+            bool roofed = DrawPaintedBuilding(
+                RoofOf(kind), centre, wide, deep, facing, Weathered(DwellingRoofColourOf(kind), worn), worn, world.DoorOf(household), household.Id, alpha);
+            if (!roofed)
+            {
+                DrawColoredPolygon(house, weathered with { A = alpha });
+            }
 
             // ⭐ Each tier its own look (§6, D722): the cottage's slate and chimney, the manor's two storeys — weathered as
             // the walls are, faint as they are when nobody lives there.
-            foreach ((Vector2[] shape, Color colour) in HouseMarksAt(kind, centre, wide, deep, facing, _pixelsPerTile))
+            foreach ((Vector2[] shape, Color colour) in roofed ? new List<(Vector2[], Color)>() : HouseMarksAt(kind, centre, wide, deep, facing, _pixelsPerTile))
             {
                 DrawColoredPolygon(shape, Weathered(colour, worn) with { A = alpha });
             }
@@ -8054,6 +8080,11 @@ public partial class VillageMap : Control
                 {
                     DrawLine(outline[edge], outline[(edge + 1) % 4], SiteEdge, 2f);
                 }
+            }
+
+            if (roofed)
+            {
+                continue;
             }
 
             DrawEdges(house, occupied ? Ink : Ink with { A = 0.35f }, fallenIn: worn == Condition.Ruin);

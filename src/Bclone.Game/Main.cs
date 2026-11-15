@@ -592,6 +592,7 @@ public partial class Main : Control
         GD.Print(_map.TheGreenGroundHolds());
         GD.Print(_map.ThePaintedPathsHold());
         GD.Print(_map.TheSnowfallHolds());
+        GD.Print(_map.ThePaintedBuildingsHold());
         GD.Print(_map.TheRiverDrawnHolds());
         GD.Print(TheRiverKeepsTheGamesSpeed());
         SaveTheValleyBake();
