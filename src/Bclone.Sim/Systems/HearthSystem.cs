@@ -75,6 +75,7 @@ public sealed class HearthSystem : ISimSystem
         if (onTheBeat)
         {
             BurnADaysFirewood(world, config, dayOfWinter / config.FirewoodBurnIntervalDays);
+            KeepTheSchoolsWarm(world, config, dayOfWinter / config.FirewoodBurnIntervalDays);
         }
 
         // The coats wear on the day's first tick, before the chill — so the day a coat runs out is a bare day.
@@ -144,6 +145,55 @@ public sealed class HearthSystem : ISimSystem
         }
 
         return config.ExposurePerTickSheltered;
+    }
+
+    /// <summary>
+    /// ⭐ THE SCHOOL'S STOVE (Joe, D764: <i>"Warm, burns firewood"</i>; `school-and-education.md §12.6`): a staffed school burns
+    /// its winter on the house's beats, then its pile is topped up to the next beat's (never below one, so it stays lit to
+    /// the winter's end) from the nearest store that gives firewood — the forge's way, not walked — and only once the homes
+    /// are covered. A school whose last wood goes and cannot be kept says so.
+    /// </summary>
+    private static void KeepTheSchoolsWarm(SimWorld world, SimConfig config, int beat)
+    {
+        int winter = config.SchoolWinterFirewood;
+        if (winter <= 0)
+        {
+            return;
+        }
+
+        int beats = (config.DaysPerSeason + config.FirewoodBurnIntervalDays - 1) / config.FirewoodBurnIntervalDays;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace school = world.Workplaces[i];
+            if (school.Kind != JobKind.Teacher || school.IsSite || school.WorkerIds.Count == 0)
+            {
+                continue;
+            }
+
+            int burn = Math.Min(school.Store.Firewood, BurnOnBeat(winter, beat, beats));
+            if (burn > 0)
+            {
+                school.Store.TryTake(Goods.Firewood, burn);
+            }
+
+            int wanted = Math.Max(1, BurnOnBeat(winter, beat + 1, beats)) - school.Store.Firewood;
+            if (wanted > 0 && LabourQuota.HomesFirewoodShortfall(world) == 0
+                && world.NearestStoreAccepting(school.Tile, Goods.Firewood, s => s.Gives(Goods.Firewood) && s.Store.Firewood > 0)
+                    is StoreBuilding store)
+            {
+                int brought = Math.Min(wanted, store.Store.Firewood);
+                if (store.Store.TryTake(Goods.Firewood, brought))
+                {
+                    school.Store.Add(Goods.Firewood, brought);
+                }
+            }
+
+            if (burn > 0 && school.Store.Firewood == 0)
+            {
+                world.Narrate($"{school.Name} is cold — the homes need the village's firewood first. {world.Clock.SeasonAndYear()}.",
+                    LogCategory.Warning);
+            }
+        }
     }
 
     private static void BurnADaysFirewood(SimWorld world, SimConfig config, int beat)
@@ -249,7 +299,9 @@ public sealed class HearthSystem : ISimSystem
             // to get warm — so the sentence a player reads and the decision the villager
             // makes are the same moment. Crossing it downward is somebody thawing out,
             // and saying it again then would train them to ignore it.
-            if (before < warnAt && villager.Cold >= warnAt && warnAt > 0)
+            // ⚠️ Not for a graduate who reads the year (B, D753): she goes in at her own moment, which may be well past this
+            // line beside a fire or short of it in the far wood, so the sentence is said when she goes (`TrySeekWarmth`).
+            if (before < warnAt && villager.Cold >= warnAt && warnAt > 0 && !BehaviorSystem.ReadsTheYear(config, villager))
             {
                 // ⭐ THE SENTENCE SAYS WHETHER THERE IS A COAT, AND HOW LONG THEY HAVE BEEN IN THE COLD (D691). Joe, on
                 // a winter log of these with 23 coats in the warehouse: *"why are so many people cold when I have so

@@ -3372,7 +3372,7 @@ public partial class VillageMap : Control
         }
 
         List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile);
-        Vector2[] fill = ZoneOutline.Fill(outline, under);
+        Vector2[] fill = ZoneOutline.Fill(outline);
         for (int p = 0; p < fill.Length; p++)
         {
             fill[p] = ToScreen(InTileSpace(fill[p], SubTile.PerTile));
@@ -3382,8 +3382,7 @@ public partial class VillageMap : Control
 
         if (refusedCells.Count > 0)
         {
-            Vector2[] no = ZoneOutline.Fill(
-                ZoneOutline.Trace(refusedCells, SubTile.PerTile), refusedCells);
+            Vector2[] no = ZoneOutline.Fill(ZoneOutline.Trace(refusedCells, SubTile.PerTile));
             for (int p = 0; p < no.Length; p++)
             {
                 no[p] = ToScreen(InTileSpace(no[p], SubTile.PerTile));
@@ -4861,7 +4860,7 @@ public partial class VillageMap : Control
                 }
 
                 List<Vector2[]> loops = ZoneOutline.Trace(field, SubTile.PerTile);
-                Vector2[] traced = ZoneOutline.Fill(loops, field);
+                Vector2[] traced = ZoneOutline.Fill(loops);
                 KeepTraced(traced, Terrain.Field, 0);
                 foreach ((byte crop, HashSet<Vector2I> cells) in sown)
                 {
@@ -4905,7 +4904,7 @@ public partial class VillageMap : Control
 
                 if (worked.Count > 0)
                 {
-                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile), worked), seam, 0);
+                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile)), seam, 0);
                 }
             }
         }
@@ -4959,7 +4958,7 @@ public partial class VillageMap : Control
                 return;
             }
 
-            Vector2[] triangles = ZoneOutline.Fill(ZoneOutline.Trace(cells, SubTile.PerTile), cells);
+            Vector2[] triangles = ZoneOutline.Fill(ZoneOutline.Trace(cells, SubTile.PerTile));
             for (int i = 0; i < triangles.Length; i++)
             {
                 triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);
@@ -4979,7 +4978,7 @@ public partial class VillageMap : Control
                 _zoneOutlines.Add((layer, edge, loop));
             }
 
-            Vector2[] triangles = ZoneOutline.Fill(loops, tiles);
+            Vector2[] triangles = ZoneOutline.Fill(loops);
             for (int i = 0; i < triangles.Length; i++)
             {
                 triangles[i] = InTileSpace(triangles[i], SubTile.PerTile);

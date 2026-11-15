@@ -205,6 +205,13 @@ public enum JobKind
     /// </summary>
     /// <remarks>⛔ Appended at 16.</remarks>
     Carpenter = 16,
+
+    /// <summary>
+    /// The teacher (D754, `school-and-education.md §12` step 1) — at the school, where each brings
+    /// <c>school_places_per_teacher</c> places the village fills from its 12–15-year-olds. Staffed like any trade, the
+    /// player saying how many and never who (D51); no skill of their own (§11.3 call 5). <b>Appended at 17.</b>
+    /// </summary>
+    Teacher = 17,
 }
 
 /// <summary>

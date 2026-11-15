@@ -230,7 +230,7 @@ internal static class ZoneOutline
             }
 
             polygon = Mathf.Abs(polygon);
-            float triangles = TriangleArea(Fill(loops, set));
+            float triangles = TriangleArea(Fill(loops));
             float ratio = polygon > 0f ? triangles / polygon : 0f;
             sizes += $" · {what} is tiled to {ratio:F3} of its own area";
 
@@ -252,7 +252,7 @@ internal static class ZoneOutline
                 set.Add(new Vector2I(x, y));
             }
 
-            Vector2[] whole = Fill(Trace(set, SubTilesPerTile), set);
+            Vector2[] whole = Fill(Trace(set, SubTilesPerTile));
             float wholeArea = TriangleArea(whole);
 
             var keep = new HashSet<Vector2I>();
@@ -359,7 +359,7 @@ internal static class ZoneOutline
                 set.Add(new Vector2I(x, y));
             }
 
-            float area = TriangleArea(Fill(Trace(set), set));
+            float area = TriangleArea(Fill(Trace(set)));
             sizes += $" · {what} fills {area:F1} of {wanted:F0}";
 
             if (Mathf.Abs(area - wanted) > wanted * within)
@@ -1018,231 +1018,218 @@ internal static class ZoneOutline
         polygon.AddRange(scratch);
     }
 
-    internal static Vector2[] Fill(List<Vector2[]> loops, HashSet<Vector2I> cells)
+    /// <summary>
+    /// ⛔⛔ AND A VILLAGE-SIZED FILL IS QUICK (Joe, 2026-11-14: <i>"painting areas is very slow/choppy"</i>). The fill re-runs
+    /// on every brushful, and a brushful comes every frame while the mouse is held — so a residential area of ~2,200 outline
+    /// points (sub-tile steps, D336, rounded twice) cost 125–312 ms a stroke on his save (the art lane measured it). Posed
+    /// here at that size: rounds overlapping along a wave with rounds cut out of it, so it has the curves, the length and
+    /// the holes; timed (best of three, wall-clock — the view's, never the sim's) and its tiling asked as <c>Tiled</c> does.
+    /// </summary>
+    internal static string AVillageSizedFillIsQuick()
     {
-        // ⛔⛔ EAR CLIPPING, NOT DELAUNAY (D352). D345 triangulated the loop points with
-        // `Geometry2D.TriangulateDelaunay` and kept the triangles whose centroid sat on paint. Joe:
-        // *"sometimes the paintbrush (all types) has weird… triangle artifacting."* Measured with
-        // `Tiled` in the self-check: the Delaunay triangles cover **1.62× a 7-tile round's area
-        // and 2.30× a 13-tile round's** — they overlap, and a translucent fill drawn twice is a
-        // darker facet. A smoothed round is hundreds of points lying almost on one circle, the
-        // one input Delaunay is not unique for, and nudging the points off it only moved which
-        // brush sizes broke. **A polygon's own ear clipping cannot overlap and cannot gap**: it
-        // is the polygon, exactly. Holes are bridged into their outer loop first — the classic
-        // cut from the hole's rightmost point to a visible outer vertex — so a ring round a hut
-        // is one weakly simple polygon and fills as a ring.
-        var outers = new List<List<Vector2>>();
-        var holes = new List<List<Vector2>>();
-        float outerSign = 0f;
-        float largest = 0f;
-
-        foreach (Vector2[] loop in loops)
+        var cells = new HashSet<Vector2I>();
+        for (int i = 0; i < 4; i++)
         {
-            float signed = Mathf.Abs(SignedArea(loop));
-            if (signed > largest)
-            {
-                largest = signed;
-                outerSign = Mathf.Sign(SignedArea(loop));
-            }
+            int cx = i * 22;
+            int cy = (int)(Mathf.Sin(i * 0.9f) * 30f);
+            int radius = 16 + (i * 7 % 9);
+            Paint(cells, cx, cy, radius, add: true);
         }
 
-        foreach (Vector2[] loop in loops)
+        for (int i = 1; i < 4; i += 2)
         {
-            List<Vector2> open = WithoutTheClosingRepeat(loop);
-            if (open.Count < 3)
-            {
-                continue;
-            }
-
-            (Mathf.Sign(SignedArea(loop)) == outerSign ? outers : holes).Add(open);
+            Paint(cells, (i * 22) + 4, (int)(Mathf.Sin(i * 0.9f) * 30f) + 3, 5, add: false);
         }
 
-        var kept = new List<Vector2>();
-        foreach (List<Vector2> outer in outers)
+        List<Vector2[]> loops = Trace(cells, 4); // quarter-tiles, as the map's (SubTile.PerTile, a sim type)
+        int points = 0;
+        float polygon = 0f;
+        foreach (Vector2[] loop in loops)
         {
-            List<Vector2> polygon = outer;
+            points += loop.Length;
+            polygon += SignedArea(loop);
+        }
 
-            // Every hole inside this outer loop, rightmost first, bridged in one at a time.
-            var inside = new List<List<Vector2>>();
-            Vector2[] fence = outer.ToArray();
-            foreach (List<Vector2> hole in holes)
+        polygon = Mathf.Abs(polygon);
+        double best = double.MaxValue;
+        Vector2[] triangles = System.Array.Empty<Vector2>();
+        for (int run = 0; run < 3; run++)
+        {
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            triangles = Fill(loops);
+            best = System.Math.Min(best, clock.Elapsed.TotalMilliseconds);
+        }
+
+        float ratio = polygon > 0f ? TriangleArea(triangles) / polygon : 0f;
+        string sizes = $"{points} outline points in {loops.Count} loops fill in {best:F1} ms as {triangles.Length / 3} triangles, "
+            + $"tiled to {ratio:F3} of its own area";
+
+        // ⚠️ Twenty milliseconds is a stroke inside a frame and a bit with the rest of the trace (the art lane's 7.5 ms
+        // sub-tile scan); measured before the fix, so the band is known to see the defect.
+        var complaints = new List<string>();
+        if (best > 20.0)
+        {
+            complaints.Add($"the fill took {best:F1} ms — a brushful a frame would be choppy");
+        }
+
+        if (Mathf.Abs(ratio - 1f) > 0.005f)
+        {
+            complaints.Add($"the triangles cover {ratio:F3} of the polygon");
+        }
+
+        return complaints.Count == 0
+            ? $"[widths] zone fill: ✅ {sizes}"
+            : $"[widths] zone fill: ⛔ {string.Join("; ", complaints)} — {sizes}";
+
+        static void Paint(HashSet<Vector2I> into, int cx, int cy, int radius, bool add)
+        {
+            long limit = (long)radius * (radius + 1);
+            for (int dy = -radius; dy <= radius; dy++)
             {
-                if (Geometry2D.IsPointInPolygon(hole[0], fence))
+                for (int dx = -radius; dx <= radius; dx++)
                 {
-                    inside.Add(hole);
-                }
-            }
-
-            inside.Sort((a, b) => Rightmost(b).X.CompareTo(Rightmost(a).X));
-            foreach (List<Vector2> hole in inside)
-            {
-                polygon = Bridge(polygon, hole);
-            }
-
-            Vector2[] corners = polygon.ToArray();
-            int[] indices = Geometry2D.TriangulatePolygon(corners);
-
-            if (indices.Length == 0)
-            {
-                // ⚠️ The clipper refused it — a self-touching bridge it could not see past. The
-                // old path is kept as the fallback so the region still fills, facets and all,
-                // rather than vanishing; the self-check's `Tiled` line is what says how often.
-                indices = Geometry2D.TriangulateDelaunay(corners);
-                for (int t = 0; t + 2 < indices.Length; t += 3)
-                {
-                    Vector2 centroid = (corners[indices[t]] + corners[indices[t + 1]] + corners[indices[t + 2]]) / 3f;
-                    var cell = new Vector2I(Mathf.RoundToInt(centroid.X), Mathf.RoundToInt(centroid.Y));
-                    if (cells.Contains(cell))
+                    if (((long)dx * dx) + ((long)dy * dy) <= limit)
                     {
-                        kept.Add(corners[indices[t]]);
-                        kept.Add(corners[indices[t + 1]]);
-                        kept.Add(corners[indices[t + 2]]);
+                        var at = new Vector2I(cx + dx, cy + dy);
+                        if (add)
+                        {
+                            into.Add(at);
+                        }
+                        else
+                        {
+                            into.Remove(at);
+                        }
                     }
                 }
-
-                continue;
             }
+        }
+    }
 
-            for (int t = 0; t + 2 < indices.Length; t += 3)
+    /// <summary>
+    /// The region the loops enclose — outer loops less their holes — as triangles that cover it exactly once.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐⭐ IN LEVEL STRIPS, NOT BY EAR CLIPPING (Joe, 2026-11-14: <i>"painting areas is very slow/choppy"</i>). D352's ear
+    /// clipping was exact — it fixed D345's overlapping Delaunay facets — but Godot's clipper costs about the square of the
+    /// points, and the fill re-runs on every brushful: a residential area of 2,200 outline points took 125–312 ms a stroke
+    /// on his save, and the probe's 4,363-point pose 792 ms. <b>This is exact in the same sense and close to linear.</b>
+    /// </para>
+    /// <para>
+    /// Every edge that is not level, swept downwards from one vertex height to the next: in each strip the edges crossing
+    /// it, ordered by where they cross its middle, pair off outside-inside — even-odd, so a hole is outside without being
+    /// bridged in (an outer loop and its holes are disjoint loops) — and each pair bounds a trapezoid, two triangles. A
+    /// trapezoid runs on down while both its edges do, so there are about as many as edges, not strips.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Why it cannot crack or draw darker:</b> trapezoids in one strip are separated by outside; the only shared
+    /// boundaries are LEVEL lines at a vertex's height, where both sides use that same y exactly, and the map is drawn
+    /// unrotated (<c>ToScreen</c> is a scale and an offset), so no pixel can fall between or under both. A sloped side is
+    /// always a polygon edge with outside beyond it. The self-check's <c>Tiled</c> lines measure it: triangles against the
+    /// loops' own area, 1.000.
+    /// </para>
+    /// </remarks>
+    internal static Vector2[] Fill(List<Vector2[]> loops)
+    {
+        var edges = new List<(Vector2 Top, Vector2 Bottom)>();
+        var heights = new List<float>();
+        foreach (Vector2[] loop in loops)
+        {
+            for (int i = 0; i < loop.Length; i++)
             {
-                kept.Add(corners[indices[t]]);
-                kept.Add(corners[indices[t + 1]]);
-                kept.Add(corners[indices[t + 2]]);
+                Vector2 a = loop[i];
+                Vector2 b = loop[(i + 1) % loop.Length];
+                if (a.Y == b.Y)
+                {
+                    continue; // level — or the loop's closing repeat — crosses no strip
+                }
+
+                edges.Add(a.Y < b.Y ? (a, b) : (b, a));
+                heights.Add(a.Y);
+                heights.Add(b.Y);
             }
+        }
+
+        heights.Sort();
+        var levels = new List<float>(heights.Count);
+        foreach (float y in heights)
+        {
+            if (levels.Count == 0 || levels[^1] != y)
+            {
+                levels.Add(y);
+            }
+        }
+
+        edges.Sort((p, q) => p.Top.Y.CompareTo(q.Top.Y));
+
+        var kept = new List<Vector2>();
+        var active = new List<int>();
+        var running = new List<(int Left, int Right, float From)>();
+        var pairs = new HashSet<(int, int)>();
+        int nextEdge = 0;
+        for (int s = 0; s + 1 < levels.Count; s++)
+        {
+            float top = levels[s];
+            float middle = (top + levels[s + 1]) / 2f;
+
+            active.RemoveAll(e => edges[e].Bottom.Y <= top);
+            while (nextEdge < edges.Count && edges[nextEdge].Top.Y <= top)
+            {
+                active.Add(nextEdge);
+                nextEdge++;
+            }
+
+            active.Sort((p, q) => XAt(edges[p], middle).CompareTo(XAt(edges[q], middle)));
+            pairs.Clear();
+            for (int k = 0; k + 1 < active.Count; k += 2)
+            {
+                pairs.Add((active[k], active[k + 1]));
+            }
+
+            // A trapezoid whose two edges no longer pair ends at this strip's top; one that still does runs on.
+            for (int r = running.Count - 1; r >= 0; r--)
+            {
+                (int left, int right, float from) = running[r];
+                if (!pairs.Remove((left, right)))
+                {
+                    Trapezoid(left, right, from, top);
+                    running.RemoveAt(r);
+                }
+            }
+
+            foreach ((int left, int right) in pairs)
+            {
+                running.Add((left, right, top));
+            }
+        }
+
+        float bottom = levels.Count > 0 ? levels[^1] : 0f;
+        foreach ((int left, int right, float from) in running)
+        {
+            Trapezoid(left, right, from, bottom);
         }
 
         return kept.ToArray();
-    }
 
-    /// <summary>A loop's points without the repeated first point, and without coincident neighbours.</summary>
-    private static List<Vector2> WithoutTheClosingRepeat(Vector2[] loop)
-    {
-        var points = new List<Vector2>(loop.Length);
-        for (int i = 0; i + 1 < loop.Length; i++)
+        void Trapezoid(int left, int right, float from, float to)
         {
-            if (points.Count == 0 || points[^1].DistanceSquaredTo(loop[i]) > 1e-8f)
-            {
-                points.Add(loop[i]);
-            }
+            var a = new Vector2(XAt(edges[left], from), from);
+            var b = new Vector2(XAt(edges[right], from), from);
+            var c = new Vector2(XAt(edges[right], to), to);
+            var d = new Vector2(XAt(edges[left], to), to);
+            kept.Add(a);
+            kept.Add(b);
+            kept.Add(c);
+            kept.Add(a);
+            kept.Add(c);
+            kept.Add(d);
         }
 
-        if (points.Count > 1 && points[^1].DistanceSquaredTo(points[0]) <= 1e-8f)
-        {
-            points.RemoveAt(points.Count - 1);
-        }
-
-        return points;
-    }
-
-    private static Vector2 Rightmost(List<Vector2> loop)
-    {
-        Vector2 best = loop[0];
-        foreach (Vector2 point in loop)
-        {
-            if (point.X > best.X)
-            {
-                best = point;
-            }
-        }
-
-        return best;
-    }
-
-    /// <summary>
-    /// Splice a hole into its outer polygon along a zero-width cut, so one ear-clipping pass
-    /// fills the ring.
-    /// </summary>
-    /// <remarks>
-    /// From the hole's rightmost vertex to the nearest outer vertex the cut can reach without
-    /// crossing an edge of either — checked against every edge, because an outer loop can be as
-    /// concave as the player paints it. ⚠️ If no vertex is visible (it should always be — the
-    /// rightmost point of a hole can always see the outer boundary somewhere) the nearest one is
-    /// taken anyway and the clipper's fallback in <see cref="Fill"/> catches the result.
-    /// </remarks>
-    private static List<Vector2> Bridge(List<Vector2> outer, List<Vector2> hole)
-    {
-        int start = 0;
-        for (int i = 1; i < hole.Count; i++)
-        {
-            if (hole[i].X > hole[start].X)
-            {
-                start = i;
-            }
-        }
-
-        Vector2 from = hole[start];
-
-        int best = -1;
-        float bestDistance = float.MaxValue;
-        for (int i = 0; i < outer.Count; i++)
-        {
-            float distance = from.DistanceSquaredTo(outer[i]);
-            if (distance >= bestDistance
-                || Crosses(from, outer[i], outer, i)
-                || Crosses(from, outer[i], hole, start))
-            {
-                continue;
-            }
-
-            best = i;
-            bestDistance = distance;
-        }
-
-        if (best < 0)
-        {
-            for (int i = 0; i < outer.Count; i++)
-            {
-                float distance = from.DistanceSquaredTo(outer[i]);
-                if (distance < bestDistance)
-                {
-                    best = i;
-                    bestDistance = distance;
-                }
-            }
-        }
-
-        // outer[0..best], then the hole once round from its rightmost point and back to it,
-        // then outer[best] again and the rest of the outer loop.
-        var spliced = new List<Vector2>(outer.Count + hole.Count + 2);
-        for (int i = 0; i <= best; i++)
-        {
-            spliced.Add(outer[i]);
-        }
-
-        for (int k = 0; k <= hole.Count; k++)
-        {
-            spliced.Add(hole[(start + k) % hole.Count]);
-        }
-
-        for (int i = best; i < outer.Count; i++)
-        {
-            spliced.Add(outer[i]);
-        }
-
-        return spliced;
-    }
-
-    /// <summary>
-    /// Whether the cut from <paramref name="a"/> to <paramref name="b"/> crosses an edge of the
-    /// loop, ignoring the two edges that meet at vertex <paramref name="at"/>.
-    /// </summary>
-    private static bool Crosses(Vector2 a, Vector2 b, List<Vector2> loop, int at)
-    {
-        for (int i = 0; i < loop.Count; i++)
-        {
-            int next = (i + 1) % loop.Count;
-            if (i == at || next == at)
-            {
-                continue;
-            }
-
-            if (Geometry2D.SegmentIntersectsSegment(a, b, loop[i], loop[next]).VariantType != Variant.Type.Nil)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        // At a vertex's own height the vertex itself, exactly — so a trapezoid's corner is the outline's point.
+        static float XAt((Vector2 Top, Vector2 Bottom) edge, float y) =>
+            y <= edge.Top.Y ? edge.Top.X
+            : y >= edge.Bottom.Y ? edge.Bottom.X
+            : edge.Top.X + ((y - edge.Top.Y) * (edge.Bottom.X - edge.Top.X) / (edge.Bottom.Y - edge.Top.Y));
     }
 
     /// <summary>The area the triangles cover, for the self-check.</summary>

@@ -54,6 +54,12 @@ public enum TechCondition
 
     /// <summary>The insulated manor's family tree (§4.4) — the cottage learned first, then its own two factors; the latch is <see cref="SimWorld.ManorLearned"/>.</summary>
     ManorFamilyTree,
+
+    /// <summary>
+    /// A library stands (D754, `school-and-education.md §11.3` call 1) — the latch is <see cref="SimWorld.SchoolLearned"/>,
+    /// set where a library is raised. Not learned by doing with the hands, so it does not introduce the map.
+    /// </summary>
+    LibraryStands,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -199,8 +205,11 @@ public static class TechTree
         },
         new TechNodeRow
         {
-            Id = "school", Name = "The school", Condition = TechCondition.NotYet, Requires = new[] { "library" },
-            Says = "Where what the library keeps becomes what the young know.",
+            // ⭐ Learned once a library stands (D754, call 1); Joe's model, not `tech-tree.md §7d`'s *readers* (D209, D753):
+            // what school gives is the person's — full strength longer, and an eye for the year (§11.4).
+            Id = "school", Name = "The school", Unlocks = BuildingKind.School, Condition = TechCondition.LibraryStands,
+            Requires = new[] { "library" },
+            Says = "With a library standing, somebody thinks to teach the young — years at school that pay out for forty.",
         },
     };
 
@@ -218,6 +227,7 @@ public static class TechTree
             TechCondition.KeptGranaryYears => world.HasLiteracy,
             TechCondition.CottageFamilyTree => world.CottageLearned,
             TechCondition.ManorFamilyTree => world.ManorLearned,
+            TechCondition.LibraryStands => world.SchoolLearned,
             _ => of > 0 && progress >= of,
         };
 

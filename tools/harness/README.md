@@ -209,6 +209,14 @@ against a number from an older commit.
   12, how many homes would walk to a storehouse because the market is more than X one-way ticks further, and the median /
   p90 / max ticks each would save, read off the end state with no sim change. ⚠️ A spell is a run of ticks in one bucket, so a shopping round trip is one spell only
   while nothing else (a meal does not change state; shelter does) interrupts it. Copy in, `-c Release --filter ZzLogistics`, delete.
+- `ZzSchool.cs` + `school.py` — D757's measurement for `specs/school-and-education.md §12.3`: what a school costs and what
+  what school gives returns over a century — `ZZ_OLDAGE` (`school_old_age_percent`), `ZZ_CARRY` (`school_carry_percent`, D761)
+  and `ZZ_HEED` (`school_heed_percent`; D757's `ZZ_VIGOUR` went with the strong years it set). `ZZ_SCHOOL=1` poses
+  the school learned at Year 10 and marks one (its stone given); `ZZ_TEACHERS` (1); seeds 200–299 (`ZZ_SEEDS`), `ZZ_YEARS`
+  (100), `ZZ_LABEL`; `ZZ_START` / `ZZ_LEAVE` set `school_starting_age` / `school_leaving_age` (D758's two-year term, 11
+  and 13); `ZZ_STATES=1` adds a ZZT line a run — the able adults' ticks by state, the village's time budget, summed by
+  `school.py --states <file>`. One ZZS line a run, including strength-weighted work (the able adults' vigour summed) and walk-years (their years walking and carrying, D761). Copy in,
+  `-c Release --filter ZzSchool --logger "console;verbosity=detailed"` per arm, delete; `school.py <file>` prints the means.
 - `ZzWorkshop.cs` — D678's table for `specs/workshop-and-the-carpenter.md §10`: what a workshop costs a village before any
   cart does anything. The played opening on the shipped config (ZzBase's), seeds 200–299 (`ZZ_SEEDS` narrows; §10 used
   200–254), fifty years; `ZZ_WORKSHOP=1` poses the workshop learned at Year 5, marks one beside the founding and **gives it

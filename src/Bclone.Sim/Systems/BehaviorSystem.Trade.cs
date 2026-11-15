@@ -94,7 +94,7 @@ public sealed partial class BehaviorSystem
                 }
 
                 // The cart's load with the post's handcart in hand (`handcart.md §13.3`) — still never below the keep, still within the post's room.
-                int armful = Math.Min(world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1),
+                int armful = Math.Min(SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1),
                     Math.Min(world.AboveTheKeep(goods), source.Store[goods]));
                 armful = Math.Min(armful, postStore.RoomFor(goods));
                 if (armful <= 0 || !source.Store.TryTake(goods, armful))
@@ -158,7 +158,7 @@ public sealed partial class BehaviorSystem
                 }
 
                 TakeTheWorksCart(world, villager, post);
-                int armful = Math.Min(world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1), store.Store[goods]);
+                int armful = Math.Min(SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1), store.Store[goods]);
                 if (!store.Store.TryTake(goods, armful))
                 {
                     Decide(world, villager);

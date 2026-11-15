@@ -55,7 +55,7 @@ public sealed class AgeingSystem : ISimSystem
             return;
         }
 
-        villager.Vigour = ComputeVigour(villager.AgeYears, villager.LifespanYears, world.Config);
+        villager.Vigour = ComputeVigour(villager.AgeYears, villager.LifespanYears, world.Config, OldAgeFromSchool(world.Config, villager));
         villager.LifeStage = StageForAge(villager.AgeYears, villager.Vigour, world.Config);
 
         VigourStage stage = StageFor(villager.Vigour);
@@ -92,12 +92,23 @@ public sealed class AgeingSystem : ISimSystem
     /// Integer arithmetic throughout, per decision D2 — this feeds gather yield,
     /// which feeds the stockpile, which decides whether the villager lives.
     /// </remarks>
-    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config)
+    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config) =>
+        ComputeVigour(ageYears, lifespanYears, config, floorFromSchool: 0);
+
+    /// <summary>
+    /// ⭐ A gentler old age (D761, `school-and-education.md §12.5`): the vigour points school keeps above the floor at the
+    /// end of a life — <c>school_old_age_percent</c> scaled by the term served, never more than a full term's.
+    /// </summary>
+    public static int OldAgeFromSchool(SimConfig config, Villager villager) =>
+        SchoolGives.ByTheTermServed(config, villager, config.SchoolOldAgePercent);
+
+    /// <summary>Vigour with school's gentler old age (D761): full until 30 as everyone, then a shallower fall to a higher floor.</summary>
+    public static int ComputeVigour(int ageYears, int lifespanYears, SimConfig config, int floorFromSchool)
     {
         ArgumentNullException.ThrowIfNull(config);
 
         int fullUntil = config.VigourFullUntilAge;
-        int floor = config.VigourMinPercent;
+        int floor = Math.Min(100, config.VigourMinPercent + Math.Max(0, floorFromSchool));
 
         if (ageYears <= fullUntil)
         {

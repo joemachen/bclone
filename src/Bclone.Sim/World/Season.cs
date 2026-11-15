@@ -365,6 +365,15 @@ public enum VillagerState
     /// away from the door and going on foot; this is the leg that puts the cart under them.
     /// </summary>
     WalkingToTheMarket,
+
+    /// <summary>Walking to the school — a pupil to their place, a teacher to their seat (D754, `school-and-education.md §12`).</summary>
+    WalkingToSchool,
+
+    /// <summary>A pupil at the school, a lesson at a time (D754).</summary>
+    AtSchool,
+
+    /// <summary>A teacher at the school, a lesson at a time (D754).</summary>
+    Teaching,
 }
 
 /// <summary>

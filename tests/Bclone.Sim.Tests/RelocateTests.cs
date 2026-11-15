@@ -206,6 +206,44 @@ public sealed class RelocateTests
     }
 
     /// <summary>
+    /// ⛔ Whoever sets out to empty a store is on that errand, whatever they were doing before (D768, Joe: <i>"im seeing
+    /// people bounce back and forth"</i>). The clearing errand walked them off without saying so, so they kept their last
+    /// state — Gargard kept <i>going in to get warm</i>, and the warmth rule turned him round at the door every tick of a winter.
+    /// </summary>
+    [Fact]
+    public void WhoeverSetsOutToEmptyAStoreSaysSo()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        StoreBuilding full = StandAGranary(world, out GridPos _);
+        StandAGranary(world, out GridPos _);
+        full.Store.Receive(Goods.Produce, 120);
+        full.Stocking = Stocking.Emptying;
+
+        int seen = 0;
+        var wrong = new List<string>();
+        for (int t = 0; t < Config.TicksPerSeason; t++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (villager.Alive && !villager.IsCarrying && villager.LegTarget == full.Tile && villager.Tile != full.Tile)
+                {
+                    seen++;
+                    if (villager.State != VillagerState.ClearingAStore && wrong.Count < 5)
+                    {
+                        wrong.Add($"{villager.Name} walks to {full.Name} {villager.DescribeState(null, false)} at tick {world.Tick}");
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"{seen} villager-ticks walking empty-handed to {full.Name}; {wrong.Count} under another errand's name");
+        Assert.True(seen > 0, "nobody walked to the store being emptied, so the guard asked nothing");
+        Assert.Empty(wrong);
+    }
+
+    /// <summary>
     /// ⛔ A store being emptied refuses everything, or the drain would never finish.
     /// </summary>
     /// <remarks>

@@ -968,6 +968,9 @@
   // winters on a back, wearing a day every winter day it is worn. The clothing
   // row reads it. Typed, not yet measured -- C4 holds it against the leather flow.
   "coat_winters": 3,
+  // From what age a villager wears one (Joe, D767: "children start wearing clothes at
+  // 5") -- they walk to school from five. Unset is adult_age (D659's "Every adult").
+  "coat_from_age": 5,
 
   // THE IRON TOOL (tools-and-the-smith.md 9.2, Joe's order of magnitude, D434):
   // lasts 250 uses, takes half off an action's ticks (a gather still 3 -> 2, a
@@ -1097,6 +1100,40 @@
   "logs_per_handcart": 10,
   "make_ticks": 20,
   "makes_per_stint": 1,
+
+  // THE SCHOOL (school-and-education.md 12, D752-D754). Learned once a library
+  // stands, placed anywhere. Each staffed teacher brings places (Joe, D754: "6 to
+  // start"); the village fills them from its villagers aged school_starting_age to one
+  // below school_leaving_age (5-11) by itself, never a pick of a child. A pupil works at
+  // nothing else and keeps credit for the years served. Costs TYPED, not measured.
+  // ⭐ SEVEN YEARS, 5 TO 12 (Joe, D767: "children in school from ages 5-12. then they join
+  // the labor force at 12. same benefits"). Every school year is a child's, so a pupil
+  // costs the village no labour -- the teachers and the building are the whole price.
+  "school_logs": 30,
+  "school_stone": 12,
+  "school_work_ticks": 40,
+  "school_capacity": 2,
+  "school_places_per_teacher": 6,
+  "school_starting_age": 5,
+  "school_leaving_age": 12,
+  "school_lesson_ticks": 4,
+  // A WARM SCHOOL (Joe, D764: "Warm, burns firewood"; school-and-education.md 12.6). A
+  // staffed school burns this a winter on the house's beats; with any in its pile it is
+  // a fire, as a home is (otherwise a roof). Its pile is kept from the nearest store --
+  // only once the homes are covered -- and its winter is in the woodcutters' want. A
+  // cottage's twelve, typed.
+  "school_winter_firewood": 12,
+  // WHAT SCHOOL GIVES (school-and-education.md 11.4 and 12.5; Joe D753 "A and B", D761
+  // "Fuller loads + old age"). OLD AGE: vigour points a full-term graduate keeps above
+  // vigour_min_percent at the end of life (scaled by the term served; full strength still
+  // ends at 30, the lifespan unchanged). CARRY: how much more a full-term graduate brings
+  // in one trip -- an armful, a basket, a cut of timber, never a catch. B (HEED): the share
+  // of the way to freezing a graduate lets herself reach by the time she is at the fire.
+  // ⭐ SET (Joe, D763: "Yes, ship it") at D762's measured mix -- +36 strength-weighted
+  // work-years a century over no school (~4 %), a decision paid for up front, never free.
+  "school_old_age_percent": 20,
+  "school_carry_percent": 25,
+  "school_heed_percent": 80,
 
   // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A
   // housed household without one sends a free member to the nearest store that
