@@ -1101,17 +1101,17 @@
   // THE SCHOOL (school-and-education.md 12, D752-D754). Learned once a library
   // stands, placed anywhere. Each staffed teacher brings places (Joe, D754: "6 to
   // start"); the village fills them from its villagers aged school_starting_age to one
-  // below school_leaving_age (12-15) by itself, never a pick of a child. A pupil works at
+  // below school_leaving_age (11-12) by itself, never a pick of a child. A pupil works at
   // nothing else and keeps credit for the years served. Costs TYPED, not measured.
-  // school_starting_age below adult_age makes the first years a child's, which cost no
-  // labour (D758: Joe's "2 years from age 11-13", measured before it is set).
+  // ⭐ TWO YEARS, 11 TO 13 (Joe, D763: "Yes, ship it", on D762's measurement). Below
+  // adult_age the first year is a child's, which costs no labour (D758).
   "school_logs": 30,
   "school_stone": 12,
   "school_work_ticks": 40,
   "school_capacity": 2,
   "school_places_per_teacher": 6,
-  "school_starting_age": 12,
-  "school_leaving_age": 16,
+  "school_starting_age": 11,
+  "school_leaving_age": 13,
   "school_lesson_ticks": 4,
   // WHAT SCHOOL GIVES (school-and-education.md 11.4 and 12.5; Joe D753 "A and B", D761
   // "Fuller loads + old age"). OLD AGE: vigour points a full-term graduate keeps above
@@ -1119,10 +1119,11 @@
   // ends at 30, the lifespan unchanged). CARRY: how much more a full-term graduate brings
   // in one trip -- an armful, a basket, a cut of timber, never a catch. B (HEED): the share
   // of the way to freezing a graduate lets herself reach by the time she is at the fire.
-  // All 0 (off, today's game) until measured on harness centuries and Joe sets them.
-  "school_old_age_percent": 0,
-  "school_carry_percent": 0,
-  "school_heed_percent": 0,
+  // ⭐ SET (Joe, D763: "Yes, ship it") at D762's measured mix -- +36 strength-weighted
+  // work-years a century over no school (~4 %), a decision paid for up front, never free.
+  "school_old_age_percent": 20,
+  "school_carry_percent": 25,
+  "school_heed_percent": 80,
 
   // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A
   // housed household without one sends a free member to the nearest store that

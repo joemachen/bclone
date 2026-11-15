@@ -209,7 +209,7 @@ public static class TechTree
             // what school gives is the person's — full strength longer, and an eye for the year (§11.4).
             Id = "school", Name = "The school", Unlocks = BuildingKind.School, Condition = TechCondition.LibraryStands,
             Requires = new[] { "library" },
-            Says = "With a library standing, somebody thinks to teach the young — four years that pay out for forty.",
+            Says = "With a library standing, somebody thinks to teach the young — years at school that pay out for forty.",
         },
     };
 

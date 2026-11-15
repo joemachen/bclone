@@ -4,7 +4,8 @@
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
 > recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
 > §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
-> NOUGHT AND MEASURED (D761, §12.5) — ⏸️ WITH JOE: THE SIZES, THE TERM, AND THE SCHOOL IN WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
+> 25 %, OLD AGE +20, B 80. ⏸️ THE SCHOOL IN WINTER STILL JOE'S; STEP 4, THE VIEW, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -522,7 +523,10 @@ Joe: *"Fuller loads + old age"*.
 **📏 The mix, measured (D762, Joe: *"Yes, measure that"*):** **+36 over no school** — more than loads 25 % alone (+21);
 peak 20.1, alive at the century 11.6, born 43.3, dead valleys 12; B trims the winter's shelter days 2,214 → 2,009 (−9 %),
 as it did alone. About 4 % of the village's strength-weighted work: a school worth building, paid for up front, never
-free. ⏸️ **Joe's: type it as shipped, and the winter call.**
+free. ⏸️ **Joe's: type it as shipped, and the winter call.** ✅ **Typed (D763, Joe: *"Yes, ship it"*):**
+`school_starting_age` 11, `school_leaving_age` 13, `school_carry_percent` 25, `school_old_age_percent` 20,
+`school_heed_percent` 80 in `data/sim.config.json`; the C# defaults stay at nought and 12–16, which the guards pose. The
+tree's line no longer says *"four years"*. ⏸️ The winter call is still his.
 
 ## 10. Definition of Done
 
