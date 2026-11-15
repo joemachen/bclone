@@ -1333,6 +1333,14 @@ public sealed record SimConfig
     [JsonPropertyName("school_leaving_age")]
     public int SchoolLeavingAge { get; init; } = 16;
 
+    /// <summary>
+    /// ⭐ Firewood a staffed school burns a winter (Joe, D764: <i>"Warm, burns firewood"</i>; `school-and-education.md
+    /// §12.6`) — spread over the house's beats; a staffed school with any in its pile is a fire, as a home is. A cottage's
+    /// twelve. ⏳ Typed, then measured.
+    /// </summary>
+    [JsonPropertyName("school_winter_firewood")]
+    public int SchoolWinterFirewood { get; init; } = 12;
+
     /// <summary>Ticks of one lesson — a pupil or a teacher at the school before deciding again (a day, as shipped).</summary>
     [JsonPropertyName("school_lesson_ticks")]
     public int SchoolLessonTicks { get; init; } = 4;
@@ -6273,6 +6281,11 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"school_heed_percent must be between 0 (off) and 95 — at the fire short of freezing (got {SchoolHeedPercent}).");
+        }
+
+        if (SchoolWinterFirewood < 0)
+        {
+            throw new SimConfigException($"school_winter_firewood cannot be negative (got {SchoolWinterFirewood}).");
         }
 
         if (SchoolLessonTicks < 1)

@@ -163,6 +163,120 @@ public sealed class SchoolTests
         Assert.Equal(new[] { 12 }, SchoolRoll.PupilsAt(shipped.World, itsSchool.Id).Select(p => p.AgeYears).ToArray());
     }
 
+    // ---------------------------------------------------------------
+    //  §12.6 — a warm school (D764, Joe: "Warm, burns firewood")
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void AStaffedSchoolIsWarmInWinter()
+    {
+        SimConfig config = Config;
+        (SimLoop loop, Workplace school, _) = AStaffedSchool(config, 12, 13);
+        SimWorld world = loop.World;
+        loop.Step(config.TicksPerDay);
+
+        // A roof before any wood is in it — not the open ground D757 found.
+        Assert.Equal(Shelter.Roof, world.ShelterAt(school.Tile));
+
+        while (world.Clock.Season != Season.Winter)
+        {
+            loop.Step(1);
+        }
+
+        loop.Step(config.TicksPerDay);
+        _output.WriteLine($"winter: the school's pile {school.Store.Firewood}, {world.ShelterAt(school.Tile)}");
+        Assert.True(school.Store.Firewood > 0, "a staffed school in winter, the homes covered, has no wood in its pile");
+        Assert.Equal(Shelter.Fire, world.ShelterAt(school.Tile));
+
+        // ⭐ And it burns its winter: a pile put by now goes down by the winter's beats still to come.
+        int winter = config.SchoolWinterFirewood;
+        int beats = (config.DaysPerSeason + config.FirewoodBurnIntervalDays - 1) / config.FirewoodBurnIntervalDays;
+        school.Store.Add(Goods.Firewood, 100);
+        int put = school.Store.Firewood;
+        while (world.Clock.Season == Season.Winter)
+        {
+            loop.Step(1);
+        }
+
+        int burned = put - school.Store.Firewood;
+        _output.WriteLine($"the school burned {burned} of a {winter}-log winter after its first beat");
+        Assert.InRange(burned, winter - HearthSystem.BurnOnBeat(winter, 0, beats) - HearthSystem.BurnOnBeat(winter, 1, beats), winter);
+
+        // Unstaffed, its fire has nobody to keep it: a roof, whatever is in the pile.
+        world.SetJobLimit(JobKind.Teacher, 0);
+        loop.Step(config.LabourSlackTicks + 1);
+        Assert.Empty(school.WorkerIds);
+        Assert.Equal(Shelter.Roof, world.ShelterAt(school.Tile));
+    }
+
+    [Fact]
+    public void TheHomesComeFirstForTheSchoolsFire()
+    {
+        var sink = new InMemoryLogSink();
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+        world.LearnTheSchool();
+        Workplace school = FoodChainTests.RaiseA(world, BuildingKind.School);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        FoodChainTests.OnlyOneTradeWorks(world, JobKind.Teacher);
+        while (world.Clock.Season != Season.Winter)
+        {
+            loop.Step(1);
+        }
+
+        loop.Step(config.TicksPerDay);
+        Assert.True(school.Store.Firewood > 0, "the pose wanted a lit school first");
+
+        // The homes' woodpiles emptied and the stores down to a few logs: the homes are short, so the school's pile is not
+        // kept — though a store still holds wood it could take — and goes out, said once.
+        foreach (Household household in world.Households)
+        {
+            household.Stockpile.TryTake(Goods.Firewood, household.Stockpile.Firewood);
+        }
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TryTake(Goods.Firewood, store.Store.Firewood);
+        }
+
+        // ⚠️ One log short, not a few logs in the store: a household fetches a few logs before the school's next beat and
+        // the gate is never asked (this guard first scored zero for it). A store-to-home fetch leaves the shortfall where it is.
+        world.StoreBuildings.First(s => s.Gives(Goods.Firewood)).Store.Add(Goods.Firewood, LabourQuota.HomesFirewoodShortfall(world) - 1);
+        Assert.Equal(1, LabourQuota.HomesFirewoodShortfall(world));
+
+        int took = 0;
+        int before = school.Store.Firewood;
+        for (int t = 0; t < config.TicksPerDay * config.FirewoodBurnIntervalDays * 3; t++)
+        {
+            loop.Step(1);
+            took = Math.Max(took, school.Store.Firewood - before);
+            before = Math.Min(before, school.Store.Firewood);
+        }
+
+        Assert.Equal(0, took);
+        Assert.True(LabourQuota.HomesFirewoodShortfall(world) > 0, "the homes were covered by the end — the gate was not what was asked");
+        Assert.Equal(0, school.Store.Firewood);
+        Assert.Equal(Shelter.Roof, world.ShelterAt(school.Tile));
+        Assert.Single(sink.Entries, e => e.Message.Contains("is cold — the homes need", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TheSchoolsWinterIsInTheWoodcuttersWant()
+    {
+        SimConfig config = Config;
+        (SimLoop loop, Workplace school, _) = AStaffedSchool(config, 12, 13);
+        SimWorld world = loop.World;
+        loop.Step(config.TicksPerDay);
+        Assert.NotEmpty(school.WorkerIds);
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            store.Store.TryTake(Goods.Firewood, store.Store.Firewood);
+        }
+
+        Assert.Equal(config.SchoolWinterFirewood, LabourQuota.FirewoodShortfall(world) - LabourQuota.HomesFirewoodShortfall(world));
+    }
+
     [Fact]
     public void AnUnstaffedSchoolHasNoPlaces()
     {

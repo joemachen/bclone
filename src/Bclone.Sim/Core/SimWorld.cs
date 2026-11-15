@@ -14248,9 +14248,20 @@ public sealed partial class SimWorld : IObstacles
         // count — but `ShelterAt` feeds the cold model, so adding them is a **behaviour** change
         // that would move goldens inside a commit whose whole claim is that none moved. *Measured
         // first, taken separately, or not at all — but not smuggled into a refactor.*
-        if (WorkplaceCovering(at) is Workplace workplace && IsUnderCover(workplace.Kind))
+        if (WorkplaceCovering(at) is Workplace workplace)
         {
-            return Shelter.Roof;
+            // ⭐ A WARM SCHOOL (Joe, D764: "Warm, burns firewood"; `school-and-education.md §12.6`): a roof, and a fire while
+            // a teacher is seated and its pile holds wood — the home's own test, one building over. D757 found it open
+            // ground, and the teacher standing in the weather all winter.
+            if (workplace.Kind == JobKind.Teacher && !workplace.IsSite)
+            {
+                return workplace.WorkerIds.Count > 0 && workplace.Store.Firewood > 0 ? Shelter.Fire : Shelter.Roof;
+            }
+
+            if (IsUnderCover(workplace.Kind))
+            {
+                return Shelter.Roof;
+            }
         }
 
         return Shelter.Outdoors;

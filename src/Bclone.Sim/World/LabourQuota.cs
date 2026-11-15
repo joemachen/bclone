@@ -1327,7 +1327,15 @@ public readonly record struct LabourQuota
     /// </para>
     /// </remarks>
     /// <summary>The firewood the homes want and the sheds do not hold — what the chain works back from.</summary>
-    public static int FirewoodShortfall(SimWorld world)
+    public static int FirewoodShortfall(SimWorld world) => Shortfall(world, schools: true);
+
+    /// <summary>
+    /// ⭐ The homes' shortfall alone (D764, `school-and-education.md §12.6`): what a school's stove asks before it is kept —
+    /// the homes come first. <see cref="FirewoodShortfall"/> is this and every staffed school's winter.
+    /// </summary>
+    public static int HomesFirewoodShortfall(SimWorld world) => Shortfall(world, schools: false);
+
+    private static int Shortfall(SimWorld world, bool schools)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -1393,6 +1401,20 @@ public readonly record struct LabourQuota
         // Each house's own winter (D719): a village of cottages wants half the woodcutting. For cabins it is
         // homes × FirewoodPerHouseholdPerWinter, as it always was.
         demand += winters;
+
+        // ⭐ AND EACH STAFFED SCHOOL'S WINTER (D764): the woodcutters cut for the school's stove, rather than it living off
+        // whatever the homes leave. No school, nothing added.
+        if (schools && world.Config.SchoolWinterFirewood > 0)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                Workplace school = world.Workplaces[i];
+                if (school.Kind == JobKind.Teacher && !school.IsSite && school.WorkerIds.Count > 0)
+                {
+                    demand += world.Config.SchoolWinterFirewood;
+                }
+            }
+        }
 
         // Across every warehouse (D38): a household can fetch from any of them, so all of
         // them are supply. Reading one would have had the village cutting wood it

@@ -1113,6 +1113,12 @@
   "school_starting_age": 11,
   "school_leaving_age": 13,
   "school_lesson_ticks": 4,
+  // A WARM SCHOOL (Joe, D764: "Warm, burns firewood"; school-and-education.md 12.6). A
+  // staffed school burns this a winter on the house's beats; with any in its pile it is
+  // a fire, as a home is (otherwise a roof). Its pile is kept from the nearest store --
+  // only once the homes are covered -- and its winter is in the woodcutters' want. A
+  // cottage's twelve, typed.
+  "school_winter_firewood": 12,
   // WHAT SCHOOL GIVES (school-and-education.md 11.4 and 12.5; Joe D753 "A and B", D761
   // "Fuller loads + old age"). OLD AGE: vigour points a full-term graduate keeps above
   // vigour_min_percent at the end of life (scaled by the term served; full strength still

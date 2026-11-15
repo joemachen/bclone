@@ -5,7 +5,8 @@
 > recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
 > §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
-> 25 %, OLD AGE +20, B 80. ⏸️ THE SCHOOL IN WINTER STILL JOE'S; STEP 4, THE VIEW, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6). STEP 4, THE
+> VIEW, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -526,7 +527,42 @@ as it did alone. About 4 % of the village's strength-weighted work: a school wor
 free. ⏸️ **Joe's: type it as shipped, and the winter call.** ✅ **Typed (D763, Joe: *"Yes, ship it"*):**
 `school_starting_age` 11, `school_leaving_age` 13, `school_carry_percent` 25, `school_old_age_percent` 20,
 `school_heed_percent` 80 in `data/sim.config.json`; the C# defaults stay at nought and 12–16, which the guards pose. The
-tree's line no longer says *"four years"*. ⏸️ The winter call is still his.
+tree's line no longer says *"four years"*. ⏸️ The winter call is still his. *(✅ D764 — warm, §12.6.)*
+
+### 12.6 ✅ A warm school — it burns firewood like a house (D764, Joe: *"Warm, burns firewood"*)
+
+D757 found the school open ground in the cold: only a home gave shelter, so the teacher stood in the weather all winter
+and the school doubled the village's shelter days. Joe chose **warm**, over closed for winter and cold as now.
+
+- **A school is a roof, and a staffed school with wood in its pile is a fire** (`SimWorld.ShelterAt` — a reader, as for
+  a home: *"a home with any firewood is a lit hearth"*). Unstaffed, or with its pile empty, it is a roof — better than
+  open ground, as a hut is. **A pupil or a teacher at a warm school thaws there**, as at a home.
+- **It burns `school_winter_firewood` a winter** (12 — a cottage's, typed; ⏳ measured below), spread over the house's
+  beats (`HearthSystem.BurnOnBeat`) and only while a teacher is seated.
+- **Its pile is kept from the nearest store that gives firewood** — at each beat, after the burn, topped up to the next
+  beat's (never below one, so it stays lit to the winter's end). Not walked: the forge's precedent (it takes its
+  iron from the nearest store when it works, D391), so the school adds no errand and no new walking.
+- **⭐ The homes come first.** The pile is topped up only when the homes are covered —
+  `LabourQuota.HomesFirewoodShortfall` is nought — the rule the forge already keeps (*"the village needs its firewood
+  for the winter"*). A school that cannot be kept says so once when its last wood goes: *"The school is cold — the
+  homes need the village's firewood first."*
+- **The woodcutters cut for it:** each staffed school's winter is in `LabourQuota.FirewoodShortfall`, the homes' winters'
+  neighbour, so the quota staffs the hands for it rather than the school living off whatever the homes leave.
+- **Saved and hashed already:** the pile is the school's `Workplace.Store`. No school, nothing changes — no golden moves.
+- Guards: `AStaffedSchoolIsWarmInWinter` (a roof before wood, a fire in winter, its winter burned, a roof unstaffed),
+  `TheHomesComeFirstForTheSchoolsFire`, `TheSchoolsWinterIsInTheWoodcuttersWant`. **6 mutants, 6 red** — the homes-first
+  one first scored zero: posed with a few logs in the store, a household fetched them before the school's beat and the
+  gate was never asked; re-posed one log short with the store full.
+
+| Arm (the shipped mix: two years 11–13, loads 25 %, old age +20, B 80; 100 seeds, a century) | Dead valleys | Alive at 100 | Peak | Starved | Froze | Strength-weighted work | Against no school | Shelter days |
+|---|---|---|---|---|---|---|---|---|
+| no school | 12 | 10.3 | 19.2 | 15.4 | 12.9 | 870.0 | — | 1,116 |
+| the school cold (D762) | 12 | 11.6 | 20.1 | 15.5 | 12.8 | 905.6 | +36 | 2,009 |
+| **the school warm (D764)** | 13 | **12.0** | 20.3 | **14.8** | 12.8 | **908.7** | **+39** | **1,356** |
+
+**In plain words:** a warm school takes **a third off the winter's shelter time** (2,009 → 1,356 — most of what the
+school had added over no school's 1,116) and the village keeps the work (+39 against +36), a few more alive at the
+century and fewer starved. Nobody more or less freezes (12.8): the frozen are still the unhoused and the hearthless.
 
 ## 10. Definition of Done
 

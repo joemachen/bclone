@@ -75,6 +75,7 @@ public sealed class HearthSystem : ISimSystem
         if (onTheBeat)
         {
             BurnADaysFirewood(world, config, dayOfWinter / config.FirewoodBurnIntervalDays);
+            KeepTheSchoolsWarm(world, config, dayOfWinter / config.FirewoodBurnIntervalDays);
         }
 
         // The coats wear on the day's first tick, before the chill — so the day a coat runs out is a bare day.
@@ -144,6 +145,55 @@ public sealed class HearthSystem : ISimSystem
         }
 
         return config.ExposurePerTickSheltered;
+    }
+
+    /// <summary>
+    /// ⭐ THE SCHOOL'S STOVE (Joe, D764: <i>"Warm, burns firewood"</i>; `school-and-education.md §12.6`): a staffed school burns
+    /// its winter on the house's beats, then its pile is topped up to the next beat's (never below one, so it stays lit to
+    /// the winter's end) from the nearest store that gives firewood — the forge's way, not walked — and only once the homes
+    /// are covered. A school whose last wood goes and cannot be kept says so.
+    /// </summary>
+    private static void KeepTheSchoolsWarm(SimWorld world, SimConfig config, int beat)
+    {
+        int winter = config.SchoolWinterFirewood;
+        if (winter <= 0)
+        {
+            return;
+        }
+
+        int beats = (config.DaysPerSeason + config.FirewoodBurnIntervalDays - 1) / config.FirewoodBurnIntervalDays;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace school = world.Workplaces[i];
+            if (school.Kind != JobKind.Teacher || school.IsSite || school.WorkerIds.Count == 0)
+            {
+                continue;
+            }
+
+            int burn = Math.Min(school.Store.Firewood, BurnOnBeat(winter, beat, beats));
+            if (burn > 0)
+            {
+                school.Store.TryTake(Goods.Firewood, burn);
+            }
+
+            int wanted = Math.Max(1, BurnOnBeat(winter, beat + 1, beats)) - school.Store.Firewood;
+            if (wanted > 0 && LabourQuota.HomesFirewoodShortfall(world) == 0
+                && world.NearestStoreAccepting(school.Tile, Goods.Firewood, s => s.Gives(Goods.Firewood) && s.Store.Firewood > 0)
+                    is StoreBuilding store)
+            {
+                int brought = Math.Min(wanted, store.Store.Firewood);
+                if (store.Store.TryTake(Goods.Firewood, brought))
+                {
+                    school.Store.Add(Goods.Firewood, brought);
+                }
+            }
+
+            if (burn > 0 && school.Store.Firewood == 0)
+            {
+                world.Narrate($"{school.Name} is cold — the homes need the village's firewood first. {world.Clock.SeasonAndYear()}.",
+                    LogCategory.Warning);
+            }
+        }
     }
 
     private static void BurnADaysFirewood(SimWorld world, SimConfig config, int beat)
