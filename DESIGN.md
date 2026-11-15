@@ -709,7 +709,10 @@ Not a schedule to build in parallel: one at a time, each its own slice, spec fir
    (skill passed on by teaching, not only beside a master).
 2. **Water as a household need** — 📝 **specced, ⏸️ four calls Joe's; 🔨 on `slice/water-need` (D775, `water-need.md`)** —
    small; the well's fixed 20-day clock made a need the larder decides. Before drought,
-   whose answer the well is.
+   whose answer the well is. ✅ **Its four calls as recommended (D776, *"All as recommended"*).**
+
+   **→ Then the systems-complete review and its workplan (D776, Joe: *"All as recommended"*)** — before morale, because its
+   order decides what the rest of this list is (the block below the list).
 3. **Morale** (`morale.md`) — unblocked: its one new mechanism, departures, wanted arrivals beside it, and nomads are
    built (D563–D584). The spec is re-read against D207's two refusals (*sickness*, *work slows*) before building.
 4. **Beer** — waits on morale (stated below); wheat → beer, bread's pattern.
@@ -718,14 +721,15 @@ Not a schedule to build in parallel: one at a time, each its own slice, spec fir
 6. **Drought, then fire and blight** — last of the pressures, because §0.1 admits a pressure only once its answer exists
    (the water need, the well, health): foretold, on the map, answerable — the sentence in the spec before the code.
 7. **The town hall's tabs and Phase 4's knowledge screen** — it itemises everything, so it is built after the content it
-   lists rather than rebuilt with each. *(The one piece that could move up, if the knowledge screen is wanted sooner.)*
-8. **Warm clothing — sheep and wool** — optional here (Joe, D723: *"in a later phase"*); may move to Phase 7.
+   lists rather than rebuilt with each — **after the last content the review's workplan adds (D776).** *(The one piece that could move up, if the knowledge screen is wanted sooner.)*
+8. **Warm clothing — sheep and wool** — ~~optional here (Joe, D723: *"in a later phase"*); may move to Phase 7.~~ **Phase 6's
+   under *"all in-game systems are built"* unless Joe moves it out at the review (D776).**
 
 **⭐ SYSTEMS COMPLETE — PHASE 6's GOAL (Joe, D774, 2026-11-15):** *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* **Recorded, not started:**
 - **The review**: every backlog system, building, profession, good, upgrade tier and tech unlock, read against the code,
    and a prioritised workplan from it. Its starting list is Joe's tracker by tab (`bclone-tracker.xlsx`, outside git,
    brought up to D773) and `content-inventory.md`. A later piece; water is built first (Joe: *"water is next for systems"*).
-- **⏸️ Where it sits is Joe's call — proposed (D774), with a recommendation:** (a) **the exit gate's seventh item** — Phase 6
+- **✅ Where it sits — as recommended (D776, Joe: *"All as recommended"*); proposed at D774 as follows:** (a) **the exit gate's seventh item** — Phase 6
    ends only when everything on the reviewed list is built, working and approved by him, or moved out by him in words (item 1
    covers only today's list); (b) **the review and its workplan as the piece after water, before morale** — its order
    decides what the rest of the phase is, so building morale and beer first risks building them before knowing what else
@@ -784,7 +788,8 @@ Not a schedule to build in parallel: one at a time, each its own slice, spec fir
 #### ⛳ Phase 6's exit gate — ✅ ACCEPTED AS WRITTEN (proposed D750, accepted by Joe D751, 2026-11-14: *"Accept as written"*)
 
 *Written at the phase's start this time: Phase 5 ran two months before it had an end (D640). The same five items as
-D641, and one this phase owes its pressures. **In force since D751 — Phase 6 ends when all six hold, and not before.***
+D641, and one this phase owes its pressures. **In force since D751 — Phase 6 ends when all seven hold, and not before.***
+*(Read "all six" until D776, when Joe's systems complete became item 7.)*
 
 1. **Every item on the Phase 6 list has a verdict** — built, played and merged, or moved out by Joe in words with a §7
    entry saying where.
@@ -797,6 +802,9 @@ D641, and one this phase owes its pressures. **In force since D751 — Phase 6 e
 5. **The four checks on the merged tree, and a played run with no `ERROR` in its log.**
 6. **Every pressure telegraphed, legible and answerable** (§0.1) — drought, fire, blight and any sickness: its warning
    sentence in its spec, the warning seen in Joe's walk before the pressure lands, and its answer built.
+7. **Systems complete** (Joe, D774; placed here D776, *"All as recommended"*) — every in-game system, building, profession,
+   upgrade tier and tech unlock on the reviewed backlog is built, working and approved by Joe, or moved out by him in words
+   with a §7 entry saying where. Item 1 covers the list above; this one covers the review's.
 
 #### Phases 7 and 8 — mods, and release (the 2D map is the game: no 3D front end, Joe, D725)
 
@@ -5257,3 +5265,4 @@ building (D176, `specs/tech-tree.md §7f`). The rest are still notes.
 - **D773 · 2026-11-15 · ✅ THE SCHOOL PLAYED AND APPROVED — *"i played the school. it looks good. and children get coats now"*.** Passed on by the art lane with his screenshot (Ashbourne, Winter Y19: Penyth, 8, *"At school 1 — in the first of seven years"*, a coat with 3 winters left); then to this session, *"yeah there was no problem, i was approving it"*. **His log read against §12.8's walk** (Ashbourne, `src/Bclone.Game/logs/bclone-20261115-153533.log`, frozen with his saves at `side-session-notes\…\ashbourne-save\`): (1) ✅ library 1 Summer Y18 and *"somebody thinks to teach the young"* the same tick; (2) ✅ school 1 Spring Y19, five children 5–11 started there the same day; (3) ✅ the stove never went out (no *"is cold"* line); (4) ⏳ nobody has finished yet; Moswyld and Eldar turned 12 inside the first year; (5) ⚠️ see below; (6) ⏳ not tried. **Coats:** the shop was learned at 54 leather in Spring Y19 and raised in Summer; its first coat came Fall Y19 day 6, the founders took the first four, and coats go first come, first served. So by Winter 7 of 13 had none, the tailor among them (she carries her coats out to the warehouse, and whoever is free takes them). The *"no coat"* warnings have run every winter since Year 1; Penyth's *"13 days in the cold, coat and all"* is the walk to and from school, and the card's *Cold* is any chill above nought. Supply was not short: warehouse 1 held 40 leather. **Two small things the log shows, put to Joe and not built:** (a) *"5 children of school age have no place at school"* was said at t8695, before the teacher had started, with 5 children and 6 places, so it fired while the school held nobody; (b) a child who turns 12 inside the first year *"leaves school 1 after 0 years"*. Docs only; not pushed. *(Pushed at his word the same day: *"fine for now, we'll review all messages later. push."*)*
 - **D774 · 2026-11-15 · ⭐ SYSTEMS COMPLETE — PHASE 6's GOAL, RECORDED; WHERE IT SITS PROPOSED, JOE'S TO CALL.** Joe, passed on by the art lane's session: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Written into §4's Phase 6 after the ordered list, with the review and its workplan recorded as a later piece (water first — *"water is next for systems"*). **Proposed, not decided:** a seventh exit-gate item, since item 1 covers only today's list; the review placed after water and before morale, because its order decides the rest of the phase; the town hall's tabs kept last; warm clothing no longer optional unless he moves it out. The review's starting list is his tracker (outside git) and `content-inventory.md`. **A standing rule from his ask to the art lane:** every systems spec names the buildings, goods and villager states it creates, so the art lane knows what to draw. Docs only.
 - **D775 · 2026-11-15 · 📝 WATER AS A HOUSEHOLD NEED — SPECCED ON `slice/water-need`, ⏸️ FOUR CALLS JOE'S.** Joe, passed on by the art lane's session: *"water is next for systems"*. Cut from `main` at D774 and claimed on its ⏸️ line. **`specs/water-need.md`**, re-read against the code: the well's trip carries nothing and drinks nothing, fires only for a well within 12 tiles, every 20 days. **Recommended:** (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. ⚠️ **First in the order of work, D428's open question:** a trip every 10 days cost 21 shipped alive of 169, mechanism unproven; a need that sends people more often inherits it, so it is traced before any number. **§4 names what the art lane draws (D774's rule):** no new building or good; two new villager states, drawing at the river bank and carrying water home. Docs only.
+- **D776 · 2026-11-15 · ✅ JOE: *"All as recommended"* — SYSTEMS COMPLETE PLACED, AND WATER'S FOUR CALLS ANSWERED.** **Systems complete (D774):** the exit gate's **seventh item** (every system on the reviewed backlog built, working and approved, or moved out in words; *"all six"* now *"all seven"*); **the review and its workplan next after water, before morale**; the town hall's tabs after the last content the workplan adds; **warm clothing Phase 6's** unless he moves it out at the review (D723's *"optional"* struck through). **Water (D775, `water-need.md §3`):** 1A water a number the household keeps at home, not a good; 2A drawn at the nearer of a well or the river bank (every golden will move); 3A nobody dies of thirst, a dry household goes at once and says so; 4 the jar and the daily drink measured before his pick. Step 1, D428's trace, next. Docs only.

@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
-> Status: **📝 SPECCED, ⏸️ FOUR CALLS JOE'S (D775, 2026-11-15, Joe: *"water is next for systems"*) — 🔨 ON
-> `slice/water-need`; NOTHING BUILT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
+> — 🔨 ON `slice/water-need`; STEP 1 (D428's trace) UNDER WAY.** *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -33,7 +33,11 @@ whole cost, and it is visible, the way the shopping walk is (D668). The well's 2
   ablation read 145, so the cost is not the job-holder's idle moment, and its mechanism is still unproven. **A need
   that sends people more often than every 20 days inherits that cost unexplained.**
 
-## 3. ⏸️ Joe's four calls — each with a recommendation
+## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
+
+**Answered:** 1A (a number the household keeps, not a good), 2A (the nearer of a well or the river bank), 3A (nobody dies of
+thirst; a dry household goes at once and says so), 4 (the jar and the drink measured, then his pick). The options as put to
+him stand below.
 
 ### Call 1 — What water is
 
