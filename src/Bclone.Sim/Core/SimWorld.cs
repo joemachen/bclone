@@ -4625,7 +4625,7 @@ public sealed partial class SimWorld : IObstacles
         SchoolLearned = true;
         Narrate(
             "With a library standing, somebody thinks to teach the young. Build a school, and each teacher there takes "
-            + $"{Config.SchoolPlacesPerTeacher} of the village's {Config.AdultAge}- to {Config.SchoolLeavingAge - 1}-year-olds "
+            + $"{Config.SchoolPlacesPerTeacher} of the village's {Config.SchoolStartingAge}- to {Config.SchoolLeavingAge - 1}-year-olds "
             + $"for the years before they work. {Clock.SeasonAndYear()}.",
             LogCategory.Discovery);
     }

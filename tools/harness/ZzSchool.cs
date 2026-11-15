@@ -12,9 +12,13 @@ namespace Bclone.Sim.Tests;
 //
 // Arms: ZZ_SCHOOL=1 poses the school learned at Year 10 and marks one beside the founding (its stone given — no harness
 // village holds stone, ZzWorkshop's lesson), the player's teachers ZZ_TEACHERS (1) asked for once it stands; unset is the
-// baseline, no school. ZZ_VIGOUR = school_vigour_years, ZZ_HEED = school_heed_percent (both 0 shipped). The opening is
+// baseline, no school. ZZ_VIGOUR = school_vigour_years, ZZ_HEED = school_heed_percent (both 0 shipped); ZZ_START and
+// ZZ_LEAVE = school_starting_age and school_leaving_age (D758's two-year term, 11 and 13). The opening is
 // ZzBase's — the shipped cold start, the opening played, a granary and a warehouse at Year 3 — on seeds 200–299
 // (ZZ_SEEDS=a,b narrows), a century (ZZ_YEARS). ZZ_LABEL names the arm.
+//
+// ZZ_STATES=1 adds a ZZT line a run: the able adults' ticks by what they were doing — the village's time budget (D758),
+// where a benefit could be worth something. `school.py --states <file>` sums it.
 //
 // One ZZS line a run: alive, peak, starved, cold, born; the year the school stood (−1 never); pupil-years served
 // (the labour the village gave up) and graduates (half a term or more); STRONG years — villager-years at full vigour past
@@ -39,9 +43,15 @@ public sealed class ZzSchool
         int vigour = int.Parse(Environment.GetEnvironmentVariable("ZZ_VIGOUR") ?? "0");
         int heed = int.Parse(Environment.GetEnvironmentVariable("ZZ_HEED") ?? "0");
         int years = int.Parse(Environment.GetEnvironmentVariable("ZZ_YEARS") ?? "100");
+        SimConfig shipped = ShippedConfig.Load();
+        int start = int.Parse(Environment.GetEnvironmentVariable("ZZ_START") ?? shipped.SchoolStartingAge.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        int leave = int.Parse(Environment.GetEnvironmentVariable("ZZ_LEAVE") ?? shipped.SchoolLeavingAge.ToString(System.Globalization.CultureInfo.InvariantCulture));
         string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (school ? $"s{teachers}v{vigour}h{heed}" : "base");
 
-        SimConfig config = ShippedConfig.Load() with { Seed = seed, SchoolVigourYears = vigour, SchoolHeedPercent = heed };
+        SimConfig config = shipped with
+        {
+            Seed = seed, SchoolVigourYears = vigour, SchoolHeedPercent = heed, SchoolStartingAge = start, SchoolLeavingAge = leave,
+        };
         SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
@@ -49,6 +59,8 @@ public sealed class ZzSchool
         int peak = 0, stoodYear = -1;
         long strongTicks = 0, dangerTicks = 0, shelterTicks = 0, workTicks = 0, strongWork = 0;
         bool staffed = false;
+        bool states = Environment.GetEnvironmentVariable("ZZ_STATES") == "1";
+        var stateTicks = new long[Enum.GetValues<VillagerState>().Length + 1];
         int danger = config.ExposureThreshold * 90 / 100;
         for (int t = 0; t < config.TicksPerYear * years; t++)
         {
@@ -82,6 +94,11 @@ public sealed class ZzSchool
                 if (!v.Alive)
                 {
                     continue;
+                }
+
+                if (states && v.CanTakeAJob)
+                {
+                    stateTicks[Math.Min((int)v.State, stateTicks.Length - 1)]++;
                 }
 
                 if (v.CanTakeAJob)
@@ -118,6 +135,17 @@ public sealed class ZzSchool
             + $"stood {stoodYear} pupilyears {pupilTicks / config.TicksPerYear} graduates {graduates} "
             + $"strongyears {strongTicks / config.TicksPerYear} dangerdays {dangerTicks / perDay} shelterdays {shelterTicks / perDay} "
             + $"workyears {workTicks / config.TicksPerYear} vigourworkyears {strongWork / 100 / config.TicksPerYear}");
+        if (states)
+        {
+            WriteStates(arm, seed, stateTicks);
+        }
+    }
+
+    private void WriteStates(string arm, ulong seed, long[] stateTicks)
+    {
+        _o.WriteLine($"ZZT {arm} {seed} " + string.Join(" ", Enum.GetValues<VillagerState>()
+            .Where(s => stateTicks[Math.Min((int)s, stateTicks.Length - 1)] > 0)
+            .Select(s => $"{s}:{stateTicks[Math.Min((int)s, stateTicks.Length - 1)]}")));
     }
 
     private static void MarkSomewhereNear(SimWorld world, BuildingKind kind, GridPos site, int radius)

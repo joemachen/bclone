@@ -1100,14 +1100,17 @@
 
   // THE SCHOOL (school-and-education.md 12, D752-D754). Learned once a library
   // stands, placed anywhere. Each staffed teacher brings places (Joe, D754: "6 to
-  // start"); the village fills them from its villagers aged adult_age to one below
-  // school_leaving_age (12-15) by itself, never a pick of a child. A pupil works at
+  // start"); the village fills them from its villagers aged school_starting_age to one
+  // below school_leaving_age (12-15) by itself, never a pick of a child. A pupil works at
   // nothing else and keeps credit for the years served. Costs TYPED, not measured.
+  // school_starting_age below adult_age makes the first years a child's, which cost no
+  // labour (D758: Joe's "2 years from age 11-13", measured before it is set).
   "school_logs": 30,
   "school_stone": 12,
   "school_work_ticks": 40,
   "school_capacity": 2,
   "school_places_per_teacher": 6,
+  "school_starting_age": 12,
   "school_leaving_age": 16,
   "school_lesson_ticks": 4,
   // WHAT SCHOOL GIVES (school-and-education.md 11.4, Joe D753: "A and B"). A: years a

@@ -1,10 +1,29 @@
 """Summarise ZzSchool's ZZS lines (D756, `school-and-education.md §12` step 3): per arm, the mean of each figure over
-its seeds, and dead valleys. Usage: python -X utf8 -I tools/harness/school.py <file of ZZS lines>"""
+its seeds, and dead valleys. Usage: python -X utf8 -I tools/harness/school.py <file of ZZS lines>; with --states first,
+the ZZT time budget (D758)"""
 import sys
 from collections import defaultdict
 
 KEYS = ["alive", "peak", "starved", "cold", "born", "pupilyears", "graduates", "strongyears", "dangerdays", "shelterdays",
         "workyears", "vigourworkyears"]
+
+if sys.argv[1] == "--states":
+    # ZZT lines (D758): the able adults' time budget, summed over every run of each arm, as shares.
+    budgets = defaultdict(lambda: defaultdict(int))
+    with open(sys.argv[2], encoding="utf-8", errors="replace") as f:
+        for line in f:
+            if "ZZT " not in line:
+                continue
+            parts = line.split("ZZT ", 1)[1].split()
+            for pair in parts[2:]:
+                state, ticks = pair.rsplit(":", 1)
+                budgets[parts[0]][state] += int(ticks)
+    for arm, budget in budgets.items():
+        total = sum(budget.values())
+        print(f"{arm}: {total} able-adult ticks")
+        for state, ticks in sorted(budget.items(), key=lambda kv: -kv[1]):
+            print(f"  {state:28} {100 * ticks / total:5.1f} %")
+    sys.exit(0)
 
 arms = defaultdict(list)
 order = []

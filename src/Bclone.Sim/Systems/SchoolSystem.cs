@@ -125,8 +125,9 @@ internal static class SchoolRoll
         for (int v = 0; v < world.Villagers.Count; v++)
         {
             Villager child = world.Villagers[v];
-            if (!child.Alive || !child.CanWork || child.IsPupil || child.IsPinned
-                || child.AgeYears < config.AdultAge || child.AgeYears >= config.SchoolLeavingAge
+            // ⭐ By age alone (D758): below adult_age a pupil is a child, who works at nothing anyway.
+            if (!child.Alive || child.IsPupil || child.IsPinned
+                || child.AgeYears < config.SchoolStartingAge || child.AgeYears >= config.SchoolLeavingAge
                 || child.SchoolTicks >= config.SchoolTermTicks)
             {
                 continue;

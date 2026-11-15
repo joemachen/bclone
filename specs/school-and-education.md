@@ -3,7 +3,8 @@
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
 > recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
-> §12.3) — ⏸️ TWO CALLS WITH JOE: THE SCHOOL DOES NOT PAY AT ANY SIZE TRIED, AND IT IS COLD IN WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4) — ⏸️ WITH JOE: WHICH MATERIAL BENEFIT, AND THE SCHOOL IN
+> WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -417,6 +418,55 @@ able adults' vigour summed — the work a village's strength is actually worth.
 grow (a bigger A, a slower decline rather than a later one, or C/D back on the table) or the cost shrink (a shorter
 term); and what a school is in winter (closed — a holiday at home by the family's fire; warm — it burns firewood like a
 house; or cold, as now).
+
+### 12.4 📏 A two-year term, 11 to 13, and where a village's day goes (D758) — ⏸️ Joe's
+
+Joe, on §12.3: *"yeah, we need to improve the value. let's test 2 years in school from age 11-13. and what can we do to make
+a material change to the benefits of attending school? short- and long-term?"*
+
+**Built for it:** `school_starting_age` (shipped **12**, today's game, until Joe sets it). The term is the years from it to
+`school_leaving_age`; a place is taken **by age alone**, so below `adult_age` a pupil is a child — who works at nothing
+anyway, and so costs the village no labour. Guard `ATermThatStartsBeforeWorkTakesAChild`; **3 mutants, 3 red** (the
+first scored zero until the fixture's pose set the life stage with the age — §12.4's trap, in HANDOFF).
+
+| Arm (100 seeds, a century each) | Dead valleys | Alive at 100 | Starved | Froze | Pupil-years | Graduates | Strong years | Shelter days | Work-years | Strength-weighted work | Against no school |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| no school (D757's, reproduced to the decimal) | 12 | 10.3 | 15.4 | 12.9 | 0 | 0 | 3.3 | 1,116 | 1,015 | 870.0 | — |
+| four years, 12–16, sizes 0 (D757) | 13 | 10.7 | 15.6 | 13.3 | 44.6 | 11.4 | 3.3 | 2,164 | 950 | 809 | **−61** |
+| **two years, 11–13, sizes 0** | 12 | 11.0 | 14.9 | 12.8 | 23.3 | 12.4 | 3.2 | 2,039 | 990 | 847.7 | **−22** |
+| two years, A 5 | 13 | 10.3 | 15.7 | 12.8 | 23.0 | 12.3 | 28.1 | 2,016 | 980 | 843.4 | −27 |
+| two years, A 15 | 12 | 10.3 | 15.3 | 12.8 | 22.7 | 12.1 | 82.0 | 2,003 | 981 | 854.0 | −16 |
+| two years, B 80 | 12 | 10.9 | 15.6 | 12.8 | 23.7 | 12.6 | 3.3 | 1,847 | 984 | 843.3 | −27 |
+| two years, A 15 + B 80 | 12 | 10.9 | 15.9 | 12.8 | 23.5 | 12.5 | 84.8 | 1,805 | 986 | 860.0 | −10 |
+
+| What the able adults were doing (no school, 100 centuries) | Share of their ticks |
+|---|---|
+| Resting (the day's rest, and nothing wanted) | 68.1 % |
+| Walking home | 11.3 % |
+| Carrying to a store | 6.5 % |
+| Fetching from a store | 4.3 % |
+| Walking to food | 3.6 % |
+| The work itself — gathering, clearing, tidying, building, firewood, materials | 5.2 % |
+| Going in for warmth | 0.8 % |
+
+**What it says, in plain words:**
+
+1. **The cost falls to about a third** — 22 strength-weighted work-years a century against 61. The year at 11 is a
+   child's and costs nothing; only the year at 12 and the teacher are paid for. **Graduates barely move (12.4 against
+   11.4): the village's children, not the places, are what limit how many** — a harness village has about two
+   12-year-olds a decade.
+2. **A and B together come within 10 of paying** (A 15 + B 80: −10). Survival still does not move in any arm.
+3. **The break-even, as arithmetic:** a graduate costs about **1.8 strength-weighted work-years**; a working life is about
+   45. **A graduate must be ~4 % more useful for life to pay for her schooling, and ~10 % to be plainly worth it.**
+4. **⭐ The time budget says why A is weak and survival never moves:** able adults **rest two thirds of the time**, and of
+   the rest **four fifths is walking and carrying** — the work itself is 5 % of the day. **A harness village is short
+   of trips, not of muscle**: labour is slack, so neither school's cost nor a strength bonus reaches who lives. ⚠️ The
+   harness is not a player (D447): a played village of fifty with its chains running is busier, and there the cost
+   bites harder — and so would a benefit to the walking.
+
+**⏸️ The calls (Joe's):** which material benefit to add or reshape — the options in D758, short-term (fuller loads,
+banking the fire, the trade head start) and long-term (a gentler old age, C back) — each measured before it is set; and
+the school in winter (§12.3), still open.
 
 ## 10. Definition of Done
 

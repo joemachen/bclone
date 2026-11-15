@@ -212,7 +212,9 @@ against a number from an older commit.
 - `ZzSchool.cs` + `school.py` — D757's measurement for `specs/school-and-education.md §12.3`: what a school costs and what
   A (`school_vigour_years`, `ZZ_VIGOUR`) and B (`school_heed_percent`, `ZZ_HEED`) return over a century. `ZZ_SCHOOL=1` poses
   the school learned at Year 10 and marks one (its stone given); `ZZ_TEACHERS` (1); seeds 200–299 (`ZZ_SEEDS`), `ZZ_YEARS`
-  (100), `ZZ_LABEL`. One ZZS line a run, including strength-weighted work (the able adults' vigour summed). Copy in,
+  (100), `ZZ_LABEL`; `ZZ_START` / `ZZ_LEAVE` set `school_starting_age` / `school_leaving_age` (D758's two-year term, 11
+  and 13); `ZZ_STATES=1` adds a ZZT line a run — the able adults' ticks by state, the village's time budget, summed by
+  `school.py --states <file>`. One ZZS line a run, including strength-weighted work (the able adults' vigour summed). Copy in,
   `-c Release --filter ZzSchool --logger "console;verbosity=detailed"` per arm, delete; `school.py <file>` prints the means.
 - `ZzWorkshop.cs` — D678's table for `specs/workshop-and-the-carpenter.md §10`: what a workshop costs a village before any
   cart does anything. The played opening on the shipped config (ZzBase's), seeds 200–299 (`ZZ_SEEDS` narrows; §10 used

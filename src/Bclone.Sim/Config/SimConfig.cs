@@ -1317,8 +1317,18 @@ public sealed record SimConfig
     public int SchoolPlacesPerTeacher { get; init; } = 6;
 
     /// <summary>
-    /// The age a pupil leaves school for work (D209: *"ages 12–16"*). Pupils are those from <see cref="AdultAge"/> to one
-    /// below this; the term is the years between, four as shipped. Validated above <see cref="AdultAge"/>.
+    /// The age a pupil may first take a place (D758). Shipped at <see cref="AdultAge"/>'s twelve, D209's *"ages 12–16"*;
+    /// <b>below <see cref="AdultAge"/> the first years are a child's</b>, who works at nothing anyway, so they cost the
+    /// village no labour — only the years past <see cref="AdultAge"/> do (Joe, D758: *"2 years in school from age 11-13"*,
+    /// measured before it is set).
+    /// </summary>
+    [JsonPropertyName("school_starting_age")]
+    public int SchoolStartingAge { get; init; } = 12;
+
+    /// <summary>
+    /// The age a pupil leaves school for work (D209: *"ages 12–16"*). Pupils are those from <see cref="SchoolStartingAge"/>
+    /// to one below this; the term is the years between, four as shipped. Validated above <see cref="AdultAge"/> — a pupil
+    /// leaves for work — and above <see cref="SchoolStartingAge"/>.
     /// </summary>
     [JsonPropertyName("school_leaving_age")]
     public int SchoolLeavingAge { get; init; } = 16;
@@ -1344,9 +1354,9 @@ public sealed record SimConfig
     [JsonPropertyName("school_heed_percent")]
     public int SchoolHeedPercent { get; init; }
 
-    /// <summary>A full term in ticks — the years from <see cref="AdultAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
+    /// <summary>A full term in ticks — the years from <see cref="SchoolStartingAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
     [JsonIgnore]
-    public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - AdultAge) * TicksPerYear;
+    public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - SchoolStartingAge) * TicksPerYear;
 
     /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
     [JsonPropertyName("logs_per_handcart")]
@@ -6230,7 +6240,13 @@ public sealed record SimConfig
         if (SchoolLeavingAge <= AdultAge)
         {
             throw new SimConfigException(
-                $"school_leaving_age must be above adult_age ({AdultAge}) — pupils are the years between (got {SchoolLeavingAge}).");
+                $"school_leaving_age must be above adult_age ({AdultAge}) — a pupil leaves for work (got {SchoolLeavingAge}).");
+        }
+
+        if (SchoolStartingAge < 1 || SchoolStartingAge >= SchoolLeavingAge)
+        {
+            throw new SimConfigException(
+                $"school_starting_age must be at least 1 and below school_leaving_age ({SchoolLeavingAge}) (got {SchoolStartingAge}).");
         }
 
         if (SchoolVigourYears < 0)

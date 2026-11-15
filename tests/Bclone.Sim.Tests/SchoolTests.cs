@@ -39,6 +39,10 @@ public sealed class SchoolTests
         for (int i = 0; i < ages.Length; i++)
         {
             living[i + 1].AgeYears = ages[i];
+
+            // ⚠️ The stage with the age (D758): a labour pass runs inside this pose, and an eleven-year-old left an adult
+            // was enrolled there before any rule about children was asked — the new guard first scored zero for it.
+            living[i + 1].LifeStage = AgeingSystem.StageForAge(ages[i], living[i + 1].Vigour, config);
         }
 
         FoodChainTests.OnlyOneTradeWorks(world, JobKind.Teacher);
@@ -137,6 +141,26 @@ public sealed class SchoolTests
         Assert.All(pupils, p => Assert.False(p.HasJob, $"{p.Name} holds a job at school"));
         Assert.All(pupils, p => Assert.False(p.IsLaborer, $"{p.Name} reads as a laborer at school"));
         Assert.Equal(world.Villagers.Count(v => v.Alive && v.CanWork) - pupils.Count, world.AbleAdults);
+    }
+
+    [Fact]
+    public void ATermThatStartsBeforeWorkTakesAChild()
+    {
+        // ⭐ D758 (Joe: "2 years in school from age 11-13"): below adult_age a pupil is a child — by age, not by CanWork.
+        SimConfig config = Config with { SchoolStartingAge = 11, SchoolLeavingAge = 13 };
+        Assert.Equal(2 * config.TicksPerYear, config.SchoolTermTicks);
+        (SimLoop loop, Workplace school, _) = AStaffedSchool(config, 11, 12, 14);
+        SimWorld world = loop.World;
+        Villager child = world.Villagers.Single(v => v.Alive && v.AgeYears == 11);
+        loop.Step(config.TicksPerDay);
+
+        Assert.Equal(new[] { 11, 12 }, SchoolRoll.PupilsAt(world, school.Id).Select(p => p.AgeYears).OrderBy(a => a).ToArray());
+        Assert.False(child.CanWork, "the pose wanted a child");
+
+        // And as shipped (twelve) the eleven-year-old waits a year.
+        (SimLoop shipped, Workplace itsSchool, _) = AStaffedSchool(Config, 11, 12);
+        shipped.Step(Config.TicksPerDay);
+        Assert.Equal(new[] { 12 }, SchoolRoll.PupilsAt(shipped.World, itsSchool.Id).Select(p => p.AgeYears).ToArray());
     }
 
     [Fact]
