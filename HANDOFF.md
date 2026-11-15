@@ -1,5 +1,9 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/water-need` (D775, 2026-11-15) — WATER AS A HOUSEHOLD NEED, SPECCED, ⏸️ FOUR CALLS JOE'S.** Joe: *"water is next for systems"*.
+> `specs/water-need.md` §3. Recommended: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Then the order of work, §5, starting with D428's
+> unexplained cost. Nothing built; the docs commit only.
+>
 > **✅ THE SCHOOL PLAYED AND APPROVED (D773, 2026-11-15)** — Joe: *"i played the school. it looks good. and children get coats now"*, then *"yeah there was no problem, i was approving it"*. His Ashbourne
 > log read against `school-and-education.md §12.8`: steps 1–3 seen, 4 and 6 not reached yet, and the coats all as designed (DESIGN §7 D773).
 > Two small things are on the ⏸️ list for him, not built. Docs only; not pushed. *(Pushed at his word the same day: *"fine for now, we'll review all messages later. push."*)*
@@ -9500,6 +9504,14 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D773 PAID FOR — JOE'S GAME LOG IS NOT `godot.log`
+
+- **His village's log is `src/Bclone.Game/logs/bclone-<date>-<time>.log`** (`Main.cs`, the `FileLogSink`, every `[life]` line and
+  DEBUG behaviour, tick-stamped). `%APPDATA%\Godotpp_userdataclone\logs\godot.log` holds only frame timings and skips, and
+  `logs/run_*.log` in the repo is `run.bat`'s console in UTF-16. A save holds no narration at all (`moments` is empty). Grepping
+  `godot.log` for the school found nothing and nearly read as *"the walk never happened"*. **Copy the newest `bclone-*.log` with the
+  saves before reading either.**
+
 ## ⛔ THE TRAP D771 PAID FOR — A STATE FIX MUST FOLLOW THE ERRAND PAST ITS ARRIVAL
 
 - **D768 set the clearing errand's state for the walk out and its guard asked only about the walk out** — empty-handed
@@ -10311,6 +10323,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*).** Phase 6
+  item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ⏸️ **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15), JOE'S TO CALL.** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
   `DESIGN.md §4` Phase 6. **Recommended:** a seventh exit-gate item (the phase ends when everything on the reviewed list is
   built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
