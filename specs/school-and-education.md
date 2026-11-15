@@ -3,8 +3,8 @@
 > Status: **specced (D209); 🔨 ON `slice/school` (D752, 2026-11-14, Joe: *"Start the school"*) — RE-READ AGAINST TODAY'S
 > CODE (§11); EVERY CALL ANSWERED (D753 — what school gives, two universal benefits, §11.4; D754 — calls 1, 4 and 5 as
 > recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
-> §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4) — ⏸️ WITH JOE: WHICH MATERIAL BENEFIT, AND THE SCHOOL IN
-> WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
+> NOUGHT AND MEASURED (D761, §12.5) — ⏸️ WITH JOE: THE SIZES, THE TERM, AND THE SCHOOL IN WINTER.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -262,7 +262,9 @@ Four were offered against the rules every benefit must pass: **no invisible mult
 **no ratchet** (every generation pays again — D196, D209), **never a gate on mastery** (`skills-catalog.md §6.7`), and
 **seen in what a villager does, said as a sentence** (§1.1). He chose two. Both belong to the **person**, not the trade.
 
-**A — "She learned to look after herself": a graduate keeps her full strength longer.**
+**A — "She learned to look after herself": a graduate keeps her full strength longer.** *(⛔ reshaped D761 — measured weak
+(D757: a 33-year-old is already ~96 % strong) and replaced, at Joe's *"Fuller loads + old age"*, by **a gentler old age**:
+full strength still ends at 30, the fall after is shallower to a higher floor; §12.5. `school_vigour_years` is gone.)*
 - Today vigour is full until `vigour_full_until_age` (30), then falls in a straight line to `vigour_min_percent` (55)
   in the final year. **A graduate is at full strength until 30 + `school_vigour_years`**, then falls the same way to
   the same floor; her **lifespan is unchanged** (school buys strong years, not more years — no story becomes one of
@@ -466,7 +468,55 @@ first scored zero until the fixture's pose set the life stage with the age — �
 
 **⏸️ The calls (Joe's):** which material benefit to add or reshape — the options in D758, short-term (fuller loads,
 banking the fire, the trade head start) and long-term (a gentler old age, C back) — each measured before it is set; and
-the school in winter (§12.3), still open.
+the school in winter (§12.3), still open. *(✅ D761: Joe, *"Fuller loads + old age"* — §12.5.)*
+
+### 12.5 ✅ Fuller loads and a gentler old age — built at size nought, measured (D761) — ⏸️ the sizes are Joe's
+
+Joe: *"Fuller loads + old age"*.
+
+- **Fuller loads:** `school_carry_percent` (0 shipped; 0–100). `SchoolGives.Load` — the knob scaled by the term served,
+  never more than a full term's — is the one reader at **every place a villager's load is what she can carry**: a
+  gatherer's basket and a woodcutter's cut (on what her strength brought, so an old graduate is both), the household's
+  fetch and the works' rounds, building materials, tidying and clearing, the dig at a face, hay, and the trading post.
+  **Not a catch** — fishing and hunting are what was caught, not what was carried. At nought every load is the old one
+  exactly.
+- **A gentler old age — A reshaped:** D753's A (strong years past 30) measured weak (D757) and is **gone**, with
+  `school_vigour_years`. `school_old_age_percent` (0 shipped): the vigour points a full-term graduate keeps above
+  `vigour_min_percent` at the end of her life, by the term served. **Full strength still ends at 30, as everyone's**; the
+  fall after is shallower to a higher floor; the lifespan is untouched. ⚠️ A higher floor is also a later elderhood
+  (it is a vigour band), so a graduate eats a full meal longer — counted in the measurement, not hidden.
+- **Guards:** `AGraduateAgesMoreGently`, `AGraduateCarriesAFullerLoad`, `AGraduateBringsMoreHomeFromAGather` (Phase 0's
+  ruler, food per trip, ≥ 1.4× at 50 %). **5 mutants: 4 red; the fifth — the household's store fetch reverted — scored
+  zero and is kept: 13 of the 14 load sites are guarded only through the one helper** (HANDOFF's D761 trap).
+
+| Arm (100 seeds, a century; the two-year term, 11–13, unless *no school*) | Dead valleys | Alive at 100 | Peak | Starved | Froze | Born | Graduates | Work-years | Strength-weighted work | Against no school | Walk-years |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| no school | 12 | 10.3 | 19.2 | 15.4 | 12.9 | 41.7 | 0 | 1,015 | 870.0 | — | 266.5 |
+| school, sizes 0 | 12 | 11.0 | 18.9 | 14.9 | 12.8 | 41.6 | 12.4 | 990 | 847.7 | −22 | 319.8 |
+| **fuller loads 25 %** | 13 | 11.8 | 20.4 | 15.5 | 12.8 | 43.7 | 13.2 | 1,040 | **891.1** | **+21** | 318.6 |
+| **fuller loads 50 %** | 12 | 11.8 | 21.1 | 15.9 | 12.8 | 44.4 | 13.5 | 1,072 | **918.5** | **+48** | 318.1 |
+| old age +15 | 12 | 11.0 | 18.9 | 15.1 | 12.8 | 41.6 | 12.5 | 987 | 855.2 | −15 | 318.6 |
+| old age +30 | 12 | 10.5 | 18.8 | 16.2 | 12.8 | 41.7 | 12.4 | 976 | 854.9 | −15 | 318.9 |
+| fuller loads 50 % + old age +30 | 12 | 12.0 | 21.1 | 16.5 | 12.9 | 44.9 | 14.0 | 1,084 | **951.9** | **+82** | 321.6 |
+
+**What it says, in plain words:**
+
+1. **⭐ Fuller loads is the first benefit that makes a school pay.** At 25 % a two-year school is **+21** over no school
+   (+43 over a school that gives nothing); at 50 %, **+48**. The villages are bigger — peak 19 → 20–21, born 42 → 44,
+   alive at the century 10.3 → 11.8.
+2. **It does not save walking: the village spends the saving on growing.** Walk-years are flat (318 against 320) —
+   the trips it saves come back as more food a trip, more children, more people. And it does not save the starving or
+   the frozen (dead valleys 12–13 throughout): those are harness failures of planning, not of carrying (D447).
+3. **A gentler old age barely shows inside a century:** +7 over the bare school at +15 and at +30 alike — no step
+   between the sizes, so it is inside the noise. A graduate's decline mostly falls after the century, or after an early
+   death in a harness village. With fuller loads it adds +33 (more graduates live to be old). It is the generational
+   one: it lands forty to sixty years after school.
+4. A school adds about 53 walk-years of its own (not chased).
+5. **§4's two failure modes:** at 25 % the school pays about 2½ % on the century — worth building, paid for up front, the
+   return ten to twenty years later — so it is a decision, not an upgrade. At 50 % it is closer to *always correct*.
+
+**⏸️ Joe's:** the sizes — recommended **fuller loads 25 %, a gentler old age +20, B at 80**, with **the two-year term,
+11–13**, measured together before they are typed; and the school in winter (§12.3).
 
 ## 10. Definition of Done
 

@@ -1338,12 +1338,21 @@ public sealed record SimConfig
     public int SchoolLessonTicks { get; init; } = 4;
 
     /// <summary>
-    /// ⭐ A — <i>"she learned to look after herself"</i> (Joe, D753; `school-and-education.md §11.4`): years a graduate of a
-    /// full term stays at full strength past <see cref="VigourFullUntilAge"/>, scaled by the term served; the decline after,
-    /// and the lifespan, are everyone's. <b>Nought ships until §12 step 3 measures it</b> — nought is today's game.
+    /// ⭐ A, reshaped — <i>"a gentler old age"</i> (Joe, D761: <i>"Fuller loads + old age"</i>; D753's A was strong years at
+    /// 30–45 and measured weak, D757): the vigour points a full-term graduate keeps above <see cref="VigourMinPercent"/> at
+    /// the end of her life, scaled by the term served. Full strength still ends at <see cref="VigourFullUntilAge"/> and the
+    /// lifespan is everyone's; the decline is only shallower. <b>Nought ships until it is measured</b> — today's game.
     /// </summary>
-    [JsonPropertyName("school_vigour_years")]
-    public int SchoolVigourYears { get; init; }
+    [JsonPropertyName("school_old_age_percent")]
+    public int SchoolOldAgePercent { get; init; }
+
+    /// <summary>
+    /// ⭐ Fuller loads (Joe, D761): how much more a full-term graduate brings in one trip — an armful, a basket, a cut of
+    /// timber — scaled by the term served, wherever a villager's load is what she can carry. Not a catch (a fish, a hunt):
+    /// carrying, not luck. <b>Nought ships until it is measured.</b>
+    /// </summary>
+    [JsonPropertyName("school_carry_percent")]
+    public int SchoolCarryPercent { get; init; }
 
     /// <summary>
     /// ⭐ B(i) — <i>"she reads the year"</i> (Joe, D753; §11.4): the share of the way to freezing a graduate lets herself
@@ -6249,9 +6258,15 @@ public sealed record SimConfig
                 $"school_starting_age must be at least 1 and below school_leaving_age ({SchoolLeavingAge}) (got {SchoolStartingAge}).");
         }
 
-        if (SchoolVigourYears < 0)
+        if (SchoolOldAgePercent < 0 || VigourMinPercent + SchoolOldAgePercent > 100)
         {
-            throw new SimConfigException($"school_vigour_years cannot be negative (got {SchoolVigourYears}).");
+            throw new SimConfigException(
+                $"school_old_age_percent must be 0 or more, and with vigour_min_percent ({VigourMinPercent}) no more than 100 (got {SchoolOldAgePercent}).");
+        }
+
+        if (SchoolCarryPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"school_carry_percent must be between 0 (off) and 100 — twice a load (got {SchoolCarryPercent}).");
         }
 
         if (SchoolHeedPercent is < 0 or > 95)

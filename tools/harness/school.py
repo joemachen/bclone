@@ -5,7 +5,7 @@ import sys
 from collections import defaultdict
 
 KEYS = ["alive", "peak", "starved", "cold", "born", "pupilyears", "graduates", "strongyears", "dangerdays", "shelterdays",
-        "workyears", "vigourworkyears"]
+        "workyears", "vigourworkyears", "walkyears"]
 
 if sys.argv[1] == "--states":
     # ZZT lines (D758): the able adults' time budget, summed over every run of each arm, as shares.

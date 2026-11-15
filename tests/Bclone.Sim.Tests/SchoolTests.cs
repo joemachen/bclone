@@ -324,35 +324,90 @@ public sealed class SchoolTests
     //  §11.4 — what school gives (step 2, its sizes at nought until step 3)
     // ---------------------------------------------------------------
 
-    /// <summary>A — <i>"she learned to look after herself"</i>: full strength longer, by the term served; the lifespan untouched.</summary>
+    /// <summary>A, reshaped (D761) — <i>"a gentler old age"</i>: full strength ends at 30 as everyone's, the fall is shallower.</summary>
     [Fact]
-    public void AGraduateKeepsFullStrengthLonger()
+    public void AGraduateAgesMoreGently()
     {
-        SimConfig config = VillageFixtures.Village with { SchoolVigourYears = 5 };
+        SimConfig config = VillageFixtures.Village with { SchoolOldAgePercent = 20 };
         IReadOnlyList<Villager> people = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World.Villagers;
         (Villager graduate, Villager halfway, Villager never) = (people[0], people[1], people[2]);
         graduate.SchoolTicks = config.SchoolTermTicks;
         halfway.SchoolTicks = config.SchoolTermTicks / 2;
 
-        Assert.Equal(5, AgeingSystem.StrongYearsFromSchool(config, graduate));
-        Assert.Equal(2, AgeingSystem.StrongYearsFromSchool(config, halfway));
-        Assert.Equal(0, AgeingSystem.StrongYearsFromSchool(config, never));
+        Assert.Equal(20, AgeingSystem.OldAgeFromSchool(config, graduate));
+        Assert.Equal(10, AgeingSystem.OldAgeFromSchool(config, halfway));
+        Assert.Equal(0, AgeingSystem.OldAgeFromSchool(config, never));
 
         // ⛔ Never more than a full term's, however long the ticks run.
         graduate.SchoolTicks = config.SchoolTermTicks * 3;
-        Assert.Equal(5, AgeingSystem.StrongYearsFromSchool(config, graduate));
+        Assert.Equal(20, AgeingSystem.OldAgeFromSchool(config, graduate));
 
-        int fullUntil = config.VigourFullUntilAge, lifespan = 67;
-        int at34 = fullUntil + 4;
-        Assert.Equal(100, AgeingSystem.ComputeVigour(at34, lifespan, config, 5));
-        Assert.True(AgeingSystem.ComputeVigour(at34, lifespan, config, 0) < 100, "an ungraduated 34-year-old is at full strength already");
+        int lifespan = 67;
+        int min = config.VigourMinPercent;
 
-        // The same floor in the same final year: school buys strong years, not more years.
-        Assert.Equal(config.VigourMinPercent, AgeingSystem.ComputeVigour(lifespan, lifespan, config, 5));
-        Assert.Equal(AgeingSystem.ComputeVigour(lifespan, lifespan, config, 0), AgeingSystem.ComputeVigour(lifespan, lifespan, config, 5));
+        // The prime years are everyone's: full until 30 either way, and not a year longer.
+        Assert.Equal(100, AgeingSystem.ComputeVigour(config.VigourFullUntilAge, lifespan, config, 20));
+        Assert.True(AgeingSystem.ComputeVigour(config.VigourFullUntilAge + 2, lifespan, config, 20) < 100,
+            "a graduate is at full strength past 30 — that was D753's A, measured weak and replaced");
 
-        // At nought — as shipped until step 3 — nobody's strength moves.
-        Assert.Equal(0, AgeingSystem.StrongYearsFromSchool(VillageFixtures.Village, graduate));
+        // ⭐ The end is higher, and so is every year of the fall.
+        Assert.Equal(min + 20, AgeingSystem.ComputeVigour(lifespan, lifespan, config, 20));
+        Assert.Equal(min, AgeingSystem.ComputeVigour(lifespan, lifespan, config, 0));
+        for (int age = config.VigourFullUntilAge + 2; age < lifespan; age++)
+        {
+            Assert.True(AgeingSystem.ComputeVigour(age, lifespan, config, 20) > AgeingSystem.ComputeVigour(age, lifespan, config, 0),
+                $"at {age} a graduate is no stronger than anybody");
+        }
+
+        // At nought — as shipped until it is measured — nobody's strength moves.
+        Assert.Equal(0, AgeingSystem.OldAgeFromSchool(VillageFixtures.Village, graduate));
+    }
+
+    /// <summary>Fuller loads (D761): a share more a trip by the term served; at nought exactly the load.</summary>
+    [Fact]
+    public void AGraduateCarriesAFullerLoad()
+    {
+        SimConfig config = VillageFixtures.Village with { SchoolCarryPercent = 50 };
+        IReadOnlyList<Villager> people = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World.Villagers;
+        (Villager graduate, Villager halfway, Villager never) = (people[0], people[1], people[2]);
+        graduate.SchoolTicks = config.SchoolTermTicks * 3;
+        halfway.SchoolTicks = config.SchoolTermTicks / 2;
+
+        Assert.Equal(120, SchoolGives.Load(config, graduate, 80));
+        Assert.Equal(100, SchoolGives.Load(config, halfway, 80));
+        Assert.Equal(80, SchoolGives.Load(config, never, 80));
+        Assert.Equal(80, SchoolGives.Load(VillageFixtures.Village, graduate, 80));
+    }
+
+    /// <summary>
+    /// ⭐ And it is seen in a trip (D761): the same gatherer in the same valley brings more home a trip as a graduate —
+    /// <c>AgeingTests.OldAgeCostsMoreWorkForTheSameFood</c>'s ruler (food per trip, no techniques), one person each way.
+    /// </summary>
+    [Fact]
+    public void AGraduateBringsMoreHomeFromAGather()
+    {
+        SimConfig config = Phase0Fixtures.Plenty with { SchoolCarryPercent = 50, Techniques = Array.Empty<TechniqueRow>() };
+        double asNever = FoodPerGather(config, graduate: false);
+        double asGraduate = FoodPerGather(config, graduate: true);
+        _output.WriteLine($"food per gather — never at school {asNever:F1}, a graduate {asGraduate:F1}");
+
+        Assert.True(asGraduate >= asNever * 1.4, $"a graduate brought {asGraduate:F1} a gather against {asNever:F1}");
+    }
+
+    private static double FoodPerGather(SimConfig config, bool graduate)
+    {
+        (SimLoop loop, _) = Phase0Fixtures.Build(config);
+        SimWorld world = loop.World;
+        if (graduate)
+        {
+            world.Villager.SchoolTicks = config.SchoolTermTicks;
+        }
+
+        loop.Step(config.TicksPerYear * 5);
+        int food = world.HouseholdOf(world.Villager).Stockpile.Produced(Goods.Produce)
+            + world.StoreBuildings.Sum(s => s.Store.Produced(Goods.Produce));
+        Assert.True(world.Villager.TotalGathers > 0, "the pose wanted somebody gathering");
+        return (double)food / world.Villager.TotalGathers;
     }
 
     /// <summary>

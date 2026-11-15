@@ -1959,7 +1959,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // same answer — and if the queue moved under them mid-errand, picking up for the site
         // they now want is the right outcome anyway (see the remarks above).
         Goods wanted = site.NextMaterialWanted() ?? Goods.Logs;
-        int room = Math.Min(site.StillNeeded(wanted), world.Config.CarryCapacity);
+        int room = Math.Min(site.StillNeeded(wanted), SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity));
 
         for (int i = 0; i < world.StoreBuildings.Count && room > 0; i++)
         {
@@ -2328,7 +2328,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // load is `cart_armfuls` armfuls — whole armfuls only, as many as the counter's room allows (D165's rule, the cart's
         // size); on foot the one armful it always was. `carry_capacity` is untouched (D537).
         int armful = world.Config.CarryCapacity;
-        int load = armful * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
+        int load = SchoolGives.Load(world.Config, villager, armful) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         Goods[] carried = MarketGoodsIn(world);
         for (int g = 0; g < carried.Length; g++)
@@ -4082,7 +4082,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         if (workplace is not null)
         {
-            TakeTheArmfulThatSentThem(world, villager, workplace, world.Config.CarryCapacity);
+            TakeTheArmfulThatSentThem(world, villager, workplace, SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity));
         }
 
         if (!villager.IsCarrying)
@@ -4125,7 +4125,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // armful takes first the good the stores hold least of against the player's own number
         // for it; a good with no limit keeps its place after them, in id order, which is what
         // keeps a village with no limits byte-identical.
-        int room = world.Config.CarryCapacity;
+        int room = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
         List<Goods> order = OrderToPickUp(world, at, villager.Carried.Slots);
         for (int i = 0; i < order.Count && room > 0; i++)
         {
@@ -4897,7 +4897,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void TakeALoadOutOf(SimWorld world, Villager villager, StoreBuilding store)
     {
-        int room = world.Config.CarryCapacity;
+        int room = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
 
         for (int g = 0; g < world.GoodsCatalog.Count && room > 0; g++)
         {
@@ -4925,7 +4925,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // ⭐ THE CART IS WHAT A CART BUYS (`handcart.md §5`, Slice H): with the household's handcart in their hands the trip
         // carries `cart_armfuls` armfuls — D668's shopping walk was consumption ÷ armful, and this is the one term the
         // village could change. `carry_capacity` is untouched (D537); the arms are still the arms.
-        int load = config.CarryCapacity * (PushingTheHouseholdsCart(villager) ? config.CartArmfuls : 1);
+        int load = SchoolGives.Load(config, villager, config.CarryCapacity) * (PushingTheHouseholdsCart(villager) ? config.CartArmfuls : 1);
 
         // Whatever store they are actually standing at, rather than a plan made
         // before they set off — the village may have changed while they walked.
@@ -5333,7 +5333,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static void LoadForTheRound(SimWorld world, Villager villager)
     {
         // The cart's load out of a buffer or a dead larder (`handcart.md §13.3`), the counter's rule.
-        int load = world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
+        int load = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         // Standing at a storehouse: the counter's own load (§14.8, D197).
         for (int i = 0; i < world.StoreBuildings.Count; i++)
@@ -6952,7 +6952,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // quotes and which already counts the village's technique.
                 perTrip = world.WithTool(villager, JobKind.Forager, perTrip);
 
-                int yield = perTrip * villager.Vigour / 100;
+                // ⭐ AND A GRADUATE'S BASKET IS FULLER (D761) — on what her strength brought, so an old graduate is both.
+                int yield = SchoolGives.Load(world.Config, villager, perTrip * villager.Vigour / 100);
 
                 // ⚠️ AND THE FLOOR OF ONE APPLIES TO VIGOUR, NOT TO THE GROUND. An old
                 // gatherer still brings something back; a hut with no trees in its ring
@@ -7048,7 +7049,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                         // ground is painted by the player and may hold a seam, and the test
                         // meant the seam was spent for nothing — the clearing path's bug, in
                         // the second of the two felling paths D133 already found drifting.
-                        int carried = fromTheTile * villager.Vigour / 100;
+                        // ⭐ A graduate carries more of it (D761) — never more than the tile held.
+                        int carried = Math.Min(fromTheTile, SchoolGives.Load(world.Config, villager, fromTheTile * villager.Vigour / 100));
                         carried = carried < 1 ? 1 : carried;
                         villager.Carried.Receive(felled, carried);
                         LeaveTheRestOnTheGround(world, tile, felled, fromTheTile - carried);
@@ -7065,7 +7067,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // Read from the config rather than from `world.TreeStand`, which is deleted
                 // with the stands (slice 5). It was always just `cut_yield` in a wrapper —
                 // one stand's worth, read by every forester in the village.
-                int wood = world.Config.CutYield * villager.Vigour / 100;
+                int wood = SchoolGives.Load(world.Config, villager, world.Config.CutYield * villager.Vigour / 100);
                 if (wood < 1)
                 {
                     wood = 1;
@@ -7388,7 +7390,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
                 Workplace? face = WorkplaceOf(world, villager);
                 bool anotherFits = villager.Carried[good] + OneDig(world, villager, trade)
-                    <= world.Config.CarryCapacity;
+                    <= SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
                 if (face is not null
                     && anotherFits
                     && villager.DigsThisStint < pace.FaceDigsPerStint

@@ -8,11 +8,11 @@ namespace Bclone.Sim.Tests;
 
 // ⛔ D756's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there
 // before any commit (D420). `school-and-education.md §12` step 3: what a school costs a village and what A and B return,
-// measured before `school_vigour_years` and `school_heed_percent` are typed.
+// measured before its sizes are typed. WALK — the able adults' years walking and carrying (D761: what fuller loads return).
 //
 // Arms: ZZ_SCHOOL=1 poses the school learned at Year 10 and marks one beside the founding (its stone given — no harness
 // village holds stone, ZzWorkshop's lesson), the player's teachers ZZ_TEACHERS (1) asked for once it stands; unset is the
-// baseline, no school. ZZ_VIGOUR = school_vigour_years, ZZ_HEED = school_heed_percent (both 0 shipped); ZZ_START and
+// baseline, no school. ZZ_OLDAGE = school_old_age_percent, ZZ_CARRY = school_carry_percent (D761), ZZ_HEED = school_heed_percent (all 0 shipped); ZZ_START and
 // ZZ_LEAVE = school_starting_age and school_leaving_age (D758's two-year term, 11 and 13). The opening is
 // ZzBase's — the shipped cold start, the opening played, a granary and a warehouse at Year 3 — on seeds 200–299
 // (ZZ_SEEDS=a,b narrows), a century (ZZ_YEARS). ZZ_LABEL names the arm.
@@ -40,24 +40,28 @@ public sealed class ZzSchool
     {
         bool school = Environment.GetEnvironmentVariable("ZZ_SCHOOL") == "1";
         int teachers = int.Parse(Environment.GetEnvironmentVariable("ZZ_TEACHERS") ?? "1");
-        int vigour = int.Parse(Environment.GetEnvironmentVariable("ZZ_VIGOUR") ?? "0");
+        int oldAge = int.Parse(Environment.GetEnvironmentVariable("ZZ_OLDAGE") ?? "0");
+        int carry = int.Parse(Environment.GetEnvironmentVariable("ZZ_CARRY") ?? "0");
         int heed = int.Parse(Environment.GetEnvironmentVariable("ZZ_HEED") ?? "0");
         int years = int.Parse(Environment.GetEnvironmentVariable("ZZ_YEARS") ?? "100");
         SimConfig shipped = ShippedConfig.Load();
         int start = int.Parse(Environment.GetEnvironmentVariable("ZZ_START") ?? shipped.SchoolStartingAge.ToString(System.Globalization.CultureInfo.InvariantCulture));
         int leave = int.Parse(Environment.GetEnvironmentVariable("ZZ_LEAVE") ?? shipped.SchoolLeavingAge.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (school ? $"s{teachers}v{vigour}h{heed}" : "base");
+        string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (school ? $"s{teachers}o{oldAge}c{carry}h{heed}" : "base");
 
         SimConfig config = shipped with
         {
-            Seed = seed, SchoolVigourYears = vigour, SchoolHeedPercent = heed, SchoolStartingAge = start, SchoolLeavingAge = leave,
+            Seed = seed, SchoolOldAgePercent = oldAge, SchoolCarryPercent = carry, SchoolHeedPercent = heed, SchoolStartingAge = start, SchoolLeavingAge = leave,
         };
         SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
 
         int peak = 0, stoodYear = -1;
-        long strongTicks = 0, dangerTicks = 0, shelterTicks = 0, workTicks = 0, strongWork = 0;
+        long strongTicks = 0, dangerTicks = 0, shelterTicks = 0, workTicks = 0, strongWork = 0, walkTicks = 0;
+        bool[] walking = Enum.GetValues<VillagerState>().Select(s => s.ToString() is var n
+            && (n.StartsWith("Traveling", StringComparison.Ordinal) || n.StartsWith("Hauling", StringComparison.Ordinal)
+                || n.StartsWith("Fetching", StringComparison.Ordinal) || n.StartsWith("Walking", StringComparison.Ordinal))).ToArray();
         bool staffed = false;
         bool states = Environment.GetEnvironmentVariable("ZZ_STATES") == "1";
         var stateTicks = new long[Enum.GetValues<VillagerState>().Length + 1];
@@ -104,6 +108,10 @@ public sealed class ZzSchool
                 if (v.CanTakeAJob)
                 {
                     workTicks++;
+                    if ((int)v.State < walking.Length && walking[(int)v.State])
+                    {
+                        walkTicks++;
+                    }
                     strongWork += v.Vigour;
                 }
 
@@ -134,7 +142,7 @@ public sealed class ZzSchool
             $"ZZS {arm} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} born {born} "
             + $"stood {stoodYear} pupilyears {pupilTicks / config.TicksPerYear} graduates {graduates} "
             + $"strongyears {strongTicks / config.TicksPerYear} dangerdays {dangerTicks / perDay} shelterdays {shelterTicks / perDay} "
-            + $"workyears {workTicks / config.TicksPerYear} vigourworkyears {strongWork / 100 / config.TicksPerYear}");
+            + $"workyears {workTicks / config.TicksPerYear} vigourworkyears {strongWork / 100 / config.TicksPerYear} walkyears {walkTicks / config.TicksPerYear}");
         if (states)
         {
             WriteStates(arm, seed, stateTicks);

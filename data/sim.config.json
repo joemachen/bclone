@@ -1113,13 +1113,15 @@
   "school_starting_age": 12,
   "school_leaving_age": 16,
   "school_lesson_ticks": 4,
-  // WHAT SCHOOL GIVES (school-and-education.md 11.4, Joe D753: "A and B"). A: years a
-  // full-term graduate stays at full strength past vigour_full_until_age (scaled by the
-  // term served; lifespan unchanged). B: the share of the way to freezing a graduate
-  // lets herself reach by the time she is at the fire -- she judges the walk, where
-  // everybody else goes in at seek_shelter_percent. Both 0 (off, today's game) until
-  // step 3 measures them on harness centuries and Joe sets them.
-  "school_vigour_years": 0,
+  // WHAT SCHOOL GIVES (school-and-education.md 11.4 and 12.5; Joe D753 "A and B", D761
+  // "Fuller loads + old age"). OLD AGE: vigour points a full-term graduate keeps above
+  // vigour_min_percent at the end of life (scaled by the term served; full strength still
+  // ends at 30, the lifespan unchanged). CARRY: how much more a full-term graduate brings
+  // in one trip -- an armful, a basket, a cut of timber, never a catch. B (HEED): the share
+  // of the way to freezing a graduate lets herself reach by the time she is at the fire.
+  // All 0 (off, today's game) until measured on harness centuries and Joe sets them.
+  "school_old_age_percent": 0,
+  "school_carry_percent": 0,
   "school_heed_percent": 0,
 
   // THE HOUSEHOLD'S HANDCART (handcart.md 3-7, Slice H; Joe's six calls, D672). A

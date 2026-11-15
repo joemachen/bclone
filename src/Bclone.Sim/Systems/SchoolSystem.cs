@@ -42,6 +42,30 @@ public sealed class SchoolSystem : ISimSystem
 }
 
 /// <summary>
+/// ⭐ What school gives a villager, by the term she served (D753, D761, `school-and-education.md §11.4`, §12.5): a full
+/// term's size, never more, and a share of it for a share of the term (call 5's credit).
+/// </summary>
+internal static class SchoolGives
+{
+    /// <summary>A full term's <paramref name="size"/> scaled by the term served; nought for nought, or for no school.</summary>
+    internal static int ByTheTermServed(SimConfig config, Villager villager, int size)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(villager);
+        int term = config.SchoolTermTicks;
+        return size <= 0 || term <= 0 || villager.SchoolTicks <= 0 ? 0 : size * Math.Min(villager.SchoolTicks, term) / term;
+    }
+
+    /// <summary>
+    /// ⭐ Fuller loads (Joe, D761): <paramref name="load"/>, and <c>school_carry_percent</c> more of it by the term served —
+    /// <i>"she packs a basket properly"</i>. The one reader for every place a villager's load is what she can carry; at
+    /// nought it is <paramref name="load"/> exactly.
+    /// </summary>
+    internal static int Load(SimConfig config, Villager villager, int load) =>
+        load + (load * ByTheTermServed(config, villager, config.SchoolCarryPercent) / 100);
+}
+
+/// <summary>
 /// ⭐ Who takes a school's places (D754, `school-and-education.md §11.3` call 4): the village fills them by itself, never a
 /// pick of a child (D15, D51). A school's places are its teachers at work times <c>school_places_per_teacher</c>.
 /// </summary>
