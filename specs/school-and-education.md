@@ -6,7 +6,7 @@
 > §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
 > 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6); ✅ STEP 4, THE
-> VIEW (D765, §12.7), UNPLAYED — STEP 5, SAVES, THE HASH AND THE GOLDENS, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> VIEW (D765, §12.7); ✅ STEP 5, SAVES AND THE HASH (D766, §12.8) — NO GOLDEN MOVED. ⏳ JOE PLAYS IT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -356,7 +356,7 @@ One slice, `slice/school`; each step its own commit with its docs; tests before 
 - **Saved and hashed:** `school_id` and `school_ticks` on the villager (read as 0 when absent), `school_learned` on the
   world. The villager's two are hashed sparsely now (no unattended village builds a school). ⚠️ **The latch is not yet
   hashed**: every golden village raises the library gift around Year 15, so hashing it now would move every golden for a
-  flag nothing unattended reads — it joins the fingerprint at step 5 with the goldens taken once (HANDOFF's debt).
+  flag nothing unattended reads — it joins the fingerprint at step 5 with the goldens taken once (HANDOFF's debt). *(⛔ void — hashed at step 5 and no golden moved, D766: an unattended village never raises its gifted library, so no golden village learns the school.)*
 - **Guards:** `SchoolTests` (9): learned once a library stands and not before (the gate, the log line, the tree's node);
   places from staffing and the youngest first, a pupil no hand and no laborer; no teacher, no places; a teacher past
   school age; the term ends with every tick served and is never sat twice; credit kept when the teacher goes; a pupil
@@ -578,6 +578,28 @@ century and fewer starved. Nobody more or less freezes (12.8): the frozen are st
 **Mutants: sim 4 / 4 red; probe 2 / 2 faults** (the places cell, the SCHOOL section hidden).
 `ChildrenWaitingForSchool` is set by each labour pass, not saved: after a load the card says nobody waits until the
 next pass (≤ 120 ticks).
+
+### 12.8 ✅ Step 5, saves and the hash (D766) — no golden moved
+
+- **Saved:** a villager's `school_id` and `school_ticks` (step 1), the world's `school_learned` (step 1) and
+  `schools_are_full` (step 4), the school's woodpile as its `Workplace.Store` (as every workplace's). `SaveLoadTests`'
+  every-field guard names each.
+- **Hashed:** the villager's two, sparsely (step 1); the woodpile (every workplace store); and now **the latch,
+  `SchoolLearned`** — a tag byte, only when learned. Guard `ALearnedSchoolIsInTheFingerprint`, red-checked.
+  `SchoolsAreFull` is narration bookkeeping and `ChildrenWaitingForSchool` a cache: neither is mixed.
+- **⭐ No golden moved — and the reason it was deferred was wrong.** D754 held the latch back because *"every golden
+  village raises the library gift around Year 15"*; it does not — an unattended village never raises its gifted library
+  (the harness had to pose the school learned for exactly that reason). The claim is void inline where it stood.
+
+**⏳ Joe's walk (what to look for):**
+1. Raise the library (gifted around Year 15–19): the log says *"somebody thinks to teach the young"*, and the school is
+   on the Knowledge tab and the teacher's row on the professions panel.
+2. Build a school and ask for a teacher: the 11- and 12-year-olds take places by themselves; a pupil's card reads
+   *"At … school — in the first of two years."*; the school's card *"N of 6 places taken"*.
+3. A winter: the school's card says *"The stove is lit."* and the teacher does not keep breaking off to get warm.
+4. Two years on: a graduate's card says what school gave her, in words.
+5. More children than places: the log asks once — another teacher, or another school.
+6. Save and load in the middle of a term: the pupils are still pupils, with their years.
 
 ## 10. Definition of Done
 

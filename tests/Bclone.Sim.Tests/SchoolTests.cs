@@ -630,6 +630,16 @@ public sealed class SchoolTests
         Assert.False(BehaviorSystem.ReadsTheYear(VillageFixtures.Village, graduate));
     }
 
+    /// <summary>Step 5 (D766): the school's latch is in the fingerprint — learn it, and the hash moves.</summary>
+    [Fact]
+    public void ALearnedSchoolIsInTheFingerprint()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        ulong before = StateHash.Compute(world);
+        world.LearnTheSchool();
+        Assert.NotEqual(before, StateHash.Compute(world));
+    }
+
     [Fact]
     public void AVillageWithNoSchoolNeverSeesAPupil()
     {
