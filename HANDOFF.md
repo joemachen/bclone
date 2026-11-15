@@ -9475,6 +9475,16 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D768 FOUND — AN ERRAND THAT DOES NOT SET ITS STATE INHERITS THE LAST ONE'S WALK
+
+- **`Decide`'s clearing errand called `Travel` without `villager.State = …` first** (since D389), so the villager walked
+  under whatever they were doing before — and each tick's continuation is the *state's* case, not the errand's. With
+  *going in to get warm* that made a one-tick bounce at the door all winter (Joe's Gargard); with *resting* it read as
+  resting on the card while walking to a store. **Every `Travel` that starts an errand needs its state set first** — grep
+  `Travel(world, villager, ` in `Decide` for one without a `State =` above it.
+- **The way in was his save, not a guess**: `tools/harness/ZzJoesSave.cs`'s shape with a per-tick trace, then a temporary
+  stack trace inside `Travel` for one named villager (restored from a copy). Three plausible suspects were all wrong.
+
 ## ⛔ THE TRAPS D767 PAID FOR — A RESTORE WITH TWO MATCHES, AND A BUILD UNDER JOE'S GAME
 
 - **A mutant's restore anchor can match twice once the mutant is in**: reverting the clothing want to `!villager.CanWork`

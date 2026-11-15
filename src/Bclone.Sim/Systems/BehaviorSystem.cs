@@ -3123,8 +3123,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         // carrying logic does the rest — `HaulOrSetDown` finds the nearest store that will have it,
         // and the emptying store refuses everything, so **a load can never come straight back**.
         // *Two rules and no shuttling, rather than a second hauling system.*
+        // ⛔⛔ AND THEY SAY SO (D768, Joe: "im seeing people bounce back and forth"). This walked them off under their
+        // last state, so its continuation was that state's: Gargard kept "going in to get warm", the warmth rule saw a man
+        // already coming in with a little cold, and turned him round at his door every tick of a winter. Every errand sets
+        // its state before its first step; this one did not.
         if (villager.CanWork && PlanEmptying(world, villager) is StoreBuilding clearing)
         {
+            villager.State = VillagerState.ClearingAStore;
             Travel(world, villager, clearing.Position, VillagerState.ClearingAStore);
             return;
         }
