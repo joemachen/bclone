@@ -1,5 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), UNPLAYED, NOT PUSHED (`origin/main` = a1faeb2). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. NO BRANCH OPEN BUT `art`.**
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), UNPLAYED, PUSHED AT HIS WORD (D770, `origin/main` = d387750). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. NO BRANCH OPEN BUT `art`.**
 
+> **⬆️ PUSHED AT JOE'S WORD (D770, 2026-11-15: *"Push main"*): `origin/main` a1faeb2..d387750** — the school and its merge are
+> on origin; the block below saying *not pushed* is left as written and corrected here. *(This record's own commit is local.)*
+>
 > **⛳ WHERE THINGS ARE, 2026-11-15 (D769) — THE SCHOOL MERGED INTO `main` AT JOE'S WORD (*"Yes, both"*), `slice/school` DELETED;
 > NOT PUSHED.** Seventeen commits, D752–D768, unplayed — Joe's walk is `school-and-education.md §12.8`. The thirty untracked
 > duplicates in `art/concept art/` were deleted first, at his word (all thirty matched `main` by `git hash-object`).
