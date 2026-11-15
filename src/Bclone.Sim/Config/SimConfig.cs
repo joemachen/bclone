@@ -1229,6 +1229,18 @@ public sealed record SimConfig
     [JsonPropertyName("coat_winters")]
     public int CoatWinters { get; init; } = 3;
 
+    /// <summary>
+    /// ⭐ The age a villager first wears a coat (Joe, D767: <i>"children start wearing clothes at 5"</i>) — they fetch one
+    /// and count in the tailor's want from here. Unset is <see cref="AdultAge"/>, D659's <i>"Every adult"</i>: children then
+    /// stayed by the hearth, and since D767 they walk to school from five.
+    /// </summary>
+    [JsonPropertyName("coat_from_age")]
+    public int? CoatFromAge { get; init; }
+
+    /// <summary>The age coats start at — <see cref="CoatFromAge"/>, or <see cref="AdultAge"/> when unset.</summary>
+    [JsonIgnore]
+    public int CoatAge => CoatFromAge ?? AdultAge;
+
     /// <summary>Leather one coat takes at the tailor's shop (`clothing.md §3.5`, D659) — half a hunt's hide. ⏳ C4 measures it.</summary>
     [JsonPropertyName("leather_per_coat")]
     public int LeatherPerCoat { get; init; } = 2; // 5 until D666: too weak for ten adults on one lodge (Joe).
@@ -6254,10 +6266,16 @@ public sealed record SimConfig
             throw new SimConfigException($"school_places_per_teacher must be at least 1 (got {SchoolPlacesPerTeacher}).");
         }
 
-        if (SchoolLeavingAge <= AdultAge)
+        // ⭐ AT adult_age, not only above it (D767, Joe: "children in school from ages 5-12 ... they join the labor force at 12").
+        if (SchoolLeavingAge < AdultAge)
         {
             throw new SimConfigException(
-                $"school_leaving_age must be above adult_age ({AdultAge}) — a pupil leaves for work (got {SchoolLeavingAge}).");
+                $"school_leaving_age must be at least adult_age ({AdultAge}) — a pupil leaves for work (got {SchoolLeavingAge}).");
+        }
+
+        if (CoatFromAge is < 0)
+        {
+            throw new SimConfigException($"coat_from_age cannot be negative (got {CoatFromAge}).");
         }
 
         if (SchoolStartingAge < 1 || SchoolStartingAge >= SchoolLeavingAge)

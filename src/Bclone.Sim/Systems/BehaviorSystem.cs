@@ -5965,7 +5965,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </summary>
     private static bool TryFetchACoat(SimWorld world, Villager villager)
     {
-        if (!villager.CanWork || villager.CoatDays > 0 || villager.IsCarrying)
+        // ⭐ From coat_from_age (D767: a child of five walks to school), not only past childhood (D659).
+        if (!villager.Alive || villager.AgeYears < world.Config.CoatAge || villager.CoatDays > 0 || villager.IsCarrying)
         {
             return false;
         }

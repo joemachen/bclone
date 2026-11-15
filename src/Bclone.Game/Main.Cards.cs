@@ -1947,7 +1947,7 @@ public partial class Main
         }
 
         // ---- COAT (D659, `clothing.md §3.3`): a roof you wear, and the winters left in it — every adult's, a child's never ----
-        bool wearsOne = villager.CanWork;
+        bool wearsOne = villager.AgeYears >= world.Config.CoatAge; // from coat_from_age (D767), not only adults (D659)
         p.CoatSection.Visible = wearsOne;
         if (wearsOne)
         {

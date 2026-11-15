@@ -6,7 +6,8 @@
 > §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
 > 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6); ✅ STEP 4, THE
-> VIEW (D765, §12.7); ✅ STEP 5, SAVES AND THE HASH (D766, §12.8) — NO GOLDEN MOVED. ⏳ JOE PLAYS IT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> VIEW (D765, §12.7); ✅ STEP 5, SAVES AND THE HASH (D766, §12.8) — NO GOLDEN MOVED; ✅ SEVEN YEARS, 5–12, AND COATS FROM
+> FIVE (D767, §12.9). ⏳ JOE PLAYS IT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -600,6 +601,33 @@ next pass (≤ 120 ticks).
 4. Two years on: a graduate's card says what school gave her, in words.
 5. More children than places: the log asks once — another teacher, or another school.
 6. Save and load in the middle of a term: the pupils are still pupils, with their years.
+
+### 12.9 ✅ Seven years, 5 to 12 — and coats from five (D767)
+
+Joe, before playing: *"i want to change it. children in school from ages 5-12. then they join the labor force at 12. same
+benefits."* and *"also children start wearing clothes at 5"*.
+
+- **The term:** `school_starting_age` 5, `school_leaving_age` 12 — leaving **at** `adult_age` now allowed (the check was
+  *above* it). **Every school year is a child's, so a pupil costs the village no labour**: the teachers, the building and
+  its firewood are the whole price. The benefits are unchanged and still scaled by the term served — a full seven years
+  for the whole of them; reading the year at three and a half.
+- **Coats from five:** `coat_from_age` 5 (unset is `adult_age`, D659's *"Every adult"* — children then stayed by the
+  hearth; since D767 they walk to school). From that age a villager fetches a coat and counts in the tailor's want; the
+  card's COAT section shows from it. Guard `ClothingTests.AChildOfFiveOrMoreWearsACoat`, 2 mutants 2 red.
+
+| Arm (100 seeds, a century; loads 25 %, old age +20, B 80, the warm school) | Dead valleys | Alive at 100 | Starved | Froze | Graduates | Pupil-years | Strength-weighted work | Against no school | Shelter days |
+|---|---|---|---|---|---|---|---|---|---|
+| no school | 12 | 10.3 | 15.4 | 12.9 | 0 | 0 | 870.0 | — | 1,116 |
+| two years, 11–13, one teacher (D764) | 13 | 12.0 | 14.8 | 12.8 | 13.5 | 25.5 | 908.7 | +39 | 1,356 |
+| **seven years, 5–12, one teacher** | 12 | 11.6 | 15.1 | 13.3 | 9.8 | 72.2 | **903.4** | **+33** | 1,395 |
+| seven years, 5–12, two teachers | **16** | 10.8 | 17.0 | 13.2 | 9.3 | 68.2 | 865.3 | **−5** | 1,484 |
+
+**In plain words:** seven years with one teacher pays about as well as two (+33 against +39) — no pupil costs labour now,
+but six places spread over seven years of children school fewer of them fully (9.8 graduates a century against 13.5), so
+the gifts reach fewer people. **⛔ A second teacher makes it worse in a harness village** (−5, dead valleys 12 → 16): there
+are not enough children to fill twelve places, so the second teacher is a working adult lost for nothing. Froze 12.8 →
+13.3 — children walking to school in winter, inside the noise; the harness makes no coats (no tailor), so coats from five
+are not in these numbers. ⚠️ D447: a played village of fifty has more children, where a second teacher may pay.
 
 ## 10. Definition of Done
 

@@ -1531,7 +1531,7 @@ public readonly record struct LabourQuota
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || !villager.CanWork)
+            if (!villager.Alive || villager.AgeYears < world.Config.CoatAge)
             {
                 continue;
             }

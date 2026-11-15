@@ -119,7 +119,17 @@ public sealed partial class SimWorld
             _ => $"{said} — {string.Join(", ", gave.Take(gave.Count - 1))}, and {gave[^1]}.",
         };
 
-        static string Years(int n) => n == 1 ? "a year" : n == 2 ? "two years" : n == 3 ? "three years" : n == 4 ? "four years" : $"{n} years";
+        static string Years(int n) => n switch
+        {
+            1 => "a year",
+            2 => "two years",
+            3 => "three years",
+            4 => "four years",
+            5 => "five years",
+            6 => "six years",
+            7 => "seven years",
+            _ => $"{n} years",
+        };
 
         static string Ordinal(int n) => n switch
         {
@@ -127,6 +137,9 @@ public sealed partial class SimWorld
             2 => "second",
             3 => "third",
             4 => "fourth",
+            5 => "fifth",
+            6 => "sixth",
+            7 => "seventh",
             _ => $"{n}th",
         };
     }

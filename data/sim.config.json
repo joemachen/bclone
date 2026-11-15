@@ -968,6 +968,9 @@
   // winters on a back, wearing a day every winter day it is worn. The clothing
   // row reads it. Typed, not yet measured -- C4 holds it against the leather flow.
   "coat_winters": 3,
+  // From what age a villager wears one (Joe, D767: "children start wearing clothes at
+  // 5") -- they walk to school from five. Unset is adult_age (D659's "Every adult").
+  "coat_from_age": 5,
 
   // THE IRON TOOL (tools-and-the-smith.md 9.2, Joe's order of magnitude, D434):
   // lasts 250 uses, takes half off an action's ticks (a gather still 3 -> 2, a
@@ -1101,17 +1104,18 @@
   // THE SCHOOL (school-and-education.md 12, D752-D754). Learned once a library
   // stands, placed anywhere. Each staffed teacher brings places (Joe, D754: "6 to
   // start"); the village fills them from its villagers aged school_starting_age to one
-  // below school_leaving_age (11-12) by itself, never a pick of a child. A pupil works at
+  // below school_leaving_age (5-11) by itself, never a pick of a child. A pupil works at
   // nothing else and keeps credit for the years served. Costs TYPED, not measured.
-  // ⭐ TWO YEARS, 11 TO 13 (Joe, D763: "Yes, ship it", on D762's measurement). Below
-  // adult_age the first year is a child's, which costs no labour (D758).
+  // ⭐ SEVEN YEARS, 5 TO 12 (Joe, D767: "children in school from ages 5-12. then they join
+  // the labor force at 12. same benefits"). Every school year is a child's, so a pupil
+  // costs the village no labour -- the teachers and the building are the whole price.
   "school_logs": 30,
   "school_stone": 12,
   "school_work_ticks": 40,
   "school_capacity": 2,
   "school_places_per_teacher": 6,
-  "school_starting_age": 11,
-  "school_leaving_age": 13,
+  "school_starting_age": 5,
+  "school_leaving_age": 12,
   "school_lesson_ticks": 4,
   // A WARM SCHOOL (Joe, D764: "Warm, burns firewood"; school-and-education.md 12.6). A
   // staffed school burns this a winter on the house's beats; with any in its pile it is
