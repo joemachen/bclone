@@ -54,7 +54,8 @@ public readonly record struct LabourQuota
         int bakers = 0,
         int herdsmen = 0,
         int merchants = 0,
-        int carpenters = 0)
+        int carpenters = 0,
+        int teachers = 0)
     {
         Hands = hands;
         Mouths = mouths;
@@ -82,6 +83,7 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Baker] = bakers;
         _byJob[(int)JobKind.Herdsman] = herdsmen;
         _byJob[(int)JobKind.Merchant] = merchants;
+        _byJob[(int)JobKind.Teacher] = teachers;
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -291,7 +293,9 @@ public readonly record struct LabourQuota
             }
 
             mouths++;
-            if (villager.CanWork)
+
+            // A pupil eats and does not work (D754): a mouth, never a hand.
+            if (villager.CanTakeAJob)
             {
                 hands++;
             }
@@ -339,6 +343,10 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Baker] = bakersWanted;
         needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
         needed[(int)JobKind.Merchant] = MerchantsWanted(world);
+
+        // ⭐ The village never asks for a teacher by itself (D754): a school is the player's decision, so the want is
+        // nobody and only the number he types stands — the merchant's shape without a want of its own.
+        needed[(int)JobKind.Teacher] = 0;
         // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
         // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
         // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
@@ -654,6 +662,7 @@ public readonly record struct LabourQuota
         int bakers = Take(ref free, Cap(bakersWanted, TotalCapacityFor(world, JobKind.Baker)));
         int herdsmen = Take(ref free, Cap(herdsmenWanted, TotalCapacityFor(world, JobKind.Herdsman)));
         int merchants = Take(ref free, Cap(merchantsWanted, TotalCapacityFor(world, JobKind.Merchant)));
+        int teachers = 0;
 
         // And the market, last of all, out of hands nobody else needs (D14).
         //
@@ -839,6 +848,7 @@ public readonly record struct LabourQuota
         bakers = Asked(world, JobKind.Baker, bakers, hands);
         herdsmen = Asked(world, JobKind.Herdsman, herdsmen, hands);
         merchants = Asked(world, JobKind.Merchant, merchants, hands);
+        teachers = Asked(world, JobKind.Teacher, teachers, hands);
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -868,12 +878,13 @@ public readonly record struct LabourQuota
         bakers = AtLeastPinned(world, JobKind.Baker, bakers);
         herdsmen = AtLeastPinned(world, JobKind.Herdsman, herdsmen);
         merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
+        teachers = AtLeastPinned(world, JobKind.Teacher, teachers);
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths, tailors: tailors,
             quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen, merchants: merchants,
-            carpenters: carpenters);
+            carpenters: carpenters, teachers: teachers);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1316,7 +1327,15 @@ public readonly record struct LabourQuota
     /// </para>
     /// </remarks>
     /// <summary>The firewood the homes want and the sheds do not hold — what the chain works back from.</summary>
-    public static int FirewoodShortfall(SimWorld world)
+    public static int FirewoodShortfall(SimWorld world) => Shortfall(world, schools: true);
+
+    /// <summary>
+    /// ⭐ The homes' shortfall alone (D764, `school-and-education.md §12.6`): what a school's stove asks before it is kept —
+    /// the homes come first. <see cref="FirewoodShortfall"/> is this and every staffed school's winter.
+    /// </summary>
+    public static int HomesFirewoodShortfall(SimWorld world) => Shortfall(world, schools: false);
+
+    private static int Shortfall(SimWorld world, bool schools)
     {
         ArgumentNullException.ThrowIfNull(world);
 
@@ -1382,6 +1401,20 @@ public readonly record struct LabourQuota
         // Each house's own winter (D719): a village of cottages wants half the woodcutting. For cabins it is
         // homes × FirewoodPerHouseholdPerWinter, as it always was.
         demand += winters;
+
+        // ⭐ AND EACH STAFFED SCHOOL'S WINTER (D764): the woodcutters cut for the school's stove, rather than it living off
+        // whatever the homes leave. No school, nothing added.
+        if (schools && world.Config.SchoolWinterFirewood > 0)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                Workplace school = world.Workplaces[i];
+                if (school.Kind == JobKind.Teacher && !school.IsSite && school.WorkerIds.Count > 0)
+                {
+                    demand += world.Config.SchoolWinterFirewood;
+                }
+            }
+        }
 
         // Across every warehouse (D38): a household can fetch from any of them, so all of
         // them are supply. Reading one would have had the village cutting wood it
@@ -1498,7 +1531,7 @@ public readonly record struct LabourQuota
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || !villager.CanWork)
+            if (!villager.Alive || villager.AgeYears < world.Config.CoatAge)
             {
                 continue;
             }

@@ -218,6 +218,10 @@ That second cost is the generational-time pillar expressed as a single building.
 
 ### 7e. Placement rule: school requires a library in catchment
 
+> ⛔ **WITHDRAWN (D754, 2026-11-14; Joe: *"Yes, all three"* to `school-and-education.md §11.3` call 1).** The school is
+> learned once a library stands and is placed anywhere: it teaches children, it does not copy books. Kept below as the
+> design it was.
+
 The one place ADJ is **structural** rather than bonus. Enforced at placement, using the existing shared cost field (`TravelCostField`) — no new system.
 
 **UI behaviour (Joe, settled):**

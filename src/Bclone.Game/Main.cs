@@ -541,6 +541,7 @@ public partial class Main : Control
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheCardSaysTheCoat());
+        GD.Print(TheSchoolIsSaid());
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWorkshopSaysWhatItMakes());
@@ -579,6 +580,7 @@ public partial class Main : Control
         GD.Print(_map.TheNomadsWalkInFromTheEdge());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
+        GD.Print(ZoneOutline.AVillageSizedFillIsQuick());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
@@ -2175,6 +2177,7 @@ public partial class Main : Control
     private Button? _bakeryButton;
     private Button? _tailorButton;
     private Button? _workshopButton;
+    private Button? _schoolButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2337,6 +2340,9 @@ public partial class Main : Control
         // The workshop, learned by felling wood (D678, `workshop-and-the-carpenter.md §4.1a`) — paid for, lit until the first is marked.
         RefreshALearnedButton(world, BuildingKind.Workshop, JobKind.Carpenter, _workshopButton, ref _workshopKnown, ref _workshopTried);
 
+        // The school, learned once a library stands (D755, `school-and-education.md §12.1`) — paid for, lit until the first is marked.
+        RefreshALearnedButton(world, BuildingKind.School, JobKind.Teacher, _schoolButton, ref _schoolKnown, ref _schoolTried);
+
         // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
@@ -2393,6 +2399,8 @@ public partial class Main : Control
     private bool _tailorTried;
     private bool _workshopKnown;
     private bool _workshopTried;
+    private bool _schoolKnown;
+    private bool _schoolTried;
     private bool _bridgeKnown;
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
@@ -7800,6 +7808,10 @@ public partial class Main : Control
             {
                 _workshopButton = button;
             }
+            else if (kind == BuildingKind.School)
+            {
+                _schoolButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -8011,6 +8023,9 @@ public partial class Main : Control
             // the first building the village raises for a reason other than eating.
             BuildingKind.Library => BuildCategory.Knowledge,
 
+            // The school beside the library that teaches it (D755): what it keeps is what the young know.
+            BuildingKind.School => BuildCategory.Knowledge,
+
             // The hall is not a knowledge building with extras, and putting it under Knowledge
             // would say the opposite of what D251 settled.
             BuildingKind.TownHall => BuildCategory.Civic,
@@ -8143,6 +8158,9 @@ public partial class Main : Control
         // ⛔ Without this arm `_ => true` lights Works at the founding for a building nobody may place, and the probe's
         // `filters:` line goes red (D678; the barn's lesson below).
         BuildingKind.Workshop => _workshopKnown,
+
+        // ⛔ The school's arm (D755): without it `_ => true` offers a school at the founding — the workshop's lesson again.
+        BuildingKind.School => _schoolKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

@@ -223,6 +223,37 @@ public sealed class ClothingTests
         Assert.True(adultsBefore > 0);
     }
 
+    /// <summary>Joe, D767: <i>"children start wearing clothes at 5"</i> — a child of six fetches one and counts; four does not.</summary>
+    [Fact]
+    public void AChildOfFiveOrMoreWearsACoat()
+    {
+        SimConfig config = Config with { CoatFromAge = 5 };
+        (SimLoop loop, Villager six, Villager four) = PosedChildren(config);
+        SimWorld world = loop.World;
+
+        // The same village posed alike, coats for adults only (D659): its tailor is wanted for fewer.
+        int wanted = LabourQuota.ClothingWanted(world);
+        int wantedAsAdultsOnly = LabourQuota.ClothingWanted(PosedChildren(Config).Loop.World);
+        Assert.True(wanted > wantedAsAdultsOnly, $"the tailor's want is {wanted} with the six-year-old and {wantedAsAdultsOnly} without");
+
+        world.AnyStoreOf(StoreKind.Warehouse).Store.Add(Goods.Clothing, 100);
+        loop.Step(config.TicksPerSeason);
+
+        Assert.True(six.CoatDays > 0, "a child of six beside a shelf of coats took none");
+        Assert.Equal(0, four.CoatDays);
+    }
+
+    private static (SimLoop Loop, Villager Six, Villager Four) PosedChildren(SimConfig config)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        (Villager six, Villager four) = (loop.World.Villagers[0], loop.World.Villagers[1]);
+        six.AgeYears = 6;
+        six.LifeStage = LifeStage.Child;
+        four.AgeYears = 4;
+        four.LifeStage = LifeStage.Child;
+        return (loop, six, four);
+    }
+
     [Fact]
     public void NoCoatShipsInTheCartAndNobodyWearsOneAtTheFounding()
     {

@@ -1229,6 +1229,18 @@ public sealed record SimConfig
     [JsonPropertyName("coat_winters")]
     public int CoatWinters { get; init; } = 3;
 
+    /// <summary>
+    /// ⭐ The age a villager first wears a coat (Joe, D767: <i>"children start wearing clothes at 5"</i>) — they fetch one
+    /// and count in the tailor's want from here. Unset is <see cref="AdultAge"/>, D659's <i>"Every adult"</i>: children then
+    /// stayed by the hearth, and since D767 they walk to school from five.
+    /// </summary>
+    [JsonPropertyName("coat_from_age")]
+    public int? CoatFromAge { get; init; }
+
+    /// <summary>The age coats start at — <see cref="CoatFromAge"/>, or <see cref="AdultAge"/> when unset.</summary>
+    [JsonIgnore]
+    public int CoatAge => CoatFromAge ?? AdultAge;
+
     /// <summary>Leather one coat takes at the tailor's shop (`clothing.md §3.5`, D659) — half a hunt's hide. ⏳ C4 measures it.</summary>
     [JsonPropertyName("leather_per_coat")]
     public int LeatherPerCoat { get; init; } = 2; // 5 until D666: too weak for ten adults on one lodge (Joe).
@@ -1288,6 +1300,92 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("workshop_unlock_logs")]
     public int WorkshopUnlockLogs { get; init; } = 1500;
+
+    // ---------------------------------------------------------------
+    //  The school (D752–D754, `specs/school-and-education.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a school costs (§12 step 1) — a hall's timber. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_logs")]
+    public int SchoolLogs { get; init; } = 30;
+
+    /// <summary>Stone a school costs (§12 step 1) — a hut's footing and a hearth. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_stone")]
+    public int SchoolStone { get; init; } = 12;
+
+    /// <summary>Work ticks to raise a school — as a hut. ⏳ Typed.</summary>
+    [JsonPropertyName("school_work_ticks")]
+    public int SchoolWorkTicks { get; init; } = 40;
+
+    /// <summary>Teachers a school seats — two, as the smithy's and the workshop's. ⏳ Typed.</summary>
+    [JsonPropertyName("school_capacity")]
+    public int SchoolCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Places each staffed teacher brings (Joe, D754 call 4: *"6 to start"*, measured later). A school's places are its
+    /// teachers at work times this — the player's lever is staffing, never the child (D51, D15).
+    /// </summary>
+    [JsonPropertyName("school_places_per_teacher")]
+    public int SchoolPlacesPerTeacher { get; init; } = 6;
+
+    /// <summary>
+    /// The age a pupil may first take a place (D758). Shipped at <see cref="AdultAge"/>'s twelve, D209's *"ages 12–16"*;
+    /// <b>below <see cref="AdultAge"/> the first years are a child's</b>, who works at nothing anyway, so they cost the
+    /// village no labour — only the years past <see cref="AdultAge"/> do (Joe, D758: *"2 years in school from age 11-13"*,
+    /// measured before it is set).
+    /// </summary>
+    [JsonPropertyName("school_starting_age")]
+    public int SchoolStartingAge { get; init; } = 12;
+
+    /// <summary>
+    /// The age a pupil leaves school for work (D209: *"ages 12–16"*). Pupils are those from <see cref="SchoolStartingAge"/>
+    /// to one below this; the term is the years between, four as shipped. Validated above <see cref="AdultAge"/> — a pupil
+    /// leaves for work — and above <see cref="SchoolStartingAge"/>.
+    /// </summary>
+    [JsonPropertyName("school_leaving_age")]
+    public int SchoolLeavingAge { get; init; } = 16;
+
+    /// <summary>
+    /// ⭐ Firewood a staffed school burns a winter (Joe, D764: <i>"Warm, burns firewood"</i>; `school-and-education.md
+    /// §12.6`) — spread over the house's beats; a staffed school with any in its pile is a fire, as a home is. A cottage's
+    /// twelve. ⏳ Typed, then measured.
+    /// </summary>
+    [JsonPropertyName("school_winter_firewood")]
+    public int SchoolWinterFirewood { get; init; } = 12;
+
+    /// <summary>Ticks of one lesson — a pupil or a teacher at the school before deciding again (a day, as shipped).</summary>
+    [JsonPropertyName("school_lesson_ticks")]
+    public int SchoolLessonTicks { get; init; } = 4;
+
+    /// <summary>
+    /// ⭐ A, reshaped — <i>"a gentler old age"</i> (Joe, D761: <i>"Fuller loads + old age"</i>; D753's A was strong years at
+    /// 30–45 and measured weak, D757): the vigour points a full-term graduate keeps above <see cref="VigourMinPercent"/> at
+    /// the end of her life, scaled by the term served. Full strength still ends at <see cref="VigourFullUntilAge"/> and the
+    /// lifespan is everyone's; the decline is only shallower. <b>Nought ships until it is measured</b> — today's game.
+    /// </summary>
+    [JsonPropertyName("school_old_age_percent")]
+    public int SchoolOldAgePercent { get; init; }
+
+    /// <summary>
+    /// ⭐ Fuller loads (Joe, D761): how much more a full-term graduate brings in one trip — an armful, a basket, a cut of
+    /// timber — scaled by the term served, wherever a villager's load is what she can carry. Not a catch (a fish, a hunt):
+    /// carrying, not luck. <b>Nought ships until it is measured.</b>
+    /// </summary>
+    [JsonPropertyName("school_carry_percent")]
+    public int SchoolCarryPercent { get; init; }
+
+    /// <summary>
+    /// ⭐ B(i) — <i>"she reads the year"</i> (Joe, D753; §11.4): the share of the way to freezing a graduate lets herself
+    /// reach <b>by the time she is at the fire</b> — she goes in when her cold and the chill of her walk to the nearest fire
+    /// would reach it, where everybody else goes in at <see cref="SeekShelterPercent"/> wherever they are. Needs half the
+    /// term served. <b>Nought ships until step 3 measures it</b> — nought is today's rule for everyone.
+    /// </summary>
+    [JsonPropertyName("school_heed_percent")]
+    public int SchoolHeedPercent { get; init; }
+
+    /// <summary>A full term in ticks — the years from <see cref="SchoolStartingAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
+    [JsonIgnore]
+    public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - SchoolStartingAge) * TicksPerYear;
 
     /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
     [JsonPropertyName("logs_per_handcart")]
@@ -3809,6 +3907,17 @@ public sealed record SimConfig
             UsesTool = true,
         },
 
+        // ⭐ THE TEACHER (D754, `school-and-education.md §12` step 1) — at the school; no skill, no tool, nothing made:
+        // what a teacher gives is places, each staffed teacher `school_places_per_teacher` of them.
+        new JobRow
+        {
+            Id = (int)JobKind.Teacher,
+            Name = "teacher",
+            Plural = "teachers",
+            Doing = "teaching",
+            WorksAt = BuildingKind.School,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
         // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
         new JobRow
@@ -4358,6 +4467,23 @@ public sealed record SimConfig
             Seats = WorkshopCapacity,
             ExtentWidth = 2,
             ExtentHeight = 1,
+        },
+
+        // ⭐ THE SCHOOL (D754, `school-and-education.md §12` step 1) — a workplace for teachers and the places their
+        // pupils fill; a hall's timber. Learned once a library stands. ⏳ Its costs typed, not measured.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.School,
+            Name = "school",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, SchoolLogs),
+                new MaterialCost(World.Goods.Stone, SchoolStone),
+            },
+            WorkTicks = SchoolWorkTicks,
+            Seats = SchoolCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
         },
 
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
@@ -6135,6 +6261,56 @@ public sealed record SimConfig
         }
 
         // The workshop's gate (D678): nought learns it at the first log felled; less is nothing.
+        if (SchoolPlacesPerTeacher < 1)
+        {
+            throw new SimConfigException($"school_places_per_teacher must be at least 1 (got {SchoolPlacesPerTeacher}).");
+        }
+
+        // ⭐ AT adult_age, not only above it (D767, Joe: "children in school from ages 5-12 ... they join the labor force at 12").
+        if (SchoolLeavingAge < AdultAge)
+        {
+            throw new SimConfigException(
+                $"school_leaving_age must be at least adult_age ({AdultAge}) — a pupil leaves for work (got {SchoolLeavingAge}).");
+        }
+
+        if (CoatFromAge is < 0)
+        {
+            throw new SimConfigException($"coat_from_age cannot be negative (got {CoatFromAge}).");
+        }
+
+        if (SchoolStartingAge < 1 || SchoolStartingAge >= SchoolLeavingAge)
+        {
+            throw new SimConfigException(
+                $"school_starting_age must be at least 1 and below school_leaving_age ({SchoolLeavingAge}) (got {SchoolStartingAge}).");
+        }
+
+        if (SchoolOldAgePercent < 0 || VigourMinPercent + SchoolOldAgePercent > 100)
+        {
+            throw new SimConfigException(
+                $"school_old_age_percent must be 0 or more, and with vigour_min_percent ({VigourMinPercent}) no more than 100 (got {SchoolOldAgePercent}).");
+        }
+
+        if (SchoolCarryPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"school_carry_percent must be between 0 (off) and 100 — twice a load (got {SchoolCarryPercent}).");
+        }
+
+        if (SchoolHeedPercent is < 0 or > 95)
+        {
+            throw new SimConfigException(
+                $"school_heed_percent must be between 0 (off) and 95 — at the fire short of freezing (got {SchoolHeedPercent}).");
+        }
+
+        if (SchoolWinterFirewood < 0)
+        {
+            throw new SimConfigException($"school_winter_firewood cannot be negative (got {SchoolWinterFirewood}).");
+        }
+
+        if (SchoolLessonTicks < 1)
+        {
+            throw new SimConfigException($"school_lesson_ticks must be at least 1 (got {SchoolLessonTicks}).");
+        }
+
         if (WorkshopUnlockLogs < 0)
         {
             throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");

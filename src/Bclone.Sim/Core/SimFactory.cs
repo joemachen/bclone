@@ -35,6 +35,7 @@ public static class SimFactory
         new MortalitySystem(),  // 9. old age, starvation, or cold
         new RegrowthSystem(),   // 10. the valley grows back (D125)
         new SkillSystem(),      // 11. and the people who worked it got better at it (Phase 3)
+        new SchoolSystem(),     // 11b. and the pupils at school count their term (D754) — nothing, with no school
         new KnowledgeSystem(),  // 12. and what the village knows is what those people know (Phase 4)
         new CivicSystem(),      // 13. and what the village makes of itself: the founders' hall (D252)
     };

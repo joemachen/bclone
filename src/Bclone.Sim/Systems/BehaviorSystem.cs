@@ -115,6 +115,9 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.SeekingShelter => "going in to get warm",
         VillagerState.CollectingForMarket => "collecting for the market",
         VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
+        VillagerState.WalkingToSchool => "walking to the school",
+        VillagerState.AtSchool => "at the school",
+        VillagerState.Teaching => "teaching at the school",
         VillagerState.FetchingMaterials => "fetching building materials",
         VillagerState.Building => "building",
         VillagerState.ClearingAStore => "clearing out a store",
@@ -1956,7 +1959,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // same answer — and if the queue moved under them mid-errand, picking up for the site
         // they now want is the right outcome anyway (see the remarks above).
         Goods wanted = site.NextMaterialWanted() ?? Goods.Logs;
-        int room = Math.Min(site.StillNeeded(wanted), world.Config.CarryCapacity);
+        int room = Math.Min(site.StillNeeded(wanted), SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity));
 
         for (int i = 0; i < world.StoreBuildings.Count && room > 0; i++)
         {
@@ -2325,7 +2328,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // load is `cart_armfuls` armfuls — whole armfuls only, as many as the counter's room allows (D165's rule, the cart's
         // size); on foot the one armful it always was. `carry_capacity` is untouched (D537).
         int armful = world.Config.CarryCapacity;
-        int load = armful * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
+        int load = SchoolGives.Load(world.Config, villager, armful) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         Goods[] carried = MarketGoodsIn(world);
         for (int g = 0; g < carried.Length; g++)
@@ -2759,28 +2762,75 @@ public sealed partial class BehaviorSystem : ISimSystem
         // Once they are here they stay until they are properly warm, not merely until
         // they are back under the line they came in over.
         bool alreadyComingIn = villager.State == VillagerState.SeekingShelter;
-        int line = threshold * config.SeekShelterPercent / 100;
-
-        if (villager.Cold < line && !(alreadyComingIn && villager.Cold > 0))
-        {
-            return false;
-        }
-
         if (villager.Cold == 0)
         {
             return false;
         }
 
-        GridPos? fire = NearestFire(world, villager.Tile);
+        // ⭐ B(i), SHE READS THE YEAR (Joe, D753; `school-and-education.md §11.4`): a graduate weighs the walk — she goes in
+        // when her cold and the chill of the walk to the nearest fire would reach `school_heed_percent`, so she leaves the
+        // far wood early and works on beside the village. Everybody else goes in at the halfway line wherever they are.
+        bool readsTheYear = ReadsTheYear(config, villager);
+        GridPos? fire = readsTheYear || villager.Cold >= threshold * config.SeekShelterPercent / 100 || alreadyComingIn
+            ? NearestFire(world, villager.Tile)
+            : null;
+        int walkChill = readsTheYear && fire is GridPos to ? ChillOfTheWalk(world, villager, to) : 0;
+        if (!alreadyComingIn && !GoesInForWarmth(config, villager, readsTheYear, walkChill))
+        {
+            return false;
+        }
+
         if (fire is null)
         {
             return false;
+        }
+
+        // ⭐ Said when she goes, in her own terms (B, D753) — the halfway warning is not hers (`HearthSystem`).
+        if (readsTheYear && !alreadyComingIn)
+        {
+            world.Narrate(
+                villager.Cold < threshold * config.SeekShelterPercent / 100
+                    ? $"{villager.Name} heads in early — it is a long walk to a fire. {world.Clock.SeasonAndYear()}."
+                    : $"{villager.Name} goes in to get warm, the fire near enough to have worked on until now. {world.Clock.SeasonAndYear()}.",
+                Logging.LogCategory.Warning);
         }
 
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.SeekingShelter;
         Travel(world, villager, fire.Value, VillagerState.SeekingShelter);
         return true;
+    }
+
+    /// <summary>Whether a villager reads the year (B, D753): the knob on, and at least half the term served.</summary>
+    internal static bool ReadsTheYear(SimConfig config, Villager villager) =>
+        config.SchoolHeedPercent > 0 && config.SchoolTermTicks > 0 && villager.SchoolTicks * 2 >= config.SchoolTermTicks;
+
+    /// <summary>
+    /// ⭐ The one rule for when the cold sends somebody in (D45; B, D753) — pure, so the guard asks it directly. Everybody:
+    /// at <c>seek_shelter_percent</c> of the way to freezing. A graduate who reads the year: when her cold and
+    /// <paramref name="walkChill"/> — what the walk to the fire will add — reach <c>school_heed_percent</c>.
+    /// </summary>
+    internal static bool GoesInForWarmth(SimConfig config, Villager villager, bool readsTheYear, int walkChill)
+    {
+        int threshold = config.ExposureThreshold;
+        return readsTheYear
+            ? villager.Cold + Math.Max(0, walkChill) >= threshold * config.SchoolHeedPercent / 100
+            : villager.Cold >= threshold * config.SeekShelterPercent / 100;
+    }
+
+    /// <summary>The cold a walk to <paramref name="fire"/> adds — its ticks by the one cost field, at their open-ground rate.</summary>
+    private static int ChillOfTheWalk(SimWorld world, Villager villager, GridPos fire)
+    {
+        SimConfig config = world.Config;
+        int cost = world.TravelCost.Cost(villager.Tile, fire);
+        if (cost == TravelCostField.Unreachable)
+        {
+            return 0;
+        }
+
+        int ticks = ((cost * config.TravelTicksPerUnit) + TravelCostField.BaseTileCost - 1) / TravelCostField.BaseTileCost;
+        int perTick = villager.CoatDays > 0 ? config.ExposurePerTickSheltered : config.ExposurePerTickOutdoors;
+        return ticks * perTick;
     }
 
     /// <summary>The closest home with somebody in it and firewood still in the pile.</summary>
@@ -3073,8 +3123,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         // carrying logic does the rest — `HaulOrSetDown` finds the nearest store that will have it,
         // and the emptying store refuses everything, so **a load can never come straight back**.
         // *Two rules and no shuttling, rather than a second hauling system.*
+        // ⛔⛔ AND THEY SAY SO (D768, Joe: "im seeing people bounce back and forth"). This walked them off under their
+        // last state, so its continuation was that state's: Gargard kept "going in to get warm", the warmth rule saw a man
+        // already coming in with a little cold, and turned him round at his door every tick of a winter. Every errand sets
+        // its state before its first step; this one did not.
         if (villager.CanWork && PlanEmptying(world, villager) is StoreBuilding clearing)
         {
+            villager.State = VillagerState.ClearingAStore;
             Travel(world, villager, clearing.Position, VillagerState.ClearingAStore);
             return;
         }
@@ -3119,6 +3174,21 @@ public sealed partial class BehaviorSystem : ISimSystem
         // life, so it is not the household's half-larder errand and the market does not stock it.
         if (TryFetchAHandcart(world, villager))
         {
+            return;
+        }
+
+        // ⭐ A PUPIL GOES TO SCHOOL, AND A TEACHER TEACHES (D754, `school-and-education.md §12` step 1) — after the
+        // household's errands, a coat and a cart, before anybody's trade: a pupil has no trade, and a teacher's is this.
+        // A day at a time: the walk, a lesson of `school_lesson_ticks`, the walk home — the smith's day, nothing made.
+        if (villager.IsPupil && world.FindWorkplace(villager.SchoolId) is Workplace school && !school.IsSite)
+        {
+            GoToSchool(world, villager, school, VillagerState.AtSchool);
+            return;
+        }
+
+        if (villager.CanWork && job is { Kind: JobKind.Teacher, IsSite: false })
+        {
+            GoToSchool(world, villager, job, VillagerState.Teaching);
             return;
         }
 
@@ -4017,7 +4087,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         if (workplace is not null)
         {
-            TakeTheArmfulThatSentThem(world, villager, workplace, world.Config.CarryCapacity);
+            TakeTheArmfulThatSentThem(world, villager, workplace, SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity));
         }
 
         if (!villager.IsCarrying)
@@ -4060,7 +4130,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // armful takes first the good the stores hold least of against the player's own number
         // for it; a good with no limit keeps its place after them, in id order, which is what
         // keeps a village with no limits byte-identical.
-        int room = world.Config.CarryCapacity;
+        int room = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
         List<Goods> order = OrderToPickUp(world, at, villager.Carried.Slots);
         for (int i = 0; i < order.Count && room > 0; i++)
         {
@@ -4832,7 +4902,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </remarks>
     private static void TakeALoadOutOf(SimWorld world, Villager villager, StoreBuilding store)
     {
-        int room = world.Config.CarryCapacity;
+        int room = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
 
         for (int g = 0; g < world.GoodsCatalog.Count && room > 0; g++)
         {
@@ -4860,7 +4930,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // ⭐ THE CART IS WHAT A CART BUYS (`handcart.md §5`, Slice H): with the household's handcart in their hands the trip
         // carries `cart_armfuls` armfuls — D668's shopping walk was consumption ÷ armful, and this is the one term the
         // village could change. `carry_capacity` is untouched (D537); the arms are still the arms.
-        int load = config.CarryCapacity * (PushingTheHouseholdsCart(villager) ? config.CartArmfuls : 1);
+        int load = SchoolGives.Load(config, villager, config.CarryCapacity) * (PushingTheHouseholdsCart(villager) ? config.CartArmfuls : 1);
 
         // Whatever store they are actually standing at, rather than a plan made
         // before they set off — the village may have changed while they walked.
@@ -5268,7 +5338,7 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static void LoadForTheRound(SimWorld world, Villager villager)
     {
         // The cart's load out of a buffer or a dead larder (`handcart.md §13.3`), the counter's rule.
-        int load = world.Config.CarryCapacity * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
+        int load = SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity) * (villager.CartForTheWorks ? world.Config.CartArmfuls : 1);
 
         // Standing at a storehouse: the counter's own load (§14.8, D197).
         for (int i = 0; i < world.StoreBuildings.Count; i++)
@@ -5605,6 +5675,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        if (onArrival is VillagerState.AtSchool or VillagerState.Teaching)
+        {
+            BeginALesson(world, villager, onArrival);
+            return;
+        }
+
         if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing or VillagerState.Making)
         {
             BeginBatches(world, villager, onArrival);
@@ -5857,6 +5933,26 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
     }
 
+    /// <summary>To the school, or straight into a lesson when already there (D754).</summary>
+    private static void GoToSchool(SimWorld world, Villager villager, Workplace school, VillagerState lesson)
+    {
+        if (villager.Tile == school.Tile)
+        {
+            BeginALesson(world, villager, lesson);
+            return;
+        }
+
+        villager.State = VillagerState.WalkingToSchool;
+        Travel(world, villager, school.Position, lesson);
+    }
+
+    /// <summary>A lesson at the school (D754) — a pupil's or a teacher's, <c>school_lesson_ticks</c> long.</summary>
+    private static void BeginALesson(SimWorld world, Villager villager, VillagerState lesson)
+    {
+        villager.State = lesson;
+        villager.ActionTicksRemaining = world.Config.SchoolLessonTicks;
+    }
+
     /// <summary>The first forge of a stint at the smithy (D391).</summary>
     private static void BeginForging(SimWorld world, Villager villager)
     {
@@ -5874,7 +5970,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </summary>
     private static bool TryFetchACoat(SimWorld world, Villager villager)
     {
-        if (!villager.CanWork || villager.CoatDays > 0 || villager.IsCarrying)
+        // ⭐ From coat_from_age (D767: a child of five walks to school), not only past childhood (D659).
+        if (!villager.Alive || villager.AgeYears < world.Config.CoatAge || villager.CoatDays > 0 || villager.IsCarrying)
         {
             return false;
         }
@@ -6861,7 +6958,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // quotes and which already counts the village's technique.
                 perTrip = world.WithTool(villager, JobKind.Forager, perTrip);
 
-                int yield = perTrip * villager.Vigour / 100;
+                // ⭐ AND A GRADUATE'S BASKET IS FULLER (D761) — on what her strength brought, so an old graduate is both.
+                int yield = SchoolGives.Load(world.Config, villager, perTrip * villager.Vigour / 100);
 
                 // ⚠️ AND THE FLOOR OF ONE APPLIES TO VIGOUR, NOT TO THE GROUND. An old
                 // gatherer still brings something back; a hut with no trees in its ring
@@ -6957,7 +7055,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                         // ground is painted by the player and may hold a seam, and the test
                         // meant the seam was spent for nothing — the clearing path's bug, in
                         // the second of the two felling paths D133 already found drifting.
-                        int carried = fromTheTile * villager.Vigour / 100;
+                        // ⭐ A graduate carries more of it (D761) — never more than the tile held.
+                        int carried = Math.Min(fromTheTile, SchoolGives.Load(world.Config, villager, fromTheTile * villager.Vigour / 100));
                         carried = carried < 1 ? 1 : carried;
                         villager.Carried.Receive(felled, carried);
                         LeaveTheRestOnTheGround(world, tile, felled, fromTheTile - carried);
@@ -6974,7 +7073,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // Read from the config rather than from `world.TreeStand`, which is deleted
                 // with the stands (slice 5). It was always just `cut_yield` in a wrapper —
                 // one stand's worth, read by every forester in the village.
-                int wood = world.Config.CutYield * villager.Vigour / 100;
+                int wood = SchoolGives.Load(world.Config, villager, world.Config.CutYield * villager.Vigour / 100);
                 if (wood < 1)
                 {
                     wood = 1;
@@ -7297,7 +7396,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
                 Workplace? face = WorkplaceOf(world, villager);
                 bool anotherFits = villager.Carried[good] + OneDig(world, villager, trade)
-                    <= world.Config.CarryCapacity;
+                    <= SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity);
                 if (face is not null
                     && anotherFits
                     && villager.DigsThisStint < pace.FaceDigsPerStint
@@ -7397,6 +7496,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             case VillagerState.Sewing:
             case VillagerState.Making:
                 FinishABatch(world, villager);
+                return;
+
+            // A lesson is a day's (D754): then home, as the smith goes home after a stint.
+            case VillagerState.AtSchool:
+            case VillagerState.Teaching:
+                villager.State = VillagerState.TravelingHome;
                 return;
 
             default:

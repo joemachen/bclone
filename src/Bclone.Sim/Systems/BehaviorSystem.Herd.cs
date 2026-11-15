@@ -86,7 +86,7 @@ public sealed partial class BehaviorSystem
                     return true;
                 }
 
-                int armful = Math.Min(world.Config.CarryCapacity, store.Store[Goods.Hay]);
+                int armful = Math.Min(SchoolGives.Load(world.Config, villager, world.Config.CarryCapacity), store.Store[Goods.Hay]);
                 if (armful <= 0 || !store.Store.TryTake(Goods.Hay, armful))
                 {
                     Decide(world, villager);

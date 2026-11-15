@@ -1,8 +1,16 @@
-# Handoff — bclone: **▶️ PHASE 5, WITH AN EXIT GATE (D641) — NEXT, SYSTEMS: THE EXIT GATE ITSELF, AT JOE'S WORD (D743, *"go with phase 5 exit gate"*). `main` = THE GREEN GROUND (A67–A70) OVER REAL HEIGHTS (D742), PUSHED AT HIS WORD (A71, `origin/main` = 637ad86; the A71 and D743 docs commits after it unpushed). ALL FIVE OF THE ART LANE'S SYSTEMS ASKS BUILT, MERGED AND PUSHED (D725–D742). NO BRANCH OPEN BUT `art`, LEVEL WITH `main`.**
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), UNPLAYED, NOT PUSHED (`origin/main` = a1faeb2). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. NO BRANCH OPEN BUT `art`.**
+
+> **⛳ WHERE THINGS ARE, 2026-11-15 (D769) — THE SCHOOL MERGED INTO `main` AT JOE'S WORD (*"Yes, both"*), `slice/school` DELETED;
+> NOT PUSHED.** Seventeen commits, D752–D768, unplayed — Joe's walk is `school-and-education.md §12.8`. The thirty untracked
+> duplicates in `art/concept art/` were deleted first, at his word (all thirty matched `main` by `git hash-object`).
+> - **The four checks on the merged tree:** **Four checks on the merged tree:** suite **2047 / 0 / 5 of 2052 in 16m18**; view build 0 warnings (`--no-incremental`); probe 159 `[widths]` lines (157 on the slice — the art lane's two came with `main`), 120 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, coat ✅, school ✅, zone fill ✅ 2.9 ms, `done.`; goldens 418 → 418, identical to the slice — **none moved**.
+> - **`art` is now behind `main` by the school** — the art lane merges `main` in at its next approved piece, as always.
+> - *(The title read "PHASE 5, WITH AN EXIT GATE … NEXT, SYSTEMS: THE EXIT GATE ITSELF" from D743 to D768 — stale through the
+>   gate's merge and the whole school; corrected D769.)*
 
 > **⭐ PHASE 6 ORDERED (D750, 2026-11-14; Joe: *"Yes, write it"*), DOCS ONLY:** the school → water as a need → morale → beer →
 > health (diet first) → drought, fire and blight → the town hall's tabs → warm clothing (optional) — `DESIGN.md §4`. A Phase 6
-> exit gate is **proposed** there — ✅ **accepted as written (D751)**. **Next for systems: the school, at Joe's word.** Nothing claimed.
+> exit gate is **proposed** there — ✅ **accepted as written (D751)**. **Next for systems: the school, at Joe's word.** Nothing claimed. *(⛔ stale from D752 — the school was claimed, built and merged, D769.)*
 >
 > **⛳ PUSHED AT JOE'S WORD (D749, 2026-11-14: *"Push main"*): `origin/main` 637ad86..2667ede** — D743 and the gate's merge are on
 > origin; the line below saying *not pushed* is left as written and corrected here. *(This record's own commit is local.)*
@@ -9475,6 +9483,89 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAPS D769 PAID FOR — UNTRACKED COPIES BLOCK A CHECKOUT, AND BOTH LANES APPEND TO §7
+
+- **Untracked files that `main` has committed stop `git checkout main`** ("would be overwritten"): Joe's thirty concept-art
+  images were committed on `art` and merged, while the originals still sat untracked in the systems checkout. **Before
+  deleting, prove each is a copy**: `git rev-parse "main:$f"` against `git hash-object "$f"` for every file — and ask Joe,
+  since they are his. Never `git clean` a folder on a guess.
+- **A systems merge after an art merge always conflicts at §7's tail** — both lanes append there. Keep both, the lane
+  already on `main` first; every entry is a line of its own, so nothing needs rewording.
+
+## ⛔ THE TRAP D768 FOUND — AN ERRAND THAT DOES NOT SET ITS STATE INHERITS THE LAST ONE'S WALK
+
+- **`Decide`'s clearing errand called `Travel` without `villager.State = …` first** (since D389), so the villager walked
+  under whatever they were doing before — and each tick's continuation is the *state's* case, not the errand's. With
+  *going in to get warm* that made a one-tick bounce at the door all winter (Joe's Gargard); with *resting* it read as
+  resting on the card while walking to a store. **Every `Travel` that starts an errand needs its state set first** — grep
+  `Travel(world, villager, ` in `Decide` for one without a `State =` above it.
+- **The way in was his save, not a guess**: `tools/harness/ZzJoesSave.cs`'s shape with a per-tick trace, then a temporary
+  stack trace inside `Travel` for one named villager (restored from a copy). Three plausible suspects were all wrong.
+
+## ⛔ THE TRAPS D767 PAID FOR — A RESTORE WITH TWO MATCHES, AND A BUILD UNDER JOE'S GAME
+
+- **A mutant's restore anchor can match twice once the mutant is in**: reverting the clothing want to `!villager.CanWork`
+  made its line identical to two others in `LabourQuota`, so `mutate.py` refused the restore (ANCHOR COUNT 2) — safely,
+  but the file stayed mutated until restored by its surrounding lines. **Choose a mutant that leaves its line unique, or
+  restore with context.**
+- **The view was built into the game folder while a Godot was running** (probably Joe's game). It went through — a running
+  game keeps the assemblies it loaded — but the rule stands: `tasklist | grep -i godot` before building, and `-o` to the
+  scratchpad for a compile check while he plays.
+
+## ⛔ THE TRAP D764 PAID FOR — A POSE THE VILLAGE UNDOES BEFORE THE RULE IS ASKED
+
+- **"The homes come first" first scored zero**: posed with five logs in a store and the homes short, a household fetched
+  the five before the school's next beat, so the store was empty and the gate was never what refused the school. Re-posed
+  **one log short with the store full** — a store-to-home fetch leaves a shortfall where it is — and the guard also asks,
+  at the end, that the homes are still short. **A pose is a moment; ask whether the village moved it before the rule ran.**
+
+## ⛔ THE TRAPS D761 PAID FOR — ONE HELPER, FOURTEEN SITES; AND A SAVING THE VILLAGE SPENDS
+
+- **Fuller loads is read at fourteen places through one helper (`SchoolGives.Load`), and only the helper and the gather site
+  are guarded.** Reverting the household's store fetch to `carry_capacity` scored **zero** — kept, and written down. A new
+  place a villager's load is set must read the helper, or a graduate carries an ordinary armful there and nothing says so:
+  grep `CarryCapacity` and `* villager.Vigour / 100` for the sites.
+- **A labour saving in a slack village is spent, not banked.** Fuller loads saved no walking (walk-years flat) — the
+  village grew instead. Measure a time-saving benefit by what the village becomes (peak, born, strength-weighted work),
+  not by the time it was meant to save.
+- **Renumbered before writing the log:** D759 was in the uncommitted code when D760 (Joe's painting bug) took the next
+  commit; the school's entry became D761 so §7 stays in order. grep the working tree for a number before committing it.
+
+## ⛔ THE TRAP D760 FOUND — A DERIVED SHAPE REBUILT PER STROKE IS REBUILT PER FRAME WHILE THE MOUSE IS HELD
+
+- **`ZoneMap.Edits` made the zone trace "once per stroke, never per frame" — and a stroke comes every frame while the player
+  paints.** The trace's comment said *"the trace is milliseconds"*; it was, until a village's residential area reached
+  2,200 outline points and D352's ear clipping (about n²) took 125–312 ms of it. **"Rebuilt only when it changes" is only
+  cheap if the rebuild is cheap at the size a late village reaches** — time it at that size (the probe's `zone fill:` poses
+  4,363 points), not at a brush's.
+- ⚠️ A felling, a site and a fence also re-trace everything (`TraceTheZonesIfTheyMoved`'s keys) — the strip fill makes that
+  cheap too, but the whole-map sub-tile scan (7.5 ms on his save) is still rebuilt each time. Debt, not yet a bug.
+
+## ⛔ THE TRAP D758 PAID FOR — A POSED AGE WITHOUT ITS LIFE STAGE IS ASKED BEFORE THE RULE IS
+
+- **`SchoolTests.AStaffedSchool` posed ages on founders and left them adults, and a labour pass runs inside the pose**
+  (`OnlyOneTradeWorks`) — so an "eleven-year-old" was enrolled there as an adult, before the rule about children was ever
+  asked, and the new guard scored **zero** against putting `CanWork` back. Fixed by setting `LifeStage` from
+  `AgeingSystem.StageForAge` with the age. **A pose is a state, not a field: change the age and change what the age
+  decides.** And a mutant that passes with the DLL rebuilt (check its timestamp) is the test's fault, not the build's.
+
+## ⛔ THE TRAPS D755 PAID FOR — A NEW TRADE AND BUILDING TOUCH EVERY HAND-TYPED CATALOGUE, AND A SELF-CORRECTING FAULT HIDES
+
+- **A new built-in trade or building breaks every test that types the catalogue out by hand** (`ModdedJobTests`,
+  `ModdedBuildingTests`, `WorkshopTests.UsesToolAndMadeFromRoundTripThroughJson` — 13 reds for one row each). The loader is
+  right to refuse a catalogue missing a built-in id; the fix is the row in each fixture, the modder's example moved up one
+  id (the boatman, 17 → 18), and the counts bumped. Grep `"name": "carpenter"` to find them all.
+- **The skill system's `_ => throw` on an unclassified state is a guard, not a nuisance**: every new `VillagerState` must say
+  whether it is work. A walk to teach is; a pupil's day is not.
+- **An order by "term left" ties for everyone who has not started** — every new pupil has the whole term ahead. Sort by
+  what actually differs (years before leaving age) before what usually ties.
+- **A fault the next tick undoes is invisible to a state check**: a full-term pupil re-enrolled is sent away by the term
+  system the very next tick, so `IsPupil` reads false either way. The symptom is churn — count the log lines.
+- **A save round trip cannot catch a field left out of the hash** — both sides lack it, so they agree. Ask the fingerprint
+  directly: change the field, the hash must move.
+- **The view's `EarnedYet` falls through to `_ => true`**: every new learned building needs its arm and its latch, or it
+  lights a tab at the founding (the workshop's lesson, D678, met again).
+
 ## ⛔ THE TRAP D747 FOUND — "ALL FINE" IS A VERDICT ON WHAT WAS LOOKED AT; THE LOG SAYS WHAT THAT WAS
 
 - **Read the walk's log before writing the walk down.** Joe's first *"All fine"* covered a late village carrying on; the
@@ -10188,7 +10279,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ✅ **PHASE 6'S EXIT GATE — ACCEPTED AS WRITTEN (D751, *"Accept as written"*)**; *(it read "proposed (D750), Joe's to accept, trim or replace")*. `DESIGN.md §4`, the end of Phase 6: D641's five items and a sixth, every pressure telegraphed, legible and answerable. And **the school is next** (`school-and-education.md`, specced D209, not started) — at his word, on its own `slice/`, claimed here first.
+- ✅ **PHASE 6'S EXIT GATE — ACCEPTED AS WRITTEN (D751, *"Accept as written"*)**; *(it read "proposed (D750), Joe's to accept, trim or replace")*. `DESIGN.md §4`, the end of Phase 6: D641's five items and a sixth, every pressure telegraphed, legible and answerable. And **the school is next** (`school-and-education.md`, specced D209, not started) — at his word, on its own `slice/`, claimed here first. **🔨 being built on `slice/school` (2026-11-14, Joe: *"Start the school"*) — first the spec re-read against today's code, then his calls.** ✅ **Re-read (D752): `school-and-education.md §11`. ⏸️ Five calls with Joe (§11.3), each with a recommendation; nothing built.** ✅ **Calls 2–3 (D753): school gives A, full strength longer, and B, reads the year (§11.4). ⏸️ Calls 1, 4 and 5 still his.** ✅ **Calls 1, 4, 5 (D754, *"Yes, all three"*); §12 the order of work — step 1 next.** ✅ **Step 1 built (D755, `school-and-education.md §12.1`). ⚠️ Debt: `SchoolLearned` is saved but NOT hashed until step 5 (every golden raises the library gift) *(✅ paid D766 — hashed; and the reason was wrong: no golden moved, an unattended village never raises its gifted library)*; the youngest-first order is this build's, Joe's to overrule. Step 2 next: A and B behind sizes at zero.** ✅ **Step 2 built at size nought (D756, §12.2). Step 3 next: `tools/harness/ZzSchool.cs`, the numbers to Joe.** 📏 **Step 3 measured (D757, §12.3). ⏸️ Two calls with Joe: the school does not pay at any size tried (61 work-years a century against 5–21 back); and it is open ground in winter. Sizes stay 0 until he answers.** 📏 **Two-year term, 11–13, measured (D758, §12.4): `school_starting_age` (shipped 12); the cost falls to a third (22 against 61); A 15 + B 80 come within 10 of paying. ⏸️ Joe: which material benefit (fuller loads, banking the fire, a gentler old age, the head start, C), then the winter call.** ✅ **Joe: *"Fuller loads + old age"* — built at size nought and measured (D761, §12.5): loads 25 % +21 over no school, 50 % +48; old age inside the noise in a century. ⏸️ Joe: the sizes (recommended loads 25, old age 20, B 80, the term 11–13) and the winter call.** 📏 **The mix measured (D762): +36 over no school. ⏸️ Joe: type it as shipped, and the winter call.** ✅ **Shipped (D763, *"Yes, ship it"*): 11–13, loads 25, old age 20, B 80 in `data/sim.config.json`. ⏸️ Joe: the school in winter.** ✅ **Warm (D764, *"Warm, burns firewood"*, §12.6): a roof, a fire while staffed with wood in its pile; 12 a winter, kept from the nearest store once the homes are covered; in the woodcutters' want. Shelter days 2,009 → 1,356. ✅ Step 4 built (D765, §12.7) — the school's card, the villager's SCHOOL section, the ask for another school, probe `school:`; ⏳ unplayed. Next: step 5 — hash `SchoolLearned` (`SchoolsAreFull` stays unhashed, narration bookkeeping), re-take the goldens once if they move, the four checks, then Joe plays. ✅ **Step 5 done (D766, §12.8): the latch hashed, no golden moved. ⏳ The slice is built and unplayed — Joe's walk is in `school-and-education.md §12.8`; then the merge, at his word.** ✅ **Seven years, 5–12, and coats from five (D767, §12.9): one teacher +33, two −5 in a harness village.** ✅ **Merged into `main` at Joe's word (D769, *"Yes, both"*), unplayed; the branch deleted; not pushed.** Step 4 as it was listed: the view (the build bar's school, *"14 of 20 places taken"*, the teacher's row, the villager card's sentences — *"carries a full basket"* among them, or fuller loads is an invisible multiplier — the tree node, the "build another school" ask), then step 5.**
 - ⏸️ **PHASE 5'S EXIT GATE — NEXT FOR SYSTEMS, AT JOE'S WORD (D743, 2026-11-14: *"go with phase 5 exit gate"*).** Accepted as written in D641 (its ✅ line below). **🔨 being built on `slice/phase5-gate` (2026-11-14).** ✅ **Built (D744): items 1, 2 and 4 hold; ⏸️ Joe's to do — walk `specs/phase-5-qa-checklist.md` (`.\run.bat`), say *"walked"* with any ❌ lines; Claude scans his logs for `ERROR`; then merge at his word.** ✅ **Walked (D747): *"All fine"*, *"Top-up items all look good"*; logs 0 `ERROR`. ⏸️ Only the merge is left — his word.** ⛳ **✅ MERGED (D748, *"Merge"*) — Phase 5 closed; not pushed.**
 - ✅ **B2/B3 ANSWERED (D725, Joe, 2026-11-11: *"2d map only."*) — the 2D drawn map is the shipped look; there is no 3D front end.** B2 (D68's *Foundation* or a 2D drawn map) is a 2D drawn map; B3 (Phases 7–8's `src/Bclone.Game3D`) is withdrawn, and §4's Phase 7 is rewritten to *mods, and release*. So the buildings the art lane paints next are the game's art. ⚠️ **For the art lane's next commit:** `art-inventory.md §1`'s B2 and B3 rows still read ⏸️ / *Roadmap* — its file, not the systems lane's. ⚠️ **For the heights line below:** with no 3D view, real heights show only as shading or relief on the flat map, and in what they do in the sim — Joe is asked whether he still wants them, and for what, before a spec.
 - ⏸️ **🔨 being specced on `art` — YOUNG TREES (A50, 2026-11-11, `tree-sprites.md §10`, Joe's *"Young trees"*): painted saplings for sapling tiles, in place of two grown trees shrunk; ✅ ALL THREE AS RECOMMENDED (A51); 🔨 BUILT on `art` (A51); ⭐ APPROVED (A52, *"everything about saplings looks great"*); MERGED into `main` (A55, `630f296`) and PUSHED (A56, `origin/main` = `7c46c6e`). Was for his eyes: `.\run.bat`, tick *paint the valley in watercolour*, find a forester's planting or a cleared wood growing back, and look again after Skip 1y for autumn and winter.** **🔨 being specced on `art` — TREE SPRITES (A29, 2026-11-10, `specs/tree-sprites.md`): THE CONCEPT'S TREES, PAINTED, IN PLACE OF THE

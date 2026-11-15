@@ -117,6 +117,10 @@ internal static class LabourAllocator
         }
 
         Match(world, quota, before);
+
+        // ⭐ The school's places after the teachers are seated (D754): places are teachers at work, so the roll must follow
+        // the match that seats them, or a reshuffle would empty every school it had just staffed.
+        SchoolRoll.Roll(world);
         ExplainTheIdle(world, quota, shedThisPass: null);
         NarrateChanges(world, before);
 
@@ -146,6 +150,7 @@ internal static class LabourAllocator
         MakeRoomForPins(world, quota);
         List<int> shed = ShedSurplus(world, quota);
         Match(world, quota, previousWorkplaces: null);
+        SchoolRoll.Roll(world);
         ExplainTheIdle(world, quota, shed);
         SayWhoTookOver(world, leftByTheDead, workingBefore);
     }
@@ -349,7 +354,9 @@ internal static class LabourAllocator
         for (int v = 0; v < world.Villagers.Count; v++)
         {
             Villager villager = world.Villagers[v];
-            if (!villager.CanWork || villager.HasJob)
+
+            // A pupil is at school, not looking for work (D754).
+            if (!villager.CanTakeAJob || villager.HasJob)
             {
                 continue;
             }
@@ -365,6 +372,12 @@ internal static class LabourAllocator
             // ⚠️ It does not force them INTO their trade — the quota floor above makes the seat
             // wanted, and the ordinary cost-first match then fills it with the person who is
             // available for it, which by this line is them. **The village still picks the hut.**
+            // ⭐ A teacher is past school age (D754): a twelve-year-old is not offered the class they would sit in.
+            if (kind == JobKind.Teacher && villager.AgeYears < world.Config.SchoolLeavingAge)
+            {
+                continue;
+            }
+
             if (villager.IsPinned && villager.PinnedTrade != kind)
             {
                 continue;
@@ -1148,6 +1161,10 @@ internal static class LabourAllocator
 
         // The herdsman after the baker, then the merchant, as the quota takes hands (D593, D594).
         JobKind.Herdsman, JobKind.Merchant,
+
+        // The teacher after the merchant (D754): only ever the player's number, so where it sits matters only when hands
+        // run short — and then the trades that feed the village come first.
+        JobKind.Teacher,
         JobKind.Marketer, JobKind.Builder,
     };
 

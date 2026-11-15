@@ -72,7 +72,8 @@ green after; the coat test inverted → red (1 of 1). The rule itself is unchang
 Every living villager past childhood — working-age and elders, the carriers included, because walking
 is outdoors (D53: *"walking is outdoors, always"*) and the market trip is a winter walk. **Children do
 not count**: they stay by the hearth in winter, and a coat on a child protects nobody. Joe: *"Every
-adult."*
+adult."* *(⛔ amended D767 — Joe: *"children start wearing clothes at 5"*: children walk to school from five, so
+`coat_from_age` (5 shipped; unset is `adult_age`) is when a villager first fetches one and counts in the tailor's want.)*
 
 ### 3.3 The coat on the villager
 `Villager.CoatDays` — the winter days left in the coat, **0 = no coat** — is `ToolUses`' exact shape
