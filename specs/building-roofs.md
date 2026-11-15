@@ -1,6 +1,6 @@
 # Building roofs — the village's buildings painted, seen straight down (A85)
 
-> **Status: ✅ MERGED INTO `main` AND PUSHED (A88, 2026-11-15; built on `art`, A85).** Behind the watercolour tick;
+> **Status: ✅ MERGED INTO `main` AND PUSHED (A88, 2026-11-15; built on `art`, A85), PLAYED (A89: *"cart and yards look good"*).** Behind the watercolour tick;
 > with it off the map is byte-identical to the build before. Art lane (CLAUDE.md *Two tracks*). Nothing in the sim,
 > `data/` or `tests/` changes.
 
