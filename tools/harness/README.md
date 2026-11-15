@@ -57,6 +57,11 @@ against a number from an older commit.
   and the woodcutter's hut stood, the first split, firewood in reach / the burn on each winter's first day (Years 1–5),
   houses standing and logs felled at Winter, Year 1, cold deaths by year, and the woodcutters wanted / given and farmers
   given at each season turn (Years 1–3). `ZZ_ARMS`, `ZZ_SEEDS` narrow it. Copy in, `--filter ZzFirstWinter`, delete.
+- `ZzWell.cs` + `well.py` — D777's trace of D428's question (`water-need.md §2a`): a well at Year 3 (§9.12f's pose, its stone
+  given), `ZZ_WELL=1`, `ZZ_TRIP` = `water_trip_every_days`, `ZZ_NOISE=n` (every stock limit +n, the noise arm), `ZZ_STATES=1`
+  (the ZZT time budget, `school.py --states`). `well.py <base-arm> <files>` prints each arm and **the paired difference in alive
+  against the base arm with its standard error** — the noise of a perturbed run, which one noise arm cannot give. Six arms run
+  in parallel as six `dotnet test --no-build` processes after one Release build. Copy in, run, delete.
 - `ZzFoodChain.cs` + `foodchain.py` — D521's anchors for the food chain (`specs/food-chain.md §8.1`), measured before
   any of it exists: wheat and forage per seat-year held, when cumulative reaped wheat reaches 1k/2k/5k/10k, wheat held
   in stores, and the lockstep share (two adults of one household carrying the same hunger). Arms: `every` (free farm,

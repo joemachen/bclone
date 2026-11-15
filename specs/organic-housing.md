@@ -727,7 +727,9 @@ founding (just past the opening's paint). Alive / starved:
 - ⭐ **The building costs nothing; the trips do, about in proportion to how often.** Every 10 days
   is 21 shipped villagers below main — four times the noise — and every 20 is within it. An
   ablation (the trip offered only at `Decide`'s rest, not `GoHome`'s) read the same (145), so it is
-  **not** the job-holder's idle moment; the mechanism is unproven (an adult off on a 20-tick walk
+  **not** the job-holder's idle moment; the mechanism is unproven *(⛔ void — it does not reproduce: re-measured on 100
+  valleys with a noise arm, every 5, 10 and 20 days are within the noise; the trip's hours come out of rest, D777,
+  `water-need.md §2a`)* (an adult off on a 20-tick walk
   when work comes back is the hypothesis).
 - ⚠️ **Where the as-played well stands, the lane is mostly the village's own.** Worn tiles within
   three of the well: 13.9 with the trips off, 14.2 at every 10 days. The trips wear a lane of their
