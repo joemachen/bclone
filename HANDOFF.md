@@ -9475,6 +9475,16 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D760 FOUND — A DERIVED SHAPE REBUILT PER STROKE IS REBUILT PER FRAME WHILE THE MOUSE IS HELD
+
+- **`ZoneMap.Edits` made the zone trace "once per stroke, never per frame" — and a stroke comes every frame while the player
+  paints.** The trace's comment said *"the trace is milliseconds"*; it was, until a village's residential area reached
+  2,200 outline points and D352's ear clipping (about n²) took 125–312 ms of it. **"Rebuilt only when it changes" is only
+  cheap if the rebuild is cheap at the size a late village reaches** — time it at that size (the probe's `zone fill:` poses
+  4,363 points), not at a brush's.
+- ⚠️ A felling, a site and a fence also re-trace everything (`TraceTheZonesIfTheyMoved`'s keys) — the strip fill makes that
+  cheap too, but the whole-map sub-tile scan (7.5 ms on his save) is still rebuilt each time. Debt, not yet a bug.
+
 ## ⛔ THE TRAP D758 PAID FOR — A POSED AGE WITHOUT ITS LIFE STAGE IS ASKED BEFORE THE RULE IS
 
 - **`SchoolTests.AStaffedSchool` posed ages on founders and left them adults, and a labour pass runs inside the pose**

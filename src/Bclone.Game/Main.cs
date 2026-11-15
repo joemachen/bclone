@@ -579,6 +579,7 @@ public partial class Main : Control
         GD.Print(_map.TheNomadsWalkInFromTheEdge());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
+        GD.Print(ZoneOutline.AVillageSizedFillIsQuick());
         GD.Print(_map.ATracedOutlineLandsOnItsOwnRectangle());
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));

@@ -131,7 +131,11 @@ is tile-shaped; only the *decision about where* got finer.
   the paint back or demolishing the farm turns the field to grass and clears the crop; a home is sited
   only on a tile painted in full (`SubTileZoneTests`). ⚠️ The field drawn as the paint (D352) is view-only and
   has no test — the probe's `fields:` line asserts the stalks stay inside their tile and `zone outlines:` that the fill tiles its polygon to 1.000 with no overlap (the Delaunay facets, D352); Joe's eyes are
-  the check on the edge.
+  the check on the edge. **⭐ The fill is level strips since D760** (Joe: *"painting areas is very slow/choppy"*): D352's
+  ear clipping cost the square of the outline's points and re-ran on every brushful — 125–312 ms a stroke on his
+  2,200-point residential area. `ZoneOutline.Fill` now sweeps the loops' edges in level strips and pairs them even-odd
+  (holes need no bridge), exact and near-linear; the probe's `zone fill:` line poses a 4,363-point area (792 ms before,
+  ⛔; 3 ms after) and asks it under 20 ms and tiled to 1.000.
 - ⛔ **Red-check every guard and count the reds** (D326), and **watch the suite's wall-clock** —
   sixteen times the zone array is the kind of change that shows up there first (D329, D331).
 
