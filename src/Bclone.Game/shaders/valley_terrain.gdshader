@@ -169,6 +169,16 @@ uniform float snow_year = 0.0;
 uniform vec3 snow_dust = vec3(0.45, 0.22, 0.2);
 uniform vec4 snow_drift = vec4(0.35, 0.75, 0.35, 0.13);
 uniform vec2 snow_drift_gain = vec2(1.35, 0.12);
+// ⭐ The snow settling by the land's shape (A77, Joe: "the snow on the map should 'contour' the map heights/depths in a way
+// that shows it settling in a 'natural' way"): snow_land x the snow line (the high ground whitens first, so the snow's edge
+// follows the heights and the thaw draws it back uphill), y the steep banks shedding it, z the drift's painted edge (px either
+// side of the contour), w how much of the drift is that edge rather than A76's soft field; snow_relief x how quickly a slope
+// turned from the light washes toward the snow's cool shadow colour (at snow_shadow_strength — A41's cool shadows, now read
+// off the land, not the patch noise; a mix toward a colour, never a grey: A67), y the contour brush showing through the
+// snow, z the pool where the ground's wash meets the snow — the wash's own pigment gathered at its edge as it dried, so the
+// snow's edge is drawn along the land's contours.
+uniform vec4 snow_land = vec4(0.0, 0.0, 2.5, 0.0);
+uniform vec3 snow_relief = vec3(0.0);
 uniform float hill_lip_strength = 0.8;
 uniform float hill_lip_width_share = 0.8;
 uniform sampler2D river_table : hint_default_black, filter_linear, repeat_disable;
@@ -569,10 +579,12 @@ void fragment() {
 
         vec3 grass = grass_recolor_srgb(m, tile_uv, season, grass_jitter);
         vec3 colour = ground * mix(vec3(1.0), grass, strength);
+        float brush_here = 0.0;
         if (green_on) {
             // The brush in the wash, on all the land; the tuft marks on the grass only, off the steep banks (the
             // hachures' ground), under the snow.
-            colour *= 1.0 + brush_strength * (1.0 - kinds.a) * valley_brush(tile, brush_dir);
+            brush_here = valley_brush(tile, brush_dir);
+            colour *= 1.0 + brush_strength * (1.0 - kinds.a) * brush_here;
             if (tuft_strength > 0.0) {
                 float marks = valley_tufts(tile, brush_dir) * covered * (1.0 - smoothstep(0.2, 0.5, hill.g));
                 colour = mix(colour, ink_srgb, tuft_strength * marks);
@@ -657,21 +669,34 @@ void fragment() {
             float snow_lit = dot(snow_normal, snow_light) - snow_light.z;
             float frost = smoothstep(0.0, snow_dust.x, snow_amount)
                 * (snow_dust.y + snow_dust.z * (0.7 * at_value_noise(tile, 150u) + 0.3 * at_value_noise(tile / 0.4, 151u)));
+            // The height's share of the valley's span, low ground 0, high 1 (A77's snow line).
+            float rise = clamp((hill.r - green_levels.x) / max(green_levels.y - green_levels.x, 1.0), 0.0, 1.0);
             float land_t = 0.5 + snow_drift.x * clamp(hill.b, -0.75, 0.75) + snow_drift.y * clamp(snow_lit, -0.25, 0.25)
-                + snow_drift.z * (threshold - 0.5);
-            float drift = smoothstep(land_t - snow_drift.w, land_t + snow_drift.w,
-                snow_amount * snow_peak * snow_drift_gain.x - snow_drift_gain.y);
+                + snow_drift.z * (threshold - 0.5) - snow_land.x * (rise - 0.5) + snow_land.y * hill.g;
+            float above = snow_amount * snow_peak * snow_drift_gain.x - snow_drift_gain.y - land_t;
+            // The drift's edge on its contour, a few pixels wide at every zoom (A77), over A76's soft bleed; its distance in
+            // screen pixels from the field's own slope.
+            float above_px = fwidth(above);
+            // Feathered into the paper's fibres, about two and a half screen pixels across, as the pen's edge is.
+            float edge_at = above / max(above_px, 1e-5) + 1.6 * (at_value_noise(tile * px_per_tile / 2.5, 92u) - 0.5);
+            float drift = mix(smoothstep(-snow_drift.w, snow_drift.w, above),
+                smoothstep(-snow_land.z, snow_land.z, edge_at), snow_land.w);
             float cover = max(frost, drift) * terrain_snow_off_water(kinds.a);
             // Trodden (A72): the snow lies thinner on a track, so the network still reads in winter.
             cover *= 1.0 - path_snow_clear * path_inside;
-            colour = terrain_snow(colour, snow_srgb, cover, snow_blend);
-
-            // Cool shadows in the snow (A41): a drift is deep where the threshold is low, so where the field rises toward the
-            // light (up-left) the snow's surface falls away from it — the drift's lee, washed blue-grey.
-            if (snow_shadow_strength > 0.0) {
-                float lee = clamp((threshold - terrain_snow_threshold(tile - vec2(0.45), snow_patch_tiles)) * 6.0, 0.0, 1.0);
-                colour = mix(colour, colour * snow_shadow_srgb, snow_shadow_strength * lee * cover);
+            // The pool just outside the drift's painted edge (A77), on the ground's side; none where the field is too flat to
+            // have an edge.
+            if (snow_relief.z > 0.0 && above_px > 1e-4) {
+                float pool = 1.0 - smoothstep(0.0, 1.4, abs(edge_at + snow_land.z + 1.0));
+                colour *= 1.0 - snow_relief.z * pool * (1.0 - kinds.a);
             }
+
+            colour = terrain_snow(colour, snow_srgb, cover, snow_blend);
+            // The land's relief on the snow (A77): a slope turned from the light cool, and the brush along the contours.
+            float turned = clamp(-snow_lit * snow_relief.x, 0.0, 1.0);
+            colour = mix(colour, snow_shadow_srgb, snow_shadow_strength * cover * turned);
+            colour = mix(colour, snow_shadow_srgb, snow_relief.y * cover * max(-brush_here, 0.0) * (1.0 - kinds.a));
+
         }
 
         // The ink (A27–A28): a pen stroke on the river's bank — over the snow, so the map still reads in winter, and under

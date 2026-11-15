@@ -431,33 +431,93 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public Vector2 SnowDriftGain { get; set; }
 
-    /// <summary>The falling flakes (§3.3): a cell a flake, tiles, far layer and near.</summary>
+    /// <summary>
+    /// The snow settling by the land's shape (§3.2, A77): x the snow line — the drifts' threshold lowered by this much from
+    /// the valley's lowest ground to its highest, so the high ground whitens first and the snow's edge follows the heights;
+    /// y steep banks shed it — the threshold raised by this much on a steep tile; z the drift's painted edge, px either side
+    /// of its contour at every zoom; w how much of a drift is that edge rather than the soft field (<see cref="SnowDrift"/> w).
+    /// </summary>
     [Export]
-    public Vector2 SnowflakeCellTiles { get; set; }
+    public Vector4 SnowLand { get; set; }
 
-    /// <summary>A flake's radius on screen, px, far and near: constant at every zoom.</summary>
+    /// <summary>
+    /// The land's relief on the snow (§3.2, A77): x how quickly a slope turned from the light washes toward the snow's cool
+    /// shadow colour with its tilt (as far as <see cref="SnowShadowStrength"/>), y the brush along the contours showing
+    /// through the snow, z the pool where the ground's wash meets the drifts.
+    /// </summary>
     [Export]
-    public Vector2 SnowflakeSizePx { get; set; }
+    public Vector3 SnowRelief { get; set; }
 
-    /// <summary>A flake's strength, far and near, at the heaviest fall.</summary>
+    /// <summary>The falling crystals (§3.3, A77): a cell a crystal, tiles.</summary>
     [Export]
-    public Vector2 SnowflakeAlpha { get; set; }
+    public float SnowflakeCrystalCellTiles { get; set; }
 
-    /// <summary>The share of cells that hold a flake at the heaviest fall.</summary>
+    /// <summary>A crystal's arm length: x in tiles, held between y and z px on screen (under y px a tile's worth it fades).</summary>
     [Export]
-    public float SnowflakeShare { get; set; }
+    public Vector3 SnowflakeCrystalSize { get; set; }
 
-    /// <summary>The near flakes' drift, tiles a second (x across, y down the map); the far ones drift at 0.7 of it.</summary>
+    /// <summary>The share of cells that hold a crystal at the heaviest fall.</summary>
     [Export]
-    public Vector2 SnowflakeDrift { get; set; }
+    public float SnowflakeCrystalShare { get; set; }
 
-    /// <summary>A flake's colour.</summary>
+    /// <summary>A crystal's strength at the heaviest fall.</summary>
+    [Export]
+    public float SnowflakeCrystalAlpha { get; set; }
+
+    /// <summary>The fine specks between the crystals: a cell a speck, tiles.</summary>
+    [Export]
+    public float SnowflakeSpeckCellTiles { get; set; }
+
+    /// <summary>A speck's radius on screen, px, least and most.</summary>
+    [Export]
+    public Vector2 SnowflakeSpeckSizePx { get; set; }
+
+    /// <summary>The share of cells that hold a speck at the heaviest fall.</summary>
+    [Export]
+    public float SnowflakeSpeckShare { get; set; }
+
+    /// <summary>A speck's strength at the heaviest fall.</summary>
+    [Export]
+    public float SnowflakeSpeckAlpha { get; set; }
+
+    /// <summary>
+    /// A flake's life, seconds of the flakes' clock: a crystal's fall (x) and settle (y), a speck's (z, w). Each life goes a
+    /// whole number of times into the clock's wrap, or the flakes would jump there.
+    /// </summary>
+    [Export]
+    public Vector4 SnowflakeLife { get; set; }
+
+    /// <summary>The wind the flakes fall on, tiles a second.</summary>
+    [Export]
+    public Vector2 SnowflakeWind { get; set; }
+
+    /// <summary>At the top of a fall: how much larger a flake is drawn (x), how far its shadow lies from it, tiles (y).</summary>
+    [Export]
+    public Vector2 SnowflakeRise { get; set; }
+
+    /// <summary>How fast a crystal turns as it falls, radians a second.</summary>
+    [Export]
+    public float SnowflakeSpin { get; set; }
+
+    /// <summary>A flake's body.</summary>
     [Export]
     public Color SnowflakeColour { get; set; }
 
-    /// <summary>A flake's faint cool rim, so it reads on snow as on grass; its alpha is the rim's share of the flake's strength.</summary>
+    /// <summary>The cool wash pooled at a crystal's edge, its bloom, and a speck's rim.</summary>
     [Export]
-    public Color SnowflakeRim { get; set; }
+    public Color SnowflakeWash { get; set; }
+
+    /// <summary>A crystal's ink; its alpha is the ink's strength.</summary>
+    [Export]
+    public Color SnowflakeInk { get; set; }
+
+    /// <summary>The crystal's pen width, px.</summary>
+    [Export]
+    public float SnowflakeInkPx { get; set; }
+
+    /// <summary>A flake's shadow on the ground; its alpha is the shadow's strength as the flake lands.</summary>
+    [Export]
+    public Color SnowflakeShadow { get; set; }
 
     /// <summary>Below this many pixels a tile the flakes fade out.</summary>
     [Export]

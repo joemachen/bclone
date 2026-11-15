@@ -1,7 +1,8 @@
 # Spec: Snowfalls — snow you can see falling, lying on the land as it falls
 
-**Status:** ✍️ **SPECCED AND 🔨 BUILT on `art` (A76, 2026-11-14)** at Joe's *"Build it"* on a mock; ⏸️ for his eyes in his
-own game; not merged. Art lane, view only. Neighbours: `terrain-shader.md` (the snow's first build, A4, A9, A23, A41 — §5.3's
+**Status:** ✍️ **SPECCED AND 🔨 BUILT on `art` (A76, 2026-11-14)** at Joe's *"Build it"* on a mock; **reworked at his first
+look in his own game (A77, the same day)** — the flakes fall into the valley, are drawn crystals, and the snow lies by the
+land's shape; ⏸️ for his eyes again; not merged. Art lane, view only. Neighbours: `terrain-shader.md` (the snow's first build, A4, A9, A23, A41 — §5.3's
 *"falling snow, not in this slice"* is this), `green-ground.md` (the land the drifts read), `painted-paths.md` (the tracks
 the snow lies thin on).
 
@@ -28,6 +29,7 @@ passed a fixed noise threshold — 3-tile patches with a hard edge. Asked what b
 | 1 | When should snow fall? Snowfalls (a few a year) / only while it lays / gently all winter | ***"Snowfalls"*** (recommended) |
 | 2 | Rain too? | ***"Snow first, rain later"*** (recommended): rain is its own later piece on the same layer |
 | 3 | The mock (`D:\Projects\brushes\snow\snow_options.jpg`, `snowfall.gif`): today against the proposal on his Hollowmere | ***"Build it"*** |
+| 4 | A76 in his own game (A77) | ***"its snowing for the player, not the village"*** (the flakes slid down the screen); ***"apply our existing parchment/watercolor style to the snowflakes and design them and vary them somewhat"*** (with a plate of crystal drawings); ***"the snow on the map should 'contour' the map heights/depths in a way that shows it settling in a 'natural' way"*** |
 
 ⛔ **Stays out:** anything that hides the village (§1.1, legibility); weather in the sim; the trees' winter look (still the
 calendar's crossfade, A41 — a later piece if it reads out of step with the falls).
@@ -42,26 +44,53 @@ end. **Between falls the ground holds.** **The thaw** runs from winter's day 22 
 founding are never snowy. The days, lengths and shares are a hash of the world's seed and the year: every year differs, and a
 replayed save snows on the same days. A pure function of the tick; the sim is untouched.
 
-### 3.2 How it lies
+### 3.2 How it lies — settling by the land's shape (A77)
 
-- **A frost first:** an even, gently uneven veil over the whole valley (whole by 0.45 of the winter's snow, at 0.22–0.42
-  strength), so the first fall dusts everything rather than dropping blobs.
-- **Then drifts, read off the land:** each place's threshold is lower in a hollow (the green ground's crest channel below
-  zero) and on a slope turned from the light (the green ground's own light), higher on a crest and a lit slope, with the
-  year's patch noise as a smaller part, shifted each year. So hollows and shaded slopes fill first and crests and sunny
-  slopes last; the thaw clears them in that order reversed. Soft edges.
-- **The peak** stays A26's *patchy* (`SnowPeak` 0.75): at mid-winter the sunniest crests can still show.
-- **Kept:** the tracks lie thinner (A72), the river's winter rim and darkening (by the snow lying), the drifts' cool lee
-  (A41), the fields whiten with the ground (now by the snow lying, not the calendar).
+- **A frost first:** an even veil over the whole valley (whole by 0.45 of the winter's snow, at 0.22–0.32 strength), so the
+  first fall dusts everything rather than dropping blobs.
+- **Then drifts, read off the land** — each place's threshold:
+  - **the snow line (A77):** lower on the valley's high ground and higher on its low ground (`SnowLand` x, across the green
+    ground's height span), so the heights whiten first, the snow's edge follows the land's contours down toward the river,
+    and the thaw draws it back uphill;
+  - lower in a hollow (the green ground's crest channel below zero), higher on a crest;
+  - lower on a slope turned from the light, higher on a lit one;
+  - **higher on a steep bank (A77):** the banks shed it (`SnowLand` y), so the hachures and lips read through;
+  - the year's patch noise only a small part now (0.12, from 0.35), shifted each year.
+- **The drift's edge is painted (A77):** a few pixels wide on its contour at every zoom (`SnowLand` z, w), feathered into the
+  paper's fibres as the pen's edge is, over A76's soft bleed; and **the ground's wash pools just outside it** (`SnowRelief`
+  z) — the pigment gathered at a wash's edge as it dried — so where the snow stops is drawn as a line along the land.
+- **The land's relief on the snow (A77):** a slope turned from the light washes toward the snow's cool shadow colour with its
+  tilt (`SnowRelief` x, at A41's `SnowShadowStrength`), and the brush along the contours shows through the snow (`SnowRelief`
+  y). ⛔ A mix toward a colour, never a grey (A67). **A41's cool lee is replaced:** it was read off the patch noise, so it lay
+  as cloud-shaped blotches unrelated to the land; the same colour and strength now come from the land.
+- **The peak** stays A26's *patchy* (`SnowPeak` 0.75): at mid-winter the lowest ground by the river and the sunniest crests can
+  still show.
+- **Kept:** the tracks lie thinner (A72), the river's winter rim and darkening (by the snow lying), the fields whiten with the
+  ground (by the snow lying, not the calendar).
 
-### 3.3 What falls
+### 3.3 What falls — into the valley, not down the screen (A77)
 
-A see-through layer over the map, shown only while a fall is falling: one hashed flake a cell in two depths, small and
-constant on screen (radius 1.2 and 1.9 px), pale with a faint cool rim so a flake reads on snow as well as on grass, sparse
-(at most 55 % of cells, scaled by how hard it falls, easing in and out of each fall). **World-anchored:** the cells drift
-slowly across the land with a light sway and move with the map when it pans. **Its clock** runs at the game's speed but at
-most twice real time, so at 10–20× the flakes never streak (a fall then lasts about a second); paused, they hold still.
-Faded out when the valley is small on screen (under 8 px a tile).
+The map is seen straight down (A31), so **a flake falls away from the eye**, not down the screen (A76's flakes slid down
+it: *"snowing for the player, not the village"*). A see-through layer over the map, shown only while a fall is falling.
+
+- **A flake's life:** born high, it falls (5 s for a crystal, 3.5 s for a speck, on the flakes' clock), then settles (1 s),
+  fading into the snow lying, and is drawn anew somewhere else in its cell. High, it is drawn larger (×1.6) and softer, and
+  **its shadow lies on the ground 1.3 tiles toward the lower right** — the valley's own light comes from the upper left. As
+  it falls it shrinks and sharpens, drifts a little on the wind (0.1 tiles a second, eastward), turns slowly, and **its shadow
+  closes in under it**; where they meet it has landed. The shadow is a soft cool blot, faint and wide while the flake is high,
+  firmer as it lands.
+- **Crystals, painted as the map is painted:** sparse (at most 30 % of 2.4-tile cells), six-armed, in **six designs after the
+  old crystal plates Joe sent** — stellar, fern (three pairs of branches), tipped (a plate at each arm's end), sectored plate,
+  plate and star, broad-branched — each jittered in its arm width, branches and plates. A paper-white body with the paper's
+  tooth, a cool wash pooled at its edge and a faint bloom of it round the crystal, a thin cool ink line round it and along its
+  inner ridges and rings that swells and lifts as the bank's pen does. Arm 0.3 tiles, held between 5 and 12 px on screen; under
+  5 px's worth a tile (about 17 px a tile) the crystals fade out and only specks fall.
+- **Specks between them:** many fine soft dots (at most 45 % of 0.9-tile cells, radius 1–1.6 px), white with the wash's cool
+  rim, each with its own small shadow.
+- **World-anchored:** they move with the map when it pans. **Their clock** runs at the game's speed but at most twice real
+  time, so at 10–20× the flakes never streak (a fall then lasts about a second); paused, they hold still. Each life goes a
+  whole number of times into the clock's hour-long wrap, so nothing jumps there. Faded out when the valley is small on screen
+  (under 8 px a tile).
 
 ## 4. How
 
@@ -76,6 +105,7 @@ Faded out when the valley is small on screen (under 8 px a tile).
   uniforms each frame from the valley's turn of `_Draw` (how hard, the zoom, where the land is, the clock). Visible only
   with the tick on and snow falling, so it costs nothing otherwise. Its clock steps in `TickTheFlowClock`.
 - **Values:** `looks/valley_watercolour.tres` (`Snow*`, `Snowflake*`, `SnowfallPaceCap`). First values, for Joe's eyes.
+  The flakes' values reach the layer from one list, `VillageMap.FlakeValues`, which the probe asks too (A77).
 
 ## 5. Limits
 
@@ -89,7 +119,8 @@ Faded out when the valley is small on screen (under 8 px a tile).
   falling after winter's day 20; the ground never thinner before the thaw and still between falls; whole as the thaw starts,
   clear by the year's end; every year's schedule its own; the same tick the same answer. The flakes' layer shows mid-fall with
   the tick on, not with nothing falling, not with the tick off, and is hidden the moment the tick goes off; the lying and the
-  falling handed over; every flake uniform declared by the compiled shader; the look's values on both layers.
+  falling handed over; every flake uniform declared by the compiled shader; the look's values on both layers (A77: every
+  `FlakeValues` entry, and `snow_land`, `snow_relief`); each flake's life a whole number of times into the clock's wrap.
 - Watercolour off byte-identical at four zooms against the build before.
 - Renders of his Hollowmere through a winter beside the mock he picked, and a snowfall in motion.
 - Red-check: every guard, the reds counted, the zeros written down.
@@ -122,3 +153,18 @@ land; the renders are their evidence.
 - The trees' winter look still turns on the calendar (A41), so they can go bare before a late first fall whitens the ground.
 - Rain: his *"later"*, on the same layer.
 - Every `Snow*` value is a first value, for his eyes.
+
+**A77, 2026-11-14 — reworked at his first look** (§2 call 4). Changed: `shaders/snowfall.gdshader` rewritten (the flakes'
+lives, their shadows, the six crystal designs painted in ink and wash, the specks); `valley_terrain.gdshader` (the snow line,
+the banks shedding, the painted drift edge and its pool, the land's relief on the snow; A41's noise-read lee removed; two
+uniforms); `VillageMap.Snowfall.cs` (`FlakeValues`, one list for the hand-over and the probe; the life check);
+`VillageMap.Watercolour.cs` (the uniform list); `ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (18
+`Snowflake*` values for A76's 8; `SnowLand`, `SnowRelief`; `SnowDrift`, `SnowDust`, `SnowShadowStrength` retuned). Nothing in
+`Bclone.Sim`, `tests/` or `data/`.
+
+**Verified.** Probe 118 ✅ 0 ⛔, `snowfall:` ✅, bar 151, tile centres and new game ✅, `done.`; view build 0 warnings. Tick off
+byte-identical to A76 at four zooms, spring and winter. Renders on his Hollowmere (`D:\Projects\brushes\snow\snow_settles.jpg`,
+`crystals_close.jpg`, `crystals_falling.gif`). Suite 2024 / 0 / 5 in 17m08; goldens 418 lines; sim, data, tests identical to
+`main`. **Red-check:** 11 mutants, 8 red of 8 guards; three draw-time zeros written down (no snow line, the shadow never
+leaving its flake, every crystal one design) — the renders are their evidence. **Cost** (4K, paired): the flakes while falling
+about +1 ms at the opening zoom, +0.4 ms closer (A76's were 0.1–0.5); nothing while none falls.

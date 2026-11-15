@@ -110,6 +110,8 @@ public partial class VillageMap
         material.SetShaderParameter("snow_dust", look.SnowDust);
         material.SetShaderParameter("snow_drift", look.SnowDrift);
         material.SetShaderParameter("snow_drift_gain", look.SnowDriftGain);
+        material.SetShaderParameter("snow_land", look.SnowLand);
+        material.SetShaderParameter("snow_relief", look.SnowRelief);
     }
 
     // ---------------------------------------------------------------
@@ -137,14 +139,11 @@ public partial class VillageMap
 
         ValleyWatercolourLook look = ValleyWatercolourLook.Current;
         var material = new ShaderMaterial { Shader = GD.Load<Shader>(SnowfallShaderPath) };
-        material.SetShaderParameter("flake_cell_tiles", look.SnowflakeCellTiles);
-        material.SetShaderParameter("flake_size_px", look.SnowflakeSizePx);
-        material.SetShaderParameter("flake_alpha", look.SnowflakeAlpha);
-        material.SetShaderParameter("flake_share", look.SnowflakeShare);
-        material.SetShaderParameter("flake_drift", look.SnowflakeDrift);
-        material.SetShaderParameter("flake_srgb", Srgb(look.SnowflakeColour));
-        material.SetShaderParameter("flake_rim", new Vector4(look.SnowflakeRim.R, look.SnowflakeRim.G, look.SnowflakeRim.B, look.SnowflakeRim.A));
-        material.SetShaderParameter("flake_fade_px", look.SnowflakeFadePxPerTile);
+        foreach ((string name, Variant value) in FlakeValues(look))
+        {
+            material.SetShaderParameter(name, value);
+        }
+
         _snowfallMaterial = material;
 
         var layer = new Control
@@ -205,12 +204,31 @@ public partial class VillageMap
     /// <summary>The flakes' clock wraps here: a whole number of every layer's cells drift past in it, so the wrap is not seen.</summary>
     private const double SnowClockPeriod = 3600.0;
 
-    /// <summary>Every uniform the map sets on the snowfall's layer — what its compiled shader must declare (trap 6).</summary>
-    private static readonly string[] SnowfallUniforms =
-    {
-        "flake_cell_tiles", "flake_size_px", "flake_alpha", "flake_share", "flake_drift", "flake_srgb", "flake_rim",
-        "flake_fade_px", "falling", "px_per_tile", "tile_origin_px", "clock_s",
-    };
+    /// <summary>The look's values for the flakes' layer, by uniform (A77): set once when the layer is built, asked by the probe.</summary>
+    private static (string Name, Variant Value)[] FlakeValues(ValleyWatercolourLook look) =>
+    [
+        ("crystal_cell_tiles", look.SnowflakeCrystalCellTiles),
+        ("crystal_size", look.SnowflakeCrystalSize),
+        ("crystal_share", look.SnowflakeCrystalShare),
+        ("crystal_alpha", look.SnowflakeCrystalAlpha),
+        ("speck_cell_tiles", look.SnowflakeSpeckCellTiles),
+        ("speck_size_px", look.SnowflakeSpeckSizePx),
+        ("speck_share", look.SnowflakeSpeckShare),
+        ("speck_alpha", look.SnowflakeSpeckAlpha),
+        ("flake_life", look.SnowflakeLife),
+        ("flake_wind", look.SnowflakeWind),
+        ("flake_rise", look.SnowflakeRise),
+        ("flake_spin", look.SnowflakeSpin),
+        ("flake_srgb", Srgb(look.SnowflakeColour)),
+        ("flake_wash_srgb", Srgb(look.SnowflakeWash)),
+        ("flake_ink", new Vector4(look.SnowflakeInk.R, look.SnowflakeInk.G, look.SnowflakeInk.B, look.SnowflakeInk.A)),
+        ("flake_ink_px", look.SnowflakeInkPx),
+        ("flake_shadow", new Vector4(look.SnowflakeShadow.R, look.SnowflakeShadow.G, look.SnowflakeShadow.B, look.SnowflakeShadow.A)),
+        ("flake_fade_px", look.SnowflakeFadePxPerTile),
+    ];
+
+    /// <summary>The uniforms the map sets each frame on the snowfall's layer.</summary>
+    private static readonly string[] SnowfallFrameUniforms = { "falling", "px_per_tile", "tile_origin_px", "clock_s" };
 
     /// <summary>
     /// ⭐ The probe's <c>snowfall:</c> line (A76, <c>snowfall.md §6</c>): the schedule, over many years and two seeds, and the
@@ -380,7 +398,7 @@ public partial class VillageMap
                     declared.Add(u["name"].AsString());
                 }
 
-                foreach (string name in SnowfallUniforms)
+                foreach (string name in SnowfallFrameUniforms.Concat(FlakeValues(look).Select(v => v.Name)))
                 {
                     if (!declared.Contains(name))
                     {
@@ -388,28 +406,34 @@ public partial class VillageMap
                     }
                 }
 
-                if (flakes.GetShaderParameter("flake_cell_tiles").AsVector2() != look.SnowflakeCellTiles
-                    || flakes.GetShaderParameter("flake_size_px").AsVector2() != look.SnowflakeSizePx
-                    || flakes.GetShaderParameter("flake_alpha").AsVector2() != look.SnowflakeAlpha
-                    || flakes.GetShaderParameter("flake_share").AsSingle() != look.SnowflakeShare
-                    || flakes.GetShaderParameter("flake_drift").AsVector2() != look.SnowflakeDrift
-                    || flakes.GetShaderParameter("flake_srgb").AsVector3() != Srgb(look.SnowflakeColour)
-                    || flakes.GetShaderParameter("flake_fade_px").AsSingle() != look.SnowflakeFadePxPerTile)
+                string[] off = FlakeValues(look).Where(v => GD.VarToStr(flakes.GetShaderParameter(v.Name)) != GD.VarToStr(v.Value)).Select(v => v.Name).ToArray();
+                if (off.Length > 0)
                 {
-                    faults.Add("a flake value on the layer is not the look file's");
+                    faults.Add($"a flake value on the layer is not the look file's: {string.Join(", ", off)}");
                 }
             }
 
             if (ground is null
                 || ground.GetShaderParameter("snow_dust").AsVector3() != look.SnowDust
                 || ground.GetShaderParameter("snow_drift").AsVector4() != look.SnowDrift
-                || ground.GetShaderParameter("snow_drift_gain").AsVector2() != look.SnowDriftGain)
+                || ground.GetShaderParameter("snow_drift_gain").AsVector2() != look.SnowDriftGain
+                || ground.GetShaderParameter("snow_land").AsVector4() != look.SnowLand
+                || ground.GetShaderParameter("snow_relief").AsVector3() != look.SnowRelief)
             {
                 faults.Add("a drift value on the ground's layer is not the look file's");
             }
 
             // The look snows: flakes that never fill a cell, a pace cap, a thaw over by the end of winter, a window before it.
-            if (look.SnowflakeShare <= 0f || look.SnowflakeShare > 1f || look.SnowfallPaceCap <= 0f || look.SnowfallPaceCap > 4f
+            // Each flake's life a whole number of times into the clock's wrap (else every flake jumps there, once an hour).
+            static bool Whole(float life) => life > 0f && Math.Abs((SnowClockPeriod / life) - Math.Round(SnowClockPeriod / life)) < 1e-6;
+            if (!Whole(look.SnowflakeLife.X + look.SnowflakeLife.Y) || !Whole(look.SnowflakeLife.Z + look.SnowflakeLife.W)
+                || look.SnowflakeLife.X <= 0f || look.SnowflakeLife.Z <= 0f || look.SnowflakeLife.Y <= 0f || look.SnowflakeLife.W <= 0f)
+            {
+                faults.Add($"a flake's life {look.SnowflakeLife} does not go a whole number of times into the clock's {SnowClockPeriod} s");
+            }
+
+            if (look.SnowflakeCrystalShare <= 0f || look.SnowflakeCrystalShare > 1f || look.SnowflakeSpeckShare <= 0f || look.SnowflakeSpeckShare > 1f
+                || look.SnowfallPaceCap <= 0f || look.SnowfallPaceCap > 4f
                 || look.SnowThaw.X + look.SnowThaw.Y > 4.0001f || look.SnowFallWindow.Y > look.SnowThaw.X || look.SnowFallWindow.X >= look.SnowFallWindow.Y)
             {
                 faults.Add($"{ValleyWatercolourLook.Path} does not snow as §3 says: the flakes' share, the pace cap, the thaw over by winter's end, or the window before the thaw");

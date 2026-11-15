@@ -1804,7 +1804,7 @@ public partial class VillageMap
         "paths_on", "path_map", "path_field_range", "path_worn_srgb", "path_packed_srgb", "path_halo_srgb", "path_halo_tiles",
         "path_halo_strength", "path_mottle", "path_rim", "path_ruts", "path_wobble_tiles", "path_pen_strength",
         "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear",
-        "snow_year", "snow_dust", "snow_drift", "snow_drift_gain",
+        "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief",
     };
 
     /// <summary>
