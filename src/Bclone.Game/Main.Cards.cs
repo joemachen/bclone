@@ -181,6 +181,8 @@ public partial class Main
         public required VBoxContainer CoatSection { get; init; }
         public required ProgressBar CoatBar { get; init; }
         public required Label CoatText { get; init; }
+        public required VBoxContainer SchoolSection { get; init; }
+        public required Label SchoolText { get; init; }
         public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
         public required VBoxContainer SkillsSection { get; init; }
         public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
@@ -1515,6 +1517,13 @@ public partial class Main
                 card.Records.Text = "Open the post's window";
                 card.Records.Visible = true;
             }
+            else if (place.Kind == JobKind.Teacher)
+            {
+                // ⭐ THE SCHOOL SAYS ITS PLACES (D765, §6: *"14 of 20 places taken"*) — and who waits, and its stove (D764).
+                WriteSchoolCard(card, new SchoolFacts(
+                    world.SayTheSchool(place), world.SchoolPlacesAt(place) > 0, world.SchoolPupilsAt(place),
+                    world.SchoolPlacesAt(place), world.ChildrenWaitingForSchool));
+            }
         }
 
         card.PeopleScroll.Visible = false;
@@ -1526,6 +1535,81 @@ public partial class Main
         card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
             : place.IsSite ? "a building site" : Workers(world, place);
         return true;
+    }
+
+    /// <summary>What the school's card says (D765) — read from the sim once, written by <see cref="WriteSchoolCard"/>.</summary>
+    private readonly record struct SchoolFacts(string Sentence, bool Teaching, int Pupils, int Places, int Waiting);
+
+    private static void WriteSchoolCard(Card card, SchoolFacts f)
+    {
+        Status(card, working: f.Teaching, f.Sentence);
+        Number(card, 1, $"{f.Pupils} / {f.Places}", "pupils · places");
+        Number(card, 2, $"{f.Waiting}", f.Waiting == 1 ? "child waiting" : "children waiting");
+    }
+
+    /// <summary>
+    /// <c>school:</c> — the school's card posed through its writer (<i>"14 of 20 places taken"</i>, fits the card), and a
+    /// villager's SCHOOL section on the real world: a graduate's says what school gave her in words (fuller loads at the
+    /// shipped size — D207's invisible multiplier is why), and one who never went shows none.
+    /// </summary>
+    private string TheSchoolIsSaid()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+
+        string sentence = "14 of 20 places taken — 3 children of school age wait for a place. The stove is lit.";
+        if (WithAPosedCard(card =>
+            {
+                WriteSchoolCard(card, new SchoolFacts(sentence, true, 14, 20, 3));
+                ForceUpdateTransform();
+                return card.Status.Text != sentence ? $"its status reads \"{card.Status.Text}\""
+                    : card.Values[1].Text != "14 / 20" ? $"its places read \"{card.Values[1].Text}\""
+                    : card.Keys[2].Text != "children waiting" ? $"its waiting reads \"{card.Keys[2].Text}\""
+                    : card.Panel.GetCombinedMinimumSize().X > CardWidth + 1f ? $"it widens to {card.Panel.GetCombinedMinimumSize().X:F0}"
+                    : null;
+            }) is string schoolFault)
+        {
+            faults.Add("the school's card: " + schoolFault);
+        }
+
+        Villager? adult = world.Villagers.FirstOrDefault(v => v.Alive && v.CanWork && !v.IsPupil);
+        if (adult is null)
+        {
+            return "[widths] school: ⛔ nobody alive to have been to school";
+        }
+
+        int before = adult.SchoolTicks;
+        string graduate = string.Empty;
+        try
+        {
+            foreach ((int pose, bool shown) in new[] { (world.Config.SchoolTermTicks, true), (0, false) })
+            {
+                adult.SchoolTicks = pose;
+                OpenCard(new CardSubject(CardKind.Villager, adult.Id));
+                Card card = _selectedCard!;
+                string said = card.Person.SchoolText.Text;
+                if (card.Person.SchoolSection.Visible != shown)
+                {
+                    faults.Add($"with {pose} ticks at school the SCHOOL section is {(shown ? "hidden" : "shown")}");
+                }
+                else if (shown && (!said.Contains("at the school", StringComparison.Ordinal)
+                    || (world.Config.SchoolCarryPercent > 0 && !said.Contains("fuller load", StringComparison.Ordinal))))
+                {
+                    faults.Add($"a graduate's card says \"{said}\" — not what school gave her");
+                }
+
+                graduate = shown ? said : graduate;
+                CloseCard(card);
+            }
+        }
+        finally
+        {
+            adult.SchoolTicks = before;
+        }
+
+        return faults.Count == 0
+            ? $"[widths] school: ✅ the school's card reads 14 / 20 places and 3 waiting, and fits; a graduate's card says \"{graduate}\"; one who never went shows no SCHOOL"
+            : $"[widths] school: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>What the barn's card says — read from the sim once, written by <see cref="WriteBarnCard"/>.</summary>
@@ -1879,6 +1963,12 @@ public partial class Main
                 : $"No coat: open ground chills {villager.Name} at the open's rate, a roof at the roof's. A tailor's shop sews coats from leather; any adult fetches one from a store.";
         }
 
+        // ---- SCHOOL (D765, `school-and-education.md §6`): *"Spent two years at the school — carries a fuller load…"* ----
+        // ⛔ The sentence is what keeps fuller loads from being an invisible multiplier (D207): what school gave, in words.
+        string? schooling = world.SayTheSchooling(villager);
+        p.SchoolSection.Visible = schooling is not null;
+        p.SchoolText.Text = schooling ?? string.Empty;
+
         // ---- NEEDS: what the sim already knows, read out (D431 — no new mechanics) ----
         // ⭐ FULL, AND JOE'S SENTENCE IS ITS TOOLTIP (D522, `food-chain.md §9` call 5): a meal of bread holds
         // hunger off, and the card says what filled them and for how long — one hover away, as the work
@@ -2189,6 +2279,12 @@ public partial class Main
         coatSection.AddChild(coatRow);
         box.AddChild(coatSection);
 
+        // ⭐ SCHOOL (D765): a pupil's year, or a graduate's years and what they gave — the sim's sentence, wrapped.
+        VBoxContainer schoolSection = Section("SCHOOL");
+        Label schoolText = Wrapped(Body(string.Empty));
+        schoolSection.AddChild(schoolText);
+        box.AddChild(schoolSection);
+
         VBoxContainer needsSection = Section("NEEDS");
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
@@ -2231,6 +2327,8 @@ public partial class Main
             CoatSection = coatSection,
             CoatBar = coatBar,
             CoatText = coatText,
+            SchoolSection = schoolSection,
+            SchoolText = schoolText,
             Needs = needs,
             SkillsSection = skillsSection,
             Skills = new(),

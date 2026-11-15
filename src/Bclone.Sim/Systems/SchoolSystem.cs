@@ -140,19 +140,12 @@ internal static class SchoolRoll
             }
         }
 
-        if (free.Count == 0)
-        {
-            return;
-        }
-
         var candidates = new List<(int YearsLeft, int TermLeft, int Cost, int VillagerId, int SchoolId)>();
         for (int v = 0; v < world.Villagers.Count; v++)
         {
             Villager child = world.Villagers[v];
             // ⭐ By age alone (D758): below adult_age a pupil is a child, who works at nothing anyway.
-            if (!child.Alive || child.IsPupil || child.IsPinned
-                || child.AgeYears < config.SchoolStartingAge || child.AgeYears >= config.SchoolLeavingAge
-                || child.SchoolTicks >= config.SchoolTermTicks)
+            if (!MayTakeAPlace(config, child))
             {
                 continue;
             }
@@ -189,7 +182,32 @@ internal static class SchoolRoll
             Enrol(world, child, free[slot].School);
             free[slot] = (free[slot].School, free[slot].Free - 1);
         }
+
+        // 3. ⭐ Who is still waiting, while a school stands — the village asks for another by name (D765, §6).
+        bool aSchoolStands = false;
+        for (int w = 0; w < world.Workplaces.Count && !aSchoolStands; w++)
+        {
+            aSchoolStands = world.Workplaces[w] is { Kind: JobKind.Teacher, IsSite: false };
+        }
+
+        int waiting = 0;
+        for (int v = 0; v < world.Villagers.Count && aSchoolStands; v++)
+        {
+            Villager child = world.Villagers[v];
+            if (MayTakeAPlace(config, child))
+            {
+                waiting++;
+            }
+        }
+
+        world.AskForAnotherSchoolIfFull(waiting);
     }
+
+    /// <summary>Who may take a place: of school age, within the term, not at school already, and not kept on a trade.</summary>
+    private static bool MayTakeAPlace(SimConfig config, Villager child) =>
+        child.Alive && !child.IsPupil && !child.IsPinned
+        && child.AgeYears >= config.SchoolStartingAge && child.AgeYears < config.SchoolLeavingAge
+        && child.SchoolTicks < config.SchoolTermTicks;
 
     /// <summary>A school's places: its teachers at work times <c>school_places_per_teacher</c>; none for a site.</summary>
     internal static int PlacesAt(SimWorld world, Workplace school) =>

@@ -277,6 +277,78 @@ public sealed class SchoolTests
         Assert.Equal(config.SchoolWinterFirewood, LabourQuota.FirewoodShortfall(world) - LabourQuota.HomesFirewoodShortfall(world));
     }
 
+    // ---------------------------------------------------------------
+    //  Step 4 — what the school says (D765, §6)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void TheSchoolSaysItsPlacesAndAsksForAnotherOnce()
+    {
+        var sink = new InMemoryLogSink();
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+        world.LearnTheSchool();
+        Workplace school = FoodChainTests.RaiseA(world, BuildingKind.School);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        List<Villager> living = world.Villagers.Where(v => v.Alive).OrderBy(v => v.Id).ToList();
+        int[] ages = { 12, 13, 14 };
+        for (int i = 0; i < ages.Length; i++)
+        {
+            living[i + 1].AgeYears = ages[i];
+            living[i + 1].LifeStage = AgeingSystem.StageForAge(ages[i], living[i + 1].Vigour, config);
+        }
+
+        FoodChainTests.OnlyOneTradeWorks(world, JobKind.Teacher);
+        loop.Step(config.TicksPerDay);
+        Assert.False(world.Clock.IsWinter, "the pose wanted a season without the stove's sentence");
+
+        // Two places, three children: the card says so, and the village asks once — naming the cheaper answer, the empty seat.
+        Assert.Equal("2 of 2 places taken — a child of school age waits for a place.", world.SayTheSchool(school));
+        Assert.Equal(1, world.ChildrenWaitingForSchool);
+        LogEntry asked = Assert.Single(sink.Entries, e => e.Message.Contains("no place at school", StringComparison.Ordinal));
+        Assert.Contains($"another teacher at {school.Name}", asked.Message, StringComparison.Ordinal);
+
+        loop.Step(config.LabourSlackTicks * 3);
+        Assert.Single(sink.Entries, e => e.Message.Contains("no place at school", StringComparison.Ordinal));
+
+        // Nobody teaching: the card says how places come.
+        world.SetJobLimit(JobKind.Teacher, 0);
+        loop.Step(config.LabourSlackTicks + 1);
+        Assert.StartsWith("Nobody teaches here", world.SayTheSchool(school), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ASchoolingIsSaidInWords()
+    {
+        SimConfig config = Config with { SchoolCarryPercent = 25, SchoolOldAgePercent = 20, SchoolHeedPercent = 80 };
+        (SimLoop loop, Workplace school, Villager teacher) = AStaffedSchool(config, 12);
+        SimWorld world = loop.World;
+        loop.Step(config.TicksPerDay);
+
+        Villager pupil = Assert.Single(SchoolRoll.PupilsAt(world, school.Id));
+        Assert.Equal($"At {school.Name} — in the first of four years.", world.SayTheSchooling(pupil));
+
+        int term = config.SchoolTermTicks;
+        teacher.SchoolTicks = term;
+        Assert.Equal("Spent four years at the school — carries a fuller load, will age more gently, and goes in from the cold "
+            + "by the length of the walk to a fire.", world.SayTheSchooling(teacher));
+
+        // A quarter of the term: a share of the first two, not yet half — so not the third.
+        teacher.SchoolTicks = term / 4;
+        Assert.Equal("Spent a year at the school before the place went — carries a fuller load and will age more gently.",
+            world.SayTheSchooling(teacher));
+
+        // Never went: nothing to say. And at nought, the years without the gifts.
+        teacher.SchoolTicks = 0;
+        Assert.Null(world.SayTheSchooling(teacher));
+        teacher.SchoolTicks = term;
+        SimLoop plain = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        Villager someone = plain.World.Villagers[0];
+        someone.SchoolTicks = Config.SchoolTermTicks;
+        Assert.Equal("Spent four years at the school.", plain.World.SayTheSchooling(someone));
+    }
+
     [Fact]
     public void AnUnstaffedSchoolHasNoPlaces()
     {

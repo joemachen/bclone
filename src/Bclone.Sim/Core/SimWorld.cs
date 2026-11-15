@@ -15172,6 +15172,7 @@ public sealed partial class SimWorld : IObstacles
             ["handcarts_ever_made"] = HandcartsEverMade,
             ["workshop_learned"] = WorkshopLearned,
             ["school_learned"] = SchoolLearned,
+            ["schools_are_full"] = SchoolsAreFull,
             ["cottage_learned"] = CottageLearned,
             ["manor_learned"] = ManorLearned,
             ["homes_built_as"] = SaveWriter.Enum(HomesBuiltAs),
@@ -15376,6 +15377,7 @@ public sealed partial class SimWorld : IObstacles
         // ⚠️ A save from before the school (D754) has no key, and may already have a library standing: the latch is the
         // library's, so it is set here from what stands rather than read as false (the knob-lowered load's shape, §4.1a).
         SchoolLearned = (save.HasValue("school_learned") && save.Bool("school_learned")) || save.Array("libraries").Count > 0;
+        SchoolsAreFull = save.HasValue("schools_are_full") && save.Bool("schools_are_full");
         CottageLearned = save.Bool("cottage_learned");
         ManorLearned = save.Bool("manor_learned");
         HomesBuiltAs = save.Enum<BuildingKind>("homes_built_as");

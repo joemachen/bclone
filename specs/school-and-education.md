@@ -5,8 +5,8 @@
 > recommended); §12 THE ORDER OF WORK; ✅ STEP 1 BUILT (D755, §12.1); ✅ STEP 2 BUILT AT SIZE NOUGHT (D756, §12.2); ✅ STEP 3 MEASURED (D757,
 > §12.3); 📏 A TWO-YEAR TERM, 11–13, MEASURED (D758, §12.4); ✅ FULLER LOADS AND A GENTLER OLD AGE BUILT AT SIZE
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
-> 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6). STEP 4, THE
-> VIEW, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6); ✅ STEP 4, THE
+> VIEW (D765, §12.7), UNPLAYED — STEP 5, SAVES, THE HASH AND THE GOLDENS, NEXT.** Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -563,6 +563,21 @@ and the school doubled the village's shelter days. Joe chose **warm**, over clos
 **In plain words:** a warm school takes **a third off the winter's shelter time** (2,009 → 1,356 — most of what the
 school had added over no school's 1,116) and the village keeps the work (+39 against +36), a few more alive at the
 century and fewer starved. Nobody more or less freezes (12.8): the frozen are still the unhoused and the hearthless.
+
+### 12.7 ✅ Step 4, the view, as built (D765) — unplayed
+
+| §12 step 4 asked | As built | Its check |
+|---|---|---|
+| The school on the build bar, once learned | step 1 (D755): `_schoolButton`, `EarnedYet`'s arm, the Knowledge tab | probe `filters:` / `bar height:` |
+| Its card — *"14 of 20 places taken"* | `SimWorld.SayTheSchool`: places taken, who waits, the stove in winter (*"The stove is lit."* / *"…is cold — the homes need the village's firewood first."*), and *"Nobody teaches here…"* unstaffed; cells **pupils · places** and **children waiting** (`WriteSchoolCard`, the barn's facts-then-write shape) | `TheSchoolSaysItsPlacesAndAsksForAnotherOnce`; probe `school:` |
+| The teacher on the professions panel | the row appears when the school is learned (`TradeKnown` reads `EarnedYet`, step 1) | probe `trades:` (teacher hidden at the founding) |
+| The villager card's sentences | a **SCHOOL** section: `SimWorld.SayTheSchooling` — *"At Northfield school — in the first of two years."*; *"Spent two years at the school — carries a fuller load, will age more gently, and goes in from the cold by the length of the walk to a fire."* — each gift named only while its size is on; *"…before the place went"* for a part term; none for anyone who never went. ⭐ **This sentence is what keeps fuller loads from being an invisible multiplier (D207).** | `ASchoolingIsSaidInWords`; probe `school:` |
+| The tree's node | the node's state is the sim's own reader (`TechTree.StateOf`, step 1); the view draws it as any node | `TheSchoolIsLearnedOnceALibraryStands`; probe `tech tree:` (every node fits) |
+| The village asking for another school by name | `SimWorld.AskForAnotherSchoolIfFull`, run by the roll: once when children of school age are first left without a place — *"…another teacher at Northfield school would bring 6 more, or build another school"* while a seat is empty, *"every school is full. Build another"* when none is — and again only after every child has had one (D42's edge, `SchoolsAreFull`, saved, not hashed) | `TheSchoolSaysItsPlacesAndAsksForAnotherOnce` |
+
+**Mutants: sim 4 / 4 red; probe 2 / 2 faults** (the places cell, the SCHOOL section hidden).
+`ChildrenWaitingForSchool` is set by each labour pass, not saved: after a load the card says nobody waits until the
+next pass (≤ 120 ticks).
 
 ## 10. Definition of Done
 

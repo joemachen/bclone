@@ -326,7 +326,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
-            "HandcartsEverMade", "WorkshopLearned", "SchoolLearned", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
+            "HandcartsEverMade", "WorkshopLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
@@ -357,6 +357,8 @@ public sealed class SaveLoadTests : IDisposable
             "_raiseRepairs",
             // The deepest generation born (D721): derived from the villagers, as the most ever alive is.
             "_deepestGenerationFor", "_deepestGeneration",
+            // Children left without a school place at the last labour pass (D765): the school roll sets it each pass.
+            "ChildrenWaitingForSchool",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {

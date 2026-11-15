@@ -541,6 +541,7 @@ public partial class Main : Control
         GD.Print(NothingUnlearnedIsOffered());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheCardSaysTheCoat());
+        GD.Print(TheSchoolIsSaid());
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWorkshopSaysWhatItMakes());
