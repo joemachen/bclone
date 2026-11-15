@@ -9507,7 +9507,7 @@ Read `git status` after staging, every time.
 ## ⛔ THE TRAP D773 PAID FOR — JOE'S GAME LOG IS NOT `godot.log`
 
 - **His village's log is `src/Bclone.Game/logs/bclone-<date>-<time>.log`** (`Main.cs`, the `FileLogSink`, every `[life]` line and
-  DEBUG behaviour, tick-stamped). `%APPDATA%\Godotpp_userdataclone\logs\godot.log` holds only frame timings and skips, and
+  DEBUG behaviour, tick-stamped). `%APPDATA%\Godot\app_userdata\bclone\logs\godot.log` holds only frame timings and skips, and
   `logs/run_*.log` in the repo is `run.bat`'s console in UTF-16. A save holds no narration at all (`moments` is empty). Grepping
   `godot.log` for the school found nothing and nearly read as *"the walk never happened"*. **Copy the newest `bclone-*.log` with the
   saves before reading either.**
