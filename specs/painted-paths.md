@@ -4,7 +4,7 @@
 the pen lightened at his word (A73, §7); ⭐ **MERGED INTO `main` AT HIS WORD (A74, 2026-11-14: *"Yes, merge it"*,
 `2d84c53`)** and **PUSHED** (A75, `origin/main` = `b88e37a`). 🔨 **The trampled trail (§3.5) BUILT on `art` (A82)** at Joe's
 *"Build it"* on a mock after his concept sheet 08; played (*"Looks good"*) and ✅ **merged into `main` at his word (A83, merge
-`2b41cb5`)**; not pushed. Art lane. View only: where a path runs, how it wears and what it costs are the
+`2b41cb5`)** and **pushed** (A84, `origin/main` = `a1faeb2`). Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
