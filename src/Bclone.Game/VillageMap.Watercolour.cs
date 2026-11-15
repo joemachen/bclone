@@ -116,6 +116,9 @@ public partial class VillageMap
     /// <summary>The river clock's frame step: real seconds times the game's speed (A46) while the village runs and the water moves, nothing otherwise.</summary>
     private void TickTheFlowClock(double delta)
     {
+        // The flakes' clock first (A76): it runs with or without the moving water.
+        TickTheSnowfall(delta);
+
         // Not before the layer is first built: until then there is nothing to move, and the clock starts at 0 with it.
         if (Paused || !_waterMoves || _watercolourMaterial is null)
         {
@@ -510,7 +513,8 @@ public partial class VillageMap
             DrawPolyline(onScreen, FieldPooling with { A = 0.14f }, Mathf.Max(1f, _pixelsPerTile * 0.07f), antialiased: true);
         }
 
-        (float _, float snow) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        // The fields whiten with the ground (A76): the snow lying from its snowfalls.
+        float snow = TheSnowNow().Lying;
         if (snow <= 0f || TheCropPainting(0, "snow") is not CanvasTexture white)
         {
             return;
@@ -559,6 +563,12 @@ public partial class VillageMap
         if (_watercolourLayer is not null)
         {
             _watercolourLayer.Visible = on;
+        }
+
+        // The flakes (A76) show only with the tick, and only while snow falls — the valley's turn of `_Draw` says when.
+        if (_snowfallLayer is not null && !on)
+        {
+            _snowfallLayer.Visible = false;
         }
 
         // The trees' ink (A28): the canopies are meshed once and kept, so a change of ink re-meshes every chunk — once, on
@@ -1117,6 +1127,7 @@ public partial class VillageMap
         material.SetShaderParameter("hill_lip_width_share", watercolour.HillLipWidthShare);
         material.SetShaderParameter("ripple_repeat_cells", RippleRepeatCells);
         HandThePathLookOver(material, watercolour);
+        HandTheSnowLookOver(material, watercolour);
 
         // The clock's period: the grid drifts RippleRepeatCells cells in it, and a whole number of lives fit it, so the wrap
         // is not seen (§4.4). The life the shader is given is the file's, rounded to fit.
@@ -1155,6 +1166,7 @@ public partial class VillageMap
         layer.Draw += () => layer.DrawRect(new Rect2(Vector2.Zero, layer.Size), Colors.White);
         AddChild(layer);
         _watercolourLayer = layer;
+        BuildTheSnowfallLayer();
     }
 
     /// <summary>
@@ -1178,9 +1190,11 @@ public partial class VillageMap
         HandTheRiverOver(material, config);
         HandTheHillsOver(material, config);
 
-        (float season, float snow) = TheYearAt(_world.Tick + _alpha, config.TicksPerSeason);
+        (float season, float _) = TheYearAt(_world.Tick + _alpha, config.TicksPerSeason);
         material.SetShaderParameter("grass_season", season);
-        material.SetShaderParameter("snow_amount", snow);
+
+        // ⭐ The snow from its snowfalls (A76, `snowfall.md`), not the calendar's one ramp: lying to the ground, falling to the flakes.
+        HandTheSnowOver(material, TheSnowNow(), TheSnowYear());
 
         float split = _beforeAfter && valley.Size.X > 0f ? ((_splitShare * Size.X) - valley.Position.X) / valley.Size.X : -1f;
         material.SetShaderParameter("split_u", split);
@@ -1787,6 +1801,10 @@ public partial class VillageMap
         "green_grass_share", "green_wood", "brush_strength", "brush_tiles", "tuft_strength", "tuft_cell_tiles", "tuft_length_tiles",
         "tuft_share", "tuft_width_px", "tuft_fade_px", "hachure_map", "hachure_texels_per_tile", "hachure_strength",
         "hachure_width_share", "hachure_fade_px",
+        "paths_on", "path_map", "path_field_range", "path_worn_srgb", "path_packed_srgb", "path_halo_srgb", "path_halo_tiles",
+        "path_halo_strength", "path_mottle", "path_rim", "path_ruts", "path_wobble_tiles", "path_pen_strength",
+        "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear",
+        "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief",
     };
 
     /// <summary>

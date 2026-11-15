@@ -377,7 +377,9 @@ used once"*) and falling snow.
 - **Falling snow (A23, Joe asked): not in this slice.** This slice is snow lying on the ground. Snow in the air is weather
   drawn over the whole map — its own layer, its own cost, and its own questions (how thick, how often; the sim has no
   weather, so it would follow the season as the ground's snow does, never the sim). Recorded on HANDOFF's art list as a
-  later piece, his to ask for.
+  later piece, his to ask for. **→ Built as `specs/snowfall.md` (A76, Joe's *"Snowfalls"*): three or four falls a year with
+  flakes on their own layer, and the lying snow now a frost then drifts read off the land, in place of this slice's one ramp
+  and fixed patches.**
 
 ### 5.4 The build, after his answers — three pieces, one commit each, each ending at his eyes
 
