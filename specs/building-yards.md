@@ -1,6 +1,6 @@
 # Building yards, and the buildings in pen and wash (A86)
 
-> **Status: 🔨 BUILT on `art` (A86, 2026-11-15; the founders' cart §3.4, A87), ⏸️ Joe's eyes, then his word to merge.** On top of A85's roofs
+> **Status: ✅ MERGED INTO `main` AND PUSHED (A88, 2026-11-15; built on `art`, A86; the founders' cart §3.4, A87).** On top of A85's roofs
 > (`building-roofs.md`), behind the same watercolour tick; with it off the map is byte-identical to the build before. Art
 > lane (CLAUDE.md *Two tracks*). Nothing in the sim, `data/` or `tests/` changes.
 
