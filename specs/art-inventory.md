@@ -6,6 +6,11 @@
 > Companion to `content-inventory.md` (what the village *has*); this is what the village *looks like* and what stands in.
 > ⚠️ **Dated the day it was read.** A building, good or animal added after D653 is not in these tables.
 >
+> ⭐ **The art lane's order (Joe, 2026-11-15, A90): *"i want to work on villagers for the next art piece. And then the UI"*** —
+> the villagers (`villager-art.md`, specced and mocked A90), then the parchment-and-wood interface (§11). **And a running list
+> (his: *"take note of the systems work being done and all of the buildings and art pieces that will have to be created for
+> that"*) — §15, kept current from each systems spec's art section (D774's rule).**
+>
 > **Key:** ✅ finished / approved · 🟨 placeholder, drawn in code · ⬜ not drawn at all · 💭 planned, nothing in the sim yet.
 > **Blocked by** names a call in §1 (B1…B14).
 
@@ -47,7 +52,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | **B10** | **Which animals.** Kept: cattle only, one kind first (`livestock.md §0`). Wild: no species, *"no models is fine for now — but we're going to have to add models in eventually"* (`hunting.md §9`). Fish subtypes deferred (`fishing.md §10.1`). `TECH-EXAMPLE.md` names 25 species. | Open | The whole animal list. |
 | **B11** | **Fire, blight and drought** must be *telegraphed, legible on the map, and answerable* (`DESIGN.md §4`, Phase 5) and have no spec, so no visual state is designed. | 💭 Phase 5 | Burning/burnt buildings, blighted fields, dry ground. |
 | **B12** | **A villager has no picture, on purpose** (D431, `the-cards.md §2a`). | ✅ Decided | Villager portraits — none needed unless reopened. |
-| **B13** | **Clothing** is specced and parked (D534, `clothing.md`); no look is specified. | ⏸️ Parked | Villager variants by dress. |
+| **B13** | **Clothing** ~~is specced and parked (D534, `clothing.md`); no look is specified.~~ ✅ **The coat is built (D659–D667) and invisible on the map; its look is a moss mantle in `villager-art.md` (A90)** — the wool coat (§15, item 8) wants a second. | ✍️ A90, ⏸️ Joe's pick | Villager variants by dress. |
 | **B14** | **Goods seen arriving and leaving stores** — Joe, D418: *"visual goods being added to / removed from each building"*; the crates are the placeholder (`storage-and-distribution.md`, D419). | Wanted, art pass | Store stock art. |
 
 ## 2. Terrain
@@ -166,14 +171,16 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
-| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.cs:385–388`, `:7822–7881`); crowds fan apart | Life stage ×3; facing/walk; per trade? | B1, B2, B4 | 🟨 |
+| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.DrawVillagers`); crowds fan apart; **a family at home is one dot on its roof** | Life stage ×3; facing/walk; per trade | B2 ✅, B4 ✅ (A31) | 🟨 ✍️ **A90, `villager-art.md`: three looks mocked on Joe's saves — A a painted token, B a painted figure in trade colours (recommended), C a figure in homespun; trade pairs alike at 30 px a tile: today 171 of 171, A 5, B 4, C 34. ⏸️ Joe's four calls (§6)** |
 | Selection ring | `#59238e` | — | — | 🟨 (UI-like) |
 | Meal mark | A bowl arc `#543d01` for 0.5 s (`VillageMap.cs:7888`) | — | — | 🟨 |
 | Arrival chevron (nomads) | `#4e3f1b`, bobbing and fading (`VillageMap.WalkIn.cs:46`, `:367`) | — | — | 🟨 |
 | Visible work | The view draws **no** work state on purpose — you read work from *where* a person stands (`trades-visibly-work.md:28`) | Working poses (chop, dig, reap)? | B4 | 🟨 by design |
-| Carried goods | ⬜ — the sim tracks a carried load, nothing draws it, no spec asks | Per good | B4 | ⬜ gap |
-| Tools in hand | ⬜ | Stone / iron | B4 | ⬜ gap |
-| Clothing | ⬜ | Per garment | B13 | ⏸️ parked |
+| Carried goods | ⬜ — the sim tracks a carried load, nothing draws it | Per good | B4 ✅ | ✍️ A90: carried in front, the good's colour, a shape per good from concept sheet 10 |
+| Tools in hand | ⬜ | Stone / iron | B4 ✅ | ✍️ A90: one tool a trade, held out while at work (B, C) |
+| Clothing | ⬜ — the coat is in the sim (D667), not on the map | Per garment | B13 | ✍️ A90: the coat a moss mantle; the wool coat later (§15) |
+| Cold, going in | ⬜ — `SeekingShelter` looks like any walk | — | — | ✍️ A90: a cold-blue arc over the head |
+| Teacher's colour | ⚠️ none — `TradeGlyph.ColourOf` falls through to the modder's grey (D752 added the trade) | — | — | ⬜ gap; A90 call 4 proposes the library's blue deepened |
 | Portrait | ⬜ by design | — | B12 | ✅ decided: none |
 
 ## 7. Animals
@@ -277,3 +284,22 @@ gathering-radius ring; home-to-work route lines. All 🟨, all functional. Wheth
 5. **The tech tree view is not to its own spec** (known colour, fogged silhouette).
 6. **Unicode symbols as icons** throughout the cards and windows — the font dependence the code rejects for goods.
 7. **"No image assets" is cited to a decision that does not say it** (B1) — ✅ **resolved, D654**: images are allowed and the citations are corrected.
+
+## 15. ⭐ Phase 6's art — the running list (Joe, A90; kept current from each systems spec, D774)
+
+Joe: *"take note of the systems work being done and all of the buildings and art pieces that will have to be created for
+that."* In `DESIGN.md §4`'s D750 order. **Every systems spec now names the buildings, goods and villager states it adds
+in a section of its own (D774)**; this list copies from there and is corrected when a spec moves. ⚠️ **Rows marked
+*not specced* are read off §4's one-line entries and are guesses until their spec is written** — and the *systems
+complete* review (D774, after water) will add more, upgrade tiers and tech unlocks among them.
+
+| # | Systems piece | Where it stands | Buildings | Goods / icons | Professions | Villager states and things on the map |
+|---|---|---|---|---|---|---|
+| 1 | **The school** | ✅ built and merged (D752–D769), played (D773) | **the school** — ⚠️ painted by the default (a shingle roof, no yard; `VillageMap.Roofs.cs` has no row for it); no bar glyph (`BuildingGlyph` *Unchosen*) | — | **the teacher** — ⚠️ no trade colour (A90 call 4) | `WalkingToSchool`, `AtSchool`, `Teaching` (indoors — A90 call 3); children in coats from five (D767) |
+| 2 | **Water as a household need** | 🔨 on `slice/water-need` (`water-need.md` §4; calls answered D776) | the well (exists) | none — water is the household's, not a good (call 1A) | — | **drawing water at the river bank** (new); **carrying water home** — a pail, or a yoke and two pails (new: the first thing carried that is not a good); the well's lane worn by the existing path wear |
+| 3 | **Morale** | specced, not started (`morale.md`; re-read against D207 first) | the levers, `tech-tree.md §9.10`: **a tavern and inn**, **a village chapel** (and the cemetery D35 gives a shape) | — | (tavern keeper, priest — not named) | **leaving the village** — the one new mechanism: a departure walked out, the arrival chevron's reverse (a bundle on the back?); ⛔ no morale bar or face (`morale.md §5`: sentences on the card only) |
+| 4 | **Beer** | waits on morale (`food-catalog.md §6`) | **a brewery** | **beer / ale** (today a blank roadmap chip, §10); barley if wheat is kept for bread | **a brewer** | carrying a cask (sheet 10's barrels); the tavern's stock |
+| 5 | **Health, diet first** | not specced (after §5's survival floor is re-derived) | **an infirmary**; an herb garden? | **medicine / herbs**; the diet's four food groups (grain, meat, fish, fruit/herbs) as marks on the card | **an herbalist** | **sick** — a state that must read on the map before it bites (§1.1, Phase 6's gate item 6); graves |
+| 6 | **Drought, then fire and blight** | not specced; each *telegraphed, legible on the map, answerable* (§0.1) | irrigation? a firebreak? | — | — | **dry ground** (B11) and the year's warning on the map; **a building on fire**, smoke, **burnt** (a ruin per kind, §5.1); **a blighted field** (§4); villagers carrying water to a fire? |
+| 7 | **The town hall's tabs and the knowledge screen** | `town-hall.md` slices 2–4; after the last content the *systems complete* review adds (D776) | — | **an icon for every crop, tree, fish, animal, technique, building and first master** (the collections, §10) | — | the founders' page, charts, the knowledge screen — **the UI piece's**, after the villagers |
+| 8 | **Warm clothing — sheep and wool** | Phase 6's now, unless Joe moves it out at the review (D776 on `slice/water-need`, not yet in `main`; was optional, D723) | a fold or shearing shed? (not decided) | **wool**; **the wool coat** | spinner / weaver? (not decided) | **sheep** — a second herd (§7), shorn and unshorn; **shearing**; **a wool coat** on the villager, apart from the leather coat's moss |
