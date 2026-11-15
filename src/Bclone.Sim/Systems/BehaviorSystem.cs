@@ -5567,6 +5567,13 @@ public sealed partial class BehaviorSystem : ISimSystem
                 world.CloseTheEmptiedStore(clearing);
             }
 
+            // ⛔ AND THE WALK WITH THE ARMFUL IS A HAUL (D768's own bug, fixed D771). Since D768 set
+            // `ClearingAStore` for the walk out, a villager who took their armful kept that state —
+            // and its continuation re-plans the walk to a store being cleared, which a full pair of
+            // arms refuses, so it turned them towards home every other tick: Joe's Oakmont, Ullow
+            // and Wileth stepped one tile and back all summer with 80 firewood each. The woodcut, the
+            // dig and the gather set it the same way before theirs.
+            villager.State = VillagerState.HaulingToStore;
             HaulOrSetDown(world, villager);
             return;
         }
