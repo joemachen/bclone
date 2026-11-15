@@ -56,7 +56,7 @@ Each finished building is drawn, in its own turned frame, as:
 | Well | A ring of stones round dark water |
 
 **Kept as they were:** construction and demolition sites (A53's dashes included), a house's new walls rising during a
-rebuild, the founders' cart, bridges, the stock chips on a store, the full-store, idle and library rings, the
+rebuild, bridges (the founders' cart is drawn since A87, `building-yards.md §3.4`), the stock chips on a store, the full-store, idle and library rings, the
 card's picture, the minimap, the bar's glyphs. **With the tick off nothing changes.**
 
 ## 3. Materials (`src/Bclone.Game/textures/buildings/roof_<material>.png`)

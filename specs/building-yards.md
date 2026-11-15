@@ -1,6 +1,6 @@
 # Building yards, and the buildings in pen and wash (A86)
 
-> **Status: 🔨 BUILT on `art` (A86, 2026-11-15), ⏸️ Joe's eyes, then his word to merge.** On top of A85's roofs
+> **Status: 🔨 BUILT on `art` (A86, 2026-11-15; the founders' cart §3.4, A87), ⏸️ Joe's eyes, then his word to merge.** On top of A85's roofs
 > (`building-roofs.md`), behind the same watercolour tick; with it off the map is byte-identical to the build before. Art
 > lane (CLAUDE.md *Two tracks*). Nothing in the sim, `data/` or `tests/` changes.
 
@@ -29,6 +29,8 @@ the look to match, and said **"Yes, build it"** to the pen-and-wash pass.
 | the hay rick at the barn | the barn holds hay | `Store[Hay]` |
 | a home's woodpile (its length) | the household holds firewood | `Household.Stockpile.Firewood` |
 | a home's larder by the back door (barrels, sacks) | it holds food | the household's edible goods |
+| the founders' cart's sacks and basket (§3.4) | it holds food | its `Store`, the edible goods |
+| the founders' cart's crates (§3.4) | it holds tools | `Store[Tools]` |
 | a cart parked at a home, the market, the trading post | they own one and nobody has it out | `HandcartUses`, as `DrawParkedCarts` reads it |
 
 **Where the building keeps no stock** (the woodcutter's logs, the builder's planks and stone, the quarry's blocks, the
@@ -78,6 +80,16 @@ barrow; mill — sacks at the door; barn — the hay rick, a trough; library —
 
 **3.3 The fishing hut's water** is the side of its footprint with water nearest, looked for on the map when the hut is
 laid (four directions, up to two tiles out); none found, no dock. Laid again when `TerrainGeneration` moves.
+
+**3.4 The founders' cart (A87).** Joe: *"the cart needs art - it's basically treated as a building"*, with a 3D render of a
+market cart for inspiration (a plank bed with iron-strapped side rails, two big spoked wheels at the middle, shafts forward,
+a canvas cover over the back, sacks, a crate and a basket of potatoes in it, a bucket hung at the back). A85 left it a
+flat chip (`StoreKind.Cart` was *not a building*, §8 of `building-roofs.md`); it is drawn now, in its own frame on its
+1 × 1 ground, seen straight down in the same pen and wash: a hatched shadow; the two wheels at the sides as an iron-tyred
+rim with their hubs out; the bed in the carts' own colour (`HandcartColour`, as the handcarts, so every cart reads as one
+family), its boards drawn along it, side rails with iron straps; two shafts and a crossbar forward; the canvas over the
+back third, its folds in pen; a bucket at the back corner. **Its load follows §2:** sacks and an open basket while it
+holds food, crates while it holds tools — an emptied cart is its bare boards.
 
 ## 4. Homes
 

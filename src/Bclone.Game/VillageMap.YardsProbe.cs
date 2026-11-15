@@ -45,6 +45,9 @@ public partial class VillageMap
                 ("the market's baskets", RoofOf(StoreKind.Market)!.Value, 1.6f, 1.6f, "basket goods", full with { Stock = 0 }),
                 ("the trading post's goods", RoofOf(StoreKind.TradingPost)!.Value, 1.6f, 0.8f, "goods", full with { Stock = 0 }),
                 ("the barn's hay", RoofOf(StoreKind.Barn)!.Value, 2.4f, 1.6f, "hay rick", full with { Stock = 0 }),
+                ("the founders' cart's food", RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, "wagon food", full with { Stock = 0 }),
+                ("the founders' cart's tools", RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, "wagon tools", full with { Stock2 = 0 }),
+                ("the founders' cart's basket of food", RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, "basket goods", full with { Stock = 0 }),
                 // Kept nowhere, so shown while working (§2).
                 ("the woodcutter's logs", RoofOf(JobKind.Woodcutter), 1.6f, 0.8f, "log pile", full with { Working = false }),
                 ("the builder's planks", RoofOf(JobKind.Builder), 1.6f, 0.8f, "planks", full with { Working = false }),
@@ -82,6 +85,7 @@ public partial class VillageMap
                 ("the well", RoofOf(BuildingKind.Well), 0.7f, 0.7f, new[] { "trough" }),
                 ("the granary", RoofOf(StoreKind.Granary)!.Value, 1.6f, 1.6f, new[] { "hoist" }),
                 ("the mine", RoofOf(JobKind.Miner), 1.6f, 0.8f, new[] { "rails" }),
+                ("the founders' cart", RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, new[] { "wagon wheel", "wagon hub", "wagon bed", "wagon rail", "wagon shaft", "wagon canvas", "wagon bucket" }),
             })
             {
                 List<RoofPiece> drawn = Draw(look, w, d, 0, empty);
@@ -90,6 +94,16 @@ public partial class VillageMap
                 {
                     faults.Add($"{what} with nothing in stock lacks its {string.Join(", ", missing)}");
                 }
+            }
+
+            // The founders' cart is a wagon (§3.4): two wheels, a bed and a canvas, each a filled shape, whatever it holds.
+            List<RoofPiece> wagon = Draw(RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, 0, empty);
+            int wheels = wagon.Count(p => p.Part == "wagon wheel" && p.Kind == RoofPieceKind.Fill);
+            int wagonBeds = wagon.Count(p => p.Part == "wagon bed" && p.Kind == RoofPieceKind.Fill);
+            int canvases = wagon.Count(p => p.Part == "wagon canvas" && p.Kind == RoofPieceKind.Fill);
+            if (wheels != 2 || wagonBeds != 1 || canvases != 1)
+            {
+                faults.Add($"the founders' cart is {wheels} wheels, {wagonBeds} beds, {canvases} canvases (want 2, 1, 1)");
             }
 
             // Every yard thing on the building's own ground — the extent, A85's drawn size ÷ its share — at four turns; the
@@ -108,6 +122,7 @@ public partial class VillageMap
                 ("farmhouse", RoofOf(JobKind.Farmer), 1.6f, 1.6f, 0.8f), ("mill", RoofOf(JobKind.Miller), 1.6f, 1.6f, 0.8f),
                 ("barn", RoofOf(StoreKind.Barn)!.Value, 2.4f, 1.6f, 0.8f), ("library", RoofOf(BuildingKind.Library), 1.6f, 1.6f, 0.8f),
                 ("town hall", RoofOf(BuildingKind.TownHall), 2.85f, 1.9f, 0.95f), ("well", RoofOf(BuildingKind.Well), 0.7f, 0.7f, 0.7f),
+                ("founders' cart", RoofOf(StoreKind.Cart)!.Value, 0.8f, 0.8f, 0.8f),
             })
             {
                 foreach (ushort facing in new ushort[] { 0, 10000, 30000, 50000 })
@@ -258,6 +273,7 @@ public partial class VillageMap
                 (YardKind.Farmhouse, StockRead.Wheat, StockRead.None, false), (YardKind.Granary, StockRead.Edible, StockRead.None, false),
                 (YardKind.Warehouse, StockRead.HeldLessCarts, StockRead.Handcarts, false), (YardKind.Market, StockRead.Held, StockRead.None, false),
                 (YardKind.TradingPost, StockRead.Held, StockRead.None, false), (YardKind.Barn, StockRead.Hay, StockRead.None, false),
+                (YardKind.FoundersCart, StockRead.Edible, StockRead.Tools, false),
                 (YardKind.Woodcutter, StockRead.None, StockRead.None, true), (YardKind.Builder, StockRead.None, StockRead.None, true),
                 (YardKind.Forager, StockRead.None, StockRead.None, true), (YardKind.Smith, StockRead.None, StockRead.None, true),
                 (YardKind.Quarry, StockRead.None, StockRead.None, true), (YardKind.Mine, StockRead.None, StockRead.None, true),
@@ -283,11 +299,12 @@ public partial class VillageMap
             store.Add(Goods.Wheat, 17);
             store.Add(Goods.Hay, 19);
             store.Add(Goods.Handcart, 2);
+            store.Add(Goods.Tools, 3);
             Goods[] edibleHere = { Goods.Fish, Goods.Meat };
             foreach ((StockRead r, int want) in new[]
             {
                 (StockRead.Fish, 7), (StockRead.Meat, 11), (StockRead.Leather, 13), (StockRead.Wheat, 17), (StockRead.Hay, 19),
-                (StockRead.Handcarts, 2), (StockRead.Held, 69), (StockRead.HeldLessCarts, 67), (StockRead.Edible, 18), (StockRead.None, 0),
+                (StockRead.Handcarts, 2), (StockRead.Held, 72), (StockRead.HeldLessCarts, 70), (StockRead.Edible, 18), (StockRead.Tools, 3), (StockRead.None, 0),
             })
             {
                 if (Read(store, r, edibleHere) != want)
@@ -303,7 +320,7 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? $"[widths] building yards: ✅ ten stock things drawn only with their stock and eleven piles only while working (§2's table); the dressing always; every yard thing on its building's ground at four turns ({checkedKinds} kinds), the fishing hut's dock out on its water's side and none without water; the roof on the door's half, the step past its eave; a home's things on its plot and off its house, the woodpile longer with each level, a larder of its level, no vegetable beds, for the cabin, cottage and manor; the fences by tier; the pen's strokes inside their roof for seven materials, thinned under 3 px, hatching only in shade; the parked cart a cart; §2's table of what each yard reads, and each read its own good; the levels at 1, 5, 20, 60"
+                ? $"[widths] building yards: ✅ twelve stock things drawn only with their stock (the founders' cart's food and tools among them) and eleven piles only while working (§2's table); the dressing always, the founders' cart a wagon with its wheels, bed, shafts and canvas; every yard thing on its building's ground at four turns ({checkedKinds} kinds), the fishing hut's dock out on its water's side and none without water; the roof on the door's half, the step past its eave; a home's things on its plot and off its house, the woodpile longer with each level, a larder of its level, no vegetable beds, for the cabin, cottage and manor; the fences by tier; the pen's strokes inside their roof for seven materials, thinned under 3 px, hatching only in shade; the parked cart a cart; §2's table of what each yard reads, and each read its own good; the levels at 1, 5, 20, 60"
                 : $"[widths] building yards: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)

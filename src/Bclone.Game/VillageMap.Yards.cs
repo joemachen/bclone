@@ -33,6 +33,7 @@ internal enum YardKind
     Cabin,
     Cottage,
     Manor,
+    FoundersCart,
 }
 
 /// <summary>
@@ -116,6 +117,7 @@ public partial class VillageMap
         HeldLessCarts,
         Handcarts,
         Hay,
+        Tools,
     }
 
     /// <summary>
@@ -131,6 +133,7 @@ public partial class VillageMap
         YardKind.Warehouse => (StockRead.HeldLessCarts, StockRead.Handcarts, false),
         YardKind.Market or YardKind.TradingPost => (StockRead.Held, StockRead.None, false),
         YardKind.Barn => (StockRead.Hay, StockRead.None, false),
+        YardKind.FoundersCart => (StockRead.Edible, StockRead.Tools, false),
         YardKind.Woodcutter or YardKind.Builder or YardKind.Forager or YardKind.Smith or YardKind.Quarry or YardKind.Mine
             or YardKind.Bakery or YardKind.Tailor or YardKind.Mill => (StockRead.None, StockRead.None, true),
         _ => (StockRead.None, StockRead.None, false),
@@ -148,6 +151,7 @@ public partial class VillageMap
         StockRead.HeldLessCarts => store.Held - store[Goods.Handcart],
         StockRead.Handcarts => store[Goods.Handcart],
         StockRead.Hay => store[Goods.Hay],
+        StockRead.Tools => store[Goods.Tools],
         _ => 0,
     };
 
@@ -1250,6 +1254,94 @@ public partial class VillageMap
         }
 
         k.Strokes("wheel", spokes, Timber);
+    }
+
+    /// <summary>
+    /// ⭐ The founders' cart (A87, `building-yards.md §3.4`), seen straight down on its 1 × 1 ground, its length along x and its
+    /// shafts forward (+x): a hatched shadow; the two wheels at its sides, iron-tyred, their hubs out; the bed in the carts'
+    /// colour, boards along it, rails strapped with iron; the shafts and a crossbar; the load — sacks and an open basket while
+    /// it holds food, crates while it holds tools (§2) — and the canvas over the back third; a bucket hung at the back.
+    /// </summary>
+    private static void Wagon(List<RoofPiece> pieces, RoofFrame frame, YardState s, int seed)
+    {
+        var k = new YardKit(pieces, frame);
+        const float back = -0.36f;
+        const float front = 0.2f;
+        const float half = 0.2f;
+        float length = front - back;
+        var bedAt = new Vector2((front + back) / 2f, 0f);
+        Vector2[] bed = Box(bedAt, length, half * 2f, 0f);
+
+        // The shadow, hatched, under the bed and the wheels.
+        Shadow(pieces, frame, (length + 0.06f) / 2f, half + 0.1f, bedAt + new Vector2(0.03f, 0f), 0.6f);
+
+        // The shafts and their crossbar, under the bed's front.
+        k.Strokes("wagon shaft", new List<Vector2>
+        {
+            new(front - 0.04f, -0.15f), new(0.49f, -0.07f), new(front - 0.04f, 0.15f), new(0.49f, 0.07f),
+        }, TimberDark, 0f, 2.5f);
+        k.Line("wagon shaft", new Vector2(0.44f, -0.08f), new Vector2(0.44f, 0.08f), TimberDark, 2f);
+
+        // The wheels, iron-tyred rims seen edge on, the hubs standing out.
+        foreach (float side in new[] { -1f, 1f })
+        {
+            Vector2 at = new(-0.08f, side * (half + 0.055f));
+            k.Thing("wagon wheel", Box(at, 0.46f, 0.07f, 0f), Timber.Darkened(0.15f), 0.9f);
+            k.Strokes("wagon wheel", new List<Vector2>
+            {
+                at + new Vector2(-0.23f, side * -0.02f), at + new Vector2(0.23f, side * -0.02f),
+                at + new Vector2(-0.23f, side * 0.02f), at + new Vector2(0.23f, side * 0.02f),
+            }, YardIron with { A = 0.8f }, 0f, 1f);
+            k.Thing("wagon hub", Oval(at + new Vector2(0f, side * 0.05f), 0.04f, 0.04f, 0f, 10), YardIron, 0.8f);
+        }
+
+        // The bed: boards along it in the carts' own colour, a tailboard, rails strapped with iron.
+        Color boards = Washed(HandcartColour);
+        k.Thing("wagon bed", bed, boards, 0.9f);
+        var joints = new List<Vector2>();
+        for (float y = -half + 0.08f; y < half; y += 0.08f)
+        {
+            joints.Add(new Vector2(back, y));
+            joints.Add(new Vector2(front, y));
+        }
+
+        k.Strokes("wagon bed", joints, new Color("#3e5258") with { A = 0.55f }, 0.08f);
+        foreach (float side in new[] { -1f, 1f })
+        {
+            k.Thing("wagon rail", Box(new Vector2(bedAt.X, side * (half - 0.02f)), length + 0.04f, 0.04f, 0f), TimberDark, 0.7f);
+            for (float x = back + 0.06f; x < front; x += 0.14f)
+            {
+                k.Fill("wagon strap", Box(new Vector2(x, side * (half - 0.02f)), 0.025f, 0.05f, 0f), YardIron);
+            }
+        }
+
+        k.Thing("wagon rail", Box(new Vector2(back + 0.015f, 0f), 0.03f, half * 2f, 0f), TimberDark, 0.7f);
+
+        // The load (§2): crates while it holds tools, sacks and a basket of food while it holds food.
+        for (int i = 0; i < Mathf.Min(2, (int)s.Stock2); i++)
+        {
+            Crate(k, "wagon tools", new Vector2(-0.02f + (i * 0.02f), -0.08f + (i * 0.15f)), 0.08f * i, 0.15f);
+        }
+
+        if (s.Stock > 0)
+        {
+            Sacks(k, "wagon food", new Vector2(0.1f, -0.1f), Mathf.Pi / 2f, Mathf.Min(3, (int)s.Stock), seed, SackColour);
+            Basket(k, new Vector2(0.13f, 0.11f), new Color("#c8b48a"), seed + 3);
+        }
+
+        // The canvas over the back third, its folds in pen, and the bucket hung at the back.
+        Vector2[] canvas = Box(new Vector2(back + 0.12f, 0f), 0.26f, (half * 2f) + 0.06f, 0f);
+        k.Thing("wagon canvas", canvas, new Color("#8a8f80"), 0.85f);
+        var folds = new List<Vector2>();
+        for (float x = back + 0.03f; x < back + 0.25f; x += 0.045f)
+        {
+            folds.Add(new Vector2(x, -half - 0.02f));
+            folds.Add(new Vector2(x + 0.015f, half + 0.02f));
+        }
+
+        k.Strokes("wagon canvas", folds, Ink with { A = 0.4f }, 0.045f);
+        HatchInto(pieces, frame, canvas, "wagon canvas", 0.6f);
+        Barrel(k, "wagon bucket", new Vector2(back - 0.05f, half + 0.03f), 0.04f, YardWater);
     }
 
     /// <summary>A small roof (a privy, a woodshed) in the yard: A85's faces, pen and all.</summary>

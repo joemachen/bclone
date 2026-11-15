@@ -28,6 +28,9 @@ internal enum RoofForm
     /// <summary>A parked handcart (A86, `building-yards.md §4.2`): drawn where its chip stood.</summary>
     Cart,
 
+    /// <summary>The founders' cart (A87, `building-yards.md §3.4`): a wagon on its own ground, its load from its store.</summary>
+    Wagon,
+
     /// <summary>A trade whose building is a store (the market, the barn, the trading post): the store paints it.</summary>
     ByItsStore,
 }
@@ -143,7 +146,7 @@ public partial class VillageMap
         StoreKind.Pile => new(RoofForm.Yard, RoofMaterial.Shingle),
         StoreKind.Barn => new(RoofForm.Roof, RoofMaterial.Tile, Lift: 1.3f, Yard: YardKind.Barn),
         StoreKind.TradingPost => new(RoofForm.Roof, RoofMaterial.Slate, Yard: YardKind.TradingPost),
-        StoreKind.Cart => null,
+        StoreKind.Cart => new(RoofForm.Wagon, RoofMaterial.Boards, Yard: YardKind.FoundersCart),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
     };
 
@@ -542,6 +545,9 @@ public partial class VillageMap
             case RoofForm.Well:
                 YardUnder(pieces, frame, look.Yard, layout, yard, seed);
                 Well(pieces, frame, hw, hd, colour, fallenIn);
+                break;
+            case RoofForm.Wagon:
+                Wagon(pieces, frame, yard, seed);
                 break;
             default:
                 // ⭐ A86: the yard first (`building-yards.md §3`), then the roof on its own part of the ground.
@@ -961,10 +967,8 @@ public partial class VillageMap
             Want("the stockpile", RoofOf(StoreKind.Pile), RoofForm.Yard, default);
             Want("the barn", RoofOf(StoreKind.Barn), RoofForm.Roof, RoofMaterial.Tile);
             Want("the trading post", RoofOf(StoreKind.TradingPost), RoofForm.Roof, RoofMaterial.Slate);
-            if (RoofOf(StoreKind.Cart) is not null)
-            {
-                faults.Add("the founders' cart is painted as a building");
-            }
+            // A87: the founders' cart is drawn now, as a wagon (`building-yards.md §3.4`).
+            Want("the founders' cart", RoofOf(StoreKind.Cart), RoofForm.Wagon, default);
 
             foreach ((JobKind job, RoofForm form, RoofMaterial material) in new[]
             {
