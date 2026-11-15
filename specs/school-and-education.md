@@ -498,6 +498,7 @@ Joe: *"Fuller loads + old age"*.
 | old age +15 | 12 | 11.0 | 18.9 | 15.1 | 12.8 | 41.6 | 12.5 | 987 | 855.2 | −15 | 318.6 |
 | old age +30 | 12 | 10.5 | 18.8 | 16.2 | 12.8 | 41.7 | 12.4 | 976 | 854.9 | −15 | 318.9 |
 | fuller loads 50 % + old age +30 | 12 | 12.0 | 21.1 | 16.5 | 12.9 | 44.9 | 14.0 | 1,084 | **951.9** | **+82** | 321.6 |
+| ⭐ **the recommended mix (D762): loads 25 % + old age +20 + B 80** | 12 | 11.6 | 20.1 | 15.5 | 12.8 | 43.3 | 13.2 | 1,041 | **905.6** | **+36** | 319.4 |
 
 **What it says, in plain words:**
 
@@ -517,6 +518,11 @@ Joe: *"Fuller loads + old age"*.
 
 **⏸️ Joe's:** the sizes — recommended **fuller loads 25 %, a gentler old age +20, B at 80**, with **the two-year term,
 11–13**, measured together before they are typed; and the school in winter (§12.3).
+
+**📏 The mix, measured (D762, Joe: *"Yes, measure that"*):** **+36 over no school** — more than loads 25 % alone (+21);
+peak 20.1, alive at the century 11.6, born 43.3, dead valleys 12; B trims the winter's shelter days 2,214 → 2,009 (−9 %),
+as it did alone. About 4 % of the village's strength-weighted work: a school worth building, paid for up front, never
+free. ⏸️ **Joe's: type it as shipped, and the winter call.**
 
 ## 10. Definition of Done
 
