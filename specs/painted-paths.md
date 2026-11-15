@@ -2,7 +2,8 @@
 
 **Status:** ✍️ **SPECCED (A72, 2026-11-14)** at Joe's pick on a mock (*"B, painted track"*). 🔨 **BUILT on `art` (A72, §7)**; played by Joe (*"looks really good"*) and
 the pen lightened at his word (A73, §7); ⭐ **MERGED INTO `main` AT HIS WORD (A74, 2026-11-14: *"Yes, merge it"*,
-`2d84c53`)** and **PUSHED** (A75, `origin/main` = `b88e37a`). Art lane. View only: where a path runs, how it wears and what it costs are the
+`2d84c53`)** and **PUSHED** (A75, `origin/main` = `b88e37a`). 🔨 **The trampled trail (§3.5) BUILT on `art` (A82)** at Joe's
+*"Build it"* on a mock after his concept sheet 08; ⏸️ for his eyes, not merged. Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
@@ -40,9 +41,16 @@ something that has not happened (§1.1) and leave paving no look of its own. C's
    track — stronger beside packed ground.
 4. **Ruts:** two faint darker streaks along a packed track (carts run there since D587).
 5. **The pen:** the river bank's ink (`InkColour`), one line on each side, swelling and thinning with the pen's
-   pressure and lifting now and then, constant on screen at every zoom. Full on packed ground, faint and more broken on
-   lightly worn ground — so worn and packed still read apart (`desire-paths.md`: grass → worn dirt → packed trail).
-   Faded out when the valley is small on screen (a track a few pixels wide would be all pen).
+   pressure and lifting now and then, constant on screen at every zoom. On packed ground only since A82 (§3.5:
+   `PathPenWornShare` 0); faded out when the valley is small on screen (a track a few pixels wide would be all pen).
+5a. ⭐ **The trampled trail (A82)** — Joe's concept sheet 08 (`art/concept art/08. Path and road tiers.jpg`) as a progression
+   the sim's two wear grades step through (`desire-paths.md`: grass → worn → packed): **lightly worn ground is tier II, a
+   faint trampled trail** — the grass flattened and yellowed toward the halo's colour rather than bare (`PathTrail` x), the
+   earth showing only in broken flecks (`PathTrail` y–w) along two foot-lines (`PathTrailFeet`), no rim and no pen; **packed
+   ground is tier III, the worn footpath**, as A72 drew it (bare dirt, rim, ruts, pen). A young village's paths are mostly
+   lightly worn and so mostly faint — the routes barely walked look it; an old one's are mostly packed (Joe's year-1 village:
+   94 lightly worn segments to 17 packed; Hollowmere, year 85: 52 to 1,026). **Not in this step:** tier IV (a rutted cart
+   track needs the sim to say which lanes carts use — a systems ask) and tier V (cobbles wait for paving, `DESIGN.md §2.6`).
 6. **Winter:** the snow lies thinner on a track (trodden), so the network still reads, and the pen lies over the snow
    as the bank's does.
 7. **Across a field** the lane is still the mesh laid over the crop (D512), in the track's sand with the tick on.
@@ -125,3 +133,10 @@ ruts, the edge's wander, the pen's fade, and the snow thinned on a track. The re
 **A73, 2026-11-14 — the pen lightened.** Joe, playing A72: *"looks really good, but like you said it does look a bit
 heavy/ragged. lighten up a tough?"* `PathPenStrength` 0.85 → 0.55, `PathPenWidthShare` 0.65 → 0.5, `PathPenFadePxPerTile`
 14 → 18. The look file only; probe green, view build 0 warnings; A72's suite stands.
+
+**A82, 2026-11-14 — the trampled trail (§3.5).** Joe added his concept art (A80–A81) and said sheet 08 bears on the path
+look; mocked in-game on his year-1 village and Hollowmere (`D:\Projects\brushes\paths\paths_progression.jpg`), then
+*"Build it"*. Changed: `valley_terrain.gdshader` (lightly worn ground the trail; two uniforms), `VillageMap.PaintedPaths.cs`
+(the hand-over; the probe's value and look checks), `VillageMap.Watercolour.cs` (the uniform list), `ValleyWatercolourLook.cs`
+with `looks/valley_watercolour.tres` (`PathTrail`, `PathTrailFeet`; `PathPenWornShare` 0.5 → 0). Nothing in `Bclone.Sim`,
+`tests/` or `data/`. **Verified.** Renders on his year-1 village and Hollowmere, before and built (`D:\Projects\brushes\paths\paths_trail_built.jpg`); tick off byte-identical to A77 at four zooms, spring and winter (readout masked); probe 118 ✅ 0 ⛔, `painted paths:` ✅, bar 151, tile centres and new game ✅, `done.`; view build 0 warnings; suite 2024 / 0 / 5 in 16m18; goldens 418 lines; sim, data, tests identical to `main`. **Red-check:** 7 mutants, 6 red of 6 guards (the trail and the feet not handed over, the feet undeclared — red because the shader then fails to compile — the grass turned all the way, the flecks' band backwards, a foot-line off the lane); one draw-time zero written down (the trail drawn as bare dirt again) — the renders are its evidence. **Cost** not measured: one noise read and two exponentials a path pixel.

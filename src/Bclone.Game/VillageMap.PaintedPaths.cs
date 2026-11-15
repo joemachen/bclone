@@ -91,6 +91,8 @@ public partial class VillageMap
         material.SetShaderParameter("path_pen_width_share", look.PathPenWidthShare);
         material.SetShaderParameter("path_pen_fade_px", look.PathPenFadePxPerTile);
         material.SetShaderParameter("path_snow_clear", look.PathSnowClear);
+        material.SetShaderParameter("path_trail", look.PathTrail);
+        material.SetShaderParameter("path_trail_feet", look.PathTrailFeet);
     }
 
     /// <summary>
@@ -337,7 +339,9 @@ public partial class VillageMap
                 || material.GetShaderParameter("path_pen_worn_share").AsSingle() != look.PathPenWornShare
                 || material.GetShaderParameter("path_pen_width_share").AsSingle() != look.PathPenWidthShare
                 || material.GetShaderParameter("path_pen_fade_px").AsSingle() != look.PathPenFadePxPerTile
-                || material.GetShaderParameter("path_snow_clear").AsSingle() != look.PathSnowClear)
+                || material.GetShaderParameter("path_snow_clear").AsSingle() != look.PathSnowClear
+                || material.GetShaderParameter("path_trail").AsVector4() != look.PathTrail
+                || material.GetShaderParameter("path_trail_feet").AsVector3() != look.PathTrailFeet)
             {
                 faults.Add("a painted path value on the layer is not the look file's, or the field not handed over");
             }
@@ -347,6 +351,16 @@ public partial class VillageMap
                 || look.PathPenStrength <= 0f || !(look.PathPenWornShare < 1f) || look.PathWobbleTiles >= WornTrailHalfWidth * 0.5f)
             {
                 faults.Add($"{ValleyWatercolourLook.Path} draws no track: on {look.PathOn}, the worn dirt not lighter than the packed or the packed not lighter than the halo, no pen, the worn pen not fainter, or the edge wandering half a lane");
+            }
+
+            // The trampled trail (A82): the grass turned part way, never all the way to bare; the flecks' noise band in order and
+            // inside 0–1; a fleck some earth; the two foot-lines inside the lane (0 to 2 across) and apart.
+            Vector4 trail = look.PathTrail;
+            Vector3 feet = look.PathTrailFeet;
+            if (!(trail.X > 0f && trail.X < 1f) || !(trail.Y >= 0f && trail.Y < trail.Z && trail.Z <= 1f) || !(trail.W > 0f && trail.W <= 1f)
+                || !(feet.X > 0f && feet.X < feet.Y && feet.Y < 2f && feet.Z > 0f))
+            {
+                faults.Add($"{ValleyWatercolourLook.Path} draws no trampled trail as §3.5 says: {trail}, the feet {feet}");
             }
 
             return faults.Count == 0

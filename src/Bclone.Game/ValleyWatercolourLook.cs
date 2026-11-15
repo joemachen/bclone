@@ -378,9 +378,21 @@ public sealed partial class ValleyWatercolourLook : Resource
     [Export]
     public float PathPenStrength { get; set; }
 
-    /// <summary>The pen on lightly worn ground, a share of the packed pen's strength.</summary>
+    /// <summary>The pen on lightly worn ground, a share of the packed pen's strength (0 since A82: a trampled trail is not inked).</summary>
     [Export]
     public float PathPenWornShare { get; set; }
+
+    /// <summary>
+    /// The trampled trail on lightly worn ground (A82, <c>painted-paths.md §3.5</c>, concept sheet 08's tier II): x how far the
+    /// grass turns toward <see cref="PathHalo"/>'s yellow; y, z the noise band over which the earth shows in flecks; w how bare a
+    /// fleck is.
+    /// </summary>
+    [Export]
+    public Vector4 PathTrail { get; set; }
+
+    /// <summary>The trail's two foot-lines the flecks keep to: x and y across the lane (0 one edge, 2 the other), z their width.</summary>
+    [Export]
+    public Vector3 PathTrailFeet { get; set; }
 
     /// <summary>The pen's width, a share of the bank's pen.</summary>
     [Export]

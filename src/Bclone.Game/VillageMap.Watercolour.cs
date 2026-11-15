@@ -1803,7 +1803,7 @@ public partial class VillageMap
         "hachure_width_share", "hachure_fade_px",
         "paths_on", "path_map", "path_field_range", "path_worn_srgb", "path_packed_srgb", "path_halo_srgb", "path_halo_tiles",
         "path_halo_strength", "path_mottle", "path_rim", "path_ruts", "path_wobble_tiles", "path_pen_strength",
-        "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear",
+        "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear", "path_trail", "path_trail_feet",
         "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief",
     };
 

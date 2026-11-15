@@ -160,6 +160,12 @@ uniform float path_pen_worn_share = 0.5;
 uniform float path_pen_width_share = 0.65;
 uniform float path_pen_fade_px = 14.0;
 uniform float path_snow_clear = 0.65;
+// ⭐ The trampled trail (A82, `painted-paths.md §3.5`; Joe's concept sheet 08, tier II, then "Build it"): lightly worn ground
+// is grass flattened and yellowed, not bare — path_trail x how far it turns toward the halo's yellow, y and z the noise over
+// which the earth shows in flecks, w how bare a fleck is; path_trail_feet the two foot-lines the flecks keep to (x and y
+// across the lane, 0 one edge to 2 the other; z their width). Packed ground stays A72's worn footpath (tier III).
+uniform vec4 path_trail = vec4(0.55, 0.5, 0.75, 0.75);
+uniform vec3 path_trail_feet = vec3(0.55, 1.45, 0.22);
 // ⭐ The snow lying from its snowfalls (A76, `specs/snowfall.md`): snow_amount is now how much has fallen, not the
 // calendar's ramp. A frost first (snow_dust: whole by x, strength y + z where its gentle unevenness is fullest), then drifts
 // whose threshold is read off the land (snow_drift: x a unit of the crest, y the light's tilt, z the year's patch noise,
@@ -621,7 +627,14 @@ void fragment() {
                 float across = clamp((path_s + path_half) / path_half, 0.0, 2.0);
                 float rut = exp(-pow((across - 0.45) / 0.12, 2.0)) * path_packed * (0.5 + 0.5 * at_value_noise(tile / 0.5, 136u));
                 dirt *= 1.0 - path_ruts * rut;
-                colour = mix(colour, dirt, path_inside * mix(0.8, 0.95, path_packed));
+                // The trampled trail (A82): lightly worn, the grass flattened and yellowed, the earth only in broken flecks along
+                // two foot-lines, no rim (and no pen: path_pen_worn_share). Packed, A72's footpath as before.
+                float feet = max(exp(-pow((across - path_trail_feet.x) / path_trail_feet.z, 2.0)),
+                    exp(-pow((across - path_trail_feet.y) / path_trail_feet.z, 2.0)));
+                float flecks = smoothstep(path_trail.y, path_trail.z, 0.7 * mottle + 0.3 * at_value_noise(tile / 0.18, 137u)) * feet;
+                vec3 trodden = mix(colour, path_halo_srgb, path_trail.x);
+                vec3 trail = mix(trodden, path_worn_srgb * (1.0 + path_mottle.x * (mottle - 0.5)), path_trail.w * flecks);
+                colour = mix(colour, mix(trail, dirt, path_packed), path_inside * mix(1.0, 0.95, path_packed));
             }
         }
 
