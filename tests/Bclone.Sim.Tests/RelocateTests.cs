@@ -244,6 +244,51 @@ public sealed class RelocateTests
     }
 
     /// <summary>
+    /// ⛔ And the armful taken out is HAULED (D771): the errand ends at the store, and the walk away with the load is
+    /// <c>HaulingToStore</c>. Joe, on <c>main</c> after D768: <i>"Oakmont swift and a few of his cohorts are 'bouncing' back
+    /// and forth between a few spots like crazy … they are stuck bouncing and wont do anything else."</i> D768 set
+    /// <c>ClearingAStore</c> for the walk out, the armful kept it, and that state's continuation — which asks for a store to
+    /// clear and finds none for full arms — turned them for home every other tick, one tile and back, all summer.
+    /// </summary>
+    [Fact]
+    public void WhoeverCarriesAnArmfulOutHaulsIt()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        StoreBuilding full = StandAGranary(world, out GridPos _);
+        StandAGranary(world, out GridPos _);
+        full.Store.Receive(Goods.Produce, 120);
+        full.Stocking = Stocking.Emptying;
+
+        int hauling = 0;
+        var wrong = new List<string>();
+        for (int t = 0; t < Config.TicksPerSeason; t++)
+        {
+            loop.StepOnce();
+            foreach (Villager villager in world.Villagers)
+            {
+                if (!villager.Alive || !villager.IsCarrying)
+                {
+                    continue;
+                }
+
+                if (villager.State == VillagerState.HaulingToStore)
+                {
+                    hauling++;
+                }
+                else if (villager.State == VillagerState.ClearingAStore && wrong.Count < 5)
+                {
+                    wrong.Add($"{villager.Name} at {villager.Tile} holds {villager.Carried.Held} {villager.DescribeState(null, false)} at tick {world.Tick}");
+                }
+            }
+        }
+
+        _output.WriteLine($"{hauling} villager-ticks hauling; {wrong.Count} carrying under the clearing errand's name; {full.Name} holds {full.Store.Held}");
+        Assert.True(hauling > 0, "nobody hauled anything, so the guard asked nothing");
+        Assert.Empty(wrong);
+    }
+
+    /// <summary>
     /// ⛔ A store being emptied refuses everything, or the drain would never finish.
     /// </summary>
     /// <remarks>
