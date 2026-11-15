@@ -2,7 +2,7 @@
 
 > **✅ THE SCHOOL PLAYED AND APPROVED (D773, 2026-11-15)** — Joe: *"i played the school. it looks good. and children get coats now"*, then *"yeah there was no problem, i was approving it"*. His Ashbourne
 > log read against `school-and-education.md §12.8`: steps 1–3 seen, 4 and 6 not reached yet, and the coats all as designed (DESIGN §7 D773).
-> Two small things are on the ⏸️ list for him, not built. Docs only; not pushed.
+> Two small things are on the ⏸️ list for him, not built. Docs only; not pushed. *(Pushed at his word the same day: *"fine for now, we'll review all messages later. push."*)*
 >
 > **✅ MERGED AND PUSHED AT JOE'S WORD (D772, 2026-11-15: *"Merge and push"*)** — `slice/clearing-haul` merged `--no-ff` into `main`
 > and deleted; `main` had not moved since it was cut, so the four checks below are the merged tree's. `origin/main` = the merge,
