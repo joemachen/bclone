@@ -1,7 +1,8 @@
 # The UI — the parchment-and-wood interface (art lane)
 
-> **Status: ✍️ specced and mocked on `art` (A96, 2026-11-15); ⏸️ four calls Joe's (§6); NOTHING BUILT — no theme, no
-> font, no code.** Joe's order (A90): *"i want to work on villagers for the next art piece. And then the UI"*; the
+> **Status: ✍️ specced and mocked on `art` (A96); ⭐ Joe's answers and the look REMOCKED as manuscript scrolls (A97,
+> 2026-11-15, §8) — the look, the fonts, the seam and the name are settled; ⏸️ three calls his (§8.5); NOTHING BUILT —
+> no theme, no font, no code.** §5–§6 are A96's first round, kept as the record; §8 supersedes them where they differ. Joe's order (A90): *"i want to work on villagers for the next art piece. And then the UI"*; the
 > villagers are done, merged and pushed (A93–A95). The interface was put after the map by his call in A65 (*"After the
 > map"*). Mocks outside git: `D:\Projects\brushes\ui\` (§5).
 >
@@ -166,3 +167,89 @@ reading test), `ui_winter.jpg` (parchment over snow), `ui_young.jpg` (Ashbourne)
    re-measured and written down; a contrast line over the theme's colours against the painted surface means (§1.1–3).
 3. Joe plays it (`.\run.bat`), merges at his word.
 4. Later: the town hall's tabs and the knowledge screen (`art-inventory.md §15` item 7) are drawn in the picked look.
+
+## 8. A97 — Joe's answers, and the look remocked as manuscript scrolls
+
+### 8.1 His words (2026-11-15), on A96's mocks
+
+> *"They're a step in the right direction, but we can go further. the UI should look like the parchment in the attached.
+> parchment/scrolls. and they should roll-up animate to close."* · *"yes, that is the reason for the fonts folder. use
+> them."* · *"okay art lane changes the systems lane files after water merges"* · *"the name 'bclone' is just a place
+> holder/working name. final name still TBD."* · *"confirmed i dont want the UI to stay slate. i want to see parchment
+> scrolls in the style of manuscript scrolls with some watercolor of their own."*
+
+His references: the style frame's scroll label (*VILLAGE MENU*) and ribbon banner (*TABULA VILLAE*, with drawn goods
+icons), four crops of his 2026-11-13 concept (the village, professions, log and minimap on parchment; the build bar a long
+parchment strip), and a manuscript page (rubricated lines, an illuminated initial, a gold-and-blue bar with marginal vines).
+
+### 8.2 What is settled by them
+
+1. **The look is parchment scrolls in the manner of manuscripts, with watercolour of their own** — not A, B or C. **B7 is
+   answered: not slate**; D635's *"the UI stays slate"* is reversed for the UI (the ground's parchment, D635, unchanged).
+2. **Windows roll up when they close** — an animation, not a cut (§8.4).
+3. **His `fonts/` folder is the type** (five OFL faces: Cardo, Eagle Lake, Grenze Gotisch, MedievalSharp, Metamorphous).
+   They move into the game's files with their `OFL.txt` when the build starts; until then they stay untracked.
+4. **The seam (§4) is the art lane's, after water merges into `main`.**
+5. **No wordmark yet: the name is a placeholder.** The seal is drawn blank; nothing says *bclone* but the title text the
+   game already has.
+
+### 8.3 The scroll look (mocked; `D:\Projects\brushes\ui\scroll\`, `scrolls.py`)
+
+| Part | Drawn as |
+|---|---|
+| **Window / card** | a hanging scroll: a parchment roll top and bottom with curled, hatched ends; the sheet between with an inked hand-drawn edge, a warm handled tone at its edges, the rolls' shadow on it, and **tea, ochre and verdigris watercolour washes with pooled rims** |
+| **Selected card** | the same with an **illuminated bar** down its left edge — gold, blue and a red pinstripe, the manuscript page's border |
+| **Build bar, top bars, short windows** | a scroll on its side: the rolls at the left and right ends |
+| **Window titles** | on a small scroll label with curled ends (the *VILLAGE MENU* plate), in the title face; the fold arrow dropped — the roll is the fold |
+| **Buttons** | plain inked words, as in his concept's bar: a hairline under them, a faint wash on hover, **held = rubric red with a red underline** |
+| **Headings** | rubricated: manuscript red in the title face (*WORK, TOOL, NEEDS, TYPE*) |
+| **Text** | Cardo, **one size up** (its x-height is small: at today's size it reads a size smaller than today's sans) |
+| **The log** | ink, its categories each in their own hue taken dark, the date stamp muted ink (`log_ink.gdshader` in the mock — the log's colours are written inline as it is appended, so the seam must reach `LogMarkup`/`StampColour` too) |
+
+**Two pairings mocked** (`scroll_options.jpg`, `scroll_closeup.jpg`, `scroll_winter.jpg`, `scroll_young.jpg`,
+`scroll_log.jpg`, `scroll_titles.jpg`): **S — Cardo with Metamorphous titles** (Lombardic capitals, closest to the
+*TABULA VILLAE* banner) and **E — Cardo with Eagle Lake titles** (a calligraphic hand, closest to *VILLAGE MENU*).
+Grenze Gotisch (blackletter) and MedievalSharp were tried on the game's words (`fonts_specimen.png`) and left out: dense or
+gimmicky at the sizes the game reads at. Blackletter may still serve an illuminated initial (§8.5's later list).
+
+**Measured** (`scroll_measure.txt`, against the sheet's median and its darkest 5 % of wash): text 11.1 / 9.8 : 1, muted
+6.1 / 5.3, heading 5.3 / 4.6, the log's born 5.4 / 4.7 and warnings 5.5 / 4.8; **ok-green 4.5 / 3.9 — darkened in the
+build**, and washes kept off the darkest where a row of text sits is not something a stretched 9-patch can promise, so the
+rule is the colour's, not the wash's. Over snow (Y86 winter) the rolls and the inked edge carry the window.
+
+### 8.4 The roll-up (`scroll_rollup.gif`, `scroll_rollup_strip.jpg`; `anim.py`, from the real frames)
+
+- **Fold** (today's ▾): the bottom roll climbs, the sheet winding onto it — the roll fattening a little as it takes up
+  paper, the sheet just above it curving into shade, its shadow on the map to the lower right — and stops under the title,
+  so a folded window is its title between two rolls, as today's fold keeps the title. **Unfold** runs it back.
+- **Close** (✕): it winds all the way to the top roll, and the closed scroll fades.
+- About 0.65 s each way in the mock (16 steps); wall-clock only — **view-only, never the sim**, and nothing waits on it
+  (a click on a folding window still lands; §1.2's pace is not a reason to make the player wait for paper).
+- **Built as** the panel clipping its body to a height tweened from full to the title, with the roll drawn at the clip's
+  edge — one helper beside the seam, in the art lane's files.
+
+### 8.5 Joe's calls now (plain words in HANDOFF's ⏸️ list)
+
+1. **Titles in Metamorphous or Eagle Lake?** *Recommended: Metamorphous* — its capitals are the banner's, and it stays
+   clear at the window-title size; Eagle Lake is lovelier in a big title and busier small.
+2. **The roll-up's speed and what fold keeps** — *recommended as mocked: about two-thirds of a second, fold keeps the
+   title, close winds away and fades.*
+3. **The size the scrolls cost.** The rolls add about 40 px of height to each window, and the text a size up makes
+   columns wider (the roster's names are cut at today's widths, and the log's last tick-box row sits under its bottom
+   roll). Joe asked for a smaller UI before (D305: *"smaller please"*), and his UI-size dial is still the one control.
+   *Recommended: the windows grow by the rolls and the columns widen to fit their words — about a tenth — and the dial
+   stays the way to win it back.* The alternative is today's footprint with thinner rolls and text that stays its size.
+
+**Later, each its own mock (not in the first build):** drawn icons for the goods (the banner's logs, sheaf, stone, coins
+— `GoodsPalette` is the systems lane's), an illuminated initial on a card's title, marginal vines, the round inked
+minimap with a compass, ribbon banners, a wordmark when the game has a name.
+
+### 8.6 The build, once he answers (replaces §7)
+
+1. The seam (§4) — panels, text roles, state colours, **and the log's inline colours**, read from the theme; today's
+   values by default, byte-identical; probe `ui theme:`; red-checked. After water merges, on `art`.
+2. The fonts into `src/Bclone.Game/fonts/` with their licences; the scroll 9-patches as textures with their `.import`
+   sidecars (trap 2); the theme `.tres`; `[gui] theme/custom`. Probe: `bar height` re-measured and written down; the
+   contrast line over the theme's colours.
+3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
+4. Joe plays it (`.\run.bat`); merge at his word.
