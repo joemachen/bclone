@@ -1,6 +1,6 @@
-# The villagers drawn — people seen straight down, their trade, age, load and state on the map (A90)
+# The villagers drawn — people standing up on the map, their trade, age, load and state (A90–A93)
 
-> **Status: ✍️ specced and mocked (A90, 2026-11-15); A, B and C rejected — Joe: *"i hate all of those. make them look like actual people."* — and remocked as **D, standing people (§3a, A91)**; Joe: *"you're heading in the right direction, now let's incorporate a little flavour from some real life examples"* — **E, D with the flavour of medieval illuminated manuscripts (§3b, A92)**; ⏸️ his calls (§6a); nothing built.** Joe: *"i want to work on
+> **Status: ✍️ specced and mocked (A90, 2026-11-15); A, B and C rejected — Joe: *"i hate all of those. make them look like actual people."* — and remocked as **D, standing people (§3a, A91)**; Joe: *"you're heading in the right direction, now let's incorporate a little flavour from some real life examples"* — **E, D with the flavour of medieval illuminated manuscripts (§3b, A92)**; **✅ E built on `art` (A93, §8) at his word — *"Yes, build E"* — every §6a call as recommended; ⏸️ his eyes, then merge at his word.** Joe: *"i want to work on
 > villagers for the next art piece. And then the UI"* — the art lane's order: **the villagers, then the parchment-and-wood
 > interface.** Mocked on copies of his saves, the buildings' way (A85): `D:\Projects\brushes\villagers\` —
 > `villagers_options.jpg` (four scenes × today / A / B / C), `villagers_catalogue.jpg` (every trade, age and state at three
@@ -191,3 +191,43 @@ the red-check counted; `_Draw` measured against today on Hollowmere; the four ch
 `render_villagers.gd` open a save in a redirected `APPDATA` and shoot each zoom with and without the villagers;
 `figures.py` draws A, B and C; `paint.py`, `sheet.py`, `catalogue.py`, `design.py` make the sheets; `measure.py` the
 table in §3.
+
+## 8. ✅ As built (A93) — E, at Joe's word: *"Yes, build E"*
+
+Every §6a call as recommended: **E**; **people standing up** on the top-down map; **0.72 of a tile** tall (never under
+11 px); **indoors not drawn** (resting, at school, teaching — and not clickable there either); **the teacher in the
+library's blue deepened** — ⚠️ held in the painter's own trade table, not in `TradeGlyph.cs` (the systems lane's file),
+so the Professions panel's teacher is still the modder's grey: a one-line systems ask, `art-inventory.md §6`.
+
+- **`PersonPainter.cs`** — the mock's painter (`illum.py`) ported line for line: the same parts, order and figure units.
+  Godot-free: it fills polygons into its own 4× supersampled buffer and hands back RGBA bytes 110 × 100 for an adult
+  (64 px tall), the feet at (54.4, 84.48). A person's look falls from their id through FNV-1a (`Hash01`) — stable across
+  runs, so a person keeps their face for life; the mock used CRC-32, so individuals differ from the mock sheets, the
+  style does not.
+- **`VillageMap.People.cs`** — with the watercolour tick on, `DrawVillagers` hands over to `DrawThePeople`: back to
+  front by screen y; each villager's `FigureKey` (id, stage, trade, pose, mirrored, hands, walking, tool out, good, coat,
+  cart, cold) painted **once** into a mipmapped texture and kept (CLAUDE.md's rule — the roofs' shape, A85), unused ones
+  let go after 600 frames; **at most 4 paintings a frame** — a person over the budget keeps the look they had, or shows
+  their dot for a frame. The point the sim glides and the click test asks (`DrawnCentre`) is the person's belt (0.40 of
+  their height up from the feet); a click reaches 0.42 of a person's height. The selection is the violet ring laid on
+  the ground at their feet; the meal bowl and the arrival chevron sit over their head; the pushed cart is painted with
+  them. **Tick off: `DrawVillagers` untouched — the dots to the byte.**
+- **The pose** from the sim's leg (`LegTo − LegFrom` on screen): along it more than 0.8 × across → from the side,
+  mirrored for the left; else toward or away. At work (the trade's doing-states, `AtWork`) facing us, the tool out; on
+  the way to work (`GoingToWork`) walking with the tool; `SeekingShelter` hugging; a good not carried on the shoulder in
+  both arms; `Idle` and still, a palm raised.
+- **Probe line `painted villagers:`** (`VillageMap.PeopleProbe.cs`): the tick; who is indoors; twelve poses; every trade
+  and the labourer in four poses at 110 × 100; the same key the same bytes, another person different; a child 0.62 of an
+  adult; walking left 97% the mirror of walking right; the gowns apart; painted once and kept, mipmapped.
+  **Red-checked, nine breaks in one run, nine reds** — ⚠️ the child's check scored **zero** as first written (it measured
+  a child from an adult's feet; a child is painted on a smaller canvas) and was fixed to measure each from its own feet,
+  then red alone.
+- **Measured.** By the gown's colour alone **5 of 171 trade pairs look alike** (ΔE < 10): woodcutter/marketer,
+  marketer/carpenter, quarrier/labourer, miner/herdsman, miller/baker (both in linen aprons) — every pair apart by the
+  hat or the tool; the probe holds it at 5. **A painting is 3.95 ms** warm in Release (a console bench of the same file),
+  **10.5 ms** in the probe (the Debug build, the first paintings JIT-compiled) — four a frame is the budget. **The draw**
+  on Hollowmere (the in-game readout, one paused frame each — a rough instrument): summer closest 13.2 ms before, 12.8
+  after; winter 14.3, 14.0. No rise seen. ⚠️ Memory: about 58 KB a kept person-look (with mipmaps); a few hundred kept is
+  tens of MB — the 600-frame letting-go is what bounds it.
+- **Renders of the build** on Joe's saves: `D:\Projects\brushes\villagers\built_people.jpg` (the game's own drawing, 2×).
+- **The four checks** (A93): the suite 2048 passed, 0 failed, 5 skipped, 17 m 10 s; the view build 0 warnings, 0 errors; the probe every line ✅ (no ⛔ anywhere), bar height 151, tile centres ✅, new game ✅, `done.`; the goldens 418 lines, and no change in `src/Bclone.Sim`, `tests/` or `data/`.

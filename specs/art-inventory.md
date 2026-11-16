@@ -171,7 +171,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
-| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.DrawVillagers`); crowds fan apart; **a family at home is one dot on its roof** | Life stage ×3; facing/walk; per trade | B2 ✅, B4 ✅ (A31) | 🟨 ✍️ **A90, `villager-art.md`: three looks mocked on Joe's saves — A a painted token, B a painted figure in trade colours (recommended), C a figure in homespun; trade pairs alike at 30 px a tile: today 171 of 171, A 5, B 4, C 34. ⏸️ Joe's four calls (§6)** |
+| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.DrawVillagers`); crowds fan apart; **a family at home is one dot on its roof** | Life stage ×3; facing/walk; per trade | B2 ✅, B4 ✅ (A31) | ✅ **built on `art` (A93, `villager-art.md §8`): people standing up, in the manner of illuminated manuscripts (mock E, Joe's pick of five, A90–A92) — trade by gown, hat and tool; load, coat, cold, cart; indoors not drawn. ⏸️ his eyes** |
 | Selection ring | `#59238e` | — | — | 🟨 (UI-like) |
 | Meal mark | A bowl arc `#543d01` for 0.5 s (`VillageMap.cs:7888`) | — | — | 🟨 |
 | Arrival chevron (nomads) | `#4e3f1b`, bobbing and fading (`VillageMap.WalkIn.cs:46`, `:367`) | — | — | 🟨 |
@@ -180,7 +180,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 | Tools in hand | ⬜ | Stone / iron | B4 ✅ | ✍️ A90: one tool a trade, held out while at work (B, C) |
 | Clothing | ⬜ — the coat is in the sim (D667), not on the map | Per garment | B13 | ✍️ A90: the coat a moss mantle; the wool coat later (§15) |
 | Cold, going in | ⬜ — `SeekingShelter` looks like any walk | — | — | ✍️ A90: a cold-blue arc over the head |
-| Teacher's colour | ⚠️ none — `TradeGlyph.ColourOf` falls through to the modder's grey (D752 added the trade) | — | — | ⬜ gap; A90 call 4 proposes the library's blue deepened |
+| Teacher's colour | ⚠️ none — `TradeGlyph.ColourOf` falls through to the modder's grey (D752 added the trade) | — | — | 🟨 on the map the painter holds `#4a5ea8` (A93); ⬜ **the systems lane's one line in `TradeGlyph.cs`**, so the Professions panel and the school's glyph agree |
 | Portrait | ⬜ by design | — | B12 | ✅ decided: none |
 
 ## 7. Animals
