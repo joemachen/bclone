@@ -3,7 +3,7 @@
 > **Status: ✍️ written on `art` (A98, 2026-11-15) at Joe's ask (*"write up a spec sheet for the whole list"*); NOTHING
 > PAINTED OR BUILT.** **A99: the list, sizes, margins, format, naming, paths, legibility rules and states are settled and
 > followed exactly; the LOOK (§1.4's palette, the scroll forms in §2's descriptions) is reopened — any row a new look makes
-> wrong is listed and put to Joe, never changed quietly. Painted in Photoshop by script; Phase 0 (the pipeline) proven.** **A101: Joe picked direction 2, the hung scroll, with thinner edges; icons raised to 20 logical px (§1.1, §4). Rows the hung scroll makes wrong, his to confirm: §2's `window` (one roll at the top, torn sides and foot), `roll` (the top roll itself, fattening as the sheet winds in), `modal` (the same form), and §1.4's Parchment (the painted sheet measures `#ead3a9`).** **A102: §2 and §3 painted — all 49 files in `textures/ui/chrome/` and `textures/ui/controls/`, PSDs outside git; two more rows the look changes, his to confirm: §3's `checkbox` (a wax seal in an inked socket) and `pill` (a ribbon, swallowtail met, frayed unmet). Not wired; the probe line (§8) comes with the wiring.** **A103: §4 painted — all 113 icons in `textures/ui/icons/<set>/`, at 20 logical (master 80; moments 104), no shared 8 px silhouette in any set; the school and the teacher borrow `#4a5ea8` (no colour in code), hay keeps `#b3a05c`. ⏸️ The owed ring fills every owed icon's 8 px outline — a corner medallion is the alternative, his call.** **A104: §5 painted — `title-band`, `seal` (blank), `new-game`, `splash` (no name on it), `tech-card-known` (neutral, tinted in code) / `-fogged` / `-locked`, in `textures/ui/screens/`. `icon.svg` / `icon.ico` not made: they wait on the name.** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
+> wrong is listed and put to Joe, never changed quietly. Painted in Photoshop by script; Phase 0 (the pipeline) proven.** **A101: Joe picked direction 2, the hung scroll, with thinner edges; icons raised to 20 logical px (§1.1, §4). Rows the hung scroll makes wrong, his to confirm: §2's `window` (one roll at the top, torn sides and foot), `roll` (the top roll itself, fattening as the sheet winds in), `modal` (the same form), and §1.4's Parchment (the painted sheet measures `#ead3a9`).** **A102: §2 and §3 painted — all 49 files in `textures/ui/chrome/` and `textures/ui/controls/`, PSDs outside git; two more rows the look changes, his to confirm: §3's `checkbox` (a wax seal in an inked socket) and `pill` (a ribbon, swallowtail met, frayed unmet). Not wired; the probe line (§8) comes with the wiring.** **A106: Joe — *"all yes and b"*: the six rows above are now the art as painted (§1.4 Parchment, §2 `window`, `roll`, `modal`, §3 `checkbox`, `pill`), and the owed mark is a corner medallion (§4.2), repainted.** **A103: §4 painted — all 113 icons in `textures/ui/icons/<set>/`, at 20 logical (master 80; moments 104), no shared 8 px silhouette in any set; the school and the teacher borrow `#4a5ea8` (no colour in code), hay keeps `#b3a05c`. ⏸️ The owed ring fills every owed icon's 8 px outline — a corner medallion is the alternative, his call.** **A104: §5 painted — `title-band`, `seal` (blank), `new-game`, `splash` (no name on it), `tech-card-known` (neutral, tinted in code) / `-fogged` / `-locked`, in `textures/ui/screens/`. `icon.svg` / `icon.ico` not made: they wait on the name.** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
 > the size, format, states and drawing rules for each, so each piece can be painted to it and dropped in. Sizes are read off
 > the code at `art` 70a7620. The four calls still open in `ui-art.md §8.5` (title face, roll-up, room) do not change any
 > asset here except where noted.
@@ -53,7 +53,7 @@ every icon must still read at 8 px (§1.3) — the test stays stricter than the 
 | Verdigris (ok) | `#2f5a28` | working, met (darkened from A97's `#3b6a33` for 4.5 : 1 over the washes) |
 | Gold leaf | `#c4983e` | the illuminated bar, owed gifts, highlights |
 | Lapis | `#30488c` | the illuminated bar, born |
-| Parchment | `#ecdeba` | the sheet (mottled ±10) |
+| Parchment | `#ead3a9` | the sheet (mottled ±10) — as painted and measured (A101; A97's `#ecdeba` before it) |
 | Roll | `#decca0` | the rolled paper |
 | Washes | tea `#aa783c`, ochre `#b48c46`, green `#788c5a`, umber `#966e50` | watercolour, 10–22 % opacity, pooled rims |
 
@@ -72,12 +72,12 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 
 | File | Master size | Margins L/T/R/B (master px) | What it is | States |
 |---|---|---|---|---|
-| `chrome/window.png` | 720 × 840 | 40 / 44 / 40 / 44 | **The hanging scroll**: a roll across the top and the bottom (Ø ≈ 32), curled, hatched ends that stand out ~16 px past the sheet; the sheet between, inked hand-drawn sides, a handled darker tone at its edges, the rolls' shadow on it, washes in the centre. Every window and card. | — |
+| `chrome/window.png` | 720 × 840 | 40 / 44 / 40 / 44 | **The hung scroll** (A101): one roll across the top (Ø ≈ 28) with turned walnut knobs inside the corners; the sheet hanging from it, its sides and foot torn and lightly scorched — the scorched band about 23 master px at most (A101: *"thinner"*) — the roll's shadow on it, washes in the centre. Every window and card. | — |
 | `chrome/window-selected.png` | 720 × 840 | 56 / 44 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; vine sprouts only in its corners. The card being worked with. | — |
 | `chrome/strip.png` | 1800 × 240 | 56 / 20 / 56 / 16 | **A scroll on its side**: rolls at the left and right ends (curls top and bottom), the sheet between with inked top and bottom edges. The build bar, the two top bars, short and folded windows. | — |
 | `chrome/title-label.png` | 400 × 68 | 28 / 16 / 28 / 16 | **A small scroll label** with curled ends, the style frame's *VILLAGE MENU* plate; window titles sit on it. | normal, hover (a shade warmer) |
-| `chrome/roll.png` | 720 × 40 | — | **The loose roll**: the bottom roll alone, drawn by the roll-up animation as it climbs; the code fattens it to 1.35× height as it winds. Same ends as the window's. | — |
-| `chrome/modal.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet** for the moment pop-up, the passing banner, pause and settings: rolls top and bottom, heavier. | — |
+| `chrome/roll.png` | 720 × 40 | — | **The top roll alone**, at the window's own x: closing winds the sheet up into it, its foot rising, and the code fattens the roll to 1.35× height as it fills (A106). Same knobs as the window's. | — |
+| `chrome/modal.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet** for the moment pop-up, the passing banner, pause and settings: the hung scroll's form, larger, with a heavier roll (Ø ≈ 40). | — |
 | `chrome/slip.png` | 240 × 120 | 20 / 16 / 20 / 16 | **A torn slip**, no rolls: tooltips and drop-down menus. | — |
 | `chrome/wash-1.png` … `wash-4.png` | 512 × 512 | — | **Washes on their own**, optional: tea, ochre, green and umber blots with pooled rims on transparent, so each window can carry a different stain (placed by a hash of the window's name, never by chance). | — |
 
@@ -85,13 +85,13 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 
 | File | Logical | Master | What it is | States |
 |---|---|---|---|---|
-| `controls/checkbox.png` | 14 × 14 | 56 × 56 | An inked square, slightly uneven. **Ticked:** a quick pen tick in ink running past the box. | empty, ticked, disabled (both at 45 %) |
+| `controls/checkbox.png` | 14 × 14 | 56 × 56 | An inked ring, slightly uneven — a seal's empty socket. **Ticked:** a red wax seal pressed into it, lit upper left, a pressed ring (A102). | empty, ticked, disabled (both at 45 %) |
 | `controls/dropdown-arrow.png` | 10 × 6 | 40 × 24 | A small inked triangle, pointing down. | — |
 | `controls/scroll-track.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A faint inked groove. | — |
 | `controls/scroll-grabber.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A short wound roll, seen end-on at both ends. | normal, hover, held |
 | `controls/bar-track.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | A faint ruled line. | — |
 | `controls/bar-fill.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | **A single wash stroke**, dry-brushed at its end. Tinted in code: verdigris working, rubric warning. | working, warning |
-| `controls/pill.png` | any × 16 | 96 × 64, 9-patch 28/0/28/0 | A rounded wash lozenge with an ink edge: *Fed*, *Warm*, *Housed*. | met (verdigris), unmet (rubric) |
+| `controls/pill.png` | any × 16 | 96 × 64, 9-patch 28/0/28/0 | **A ribbon** with an ink edge: *Fed*, *Warm*, *Housed*. Met: verdigris, swallowtail ends; unmet: rubric, frayed square ends — a change of form as well as colour (A102). | met (verdigris), unmet (rubric) |
 | `controls/light.png` | 8 × 8 | 32 × 32 | A small round wash, inked: a card's working light. | working, stopped |
 | `controls/rule-h.png` / `rule-v.png` | any × 2 | 256 × 8, 9-patch 16/0/16/0 | **A pen stroke** that thickens and tapers at its ends. | — |
 | `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. | — |
@@ -135,8 +135,11 @@ row taller than today's text line (a layout change in the seam — the build bar
 | `handcarts.png` | a two-wheeled handcart, from the side |
 
 ### 4.2 Buildings (29) — `icons/buildings/`
-**Two files each:** normal, and **owed** (a gift waiting — today's amber *Stone bridge*, *School*: a gold-leaf ring
-behind). **Held** is the bar's rubric underline, no file. **No locked state:** the bar offers nothing the village has not
+**Two files each:** normal, and **owed** (a gift waiting — today's amber *Stone bridge*, *School*: **a small gold-leaf
+medallion on the building**, at the lowest-rightmost spot where it lies wholly inside the drawing — A106, Joe's *"b"*:
+A103's ring behind made every owed icon the same disc at 8 px; a medallion in a corner still added the same cells to every
+outline (11 owed pairs alike at the upper right, 6 at the lower); one inside the drawing adds none, so an owed icon has its
+normal icon's outline exactly. Positions measured off the normal files, `D:\Projects\brushes\ui\medallions.json`). **Held** is the bar's rubric underline, no file. **No locked state:** the bar offers nothing the village has not
 learned (D502, no spoilers); the tech tree draws its own locked cards (§5). **58 files.** Seen as a small
 three-quarter vignette or straight down? ⏸️ **The map draws buildings straight down (A31); the icons may be drawn as a
 little elevation, as the style frame's are** — recommended: elevation (a front view reads at 8 px; a roof from above
