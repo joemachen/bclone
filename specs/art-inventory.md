@@ -171,7 +171,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 
 | Item | Stands in now | Variants needed | Blocked by | State |
 |---|---|---|---|---|
-| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.DrawVillagers`); crowds fan apart; **a family at home is one dot on its roof** | Life stage ×3; facing/walk; per trade | B2 ✅, B4 ✅ (A31) | ✅ **built on `art` (A93, `villager-art.md §8`): people standing up, in the manner of illuminated manuscripts (mock E, Joe's pick of five, A90–A92) — trade by gown, hat and tool; load, coat, cold, cart; indoors not drawn. ⏸️ his eyes** |
+| **A villager** | A dot, r max(3px, 0.2 tile), coloured by life stage — adult `#454135`, child `#02465f`, elder `#5d3900` (`VillageMap.DrawVillagers`); crowds fan apart; **a family at home is one dot on its roof** | Life stage ×3; facing/walk; per trade | B2 ✅, B4 ✅ (A31) | ✅ **built (A93, `villager-art.md §8`), merged into `main` (A94): people standing up, in the manner of illuminated manuscripts (mock E, Joe's pick of five, A90–A92) — trade by gown, hat and tool; load, coat, cold, cart; indoors not drawn** |
 | Selection ring | `#59238e` | — | — | 🟨 (UI-like) |
 | Meal mark | A bowl arc `#543d01` for 0.5 s (`VillageMap.cs:7888`) | — | — | 🟨 |
 | Arrival chevron (nomads) | `#4e3f1b`, bobbing and fading (`VillageMap.WalkIn.cs:46`, `:367`) | — | — | 🟨 |
