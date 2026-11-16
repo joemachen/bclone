@@ -37,11 +37,12 @@ public sealed class ZzWell
         int years = int.Parse(Environment.GetEnvironmentVariable("ZZ_YEARS") ?? "50");
         int noise = int.Parse(Environment.GetEnvironmentVariable("ZZ_NOISE") ?? "0");
         SimConfig shipped = ShippedConfig.Load();
+        // ZZ_TRIP was water_trip_every_days until D778; it is the jar now (40 at one a person a day is the old 20 for two).
         int trip = int.Parse(Environment.GetEnvironmentVariable("ZZ_TRIP")
-            ?? shipped.WaterTripEveryDays.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            ?? shipped.WaterJar.ToString(System.Globalization.CultureInfo.InvariantCulture));
         string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (well ? $"w{trip}" : "base") + (noise != 0 ? $"n{noise}" : "");
 
-        SimConfig config = shipped with { Seed = seed, WaterTripEveryDays = trip };
+        SimConfig config = shipped with { Seed = seed, WaterJar = trip };
         SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);

@@ -375,7 +375,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Household), Kept.Saved, new[]
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
-            "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
+            "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse",
         }),
         (typeof(Workplace), Kept.Saved, new[]

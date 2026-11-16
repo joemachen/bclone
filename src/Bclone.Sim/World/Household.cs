@@ -1244,15 +1244,17 @@ public sealed class Household
     public bool ToppingUpFirewood { get; set; }
 
     /// <summary>
-    /// The day somebody from this household last set off for the well — <see cref="SimWorld.Today"/>'s
-    /// count, <b>0 if never</b> (D427, `organic-housing.md §9.12`).
+    /// The water in the household's jar at home (D778, `water-need.md §5` step 2; Joe's call 1A: a number the household
+    /// keeps, not a good) — <b>0 for an empty jar</b>.
     /// </summary>
     /// <remarks>
-    /// Taken when they set off, not when they come home, so a housemate who reaches a rest a tick
-    /// later does not go too. Hashed once it is set: a village with no well never sets it, and
-    /// hashes as it did before wells existed.
+    /// Filled to <c>water_jar</c> when somebody from the household finishes drawing at a well; every living member
+    /// drinks <c>water_per_person_per_day</c> of it on each day's turn (<c>NeedsSystem</c>), never below empty. When it
+    /// cannot cover another day, an adult at home goes for more (<c>BehaviorSystem.TryDrawWater</c>). ⛔ <b>Saved and
+    /// hashed only when there is water in it</b>: a village with no well never fills a jar, and hashes and saves as it did
+    /// before water. <i>(Replaces <c>WaterDrawnOnDay</c>, the 20-day clock's day, D427 — retired at D778.)</i>
     /// </remarks>
-    public int WaterDrawnOnDay { get; set; }
+    public int Water { get; set; }
 
     /// <summary>
     /// The trips left in the household's handcart — <b>0 for no cart</b> (`handcart.md §3`, §6; Slice H, Joe's call
@@ -1351,7 +1353,8 @@ public sealed class Household
         ["day_for_a_child"] = DayForAChild,
         ["topping_up_food"] = ToppingUpFood,
         ["topping_up_firewood"] = ToppingUpFirewood,
-        ["water_drawn_on_day"] = WaterDrawnOnDay,
+        // Only when there is water in it (D778) — so a save from before, which has `water_drawn_on_day` instead, reads every jar empty.
+        ["water"] = Water != 0 ? Water : null,
         ["handcart_uses"] = HandcartUses,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
@@ -1376,7 +1379,7 @@ public sealed class Household
             DayForAChild = save.Int("day_for_a_child"),
             ToppingUpFood = save.Bool("topping_up_food"),
             ToppingUpFirewood = save.Bool("topping_up_firewood"),
-            WaterDrawnOnDay = save.Int("water_drawn_on_day"),
+            Water = save.HasValue("water") ? save.Int("water") : 0,
             HandcartUses = save.Int("handcart_uses"),
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };

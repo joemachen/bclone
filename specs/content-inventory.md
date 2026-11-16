@@ -160,7 +160,7 @@ innkeeper, beekeeper, administrator.
 | Fuel | 💭 charcoal (the only smelting fuel until coal), coal, lamp oil |
 | Tools | 💭 the builder's hammer (with the workshop); better tools per trade |
 | Animal products and textiles | ✅ clothing — the leather coat (`clothing.md`, D659–D667) · 💭 the wool coat (D723, Phase 6), wool, cloth, hides, tallow, bone, feathers, fur, silk, cotton, hay and silage |
-| Water and health | 📝 water as a need (`water-need.md`, specced D775, calls Joe's); herbalists, an infirmary, disease (Phase 6) |
+| Water and health | 🔨 water as a need (`water-need.md`, specced D775, calls answered D776; ✅ step 2, water at home, D778); herbalists, an infirmary, disease (Phase 6) |
 | Goods and trade | 💭 soap, candles, paper, ink, barrels, salt (mined or traded), luxury goods for trade (§2.4) |
 
 ### Knowledge, planned (`tech-tree.md`)

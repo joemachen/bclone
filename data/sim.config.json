@@ -1290,17 +1290,20 @@
 
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
-  // No water mechanic: a household walks to its nearest well and back every
-  // water_trip_every_days, and the lane their feet wear is the point. NOT daily:
-  // a day is four ticks and the walk is about twelve, so a trip a day is somebody
-  // at the well for ever. 20 is Joe's pick (D427), a PLACEHOLDER for pathing: every
-  // 10 days cost 21 shipped villagers of 169, every 20 is within the noise. In
-  // Phase 6 the household's water need decides when somebody goes, not a clock.
+  //
+  // WATER AT HOME (D778, water-need.md). Each household keeps a jar; every living
+  // member drinks water_per_person_per_day of it on each day's turn, and when it
+  // cannot cover another day an adult at home walks to the nearest well and fills
+  // it to water_jar. 40 at 1 sends a household of two every 20 days -- the clock
+  // D427 shipped -- and one of five every 8. The trip's hours come out of rest and
+  // cost nothing measurable even every 5 days (D777). PLACEHOLDERS: Joe picks the
+  // sizes once they are measured (water-need.md step 5).
   "well_logs": 10,
   "well_stone": 15,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
-  "water_trip_every_days": 20,
+  "water_jar": 40,
+  "water_per_person_per_day": 1,
 
   // BRIDGES (D40, D546, D547, D549, specs/bridges.md). A deck over the water, one
   // tile wide: the tiles stay river and become walkable. Pressed on one bank and

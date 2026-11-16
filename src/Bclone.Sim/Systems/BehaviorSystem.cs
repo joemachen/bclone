@@ -460,8 +460,8 @@ public sealed partial class BehaviorSystem : ISimSystem
 
             case VillagerState.WalkingToTheWell:
                 // To the well they set off for (D427), fixed at departure. Pulled down or moved
-                // on the way, and they turn for home — the claim is spent, which costs nothing
-                // while no water is carried.
+                // on the way, and they turn for home — the jar is still low, so somebody goes again
+                // at the next rest, to whichever well is nearest then (D778).
                 if (world.WellCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is not Well toTheWell)
                 {
                     GoHome(world, villager);
@@ -6367,8 +6367,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Set off for the household's nearest well, if its water trip is due (D427,
-    /// `organic-housing.md §9.12`). False, touching nothing, when it is not.
+    /// Set off for the household's nearest well, if its jar is low (D427, `organic-housing.md §9.12`; D778,
+    /// `water-need.md §5` step 2). False, touching nothing, when it is not.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -6379,9 +6379,10 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </para>
     /// <para>
     /// <b>Who:</b> an adult with empty hands (<c>CanWork</c> — never a child, the line every errand
-    /// draws). <b>When:</b> the household's last trip was <c>water_trip_every_days</c> or more ago
-    /// and nobody from it is on one now. <b>The claim is taken on setting off</b>, so a housemate
-    /// who reaches a rest a tick later stays home.
+    /// draws). <b>When:</b> the household's jar cannot cover another day of its living members' drink
+    /// (<see cref="WaterIsLow"/>; until D778, a 20-day clock) and nobody from it is on a trip now — <b>the
+    /// trip under way is the claim</b>, so a housemate who reaches a rest a tick later stays home, and the
+    /// jar is full before the drawer turns for home.
     /// </para>
     /// <para>
     /// ⛔ <b>The first test is <c>Wells.Count</c>, and nothing is read or written before it</b> — a
@@ -6404,26 +6405,43 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
-        int today = world.Today;
-        if (household.WaterDrawnOnDay != 0
-            && today - household.WaterDrawnOnDay < world.Config.WaterTripEveryDays)
-        {
-            return false;
-        }
-
-        if (AHousemateIsAtTheWell(world, household.Id)
+        if (!WaterIsLow(world, household)
+            || AHousemateIsAtTheWell(world, household.Id)
             || world.NearestWell(villager.Tile, out _) is not Well well)
         {
             return false;
         }
 
-        household.WaterDrawnOnDay = today;
         villager.ErrandX = well.Tile.X;
         villager.ErrandY = well.Tile.Y;
         villager.ActionTicksRemaining = 0;
         villager.State = VillagerState.WalkingToTheWell;
         Travel(world, villager, well.Position, VillagerState.DrawingWater);
         return true;
+    }
+
+    /// <summary>
+    /// ⭐ THE JAR SAYS WHEN (D778): empty, or holding less than another day of its living members' drink.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Asked at every rest at home, so the villagers are counted only in the jar's last days: every living member is on
+    /// the member list (each <c>HouseholdId</c> is set beside an <c>AddMember</c>, and a death leaves the id there), so a
+    /// jar that covers the whole list covers the living without counting them.
+    /// </remarks>
+    private static bool WaterIsLow(SimWorld world, Household household)
+    {
+        if (household.Water <= 0)
+        {
+            return true;
+        }
+
+        int perPerson = world.Config.WaterPerPersonPerDay;
+        if (household.Water >= perPerson * household.MemberIds.Count)
+        {
+            return false;
+        }
+
+        return household.Water < perPerson * world.LivingMembersOf(household);
     }
 
     /// <summary>Whether anybody from this household is walking to a well or drawing at one now.</summary>
@@ -6817,11 +6835,20 @@ public sealed partial class BehaviorSystem : ISimSystem
                 return;
 
             case VillagerState.DrawingWater:
-                // ⭐ Drawn, and home (D427). Nothing is carried yet — the water is Phase 6; the walk
-                // there and back, and the lane it wears, is what this slice is for.
+                // ⭐ Drawn, the household's jar filled, and home (D427, D778). The jar is filled here,
+                // where the drawing ends — nothing is seen carried home yet (`water-need.md §4`, the
+                // art lane's pail) — so a drawer the cold breaks off fills nothing, and somebody goes again.
                 if (world.WellCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is Well drawnAt)
                 {
                     drawnAt.Draws++;
+                }
+
+                Household drewFor = world.HouseholdOf(villager);
+                drewFor.Water = world.Config.WaterJar;
+                if (world.Logs(LogLevel.Debug))
+                {
+                    world.Log(LogLevel.Debug, "behavior",
+                        $"{villager.Name} drew water for the {drewFor.Surname} household — the jar holds {drewFor.Water}.");
                 }
 
                 villager.ErrandX = 0;

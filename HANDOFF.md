@@ -1,5 +1,12 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/water-need` — ✅ STEP 2 BUILT (D778, 2026-11-15): WATER AT HOME.** Each household keeps a jar (`water_jar` 40), every
+> living member drinks `water_per_person_per_day` (1) a day, and somebody goes to the well when it cannot cover another day — the
+> 20-day clock retired, a household of two keeping it. ⚠️ Measured: five go every 13 days though their jar lasts 8 (the trip waits
+> for a rest at home) — step 4's number. No format step: Joe's saves load with empty jars. One golden moved, the Phase 5 village's, which has a well — and its herd chain was found hanging on one boat, so its pose keeps 100 firewood, not 300 (27 arms measured).
+> - **Four checks:** suite **2054 / 0 / 5 of 2059 in 17m08** (a first run read 21m36 with that golden red; the re-run is level with D771's 17m04); view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines (159 at D771 — A86–A87's two came with `main`), 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 418 → 420 lines — the two Phase 5 constants moved and their old values are quoted beside them, nothing else.
+> - **Guards:** 7 new in `WellTests`, 8 mutants: the fill short 1 red, a flat drink 1, the jar unhashed 1, unsaved 1, `water_jar` 30 1, every jar starting at 1 2 (`NoWellNoTrip` scores **zero** on it; the hash and save guards catch it); the low rule off by one on its slow line **0** — a near-equivalent, because the member-list line answers first — and on both lines **0** until a jar of exactly a day was added, then **1** (`TheJarSaysWhenToGo(3)`). The keep back at 300 turns `EveryPhaseFiveChainTurnsOver` red (seen, not mutated: it is the run that found it).
+>
 > **🔨 `slice/water-need` (D775, 2026-11-15) — WATER AS A HOUSEHOLD NEED, SPECCED, ⏸️ FOUR CALLS JOE'S.** Joe: *"water is next for systems"*.
 > `specs/water-need.md` §3. Recommended: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Then the order of work, §5, starting with D428's
 > unexplained cost. Nothing built; the docs commit only.
@@ -9504,6 +9511,22 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D778 PAID FOR — A SAVE'S NULL IS A KEY, AND A FIXTURE'S FAMILIES ARE ALL ONE SIZE
+
+- **A sparse save key is written `"key": null`, not left out.** `SaveWriter` keeps nulls (`keeps_its_house` does the same),
+  so a test that counted the households carrying `water` found both, where one had water. "Absent" in a save means stripped
+  by the test, and only a stripped key is what an old save looks like — `save.HasValue` reads both the same way.
+- **The village fixture's households were all three strong for four years** — a size test over them had nothing to compare and
+  failed `NotEmpty`. Twelve years gave 2s to 5s. Before a guard compares across a property, print the property's spread
+  (D423: pose the shape that makes the claim bite).
+- **A golden that holds a well moves when water does** — `PhaseFiveGoldenTests` poses one, so "the goldens move at step 7" was
+  never true for it. Grep the goldens' poses for the thing you change before planning when they move.
+- **⛔ A COVERAGE GUARD CAN HANG ON ONE EVENT.** The Phase 5 golden's *"cattle landed"* rested on one boat in Year 14 finding
+  enough firewood at the post; a water trip a day either side of 20 lost it, on the old code as much as the new. **Before
+  "fixing" a chain that stopped, nudge the input on the old code too** (`git archive HEAD` into the scratchpad, never a
+  worktree): if the old code breaks under the same nudge, it is the pose, and the pose is what changes (D418's rule run the
+  other way).
+
 ## ⛔ THE TRAP D773 PAID FOR — JOE'S GAME LOG IS NOT `godot.log`
 
 - **His village's log is `src/Bclone.Game/logs/bclone-<date>-<time>.log`** (`Main.cs`, the `FileLogSink`, every `[life]` line and
@@ -10324,7 +10347,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*). ✅ ALL
-  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; step 2 next.** Phase 6
+  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; step 3, the river bank, next.** *(Read "step 2 next" at D777.)* Phase 6
   item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
   the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in

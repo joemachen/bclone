@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
 > Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
-> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; STEP 2 NEXT.** *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; STEP 3 NEXT.** *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -20,7 +20,7 @@ helps with that when the time comes."*
 So: **a household keeps water at home and drinks it; somebody goes for more when it runs low.** The walk is the
 whole cost, and it is visible, the way the shopping walk is (D668). The well's 20-day clock goes.
 
-## 2. What is there today (re-read against the code, 2026-11-15)
+## 2. What is there today (re-read against the code, 2026-11-15) *(⚠️ before step 2 — §2b is what changed, D778)*
 
 - **The well** (`BuildingKind.Well`, `SimWorld.Wells`, D427): optional; with none, nothing is tried and nothing hashed.
 - **The trip** (`BehaviorSystem.TryDrawWater`): offered only where a rest at home would begin, to an adult with empty
@@ -52,6 +52,26 @@ time spent going in to get warm (0.8 → 1.6 % at every 5 days), with no rise in
 30 valleys with one noise arm, not a spread; it does not reproduce. ⚠️ A harness village rests 69 % of its adult time (D447:
 a harness is not a player), so in a busy played village the trip has less rest to come out of, and still never displaces
 work by structure. `tools/harness/ZzWell.cs` + `well.py`.
+
+### 2b. ✅ Step 2 — water at home, built (D778)
+
+- **`Household.Water`**, the jar (call 1A: a number, not a good). Filled to **`water_jar` (40)** when a household's drawer
+  finishes at the well — where the drawing ends, so a drawer the cold breaks off fills nothing and somebody goes again.
+- **The drink:** on each day's first tick (`NeedsSystem`), every living member drinks **`water_per_person_per_day` (1)**,
+  never below empty. An empty jar costs nothing yet — step 4 (call 3A).
+- **When somebody goes:** where a rest at home would begin, as before, once the jar is empty or holds less than another
+  day for the living (`BehaviorSystem.WaterIsLow`). **The trip under way is the claim** — no day is stored.
+- **Retired:** `water_trip_every_days` and `Household.WaterDrawnOnDay`. **Saved** as `water` (null for an empty jar, as
+  `keeps_its_house` is) **with no format step** — a save from before has no `water` key and loads with every jar empty,
+  so Joe's format-13 saves still load (with a well, each household goes at its next rest, as the old clock's first trip
+  did). **Hashed** only when there is water in it, so a village with no well hashes as before.
+- **The price, at the shipped sizes:** a household of two every 20 days, today's clock (`AHouseholdOfTwoGoesEveryTwentyDaysAsTheClockDid`).
+  Measured on the fixture village over twelve years, days between a household's trips by how many lived there:
+  **2 → 24.5, 3 → 15.7, 4 → 13.8, 5 → 13.0.** ⚠️ **A big household goes less often than its jar asks** (five drink 40
+  in eight days, and go every thirteen): the trip waits for an adult resting at home with empty hands, and a busy big
+  household rests less. It sits dry for days, which costs nothing yet — **step 4's trip ahead of work is the answer, and
+  this is the measurement it is checked against.**
+- **Goldens:** **one moved, the Phase 5 village's** (`PhaseFiveGoldenTests`, both constants): its pose has a well. Its coverage test went red too (no cattle landed), and that was the pose, not water: on the old code its herd landed only at a trip every 20 or 21 days, not 15, 19 or 25 — one boat in Year 14 bought it only if the post held the firewood to pay — so the pose's firewood keep went 300 → 100, where cattle, calves and leather came in all 27 arms (4 intervals on the old code, 5 jars on the new; `phase-5-golden.md`). Every other golden is unmoved — none of their villages has a well.
 
 ## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
 
@@ -111,15 +131,16 @@ Under call 1B the stock bar would also want a water icon.
 ## 5. The order of work (after his calls)
 
 1. ✅ **Trace D428's open question (D777, §2a): it does not reproduce — the trip comes out of rest; winter walks chill.**
-2. **Water at home, drunk, at size nought.** The household's water and its daily drink, the trip filling it. Shipped
+2. ✅ **Water at home, drunk, at size nought (D778, §2b).** The household's water and its daily drink, the trip filling it. Shipped
    at sizes that reproduce today's 20-day clock for a family of two, so the change is the mechanism, not the price.
 3. **The river bank** (call 2A): the nearest walkable tile beside the river by the shared cost field (§2.6, never a
    second distance), a well preferred when nearer.
 4. **Running dry** (call 3): the trip ahead of work, the card line, the log sentence.
 5. **Measured** (call 4) at three or four jar sizes; Joe picks.
 6. **The view**: the card's line and NEEDS, the carried pail (or the art lane's stand-in), the probe line.
-7. **Saves and the hash**: the household's water saved and hashed; `water_drawn_on_day` retired with a save-format
-   step; the goldens re-taken in one commit, the diff read.
+7. **Saves and the hash**: ~~the household's water saved and hashed; `water_drawn_on_day` retired with a save-format
+   step;~~ **done at step 2 (D778), with no format step** — the jar is an optional key, and a save without it reads empty; the
+   goldens re-taken in one commit, the diff read *(step 2 re-took those a well reaches, §2b)*.
 
 ## 6. Acceptance
 
