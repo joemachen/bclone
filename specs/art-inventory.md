@@ -241,6 +241,9 @@ gathering-radius ring; home-to-work route lines. All 🟨, all functional. Wheth
 
 ## 11. Panels, chrome, minimap, tech tree
 
+> 📋 **The UI's image assets, one spec sheet (A98): `specs/ui-assets.md`** — chrome, controls, 16 goods, 29 buildings,
+> 18 trades, 12 tools, seasons, alerts, moments, screens; ≈ 160 files. Covers §10's icon rows too.
+>
 > ✍️ **Specced and mocked (A96): `specs/ui-art.md`** — what the UI is today (§2 there, read off the code at 65818ff),
 > the lane seam it needs (§4), three looks measured (§5), Joe's four calls (§6).
 

@@ -244,6 +244,8 @@ rule is the colour's, not the wash's. Over snow (Y86 winter) the rolls and the i
 — `GoodsPalette` is the systems lane's), an illuminated initial on a card's title, marginal vines, the round inked
 minimap with a compass, ribbon banners, a wordmark when the game has a name.
 
+**Every image the look needs, with sizes, states and drawing rules: `specs/ui-assets.md` (A98).**
+
 ### 8.6 The build, once he answers (replaces §7)
 
 1. The seam (§4) — panels, text roles, state colours, **and the log's inline colours**, read from the theme; today's
