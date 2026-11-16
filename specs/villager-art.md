@@ -1,6 +1,6 @@
 # The villagers drawn — people seen straight down, their trade, age, load and state on the map (A90)
 
-> **Status: ✍️ specced and mocked (A90, 2026-11-15); A, B and C rejected — Joe: *"i hate all of those. make them look like actual people."* — and remocked as **D, standing people (§3a, A91)**; ⏸️ his calls (§6a); nothing built.** Joe: *"i want to work on
+> **Status: ✍️ specced and mocked (A90, 2026-11-15); A, B and C rejected — Joe: *"i hate all of those. make them look like actual people."* — and remocked as **D, standing people (§3a, A91)**; Joe: *"you're heading in the right direction, now let's incorporate a little flavour from some real life examples"* — **E, D with the flavour of medieval illuminated manuscripts (§3b, A92)**; ⏸️ his calls (§6a); nothing built.** Joe: *"i want to work on
 > villagers for the next art piece. And then the UI"* — the art lane's order: **the villagers, then the parchment-and-wood
 > interface.** Mocked on copies of his saves, the buildings' way (A85): `D:\Projects\brushes\villagers\` —
 > `villagers_options.jpg` (four scenes × today / A / B / C), `villagers_catalogue.jpg` (every trade, age and state at three
@@ -125,8 +125,35 @@ Animals (cattle, game — `art-inventory.md §7`), portraits (B12 stands: none),
 at night, villagers in the UI (the next piece). New states Phase 6 adds are listed in `art-inventory.md §15` and drawn
 in this look when their systems land.
 
-## 6a. ⏸️ Joe's calls on D (A91) — supersede §6's first two
+## 3b. ⭐ E — D with the manuscripts' flavour (A92)
 
+Joe, on D: *"you're heading in the right direction, now let's incorporate a little flavour from some real life
+examples"* — seven pages of medieval illumination he sent (courtly scenes in the Codex Manesse manner, choristers at a
+lectern, a crowd in a landscape, a watercolour of three women and a child, paired figures from a medical book, boys at a
+game, an Adoration). **E is D's people, with what those pages share:**
+
+- **Long A-line gowns** widening to the hem — ankle for the merchant, the tailor, the teacher and the elders; calf or knee
+  for the working trades, over **grey or coloured hose**, in **pointed black shoes**.
+- **Pigment colour**: each trade's colour (`TradeGlyph`) pushed toward its pigment — vermilion, ultramarine, verdigris,
+  rose, ochre — instead of D's pull toward undyed cloth. **Half of everyone shows sleeves of a second pigment** (a kirtle
+  under the gown).
+- **Ink**: every shape outlined, **fold lines** drawn down the gown and the cloak, a pale stroke on the lit side (left).
+- **Heads**: rolled curly bobs (fair, auburn, ginger, brown, black); **white linen coifs tied under the chin** (the
+  forager, miller and baker, and about a fifth of the bareheaded); **hoods with a hanging tail** (forester, hunter,
+  elders); **red caps** (builder, carpenter, some others); the merchant's rolled hat with its tail; the teacher's black
+  cap and red shoulder cape. **Pink cheeks and dot eyes** at the closest zoom.
+- **A slight sway** in every body; **a raised palm** on anyone standing idle, as the pages' people talk.
+- **The coat a cloak with a pale fur collar.**
+
+Mocks: `illum_options.jpg` (D vs E, five scenes), `illum_closeup.jpg` (2×), `illum_large.jpg` (every trade, child,
+elder, cold, cart, and a row talking), `illum_{closest,middle,far}_{grass,snow}.png`. Tools: `illum.py`,
+`people_sheets.py` (`LOOK=illum`), `illum_compare.py`. Still no sex drawn: coifs, curls, gown lengths and colours fall
+by the villager's id for everyone.
+
+## 6a. ⏸️ Joe's calls on D (A91, and E, A92) — supersede §6's first two
+
+0. **D or E?** ⭐ Recommended: E — it is D with the pages' flavour he asked for, and the pigments make the trades
+   easier to tell apart, not harder.
 1. **Standing people on a map seen from above — yes?** ⭐ Recommended: yes. It is the only way a villager at this size
    looks like a person, and old painted maps do exactly this.
 2. **The size: 0.72 of a tile tall** (about a third of a 2 × 1 house's length). ⭐ Recommended as mocked.
