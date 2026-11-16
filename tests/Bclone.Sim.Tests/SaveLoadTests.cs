@@ -359,6 +359,8 @@ public sealed class SaveLoadTests : IDisposable
             "_deepestGenerationFor", "_deepestGeneration",
             // Children left without a school place at the last labour pass (D765): the school roll sets it each pass.
             "ChildrenWaitingForSchool",
+            // The river's bank tiles (D779): derived from the terrain, rebuilt when its counter moves.
+            "_banks", "_banksBuiltAt",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {

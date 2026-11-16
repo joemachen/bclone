@@ -1,6 +1,12 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
-> **🔨 `slice/water-need` — ✅ STEP 2 BUILT (D778, 2026-11-15): WATER AT HOME.** Each household keeps a jar (`water_jar` 40), every
+> **🔨 `slice/water-need` — ✅ STEP 3 BUILT (D779, 2026-11-15): THE RIVER BANK, AND JOE'S JAR OF 120.** With no well nearer, a
+> household walks to the bank tile cheapest to walk home from. At step 2's jar of 40 that was too dear — a river 15–25 tiles off
+> is ten days a trip — so the jar went to Joe (call 4) with measurements: *"120 (Recommended)"*. Eight golden constants and one pin re-taken, each proven by ablation; three posed guards fixed at their poses (the herdsman's jar, the lodge's hunter already out and its cap edge).
+> - **Four checks:** suite **2058 / 0 / 5 of 2063 in 17m05**; view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines, 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 420 → 427 lines — the eight re-taken constants and seven *Was* lines, nothing else.
+> - **Guards:** 5 new in `WellTests` (the bank with no well; the nearer of well and bank, both ways; a well by the houses shortens the walk, 18.0 → 1.5 ticks out; the bank is the cheapest walk home against a tile-by-tile search; Joe's jar), 7 mutants: bank always **4** red, well always **1**, the first bank not the cheapest **3**, stood-on banks not skipped **0** (a near-equivalent: the field to the home walls every building tile but the home's own, so a built-on bank is unreachable anyway — zero kept and written down), no river trips **3**, the river not filling the jar **2**, the river not a claim **3**.
+>
+> **🔨 `slice/water-need` — ✅ STEP 2 BUILT (D778, 2026-11-15): WATER AT HOME.** *(The jar of 40 below is 120 since D779.)* Each household keeps a jar (`water_jar` 40), every
 > living member drinks `water_per_person_per_day` (1) a day, and somebody goes to the well when it cannot cover another day — the
 > 20-day clock retired, a household of two keeping it. ⚠️ Measured: five go every 13 days though their jar lasts 8 (the trip waits
 > for a rest at home) — step 4's number. No format step: Joe's saves load with empty jars. One golden moved, the Phase 5 village's, which has a well — and its herd chain was found hanging on one boat, so its pose keeps 100 firewood, not 300 (27 arms measured).
@@ -9511,6 +9517,22 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D779 PAID FOR — A MUTANT THAT CANNOT BE SWAPPED BACK, AND A TIME SCALE NOBODY DID THE SUM ON
+
+- **⛔ A mutant whose replacement is empty, or a bare `)`, cannot be swapped back by text.** The reverse swap counts its anchor,
+  finds thousands, and stops — leaving the mutant in the tree. Twice in one run (R4's empty string, R7's `)`); both found by
+  counting the restored text afterwards, and one of them was in an **untracked** new file that `git diff --stat` cannot show.
+  **Replace with a marker comment, never with nothing, and count the restored line after every mutant run.**
+- **⭐ Do the walk's sum before shipping a need.** A day is four ticks and a villager walks about a tile a tick, so a trip of N
+  tiles costs N/2 days. A jar sized for a well five tiles off (step 2's 40) bought thirteen days of water for a ten-day walk to a
+  far river. The harness said so in one run; the arithmetic would have said it before any run.
+- **The fixtures do not read `data/sim.config.json`.** `VillageFixtures.Village` starts from C# defaults, so a size measured on a
+  fixture moves with the `SimConfig` default, not the data file — and a golden posed on `ShippedConfig` moves with the data. Both
+  were changed together here; change one and half the suite measures the other number.
+- **Posed tests sit on edges.** Three guards here failed on a pose, not a rule: a cap set at exactly twice what was held, a
+  hunter already out when the rows were set, a herdsman's household errand. Trace the tick it goes wrong (who, what state, what
+  the rule read) before touching the rule — each trace here took one run.
+
 ## ⛔ THE TRAP D778 PAID FOR — A SAVE'S NULL IS A KEY, AND A FIXTURE'S FAMILIES ARE ALL ONE SIZE
 
 - **A sparse save key is written `"key": null`, not left out.** `SaveWriter` keeps nulls (`keeps_its_house` does the same),
@@ -10347,7 +10369,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*). ✅ ALL
-  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; step 3, the river bank, next.** *(Read "step 2 next" at D777.)* Phase 6
+  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); step 4, running dry, next.** *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
   item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
   the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in

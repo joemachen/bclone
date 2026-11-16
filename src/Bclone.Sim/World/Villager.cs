@@ -927,6 +927,8 @@ public sealed class Villager
                 : "digging iron at the mine face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
+            VillagerState.WalkingToTheRiver => "walking to the river for water",
+            VillagerState.DrawingAtTheRiver => "drawing water at the river",
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
             VillagerState.Tending => $"tending the wheat at {where}",
             VillagerState.WalkingBackToTheSteading => $"walking back to {where}",

@@ -306,6 +306,8 @@ public sealed class SkillSystem : ISimSystem
         // fetch's walk home always has.
         VillagerState.WalkingToTheWell => false,
         VillagerState.DrawingWater => false,
+        VillagerState.WalkingToTheRiver => false,
+        VillagerState.DrawingAtTheRiver => false,
 
         // Tending is the look only (D511): no trade grows from it, and nor does the walk back to the
         // steading — which is why that walk is its own state and not `TravelingHome`, which counts.

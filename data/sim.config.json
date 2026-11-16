@@ -1291,18 +1291,19 @@
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
   //
-  // WATER AT HOME (D778, water-need.md). Each household keeps a jar; every living
-  // member drinks water_per_person_per_day of it on each day's turn, and when it
-  // cannot cover another day an adult at home walks to the nearest well and fills
-  // it to water_jar. 40 at 1 sends a household of two every 20 days -- the clock
-  // D427 shipped -- and one of five every 8. The trip's hours come out of rest and
-  // cost nothing measurable even every 5 days (D777). PLACEHOLDERS: Joe picks the
-  // sizes once they are measured (water-need.md step 5).
+  // WATER AT HOME (D778-D779, water-need.md). Each household keeps a jar; every
+  // living member drinks water_per_person_per_day of it on each day's turn, and
+  // when it cannot cover another day an adult at home walks to the nearer of a
+  // well (within home_well_reach_tiles) and the river bank, and fills it to
+  // water_jar. 120 is Joe's pick (D779): two go every 60 days, three every 40,
+  // five every 24. NOT 40 (the old 20-day clock for two): with every village
+  // walking to the river, often 15-25 tiles off -- ten days there and back -- 40
+  // cost 0.6 villagers a valley over 100 valleys and a farm's harvest 79 -> 66 %.
   "well_logs": 10,
   "well_stone": 15,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
-  "water_jar": 40,
+  "water_jar": 120,
   "water_per_person_per_day": 1,
 
   // BRIDGES (D40, D546, D547, D549, specs/bridges.md). A deck over the water, one

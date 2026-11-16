@@ -77,6 +77,23 @@ public sealed class LodgeCarriersTests
         int leather = world.HeldAgainstItsLimit(Goods.Leather);
         Assert.True(world.SetStockLimit(Goods.Leather, leatherMet ? leather : leather + 500).Allowed);
         Assert.Equal(leatherMet, world.LimitIsMet(Goods.Leather));
+
+        // ⚠️ THE ORDERS REACH EVERY HUNTER AT ONCE (D779). A hunter already out when the pose sets the rows finishes that hunt —
+        // eleven ticks' walk and eleven hunting, the game's rule that an errand under way is finished — and these guards count
+        // a season's hunting after the orders. Which tick of the year the pose lands on decides whether one is out: since every
+        // household walks to the river, at Joe's jar of 120 Quinkin was, and three guards read 22 hunting ticks. So the hunters
+        // out are stood down to decide again under the orders, as every hunter at home already does.
+        foreach (Villager villager in world.Villagers)
+        {
+            if (villager.Alive && villager.State is VillagerState.TravelingToGame or VillagerState.Hunting)
+            {
+                villager.State = VillagerState.Idle;
+                villager.ActionTicksRemaining = 0;
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+            }
+        }
+
         return (loop, lodge);
     }
 
@@ -299,8 +316,11 @@ public sealed class LodgeCarriersTests
         (SimLoop loop, Workplace lodge) = ALodgeUnderAMetLimit(meat: 1_000, limit: 500, huntersTyped: null, leatherMet: false);
         SimWorld world = loop.World;
         int held = world.HeldAgainstItsLimit(Goods.Meat);
-        Assert.True(world.SetStockLimit(Goods.Meat, held / 2).Allowed);
-        Assert.True(world.PastTheSecondGoodCap(Goods.Meat), $"the premise: {held} meat is twice a row of {held / 2}");
+        // ⚠️ A THIRD, NOT A HALF (D779) — measured. At a half the pose sat exactly on the cap, and a season's eating takes the
+        // village below twice its row: with the river trips at a jar of 40 the meat read 1,327 against a cap of 1,398 on tick 49, and the
+        // hunter went out for the hides, which is D714's rule doing as it says. A third leaves the season's eating room.
+        Assert.True(world.SetStockLimit(Goods.Meat, held / 3).Allowed);
+        Assert.True(world.PastTheSecondGoodCap(Goods.Meat), $"the premise: {held} meat is past twice a row of {held / 3}");
         Assert.False(world.LimitIsMet(Goods.Leather), "the premise: leather is short");
         Assert.False(world.BufferIsSwollen(lodge), "the premise: not swollen, so D683's carriers do not keep the seats");
 

@@ -2178,14 +2178,15 @@ public sealed record SimConfig
     /// How much water a household's jar holds — filled to the brim at a well (D778, `water-need.md §5` step 2).
     /// </summary>
     /// <remarks>
-    /// ⭐ <b>With <see cref="WaterPerPersonPerDay"/> it is the clock D427 shipped, now kept by the household</b>:
-    /// 40 at one a person a day sends a household of two every twenty days, as <c>water_trip_every_days</c> did, so
-    /// step 2 changes the mechanism and not the price; a household of five goes every eight. ⏸️ Joe picks the sizes
-    /// after they are measured (`water-need.md` call 4, step 5). The trip itself costs nothing measurable at every 5
-    /// days (D777) — its hours come out of rest.
+    /// ⭐ <b>120, Joe's pick (D779, `water-need.md` call 4), measured</b>: at one a person a day a household of two goes every
+    /// sixty days, three every forty, five every twenty-four. ⛔ <b>Not 40</b>, which was the D427 clock's price (two every
+    /// twenty days) and was right only while nobody walked further than a well: since the river (D779) a household with no well
+    /// walks to the bank, often fifteen to twenty-five tiles — ten days there and back, at four ticks a day — and over 100
+    /// valleys a jar of 40 cost 0.59 ± 0.30 alive a valley, with more starved, and took a farm's harvest from 79 % to 66 %.
+    /// At 120: −0.27 ± 0.34 and 75 %; 2.6 % of adult time on water.
     /// </remarks>
     [JsonPropertyName("water_jar")]
-    public int WaterJar { get; init; } = 40;
+    public int WaterJar { get; init; } = 120;
 
     /// <summary>
     /// The water each living member of a household drinks on each day's turn (D778). Zero: nobody drinks, so a

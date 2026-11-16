@@ -170,11 +170,14 @@ public sealed class HerdsmanTests
         // target (`fetch_below_share_percent`) — and he spent the five days shopping across the valley; winter came with
         // nothing out. That is the household's errand beating the herd's, which this guard does not ask about. Filling the
         // larder on the pose's day alone was too late: he had set out the day before.
+        // ⚠️ AND HIS JAR (D779), for the same reason: since every household walks to the river for its water, his last days
+        // before winter went on the walk, and winter came with nothing out — the household's errand again, not the herd's.
         Household home = world.HouseholdOf(herdsman);
         void KeepHisLarderFull()
         {
             home.Stockpile.Receive(Goods.Produce, Math.Max(0, world.TargetFoodFor(home) - world.FoodIn(home.Stockpile)));
             home.ToppingUpFood = false;
+            home.Water = world.Config.WaterJar;
         }
 
         // Five days before winter, when he starts carrying hay out (`hay_feed_ahead_days`): six head, the winter's hay in.

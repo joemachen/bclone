@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
 > Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
-> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; STEP 3 NEXT.** *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); STEP 4, RUNNING DRY, NEXT.** *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -65,13 +65,52 @@ work by structure. `tools/harness/ZzWell.cs` + `well.py`.
   `keeps_its_house` is) **with no format step** — a save from before has no `water` key and loads with every jar empty,
   so Joe's format-13 saves still load (with a well, each household goes at its next rest, as the old clock's first trip
   did). **Hashed** only when there is water in it, so a village with no well hashes as before.
-- **The price, at the shipped sizes:** a household of two every 20 days, today's clock (`AHouseholdOfTwoGoesEveryTwentyDaysAsTheClockDid`).
+- **The price, at the shipped sizes** *(⛔ step 2's jar of 40 — 120 since D779, §2c)*: a household of two every 20 days, today's clock (`AHouseholdOfTwoGoesEveryTwentyDaysAsTheClockDid`).
   Measured on the fixture village over twelve years, days between a household's trips by how many lived there:
   **2 → 24.5, 3 → 15.7, 4 → 13.8, 5 → 13.0.** ⚠️ **A big household goes less often than its jar asks** (five drink 40
   in eight days, and go every thirteen): the trip waits for an adult resting at home with empty hands, and a busy big
   household rests less. It sits dry for days, which costs nothing yet — **step 4's trip ahead of work is the answer, and
   this is the measurement it is checked against.**
 - **Goldens:** **one moved, the Phase 5 village's** (`PhaseFiveGoldenTests`, both constants): its pose has a well. Its coverage test went red too (no cattle landed), and that was the pose, not water: on the old code its herd landed only at a trip every 20 or 21 days, not 15, 19 or 25 — one boat in Year 14 bought it only if the post held the firewood to pay — so the pose's firewood keep went 300 → 100, where cattle, calves and leather came in all 27 arms (4 intervals on the old code, 5 jars on the new; `phase-5-golden.md`). Every other golden is unmoved — none of their villages has a well.
+
+### 2c. ✅ Step 3 — the river bank, built; ✅ call 4, Joe's jar of 120 (D779)
+
+- **A bank tile** is land with the river on one of its four sides and nothing standing on it (`SimWorld.IsBank`). **The bank a
+  home uses is the one cheapest to walk home from, on the one cost field** (`SimWorld.NearestBank`): every candidate priced on
+  the field *to the home*, which every walk home has already built — no field per bank tile, no second distance. The bank list
+  is derived from the terrain (`TerrainGeneration`), never hashed or saved.
+- **Which:** a well within `home_well_reach_tiles` whose walk is no longer than the bank's; otherwise the bank. So a well's payoff
+  is walking saved, and one built further off than the river is not used. ⚠️ The well's reach (12) still bounds it: a well 15 out
+  with the river 30 out is not used — the siting term and the card read the same reach, and this slice did not move them.
+- **Two new states, at the end of the list** (no state already saved or hashed changes its number): `WalkingToTheRiver`, then
+  `DrawingAtTheRiver` (`well_draw_ticks`, then home). A bank built on while they walk sends them home; the jar is still low.
+- ⛔ **The price at a jar of 40 was too dear, and that is arithmetic.** A day is four ticks and a villager walks about a tile a
+  tick; most fixture founding sites are 6 to 29 tiles from the bank (seeds 1–40), so a household with no well spent ten days on
+  a trip its jar of 40 bought thirteen days of, for three. Measured:
+
+| arm (100 valleys, 50 years, seeds 200–299; paired against D777's no-well base) | Δ alive (± s.e.) | starved | adult time on water | rest, adult-years |
+|---|---|---|---|---|
+| before water (D777's base) | — | 6.2 | 0 | 326.7 |
+| the river, jar 40 (step 2's size) | **−0.59 ± 0.30** | 7.0 | 6.2 % | 262.1 |
+| the river, jar 120 | −0.27 ± 0.34 | 6.2 | 2.6 % | 303.8 |
+| the river, jar 400 | −0.03 ± 0.29 | 6.2 | 0.9 % | 314.1 |
+| a well at Year 3, jar 40 | −0.42 ± 0.38 | 6.6 | 4.5 % | 280.2 |
+| a well at Year 3, jar 120 | −0.31 ± 0.34 | 6.2 | 1.8 % | 304.2 |
+
+| `FarmTests` (six fixture valleys, ten years) | before the river | jar 40 | 80 | 120 | 200 |
+|---|---|---|---|---|---|
+| brought in, all six (bar 75 %) | 79 % | **66 %** | **71 %** | 75 % | 75 % |
+| the near farm | 84 % | **71 %** | 86 % | 89 % | 87 % |
+| the far farm | 86 % | 87 % | 96 % | 95 % | 91 % |
+
+  **⭐ Joe's pick, 2026-11-15 (call 4): *"120 (Recommended)"*** — two go every sixty days, three every forty, five every
+  twenty-four; within the noise at fifty years. The river at a jar of 40 is the one arm outside it.
+- **Guards the river moved, and why** (all poses, none of them the rule they guard): `HerdsmanTests` keeps the herdsman's jar
+  full beside his larder (D601's own reason — the household's errand beat the herd's); `LodgeCarriersTests` stands down a hunter
+  already out when the pose sets its rows (an errand under way is finished; which tick the pose lands on decided whether one was
+  out), and its cap guard sets the row at a third of the meat, not a half (at a half it sat exactly on the cap, and a season's
+  eating crossed it — D714's rule then sends the hunter out, as it says).
+- **Goldens:** **eight constants in five goldens and one pin moved, each proven by ablation**: the farm golden (both), the two skill fifty-years, the two stock-limit fifty-years, the walking-clock pin (48 → 49 trips) — all six back to their old values with the bank never offered — and the Phase 5 golden (both), back to its old pair with the bank never offered and the data jar at 40 (it has a well). ⚠️ The farm golden's second value hid behind its first assert until the first was re-taken (D735's trap).
 
 ## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
 
@@ -106,7 +145,7 @@ him stand below.
   would be answerable (a well), but it is a death spiral D207 refused for morale, and it lands before health exists to
   explain it.
 
-### Call 4 — The numbers, measured before his pick
+### Call 4 — The numbers, measured before his pick — ✅ `water_jar` 120 (Joe, D779: *"120 (Recommended)"*, §2c)
 
 `water_per_person_per_day` and `water_jar` (how much a home holds), and so how often a household goes: a family of two
 with a jar of 40 at one a person a day goes every 20 days (today's clock), and a family of five every 8. **Measured
@@ -122,7 +161,7 @@ Under the recommended calls:
 | Buildings | the well | exists (D427); no new building |
 | Goods | none: water is the household's, not a good (call 1A) | — |
 | Villager states | `WalkingToTheWell`, `DrawingWater` | exist |
-| Villager states | **drawing water at the river bank** | new (call 2A) |
+| Villager states | **walking to the river, drawing water at the river bank** | ✅ new (call 2A): `WalkingToTheRiver`, `DrawingAtTheRiver` (D779) |
 | Villager states | **carrying water home** (a pail, or a yoke and two pails) | new: today nothing is carried |
 | Map | the lane from the houses to the bank, worn by the feet | the path wear that exists; no new paint |
 
@@ -133,14 +172,17 @@ Under call 1B the stock bar would also want a water icon.
 1. ✅ **Trace D428's open question (D777, §2a): it does not reproduce — the trip comes out of rest; winter walks chill.**
 2. ✅ **Water at home, drunk, at size nought (D778, §2b).** The household's water and its daily drink, the trip filling it. Shipped
    at sizes that reproduce today's 20-day clock for a family of two, so the change is the mechanism, not the price.
-3. **The river bank** (call 2A): the nearest walkable tile beside the river by the shared cost field (§2.6, never a
+3. ✅ **The river bank** (call 2A; D779, §2c): the nearest walkable tile beside the river by the shared cost field (§2.6, never a
    second distance), a well preferred when nearer.
 4. **Running dry** (call 3): the trip ahead of work, the card line, the log sentence.
-5. **Measured** (call 4) at three or four jar sizes; Joe picks.
+5. ✅ **Measured** (call 4) at three or four jar sizes; Joe picks. *(Done at step 3, D779, because the river made step 2's jar too dear
+   to ship: river arms at 40, 120 and 400 and wells at 40 and 120 over 100 valleys, the farm guard at 40, 80, 120 and 200 —
+   Joe: 120. The 100-year reading is not taken.)*
 6. **The view**: the card's line and NEEDS, the carried pail (or the art lane's stand-in), the probe line.
 7. **Saves and the hash**: ~~the household's water saved and hashed; `water_drawn_on_day` retired with a save-format
    step;~~ **done at step 2 (D778), with no format step** — the jar is an optional key, and a save without it reads empty; the
-   goldens re-taken in one commit, the diff read *(step 2 re-took those a well reaches, §2b)*.
+   goldens re-taken in one commit, the diff read *(step 2 re-took those a well reaches, §2b; ✅ step 3 the rest, §2c — every one
+   proven by ablation)*.
 
 ## 6. Acceptance
 

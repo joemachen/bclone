@@ -149,6 +149,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.StockingTheMarket => "stocking the market",
         VillagerState.WalkingToTheWell => "walking to the well",
         VillagerState.DrawingWater => "drawing water",
+        VillagerState.WalkingToTheRiver => "walking to the river for water",
+        VillagerState.DrawingAtTheRiver => "drawing water at the river",
         VillagerState.WalkingOutToTend => "walking out to tend the field",
         VillagerState.Tending => "tending the field",
         VillagerState.WalkingBackToTheSteading => "walking back to the steading",
@@ -470,6 +472,21 @@ public sealed partial class BehaviorSystem : ISimSystem
 
                 Travel(world, villager, toTheWell.Position, VillagerState.DrawingWater);
                 return;
+
+            case VillagerState.WalkingToTheRiver:
+            {
+                // To the bank tile they set off for (D779), fixed at departure. Built on since, and they turn for
+                // home — the jar is still low, so somebody goes again at the next rest, to whichever is nearest then.
+                var bank = new GridPos(villager.ErrandX, villager.ErrandY);
+                if (!world.IsBank(bank))
+                {
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, bank, VillagerState.DrawingAtTheRiver);
+                return;
+            }
 
             case VillagerState.WalkingOutToTend:
                 // To the tile they set off for (D511), fixed at departure like every field leg.
@@ -5676,6 +5693,22 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // At the river bank (D779): the same, if the tile is still a bank.
+        if (onArrival == VillagerState.DrawingAtTheRiver)
+        {
+            if (!world.IsBank(new GridPos(villager.ErrandX, villager.ErrandY)))
+            {
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
+                return;
+            }
+
+            villager.State = VillagerState.DrawingAtTheRiver;
+            villager.ActionTicksRemaining = world.Config.WellDrawTicks;
+            return;
+        }
+
         if (onArrival == VillagerState.Forging)
         {
             BeginForging(world, villager);
@@ -6367,8 +6400,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// Set off for the household's nearest well, if its jar is low (D427, `organic-housing.md §9.12`; D778,
-    /// `water-need.md §5` step 2). False, touching nothing, when it is not.
+    /// Set off for the household's water, if its jar is low — to the nearer of its nearest well and the river bank (D427,
+    /// `organic-housing.md §9.12`; D778–D779, `water-need.md §5` steps 2–3). False, touching nothing, when it is not.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -6385,14 +6418,15 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// jar is full before the drawer turns for home.
     /// </para>
     /// <para>
-    /// ⛔ <b>The first test is <c>Wells.Count</c>, and nothing is read or written before it</b> — a
-    /// village with no well must run exactly as it did before wells existed (§9.12d; the goldens
-    /// are the check).
+    /// ⭐ <b>Where (D779, Joe's call 2A):</b> a well within <c>home_well_reach_tiles</c> whose walk is no longer than the
+    /// bank's, and otherwise the bank (<see cref="SimWorld.NearestBank"/>) — so a well's payoff is the walking it saves, and one
+    /// built further off than the river is not used. <i>(Until D779 the first test was <c>Wells.Count</c>: a village with no well
+    /// never walked for water, which call 2B was and Joe did not pick.)</i>
     /// </para>
     /// </remarks>
     private static bool TryDrawWater(SimWorld world, Villager villager)
     {
-        if (world.Wells.Count == 0 || !villager.CanWork || villager.IsCarrying)
+        if (!villager.CanWork || villager.IsCarrying)
         {
             return false;
         }
@@ -6405,18 +6439,32 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
-        if (!WaterIsLow(world, household)
-            || AHousemateIsAtTheWell(world, household.Id)
-            || world.NearestWell(villager.Tile, out _) is not Well well)
+        if (!WaterIsLow(world, household) || AHousemateIsAtTheWell(world, household.Id))
         {
             return false;
         }
 
-        villager.ErrandX = well.Tile.X;
-        villager.ErrandY = well.Tile.Y;
+        Well? well = world.NearestWell(villager.Tile, out int wellWalk);
+        GridPos? bank = world.NearestBank(villager.Tile, out int bankWalk);
         villager.ActionTicksRemaining = 0;
-        villager.State = VillagerState.WalkingToTheWell;
-        Travel(world, villager, well.Position, VillagerState.DrawingWater);
+        if (well is not null && (bank is null || wellWalk <= bankWalk))
+        {
+            villager.ErrandX = well.Tile.X;
+            villager.ErrandY = well.Tile.Y;
+            villager.State = VillagerState.WalkingToTheWell;
+            Travel(world, villager, well.Position, VillagerState.DrawingWater);
+            return true;
+        }
+
+        if (bank is not GridPos river)
+        {
+            return false;
+        }
+
+        villager.ErrandX = river.X;
+        villager.ErrandY = river.Y;
+        villager.State = VillagerState.WalkingToTheRiver;
+        Travel(world, villager, river, VillagerState.DrawingAtTheRiver);
         return true;
     }
 
@@ -6444,7 +6492,19 @@ public sealed partial class BehaviorSystem : ISimSystem
         return household.Water < perPerson * world.LivingMembersOf(household);
     }
 
-    /// <summary>Whether anybody from this household is walking to a well or drawing at one now.</summary>
+    /// <summary>The household's jar filled to the brim where the drawing ends (D778), and the DEBUG line saying where (D779).</summary>
+    private static void FillTheJar(SimWorld world, Villager villager, string where)
+    {
+        Household drewFor = world.HouseholdOf(villager);
+        drewFor.Water = world.Config.WaterJar;
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "behavior",
+                $"{villager.Name} drew water at {where} for the {drewFor.Surname} household — the jar holds {drewFor.Water}.");
+        }
+    }
+
+    /// <summary>Whether anybody from this household is out for water now — at a well or the river bank (D779).</summary>
     /// <remarks>One pass over the villagers, and only when a trip is otherwise due (D422's warning about per-member lookups).</remarks>
     private static bool AHousemateIsAtTheWell(SimWorld world, int householdId)
     {
@@ -6452,7 +6512,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             Villager v = world.Villagers[i];
             if (v.HouseholdId == householdId
-                && v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater)
+                && v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater
+                    or VillagerState.WalkingToTheRiver or VillagerState.DrawingAtTheRiver)
             {
                 return true;
             }
@@ -6843,14 +6904,16 @@ public sealed partial class BehaviorSystem : ISimSystem
                     drawnAt.Draws++;
                 }
 
-                Household drewFor = world.HouseholdOf(villager);
-                drewFor.Water = world.Config.WaterJar;
-                if (world.Logs(LogLevel.Debug))
-                {
-                    world.Log(LogLevel.Debug, "behavior",
-                        $"{villager.Name} drew water for the {drewFor.Surname} household — the jar holds {drewFor.Water}.");
-                }
+                FillTheJar(world, villager, "the well");
 
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
+                return;
+
+            case VillagerState.DrawingAtTheRiver:
+                // ⭐ Drawn at the bank, the jar filled, and home (D779) — the well's completion without a well to count.
+                FillTheJar(world, villager, "the river");
                 villager.ErrandX = 0;
                 villager.ErrandY = 0;
                 GoHome(world, villager);

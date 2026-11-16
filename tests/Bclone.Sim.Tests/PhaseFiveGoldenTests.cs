@@ -72,7 +72,10 @@ public sealed class PhaseFiveGoldenTests
     // jar runs low (every 40/n days for n living) instead of every 20, and the jar is hashed in place of the day; and the pose
     // keeps 100 firewood, not 300, because at 300 the herd hung on one boat (the keep line says how it was measured). Those are
     // the commit's two changes to what this village runs; nothing else in it touches the sim. Was 1863475448240955389.
-    private const ulong PhaseFiveGoldenHash = 2969974743799576693UL;
+    // RE-TAKEN (D779), BOTH — the river bank (`water-need.md §5` step 3) and Joe's jar of 120: this village has a well, so its
+    // households near the river go to the bank and the rest go a third as often. ⭐ PROVEN BY ABLATION: with the bank never offered
+    // and `water_jar` back at 40 in the data, both old values pass. Was 2969974743799576693.
+    private const ulong PhaseFiveGoldenHash = 11880347252707744900UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
     // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
@@ -81,7 +84,8 @@ public sealed class PhaseFiveGoldenTests
     // failed assert, and the posed hash above failed first, hiding this one until it was re-taken.
     // Was 11978217067257029817 before D736 (the hills smoothed, as above) — caught on the re-run this time.
     // Was 4967655042257212333 before D778 (water at home and the keep of 100, as above) — read off the same run as the posed one.
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 1205823903075181310UL;
+    // Was 1205823903075181310 before D779 (the river bank and the jar of 120, as above).
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 13179634247122399127UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

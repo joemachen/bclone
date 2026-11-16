@@ -88,8 +88,9 @@ public sealed class ZzWell
                     continue;
                 }
 
-                if (v.State == VillagerState.WalkingToTheWell
-                    && (!before.TryGetValue(v.Id, out VillagerState was) || was != VillagerState.WalkingToTheWell))
+                // A trip to the well or, since D779, to the river bank.
+                if (v.State is VillagerState.WalkingToTheWell or VillagerState.WalkingToTheRiver
+                    && (!before.TryGetValue(v.Id, out VillagerState was) || was != v.State))
                 {
                     trips++;
                 }
@@ -102,7 +103,8 @@ public sealed class ZzWell
 
                 adultTicks++;
                 stateTicks[Math.Min((int)v.State, stateTicks.Length - 1)]++;
-                if (v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater)
+                if (v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater
+                    or VillagerState.WalkingToTheRiver or VillagerState.DrawingAtTheRiver)
                 {
                     toWell++;
                 }
