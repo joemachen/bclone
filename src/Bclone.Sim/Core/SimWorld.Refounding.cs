@@ -114,6 +114,7 @@ public sealed partial class SimWorld
                 Stockpile = NewLarder(),
                 DayForAChild = NameHash.DayForAChild(Seed, householdId, Config.DaysPerSeason * 4),
                 HomePosition = null,
+                Water = Config.WaterJar, // a refounding starts as the founding does (D780)
             };
             surnames.Add(household.Surname);
             Households.Add(household);

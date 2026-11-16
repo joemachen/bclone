@@ -866,7 +866,9 @@ public sealed class FarmTests
         // villages that live and villages that do not, and the claim is about what is sown.
         int sown = 0;
         int reaped = 0;
-        for (ulong seed = 1; seed <= 6; seed++)
+        // ⚠️ TWENTY-FOUR VALLEYS, NOT SIX (D780, Joe: "Widen and re-set bars"): on six it passed or failed by the draw — 66 to
+        // 79 % from one commit to the next. On twenty-four: 79 % before water, 74 % since every village walks to the river (D779).
+        for (ulong seed = 1; seed <= 24; seed++)
         {
             (int sownHere, int reapedHere) = SowAndReapForTenYears(Config with { Seed = seed });
             sown += sownHere;
@@ -874,7 +876,7 @@ public sealed class FarmTests
         }
 
         int broughtIn = sown == 0 ? 0 : reaped * 100 / sown;
-        _output.WriteLine($"over 10 years in six valleys: sown {sown}, reaped {reaped} — {broughtIn}% brought in");
+        _output.WriteLine($"over 10 years in twenty-four valleys: sown {sown}, reaped {reaped} — {broughtIn}% brought in");
 
         Assert.True(sown > 0, "Nothing was sown, so the guard measures nothing.");
 
@@ -893,7 +895,7 @@ public sealed class FarmTests
         // The cap is held by `AFarmsHarvestFallsOffWithDistanceFromItsStore` and two in
         // `FarmMemoryTests` (3 red under each mutant); this guards the outcome.
         Assert.True(
-            broughtIn >= 75,
+            broughtIn >= 70, // Joe, D780: just under the 74 % the game reaps with the river; 75 until then
             $"Only {broughtIn}% of what the farm sowed was ever reaped. A spring that commits "
             + "ground the autumn cannot take turns use-it-or-lose-it from a consequence into "
             + "weather, and the player cannot act on weather.");

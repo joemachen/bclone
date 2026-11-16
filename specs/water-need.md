@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
 > Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
-> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); STEP 4, RUNNING DRY, NEXT.** *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); ✅ STEP 4 (D780, §2d): RUNNING DRY IS SAID, NOT RUSHED (Joe); STEP 6, THE VIEW, NEXT.** *(Read "STEP 4, RUNNING DRY, NEXT" at D779.)* *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -112,6 +112,43 @@ work by structure. `tools/harness/ZzWell.cs` + `well.py`.
   eating crossed it — D714's rule then sends the hunter out, as it says).
 - **Goldens:** **eight constants in five goldens and one pin moved, each proven by ablation**: the farm golden (both), the two skill fifty-years, the two stock-limit fifty-years, the walking-clock pin (48 → 49 trips) — all six back to their old values with the bank never offered — and the Phase 5 golden (both), back to its old pair with the bank never offered and the data jar at 40 (it has a well). ⚠️ The farm golden's second value hid behind its first assert until the first was re-taken (D735's trap).
 
+### 2d. ✅ Step 4 — running dry: said, not rushed (D780; Joe: *"Say it, don't rush"*)
+
+**Built as call 3A was answered first, and measured.** A dry household sent its first able adult with empty hands at once,
+from work, ahead of everything but eating, warmth and the restock — and said so. Over 100 valleys at Joe's jar:
+
+| a dry household (100 valleys, 50 years, jar 120) | Δ alive against step 3 (± s.e.) | starved | born |
+|---|---|---|---|
+| somebody leaves their work at once (call 3A as answered) | **−0.56 ± 0.32** | 6.2 → 6.6 | 18.1 → 17.3 |
+| somebody resting or idle goes at once, no job dropped | −0.37 ± 0.30 | 6.0 | 16.9 |
+| nobody rushes; the next rest at home fills it (✅ Joe's pick) | **+0.00** — no valley differs | 6.2 | 18.1 |
+| the rush, and the founders' jars empty | −1.16 ± 0.39 | 7.7 | 17.6 |
+
+**An empty jar harms nobody** (no thirst, call 3A), **so the rush bought nothing and took work time** — D777's lesson the other
+way round: a trip that comes out of rest is free, one that comes out of work is not. Put to Joe: *"Say it, don't rush
+(Recommended)"*. **What ships:**
+
+- **The day a jar runs dry the log says so, once** (`NeedsSystem`, the drink that empties it): *"The Bramble household has run
+  out of water — somebody will go for it at their next rest at home."* A jar already empty is never read again, so once a
+  spell by construction.
+- **Nobody rushes.** It is filled at the next rest at home, as every trip is (measured: 41 ticks, on the fixture's pose).
+- **The card's sentence** (`SimWorld.WaterNoteFor`): nothing while there is water; *"No water — somebody will go at their next
+  rest at home"*; *"No water — Mabel has gone to the river"* once somebody has. The sim's half; the card draws it at step 6.
+- **The founders start with a full jar** (and a refounding) — costs nothing measurable (the no-rush arm above starts full and
+  no valley differs), and a new valley does not open dry. A household formed later starts empty and fetches at its first rest.
+- **Saved always** — a save without the key is from before water and reads full, so a dry jar and an old save are told apart.
+
+**Two old guards, widened and re-barred** (Joe: *"Widen and re-set bars (Recommended)"*): on six and twelve valleys they
+passed or failed by the draw; on twenty-four —
+
+| guard, on 24 valleys | bar | before water (D778) | the river (D779) | ✅ now (D780) |
+|---|---|---|---|---|
+| `FarmTests.AFarmBringsInMostOfWhatItSows` — brought in | 75 % → **70 %** | 79 % | 74 % | 75 % |
+| `DesirePathTests.TheFoundingHubWearsLanesNotABlock` — the lanes' block against the corner-cutters' | 0.7 → **0.8** | 0.82 | 0.74 | 0.76 |
+
+The lanes guard **was never met on a wide sample** — 0.82 before water — and is its own ⏸️ item: why the founding hub wears a
+block at all. **Goldens:** **four constants in two goldens and one pin moved, each proven by ablation**: the two skill fifty-years, the two stock-limit fifty-years and the walking-clock pin (20 / 141 / 494 → 507) — all back to their old values with the founding's jars started empty (the dry sentence changes no state). The farm and Phase 5 goldens did not move.
+
 ## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
 
 **Answered:** 1A (a number the household keeps, not a good), 2A (the nearer of a well or the river bank), 3A (nobody dies of
@@ -135,7 +172,7 @@ him stand below.
 - B: only a well. Then a village without one either has no water (and call 3 must punish it) or the need does
   nothing until one is built. A need that does nothing before a building is a building's tax, not a need.
 
-### Call 3 — What running dry does
+### Call 3 — What running dry does — ✅ A, and then *"Say it, don't rush"* (Joe, D780, §2d): no trip ahead of work
 
 - **A (recommended): nobody dies of thirst; a household that runs dry goes at once.** It sends somebody ahead of work,
   like the emergency restock, and **says so**: the household card reads *"No water — Dovlow has gone to the river"*,
@@ -174,7 +211,8 @@ Under call 1B the stock bar would also want a water icon.
    at sizes that reproduce today's 20-day clock for a family of two, so the change is the mechanism, not the price.
 3. ✅ **The river bank** (call 2A; D779, §2c): the nearest walkable tile beside the river by the shared cost field (§2.6, never a
    second distance), a well preferred when nearer.
-4. **Running dry** (call 3): the trip ahead of work, the card line, the log sentence.
+4. ✅ **Running dry** (call 3; D780, §2d): ~~the trip ahead of work,~~ *(built, measured at −0.56 alive, and taken out at Joe's
+   word)* the card line (the sim's sentence; drawn at step 6), the log sentence.
 5. ✅ **Measured** (call 4) at three or four jar sizes; Joe picks. *(Done at step 3, D779, because the river made step 2's jar too dear
    to ship: river arms at 40, 120 and 400 and wells at 40 and 120 over 100 valleys, the farm guard at 40, 80, 120 and 200 —
    Joe: 120. The 100-year reading is not taken.)*

@@ -57,6 +57,40 @@ public sealed partial class SimWorld
         return best;
     }
 
+    /// <summary>
+    /// ⭐ THE HOUSEHOLD CARD'S WATER SENTENCE (D780, `water-need.md` call 3A: <i>"No water — Dovlow has gone to the river"</i>):
+    /// null while there is water in the jar; who has gone and where once somebody has; that somebody will at their next rest
+    /// at home, otherwise (Joe, D780: <i>"Say it, don't rush"</i>).
+    /// </summary>
+    public string? WaterNoteFor(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        if (household.Water > 0)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager v = Villagers[i];
+            if (v.Alive && v.HouseholdId == household.Id)
+            {
+                string? where = v.State switch
+                {
+                    VillagerState.WalkingToTheWell or VillagerState.DrawingWater => "the well",
+                    VillagerState.WalkingToTheRiver or VillagerState.DrawingAtTheRiver => "the river",
+                    _ => null,
+                };
+                if (where is not null)
+                {
+                    return $"No water — {v.Name} has gone to {where}";
+                }
+            }
+        }
+
+        return "No water — somebody will go at their next rest at home";
+    }
+
     /// <summary>Every land tile beside the river, in row order, rebuilt when the terrain changes.</summary>
     private List<GridPos> Banks()
     {

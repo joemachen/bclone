@@ -401,7 +401,8 @@ public sealed class StockLimitTests
     // would have, and by Year 50 it is set either way; nothing the village does changes (Build homes as stays Cabin). Was
     // 2460416229105199918.
     // RE-TAKEN (D779) — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Was 2939480164378330515.
-    private const ulong FixtureFiftyYearHash = 5505396747410913982UL;
+    // RE-TAKEN (D780) — the founders start with a full jar (`water-need.md §5` step 4), so their first trips come forty days later. ⭐ PROVEN BY ABLATION: with the founding's jars started empty the old value passes; the dry sentence changes no state. Was 5505396747410913982.
+    private const ulong FixtureFiftyYearHash = 5003805206828685583UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -536,7 +537,8 @@ public sealed class StockLimitTests
     // ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) the old value passes. The fixture's did not move. Was 1984555868935464164.
     // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 17224396567075353750.
     // RE-TAKEN (D779) — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Was 17613434144534984246.
-    private const ulong ShippedFiftyYearHash = 720234075894929209UL;
+    // RE-TAKEN (D780) — the founders start with a full jar (`water-need.md §5` step 4), so their first trips come forty days later. ⭐ PROVEN BY ABLATION: with the founding's jars started empty the old value passes; the dry sentence changes no state. Was 720234075894929209.
+    private const ulong ShippedFiftyYearHash = 1516272682464998280UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

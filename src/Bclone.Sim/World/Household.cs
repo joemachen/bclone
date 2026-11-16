@@ -1250,9 +1250,10 @@ public sealed class Household
     /// <remarks>
     /// Filled to <c>water_jar</c> when somebody from the household finishes drawing at a well; every living member
     /// drinks <c>water_per_person_per_day</c> of it on each day's turn (<c>NeedsSystem</c>), never below empty. When it
-    /// cannot cover another day, an adult at home goes for more (<c>BehaviorSystem.TryDrawWater</c>). ⛔ <b>Saved and
-    /// hashed only when there is water in it</b>: a village with no well never fills a jar, and hashes and saves as it did
-    /// before water. <i>(Replaces <c>WaterDrawnOnDay</c>, the 20-day clock's day, D427 — retired at D778.)</i>
+    /// cannot cover another day, an adult at home goes for more (<c>BehaviorSystem.TryDrawWater</c>); the day it empties the
+    /// log says so, and nobody rushes (Joe, D780). The founders start full (D780). ⛔ <b>Hashed only when there
+    /// is water in it</b>; <b>saved always</b> (D780 — a save without the key is from before water, and reads full).
+    /// <i>(Replaces <c>WaterDrawnOnDay</c>, the 20-day clock's day, D427 — retired at D778.)</i>
     /// </remarks>
     public int Water { get; set; }
 
@@ -1353,14 +1354,14 @@ public sealed class Household
         ["day_for_a_child"] = DayForAChild,
         ["topping_up_food"] = ToppingUpFood,
         ["topping_up_firewood"] = ToppingUpFirewood,
-        // Only when there is water in it (D778) — so a save from before, which has `water_drawn_on_day` instead, reads every jar empty.
-        ["water"] = Water != 0 ? Water : null,
+        // Every household's, empty or not (D780) — so a save from before water, with no key, is told apart from a dry jar and reads full.
+        ["water"] = Water,
         ["handcart_uses"] = HandcartUses,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
 
-    internal static Household FromSave(SaveReader save)
+    internal static Household FromSave(SaveReader save, int waterJar)
     {
         var household = new Household
         {
@@ -1379,7 +1380,7 @@ public sealed class Household
             DayForAChild = save.Int("day_for_a_child"),
             ToppingUpFood = save.Bool("topping_up_food"),
             ToppingUpFirewood = save.Bool("topping_up_firewood"),
-            Water = save.HasValue("water") ? save.Int("water") : 0,
+            Water = save.HasValue("water") ? save.Int("water") : waterJar,
             HandcartUses = save.Int("handcart_uses"),
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };

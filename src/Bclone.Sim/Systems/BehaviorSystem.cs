@@ -6444,28 +6444,46 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
-        Well? well = world.NearestWell(villager.Tile, out int wellWalk);
-        GridPos? bank = world.NearestBank(villager.Tile, out int bankWalk);
-        villager.ActionTicksRemaining = 0;
+        return SetOffForWater(world, villager, villager.Tile) is not null;
+    }
+
+    /// <summary>
+    /// Send <paramref name="villager"/> for water — to the nearer of the nearest well within reach and the river bank, both
+    /// judged from <paramref name="home"/> (D779) — and say where: <c>"the well"</c>, <c>"the river"</c>, or null when neither
+    /// can be walked to.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>There is no trip ahead of work for a dry jar</b> (Joe, D780: <i>"Say it, don't rush"</i>). Built and measured first:
+    /// a dry household sending somebody straight off their job cost 0.56 ± 0.32 alive a valley over 100 valleys and took a
+    /// farm's harvest 74 → 69 %, and from rest alone 0.37 ± 0.30 — while an empty jar harms nobody (no thirst, call 3A), so the
+    /// rush bought nothing. A dry jar is said (<c>NeedsSystem</c>, the card) and filled at the next rest at home, which is free
+    /// (D777). When health makes an empty jar matter, a rush can come back with a reason.
+    /// </remarks>
+    private static string? SetOffForWater(SimWorld world, Villager villager, GridPos home)
+    {
+        Well? well = world.NearestWell(home, out int wellWalk);
+        GridPos? bank = world.NearestBank(home, out int bankWalk);
         if (well is not null && (bank is null || wellWalk <= bankWalk))
         {
+            villager.ActionTicksRemaining = 0;
             villager.ErrandX = well.Tile.X;
             villager.ErrandY = well.Tile.Y;
             villager.State = VillagerState.WalkingToTheWell;
             Travel(world, villager, well.Position, VillagerState.DrawingWater);
-            return true;
+            return "the well";
         }
 
         if (bank is not GridPos river)
         {
-            return false;
+            return null;
         }
 
+        villager.ActionTicksRemaining = 0;
         villager.ErrandX = river.X;
         villager.ErrandY = river.Y;
         villager.State = VillagerState.WalkingToTheRiver;
         Travel(world, villager, river, VillagerState.DrawingAtTheRiver);
-        return true;
+        return "the river";
     }
 
     /// <summary>

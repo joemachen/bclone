@@ -358,7 +358,15 @@ public sealed class PlacementTests
         SimLoop loop = SimFactory.CreatePhase0(config, sink);
         loop.Step(config.TicksPerYear * 10);
 
+        // ⚠️ ON, UNTIL IT HOLDS SOMETHING (D780). A spring's granary swings between nought and five hundred from one year to the
+        // next with nobody starving — measured over ten years with the founders' jars full and empty — and this read one tick:
+        // the full jars' Year 10 happened to land on an empty one. Within the year the village fills it again on its own.
         SimWorld world = loop.World;
+        for (int t = 0; t < config.TicksPerYear && world.AnyStoreOf(StoreKind.Granary).Store.Held == 0; t++)
+        {
+            loop.StepOnce();
+        }
+
         StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
         int inside = granary.Store.Held;
         Assert.True(inside > 0, "The granary was empty, so this proves nothing (D7).");

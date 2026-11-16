@@ -37,8 +37,8 @@ public sealed class NeedsSystem : ISimSystem
 
     /// <summary>
     /// ⭐ THE DAY'S DRINK (D778, `water-need.md §5` step 2): every living member of a household drinks
-    /// <c>water_per_person_per_day</c> from its jar, never below empty. What an empty jar costs is step 4's (Joe's call
-    /// 3A: nobody dies of thirst); here it only sends somebody for more.
+    /// <c>water_per_person_per_day</c> from its jar, never below empty. An empty jar costs nothing (Joe's call 3A: nobody
+    /// dies of thirst) and is said, the day it empties (D780).
     /// </summary>
     /// <remarks>
     /// ⛔ A dry jar is never read past its <c>Water</c>, so a village with no well, whose jars are never filled, writes
@@ -64,6 +64,14 @@ public sealed class NeedsSystem : ISimSystem
             living ??= LivingByHousehold(world);
             int drink = perPerson * living.GetValueOrDefault(household.Id);
             household.Water = Math.Max(0, household.Water - drink);
+
+            // ⭐ SAID THE DAY IT RUNS DRY, AND ONLY THEN (D780, call 3A: "and says so"; Joe: "Say it, don't rush"): the jar
+            // goes from water to none here and nowhere else, so the sentence is once a dry spell by construction — a jar
+            // already empty is never read past its first line above. Nobody goes for it at once; the next rest at home does.
+            if (household.Water == 0 && drink > 0)
+            {
+                world.Narrate($"The {household.Name} household has run out of water — somebody will go for it at their next rest at home.");
+            }
         }
     }
 

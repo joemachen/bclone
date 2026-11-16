@@ -1,5 +1,12 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/water-need` — ✅ STEP 4 BUILT (D780, 2026-11-16): RUNNING DRY IS SAID, NOT RUSHED.** Built first as call 3A read
+> (a dry household sends somebody off their work at once) and measured: −0.56 ± 0.32 alive a valley, for a need that harms
+> nobody. Joe: *"Say it, don't rush"* — the log says it the day the jar empties, once; the next rest at home fills it; the
+> founders start full. And *"Widen and re-set bars"*: the farm and lanes guards on 24 valleys, bars 70 % and 0.8. Four golden constants and one pin re-taken, proven by ablation (the founders' full jar).
+> - **Four checks:** suite **2063 / 0 / 5 of 2068 in 19m27** (the two widened guards are about two minutes of it; one earlier run read 25m15, the machine — back to back, fifty fixture years took 16.1 s on HEAD and 15.4 s on the tree); view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines, 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 427 → 430 lines — the four re-taken constants and three *Was* lines, nothing else.
+> - **Guards:** 5 new in `WellTests` (said once the day it runs dry; a dry jar waits for a rest at home; every dry spell said once in a year at a jar of three — 36; the founders start full; the card's sentence), plus the save test reading an old save full. Mutants: the sentence removed **2** red, said every dry day **2**, the card naming nobody **1**, the founders empty **2**, the trip's at-home test removed **0** (a near-equivalent — it is asked only where a rest at home begins; zero kept and written down), a rush put back **5** (the no-rush guard among them). The rush's own seven, before Joe took it out: 2, 2, 6, 3 (a first build of the switch-off scored 1 — the D780 trap), 4, 1, 9. The two widened guards: measured, not mutated (75 % against 70, 0.76 against 0.8).
+>
 > **🔨 `slice/water-need` — ✅ STEP 3 BUILT (D779, 2026-11-15): THE RIVER BANK, AND JOE'S JAR OF 120.** With no well nearer, a
 > household walks to the bank tile cheapest to walk home from. At step 2's jar of 40 that was too dear — a river 15–25 tiles off
 > is ten days a trip — so the jar went to Joe (call 4) with measurements: *"120 (Recommended)"*. Eight golden constants and one pin re-taken, each proven by ablation; three posed guards fixed at their poses (the herdsman's jar, the lodge's hunter already out and its cap edge).
@@ -9517,6 +9524,20 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D780 PAID FOR — A RUSH FOR A NEED THAT HARMS NOBODY, AND A MUTANT THAT STILL RAN THE CALL
+
+- **⭐ Ask where an errand's hours come from before ranking it above work.** D777 measured the water trip free *because it came
+  out of rest*; ranking the dry trip above work moved its hours into work, and with no thirst to answer it cost 0.56 alive a
+  valley for nothing. An errand above work needs a harm it prevents, or it is a tax.
+- **⛔ `if (Call() && false-thing)` does not switch `Call` off** — the call runs, does its work, and only the `if` is false. D4
+  scored one red that way; with the false thing first (`villager.Id < 0 && Call()`) it scored three. **Put the switch before the
+  call.**
+- **A small-sample guard near its bar is a coin, and widening it can show the bar was never met.** The lanes guard read 0.82 on
+  twenty-four valleys before water; twelve had passed it for months. Widen before blaming the change in front of you, and
+  measure the commit before it on the same sample (`git archive` into the scratchpad).
+- **The suite read 25m15 once and 17m32 the next run, same code.** Back to back, fifty fixture years took 16.1 s on HEAD and
+  15.4 s on the tree. The clock is an instrument — read it twice before chasing it (D417).
+
 ## ⛔ THE TRAP D779 PAID FOR — A MUTANT THAT CANNOT BE SWAPPED BACK, AND A TIME SCALE NOBODY DID THE SUM ON
 
 - **⛔ A mutant whose replacement is empty, or a bare `)`, cannot be swapped back by text.** The reverse swap counts its anchor,
@@ -10368,8 +10389,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE FOUNDING HUB WEARS A BLOCK, NOT LANES — THE D414 BAR WAS NEVER MET ON A WIDE SAMPLE (D780, 2026-11-16).** Found while
+  widening `TheFoundingHubWearsLanesNotABlock` to 24 valleys at Joe's word: the shipped walk's worn block against the
+  corner-cutters' read **0.82 before water** (bar 0.7; twelve valleys had passed it by the draw since D612), 0.74 with the river,
+  0.76 now. The bar is 0.8 for now, just over what the game does. **His to call:** whether a thinner hub is still wanted, and if
+  so, a slice to find what wears the block. Nothing built.
+
 - ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*). ✅ ALL
-  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); step 4, running dry, next.** *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
+  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); ✅ step 4, running dry said, not rushed (D780, *"Say it, don't rush"*); step 6, the view, next.** *(Read "step 4 … next" at D779.)* *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
   item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
   the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
