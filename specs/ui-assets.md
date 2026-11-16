@@ -3,7 +3,7 @@
 > **Status: ✍️ written on `art` (A98, 2026-11-15) at Joe's ask (*"write up a spec sheet for the whole list"*); NOTHING
 > PAINTED OR BUILT.** **A99: the list, sizes, margins, format, naming, paths, legibility rules and states are settled and
 > followed exactly; the LOOK (§1.4's palette, the scroll forms in §2's descriptions) is reopened — any row a new look makes
-> wrong is listed and put to Joe, never changed quietly. Painted in Photoshop by script; Phase 0 (the pipeline) proven.** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
+> wrong is listed and put to Joe, never changed quietly. Painted in Photoshop by script; Phase 0 (the pipeline) proven.** **A101: Joe picked direction 2, the hung scroll, with thinner edges; icons raised to 20 logical px (§1.1, §4). Rows the hung scroll makes wrong, his to confirm: §2's `window` (one roll at the top, torn sides and foot), `roll` (the top roll itself, fattening as the sheet winds in), `modal` (the same form), and §1.4's Parchment (the painted sheet measures `#ead3a9`).** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
 > the size, format, states and drawing rules for each, so each piece can be painted to it and dropped in. Sizes are read off
 > the code at `art` 70a7620. The four calls still open in `ui-art.md §8.5` (title face, roll-up, room) do not change any
 > asset here except where noted.
@@ -20,8 +20,9 @@ The game lays out at **1280 × 800 logical pixels** and stretches to the window 
 | Joe today: 1920 × 1080, 75 % | **≈ 1.0** |
 | Largest: 3840-wide (4K), dial at 115 % | **3.45** |
 
-So a 14-logical icon lands between **8 and 48 physical pixels**. **Every master is painted at 4 × its logical size or
-more**, and every icon must still read at 8 px (§1.3).
+So a 20-logical icon lands between **11 and 69 physical pixels** (A101: raised from 14, which landed at 8–48 and was
+a speck on Joe's screen in every Phase 1 direction). **Every master is painted at 4 × its logical size or more**, and
+every icon must still read at 8 px (§1.3) — the test stays stricter than the smallest real case.
 
 ### 1.2 Format
 - **PNG, RGBA, sRGB, straight (unpremultiplied) alpha**, transparent background unless the sheet says otherwise.
@@ -36,7 +37,7 @@ more**, and every icon must still read at 8 px (§1.3).
    silhouettes are alike (A90's lesson: today's villager dots were alike in 171 of 171 trade pairs at 30 px a tile).
 2. **Colour is never the only cue** — a state is a mark or a change of form as well as a tint.
 3. **Inked.** Everything that sits on parchment has an ink outline, `Ink #2a2018`, about 1/14 of the icon's side at
-   master size (4 px on a 56 px icon), slightly irregular, a pen not a vector stroke (D637's rule for things with an area).
+   master size (5 px on a 70 px icon), slightly irregular, a pen not a vector stroke (D637's rule for things with an area).
 4. **Values.** Fills sit in the mid band (L\* 30–75) so the ink line and the parchment (L\* ≈ 86) both separate from them;
    nothing in an icon is as light as the parchment unless it is outlined.
 5. **Light from the upper left**, as on the map (A77, A85): a lit edge upper left, shade lower right, no cast shadow on
@@ -103,14 +104,16 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 
 ## 4. Icons
 
-**All icons: 14 × 14 logical, master 64 × 64 with 4 px clear on every side (the drawing in 56 × 56), on transparent.**
+**All icons: 20 × 20 logical, master 80 × 80 with 5 px clear on every side (the drawing in 70 × 70), on transparent.**
+*(A101, Joe: "yes raise icons to 20 logical px" — from 14 × 14 / 64 × 64. Moments stay 26. Controls — checkbox, pin,
+close and the rest of §3 — are not icons and keep their sizes.)*
 They sit straight on the parchment — ⏸️ **D637's parchment chip under pictures of world things was for slate panels; on
 a parchment sheet it is redundant, so recommended dropped** (Joe's to confirm when the build starts). States are separate
 files named `<name>-<state>.png`.
 
 ### 4.1 Goods (16) — `icons/goods/`
-⚠️ Today a goods row shows a 10-logical colour chip. Icons at 14 widen the top bar and the stock rows a little (a layout
-change in the seam). Fill colour from `GoodsPalette`.
+⚠️ Today a goods row shows a 10-logical colour chip. Icons at 20 widen the top bar and the stock rows, and make each
+row taller than today's text line (a layout change in the seam — the build bar's buttons and the top bars grow with it). Fill colour from `GoodsPalette`.
 
 | File | Draw |
 |---|---|
@@ -198,10 +201,10 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 ### 4.5 Seasons, alerts, moments — `icons/time/`, `icons/alerts/`, `icons/moments/`
 | File | Logical | Draw |
 |---|---|---|
-| `spring.png` · `summer.png` · `autumn.png` · `winter.png` | 14 | a budding twig · a sun · a falling leaf · a snow crystal (A77's) |
-| `warning.png` | 14 | a rubric triangle with an ink mark (replaces the font's ⚠) |
-| `death.png` | 14 | a small cross over a mound (replaces ⛔ in the log) |
-| `shortage.png` | 14 | an empty, tipped bowl |
+| `spring.png` · `summer.png` · `autumn.png` · `winter.png` | 20 | a budding twig · a sun · a falling leaf · a snow crystal (A77's) |
+| `warning.png` | 20 | a rubric triangle with an ink mark (replaces the font's ⚠) |
+| `death.png` | 20 | a small cross over a mound (replaces ⛔ in the log) |
+| `shortage.png` | 20 | an empty, tipped bowl |
 | `nomads.png` | 26 (master 104) | figures with bundles walking |
 | `bridge.png` | 26 (master 104) | an arch over water |
 ⚠️ One more moment icon each time the systems lane adds a moment kind.
