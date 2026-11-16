@@ -534,6 +534,17 @@ public partial class VillageMap : Control
     /// <summary>The map's own clock for the meal mark: real seconds, summed from frame deltas. View only.</summary>
     private double _mealClock;
 
+    /// <summary>
+    /// ⭐ WHO CARRIES A PAIL (`water-need.md §5` step 6): <c>false</c> — an empty one — on the way to the well or the river,
+    /// <c>true</c> once they have drawn and until they are home. View only, remembered from the states the sim reports a tick
+    /// at a time (<see cref="CarryTheWater"/>): the sim holds no "carrying water" fact (water is not a good, call 1A), so a
+    /// save loaded mid-walk shows no pail on that one walk — never a wrong one.
+    /// </summary>
+    private Dictionary<int, bool> _pails = new();
+
+    /// <summary>The world <see cref="_pails"/> was remembered from; a new or loaded one starts with nobody carrying.</summary>
+    private SimWorld? _pailsOf;
+
     /// <summary>How long a meal mark shows — <b>real time</b>, so it reads at every speed (Joe: "a fixed half second").</summary>
     internal const double MealMarkSeconds = 0.5;
 
@@ -9134,9 +9145,65 @@ public partial class VillageMap : Control
                     _mealShownUntil.Remove(villager.Id);
                 }
             }
+
+            if (_pails.TryGetValue(villager.Id, out bool full))
+            {
+                DrawThePail(centre, radius, full);
+            }
         }
 
         PruneTheDead(stillAlive);
+    }
+
+    /// <summary>
+    /// ⭐ A pail at a villager's side (`water-need.md §5` step 6) — empty on the way to the well or the river, full of water on
+    /// the way home. The art lane's to draw properly (`water-need.md §4`); this is the stand-in, in the map's own ink and water.
+    /// </summary>
+    private void DrawThePail(Vector2 centre, float radius, bool full)
+    {
+        float size = Mathf.Max(3f, radius * 0.8f);
+        Vector2 at = centre + new Vector2(radius + (size * 0.7f), radius * 0.3f);
+        Vector2 rimLeft = at + new Vector2(-size * 0.6f, -size * 0.5f);
+        Vector2 rimRight = at + new Vector2(size * 0.6f, -size * 0.5f);
+        Vector2 baseRight = at + new Vector2(size * 0.42f, size * 0.5f);
+        Vector2 baseLeft = at + new Vector2(-size * 0.42f, size * 0.5f);
+        if (full)
+        {
+            DrawColoredPolygon(new[] { rimLeft, rimRight, baseRight, baseLeft }, WaterTone);
+        }
+
+        DrawPolyline(new[] { rimLeft, baseLeft, baseRight, rimRight }, Ink, 1.5f);
+
+        // The handle, over the rim (screen y runs down, so π → 2π sweeps above).
+        DrawArc(at + new Vector2(0f, -size * 0.5f), size * 0.6f, Mathf.Pi, Mathf.Tau, 8, Ink, 1.2f);
+    }
+
+    /// <summary>
+    /// Who carries a pail after this tick, from who carried one before it and everybody's state now (`water-need.md §5` step 6)
+    /// — pure, so the probe can pose it. Walking to the well or the river: an empty pail. Drawing at either: a full one. Walking
+    /// home with a full one: still full. <b>Anything else drops it</b> — home, or given up on the way (a well pulled down, a bank
+    /// gone under) with nothing drawn, or dead.
+    /// </summary>
+    internal static Dictionary<int, bool> CarryTheWater(IReadOnlyDictionary<int, bool> before, IReadOnlyList<(int Id, VillagerState State)> living)
+    {
+        var after = new Dictionary<int, bool>();
+        foreach ((int id, VillagerState state) in living)
+        {
+            switch (state)
+            {
+                case VillagerState.WalkingToTheWell or VillagerState.WalkingToTheRiver:
+                    after[id] = false;
+                    break;
+                case VillagerState.DrawingWater or VillagerState.DrawingAtTheRiver:
+                    after[id] = true;
+                    break;
+                case VillagerState.TravelingHome when before.TryGetValue(id, out bool full) && full:
+                    after[id] = true;
+                    break;
+            }
+        }
+
+        return after;
     }
 
     /// <summary>
@@ -9239,6 +9306,24 @@ public partial class VillageMap : Control
         }
 
         MarkTheMeals(_mealShownUntil, ate, _mealClock);
+
+        // ⭐ AND WHO CARRIES WATER (`water-need.md §5` step 6) — once a tick, from the states, where the sim's fact changes.
+        if (!ReferenceEquals(_pailsOf, world))
+        {
+            _pails = new Dictionary<int, bool>();
+            _pailsOf = world;
+        }
+
+        var states = new List<(int Id, VillagerState State)>(world.Villagers.Count);
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Villagers[i].Alive)
+            {
+                states.Add((world.Villagers[i].Id, world.Villagers[i].State));
+            }
+        }
+
+        _pails = CarryTheWater(_pails, states);
 
         // ⭐ THE CROWD FAN, ONCE A TICK, AMONG THE STANDING (D525). A villager who moved this tick is on their
         // way somewhere and keeps to their line; the people standing on a tile share its ring, ranked by id.

@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
 > Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
-> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); ✅ STEP 4 (D780, §2d): RUNNING DRY IS SAID, NOT RUSHED (Joe); STEP 6, THE VIEW, NEXT.** *(Read "STEP 4, RUNNING DRY, NEXT" at D779.)* *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); ✅ STEP 4 (D780, §2d): RUNNING DRY IS SAID, NOT RUSHED (Joe); ✅ STEP 6 (D781, §2e): THE VIEW — THE CARD'S LINE, NEEDS, THE PAIL; JOE PLAYS IT NEXT.** *(Read "STEP 6, THE VIEW, NEXT" at D780.)* *(Read "STEP 4, RUNNING DRY, NEXT" at D779.)* *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -149,6 +149,26 @@ passed or failed by the draw; on twenty-four —
 The lanes guard **was never met on a wide sample** — 0.82 before water — and is its own ⏸️ item: why the founding hub wears a
 block at all. **Goldens:** **four constants in two goldens and one pin moved, each proven by ablation**: the two skill fifty-years, the two stock-limit fifty-years and the walking-clock pin (20 / 141 / 494 → 507) — all back to their old values with the founding's jars started empty (the dry sentence changes no state). The farm and Phase 5 goldens did not move.
 
+### 2e. ✅ Step 6 — the view (D781)
+
+**Water is on screen, and nothing in the sim moved for it.**
+
+- **The household's card** has a water line under the handcart's: *"A jar of water, 87 of 120 — enough for 29 days."* while it
+  lasts; *"… — less than a day's; somebody will fill it at their next rest at home."* when it is low enough to send somebody;
+  and, once it is dry, **the sim's own sentence in amber** (`SimWorld.WaterNoteFor`, §2d): *"No water — somebody will go at
+  their next rest at home."* / *"No water — Mabel has gone to the river."* Hidden for a household nobody lives in.
+- **A person's NEEDS** has a fourth pill: *Water*, or *No water* in amber, with the household line as its tooltip. The jar is
+  the household's, so every member reads the same.
+- **The pail** (the art lane's to draw properly, §4 — this is the stand-in, in the map's ink and its water colour): an empty pail
+  at the villager's side on the way to the well or the river, a full one while drawing and on the way home, put down at home.
+  **Remembered by the view, not the sim**: water is not a good (call 1A), so nothing is carried in the sim's terms; the map
+  watches the states a tick at a time (`VillageMap.CarryTheWater`, pure) — walked out, drew, walking home. Given up on the way
+  with nothing drawn (a well pulled down, a bank gone under), the pail is put down, never shown full. A save loaded mid-walk
+  shows no pail on that one walk: never a wrong one.
+- **The probe's `water:` line** reads the household card full and dry (and amber), the pill both ways with its tooltip, the
+  widest line against the card's width (the longest name gone to the river; a jar in the thousands), and the pail's whole walk
+  posed — out, drawn, home, given up, dead. the `water:` line red-checked, four mutants, every one red where aimed: the dry line not amber **1**, the pill's words swapped **2** (dry and full), an empty pail carried home after giving up **1**, a draw that leaves the pail empty **2**; all reverted by marker, the diff read back.
+
 ## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
 
 **Answered:** 1A (a number the household keeps, not a good), 2A (the nearer of a well or the river bank), 3A (nobody dies of
@@ -199,7 +219,7 @@ Under the recommended calls:
 | Goods | none: water is the household's, not a good (call 1A) | — |
 | Villager states | `WalkingToTheWell`, `DrawingWater` | exist |
 | Villager states | **walking to the river, drawing water at the river bank** | ✅ new (call 2A): `WalkingToTheRiver`, `DrawingAtTheRiver` (D779) |
-| Villager states | **carrying water home** (a pail, or a yoke and two pails) | new: today nothing is carried |
+| Villager states | **carrying water home** (a pail, or a yoke and two pails) | new — ✅ a stand-in pail drawn by the map (D781, §2e: empty going, full coming home); the art lane's to draw |
 | Map | the lane from the houses to the bank, worn by the feet | the path wear that exists; no new paint |
 
 Under call 1B the stock bar would also want a water icon.
@@ -216,7 +236,7 @@ Under call 1B the stock bar would also want a water icon.
 5. ✅ **Measured** (call 4) at three or four jar sizes; Joe picks. *(Done at step 3, D779, because the river made step 2's jar too dear
    to ship: river arms at 40, 120 and 400 and wells at 40 and 120 over 100 valleys, the farm guard at 40, 80, 120 and 200 —
    Joe: 120. The 100-year reading is not taken.)*
-6. **The view**: the card's line and NEEDS, the carried pail (or the art lane's stand-in), the probe line.
+6. ✅ **The view** (D781, §2e): the card's line and NEEDS, the carried pail (the stand-in, until the art lane's), the probe line.
 7. **Saves and the hash**: ~~the household's water saved and hashed; `water_drawn_on_day` retired with a save-format
    step;~~ **done at step 2 (D778), with no format step** — the jar is an optional key, and a save without it reads empty; the
    goldens re-taken in one commit, the diff read *(step 2 re-took those a well reaches, §2b; ✅ step 3 the rest, §2c — every one

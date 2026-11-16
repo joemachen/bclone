@@ -1,5 +1,15 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/water-need` — ✅ STEP 6 BUILT (D781, 2026-11-16): WATER ON SCREEN — EVERY STEP OF THE SPEC IS BUILT; JOE PLAYS IT NEXT.**
+> The household card's water line (*"A jar of water, 87 of 120 — enough for 29 days."*; dry, the sim's sentence in amber), a fourth
+> NEEDS pill on a person's card (*Water* / *No water*, the line as its tooltip), and a stand-in pail on the map — empty going, full
+> coming home — remembered by the view, not the sim (water is not a good). **What Joe should look for:** a family's water line counting
+> down on its card, the pail on somebody walking to and from the river or the well (a family of three goes about every forty days,
+> of two every sixty), and the *less than a day's* line just before. A fully dry, amber jar is rare by design: it needs nobody home
+> to rest before it empties. Nothing in the sim moved; no golden.
+> - **Four checks:** suite **2063 / 0 / 5 of 2068 in 17m48** (nothing in the sim or the tests moved); view build 0 warnings (`--no-incremental`); probe **162** `[widths]` lines (161 + the new `water:`), 123 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 430 lines, unchanged
+> - **Guards:** the `water:` line red-checked, four mutants, every one red where aimed: the dry line not amber **1**, the pill's words swapped **2** (dry and full), an empty pail carried home after giving up **1**, a draw that leaves the pail empty **2**; all reverted by marker, the diff read back
+>
 > **🔨 `slice/water-need` — ✅ STEP 4 BUILT (D780, 2026-11-16): RUNNING DRY IS SAID, NOT RUSHED.** Built first as call 3A read
 > (a dry household sends somebody off their work at once) and measured: −0.56 ± 0.32 alive a valley, for a need that harms
 > nobody. Joe: *"Say it, don't rush"* — the log says it the day the jar empties, once; the next rest at home fills it; the
@@ -9524,6 +9534,16 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D781 PAID FOR — A SED THAT MATCHED TWICE
+
+- **⛔ Count an anchor before a `sed` writes it, and stop on anything but 1.** A one-line fix (`float widest = 0f;` → add a line
+  after it) counted **2** and ran anyway: the second hit was the card probe's own `widest`, 300 lines down, and the view build's
+  `CS0219` was the only thing that said so. The memory rule is "count every anchor before writing" — counting is not enough;
+  a count of 2 is the stop. *(The Python edit scripts exit on any count but 1; `sed` does not.)*
+- **⭐ A view fact the sim does not hold can be remembered by the view, honestly, if it is never shown wrong.** The pail is drawn
+  from states seen a tick at a time; what it cannot know (a save loaded mid-walk, a tick missed) it does not draw. Putting a
+  "carrying water" field in the sim would have hashed a picture and moved every golden.
+
 ## ⛔ THE TRAP D780 PAID FOR — A RUSH FOR A NEED THAT HARMS NOBODY, AND A MUTANT THAT STILL RAN THE CALL
 
 - **⭐ Ask where an errand's hours come from before ranking it above work.** D777 measured the water trip free *because it came
@@ -10396,7 +10416,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   so, a slice to find what wears the block. Nothing built.
 
 - ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*). ✅ ALL
-  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); ✅ step 4, running dry said, not rushed (D780, *"Say it, don't rush"*); step 6, the view, next.** *(Read "step 4 … next" at D779.)* *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
+  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); ✅ step 4, running dry said, not rushed (D780, *"Say it, don't rush"*); ✅ step 6, the view (D781): the card's water line, a NEEDS pill, a stand-in pail; Joe plays it next.** *(Read "step 6, the view, next" at D780.)* *(Read "step 4 … next" at D779.)* *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
   item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
   the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
