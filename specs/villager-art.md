@@ -1,6 +1,6 @@
 # The villagers drawn — people seen straight down, their trade, age, load and state on the map (A90)
 
-> **Status: ✍️ specced and mocked (A90, 2026-11-15) — ⏸️ four calls Joe's (§6); nothing built.** Joe: *"i want to work on
+> **Status: ✍️ specced and mocked (A90, 2026-11-15); A, B and C rejected — Joe: *"i hate all of those. make them look like actual people."* — and remocked as **D, standing people (§3a, A91)**; ⏸️ his calls (§6a); nothing built.** Joe: *"i want to work on
 > villagers for the next art piece. And then the UI"* — the art lane's order: **the villagers, then the parchment-and-wood
 > interface.** Mocked on copies of his saves, the buildings' way (A85): `D:\Projects\brushes\villagers\` —
 > `villagers_options.jpg` (four scenes × today / A / B / C), `villagers_catalogue.jpg` (every trade, age and state at three
@@ -79,6 +79,32 @@ B's four at 30 px: woodcutter/carpenter, and the labourer against the smith, the
 greyish cloth). C's 34 are mostly the bareheaded trades (woodcutter, smith, tailor, carpenter, labourer) being one
 another, and the white caps (miller, baker); they part only when working, by the tool.
 
+## 3a. ⭐ D — actual people (A91, after Joe rejected A, B and C)
+
+Joe, on A–C: *"i hate all of those. make them look like actual people."* A person seen straight down is a hat on two
+shoulders, and every version of that read as a token or a beetle. **D draws people standing up**, as the concept lineup
+(sheet 09) draws them, small: a head with a face and hair (or the trade's hat), a tunic in the trade's colour pulled
+toward undyed cloth, a belt, arms, hose and shoes; the tool in hand at work; the load on the shoulder, on the back or in
+the arms; the coat a moss cloak behind and over the shoulders; a shadow on the ground to the lower right. Mocks
+(`D:\Projects\brushes\villagers\`): `people_options.jpg` (today vs D, five scenes at three zooms),
+`people_closeup.jpg` (2×), `people_large.jpg` (every trade, child, elder, cold and cart, drawn large),
+`people_{closest,middle,far}_{grass,snow}.png` (the same at the game's sizes). Tools: `people.py`, `people_sheets.py`,
+`people_compare.py`.
+
+- **Facing**: three views from the walk — toward you (and anyone standing at work), away (the back of the head, no
+  face), and from the side, mirrored for left; walking people mid-stride.
+- **Height**: an adult stands **0.72 of a tile** (45 px at the closest zoom, 27 at the middle, 17 far; never under
+  13); a child 0.62 of that with a bigger head; an elder a little stooped, grey-haired, hooded in the elder brown, with a stick.
+- **Who**: skin, hair colour and style (short, cropped, tied, long), tunic length and hose are drawn from the villager's
+  id, so a person keeps their look for life. ⚠️ **No sex is drawn** — the sim has none (*"villagers have names and no
+  sex"*, `SimConfig`), so there are no men's and women's clothes, only people.
+- **Cold** (`SeekingShelter`): arms hugged in, two blue shiver marks by the head. **The pushed cart** is a small wheeled
+  cart beside or behind them.
+- ⚠️ **The view**: the ground and the buildings stay seen from straight above (A31) and the people stand up on them —
+  the convention of an illustrated map. It is a departure from A31 for people only, and it is Joe's call (§6a, 1).
+- Not measured yet against A85's ΔE threshold: D says the trade by colour *and* hat *and* tool, and the eye reads a
+  person's shape before their colour; the measure is rerun if he picks it.
+
 ## 4. Common to every look (proposed; settled when Joe picks)
 
 - **Straight down, facing the walk, turned freely** (A31) — a standing villager faces down the screen.
@@ -99,7 +125,15 @@ Animals (cattle, game — `art-inventory.md §7`), portraits (B12 stands: none),
 at night, villagers in the UI (the next piece). New states Phase 6 adds are listed in `art-inventory.md §15` and drawn
 in this look when their systems land.
 
-## 6. ⏸️ Joe's calls — in plain words, each with a recommendation
+## 6a. ⏸️ Joe's calls on D (A91) — supersede §6's first two
+
+1. **Standing people on a map seen from above — yes?** ⭐ Recommended: yes. It is the only way a villager at this size
+   looks like a person, and old painted maps do exactly this.
+2. **The size: 0.72 of a tile tall** (about a third of a 2 × 1 house's length). ⭐ Recommended as mocked.
+3. **People indoors not drawn on the roof** (§6, call 3) — still stands; D's mocks do it.
+4. **The teacher's colour** (§6, call 4) — still stands; D's mocks use `#4a5ea8`.
+
+## 6. ⏸️ Joe's calls (A90, on A–C) — in plain words, each with a recommendation
 
 1. **Which look: A, B or C?** *(see `villagers_options.jpg`, then `villagers_catalogue.jpg`)*
    ⭐ **Recommended: B, the painted figure in trade colours.** It is the concept's style (hats, tools, ink, seen from
