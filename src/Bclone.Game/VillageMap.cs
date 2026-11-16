@@ -9080,6 +9080,14 @@ public partial class VillageMap : Control
         // would disagree by a tile.
         AdvanceInterpolation(world);
 
+        // ⭐ With the tick on, people standing up instead of dots (A93, `villager-art.md §3b`); off, the dots below, to the byte.
+        if (PaintsPeople)
+        {
+            DrawThePeople(world, stillAlive);
+            PruneTheDead(stillAlive);
+            return;
+        }
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -9424,14 +9432,15 @@ public partial class VillageMap : Control
     private Villager? VillagerAt(Vector2 screen)
     {
         SimWorld world = _world!;
-        float reach = VillagerRadius + 4f;
+        // ⭐ A painted person is clicked by their body, not a dot's radius (A93) — and one indoors is not there to click.
+        float reach = PersonReach + 4f;
         float nearest = reach * reach;
         Villager? hit = null;
 
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive)
+            if (!villager.Alive || (PaintsPeople && !ShownAsAPerson(villager.State)))
             {
                 continue;
             }
