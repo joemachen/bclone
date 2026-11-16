@@ -1,5 +1,10 @@
 # The UI — the parchment-and-wood interface (art lane)
 
+> **⛔ §8's LOOK IS REOPENED (A99, 2026-11-15) — Joe: *"NOT in the look of the A97 scroll mocks (scroll_options.jpg). I hate
+> those."* What stands from §8: not slate, his fonts folder, the seam after water, the name a placeholder; the inventory
+> (`ui-assets.md`) stands as written. What is reopened: rolls, curls, washes, the title faces and the palette. The assets
+> are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
+>
 > **Status: ✍️ specced and mocked on `art` (A96); ⭐ Joe's answers and the look REMOCKED as manuscript scrolls (A97,
 > 2026-11-15, §8) — the look, the fonts, the seam and the name are settled; ⏸️ three calls his (§8.5); NOTHING BUILT —
 > no theme, no font, no code.** §5–§6 are A96's first round, kept as the record; §8 supersedes them where they differ. Joe's order (A90): *"i want to work on villagers for the next art piece. And then the UI"*; the

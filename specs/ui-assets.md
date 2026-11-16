@@ -1,7 +1,9 @@
 # UI image assets — the spec sheet
 
 > **Status: ✍️ written on `art` (A98, 2026-11-15) at Joe's ask (*"write up a spec sheet for the whole list"*); NOTHING
-> PAINTED OR BUILT.** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
+> PAINTED OR BUILT.** **A99: the list, sizes, margins, format, naming, paths, legibility rules and states are settled and
+> followed exactly; the LOOK (§1.4's palette, the scroll forms in §2's descriptions) is reopened — any row a new look makes
+> wrong is listed and put to Joe, never changed quietly. Painted in Photoshop by script; Phase 0 (the pipeline) proven.** The look is `ui-art.md §8` (manuscript scrolls, A97); this sheet is every image that look needs, with
 > the size, format, states and drawing rules for each, so each piece can be painted to it and dropped in. Sizes are read off
 > the code at `art` 70a7620. The four calls still open in `ui-art.md §8.5` (title face, roll-up, room) do not change any
 > asset here except where noted.
