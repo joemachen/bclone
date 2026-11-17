@@ -3038,6 +3038,16 @@ public sealed partial class BehaviorSystem : ISimSystem
             }
         }
 
+        // ⭐ AT HOME WITH NOTHING IN HAND, THE JAR IS ASKED BEFORE ANY WORK IS (D782). Until D782 it was asked only where a
+        // rest spell began — when the villager had run out of work — and a village whose every adult always had work never
+        // went at all: Joe's two families ran dry in year 1 and stayed dry for five years, coming home forty times each.
+        // Still never ahead of eating, warmth or the restock (all above the state switch in `ActOne`), and never off a job
+        // under way: only somebody already standing at their own door, choosing what to do next.
+        if (TryDrawWater(world, villager))
+        {
+            return;
+        }
+
         // Eating was already handled by TryEat before anything got here.
         // Forage — but only if there is anything to forage, and only if this
         // villager is old enough to work. A child eats from the household store and
@@ -6405,10 +6415,11 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// </summary>
     /// <remarks>
     /// <para>
-    /// ⭐ <b>Asked only where a rest at home would begin</b> (`GoHome`'s already-home arm and the
-    /// last line of <c>Decide</c>), so it never gets ahead of anything: eating, warmth and the
-    /// emergency restock run above the state switch in <c>ActOne</c>, and every trade and fetch was
-    /// asked before the rest. From home, so the lane it wears runs door to well.
+    /// ⭐ <b>Asked whenever an adult stands at their own door choosing what to do next</b> — first in <c>Decide</c>, ahead
+    /// of any work (D782), and still where a rest at home begins (`GoHome`'s already-home arm and <c>Decide</c>'s last line).
+    /// Never ahead of eating, warmth or the emergency restock (above the state switch in <c>ActOne</c>), and never off a job
+    /// under way. From home, so the lane it wears runs door to well. <i>(Until D782 only where a rest began — when the
+    /// adult had run out of work — so a village whose every adult always had work never went: Joe's ran dry for five years.)</i>
     /// </para>
     /// <para>
     /// <b>Who:</b> an adult with empty hands (<c>CanWork</c> — never a child, the line every errand
@@ -6487,10 +6498,11 @@ public sealed partial class BehaviorSystem : ISimSystem
     }
 
     /// <summary>
-    /// ⭐ THE JAR SAYS WHEN (D778): empty, or holding less than another day of its living members' drink.
+    /// ⭐ THE JAR SAYS WHEN (D778, D782): empty, or holding <c>water_low_days</c> of its living members' drink or less.
+    /// <i>(Until D782 "less than another day's", which a jar of 120 drunk a day at a time never was until it was empty.)</i>
     /// </summary>
     /// <remarks>
-    /// ⚠️ Asked at every rest at home, so the villagers are counted only in the jar's last days: every living member is on
+    /// ⚠️ Asked at every moment at home, so the villagers are counted only in the jar's last days: every living member is on
     /// the member list (each <c>HouseholdId</c> is set beside an <c>AddMember</c>, and a death leaves the id there), so a
     /// jar that covers the whole list covers the living without counting them.
     /// </remarks>
@@ -6501,13 +6513,13 @@ public sealed partial class BehaviorSystem : ISimSystem
             return true;
         }
 
-        int perPerson = world.Config.WaterPerPersonPerDay;
-        if (household.Water >= perPerson * household.MemberIds.Count)
+        int perDay = world.Config.WaterPerPersonPerDay * world.Config.WaterLowDays;
+        if (household.Water > perDay * household.MemberIds.Count)
         {
             return false;
         }
 
-        return household.Water < perPerson * world.LivingMembersOf(household);
+        return household.Water <= perDay * world.LivingMembersOf(household);
     }
 
     /// <summary>The household's jar filled to the brim where the drawing ends (D778), and the DEBUG line saying where (D779).</summary>

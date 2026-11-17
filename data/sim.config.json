@@ -1305,6 +1305,12 @@
   "well_draw_ticks": 2,
   "water_jar": 120,
   "water_per_person_per_day": 1,
+  // A jar is low -- somebody at home goes for it -- at this many days of its
+  // family's drink or fewer (D782). NOT "less than a day's" (D778-D781): 120
+  // divides by every family size up to six, so that was only ever empty, and
+  // every jar ran dry first. 5, measured: dry family-days 15 % -> 2 % over 100
+  // valleys, 21 % -> 0.4 % on Joe's village; survival within the noise.
+  "water_low_days": 5,
 
   // BRIDGES (D40, D546, D547, D549, specs/bridges.md). A deck over the water, one
   // tile wide: the tiles stay river and become walkable. Pressed on one bank and

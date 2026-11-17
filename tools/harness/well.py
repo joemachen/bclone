@@ -5,7 +5,7 @@ import math
 import sys
 from collections import defaultdict
 
-KEYS = ["alive", "peak", "starved", "cold", "born", "trips", "adultyears", "wellticks", "restyears"]
+KEYS = ["alive", "peak", "starved", "cold", "born", "trips", "adultyears", "wellticks", "restyears", "drydays", "homedays"]
 
 base = sys.argv[1]
 arms = defaultdict(dict)

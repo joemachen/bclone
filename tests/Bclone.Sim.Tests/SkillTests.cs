@@ -359,7 +359,8 @@ public sealed class SkillTests
     // 16912250691129698349 (fixture).
     // RE-TAKEN (D779), BOTH — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Were 5630912825231854938 (fixture) and 4364615826142427054 (shipped).
     // RE-TAKEN (D780), BOTH — the founders start with a full jar (`water-need.md §5` step 4), so their first trips come forty days later. ⭐ PROVEN BY ABLATION: with the founding's jars started empty the old value passes; the dry sentence changes no state. Were 3763769609766550783 (fixture) and 13166233227980958796 (shipped).
-    [InlineData(false, 649758674715895921UL)]
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 649758674715895921.
+    [InlineData(false, 3355812465154948625UL)]
     // RE-TAKEN (D446), THE SHIPPED ONE ONLY — the shipped game starts with a limit on the new iron tools (`"iron tools": 200`, Joe's "200 for everything else"), and a set limit is mixed into the fingerprint. ⭐ PROVEN TO BE THE ONLY REASON: with that one line taken out of the data the old value passes, so a village with only stone tools plays exactly as before (`tools-and-the-smith.md §9.2`). The fixture sets no limits and did not move. Was 12410617450677179378 (shipped).
     // RE-TAKEN (D447), THE SHIPPED ONE ONLY — both tool limits start at 25, not 200 (Joe: "its going to take a few years to have more than 25 people who need tools at once"); a set limit is hashed. Nothing plays differently with no smithy: D420's 55 villages read village for village as at 200. Was 13441693335877048572 (shipped).
     // RE-TAKEN (D452), THE SHIPPED ONE ONLY — a forester's planting seats count grass only (`SimWorld.IsGroundToPlant`), so a hut whose ground is all saplings stops holding hands it cannot use (found D434). ⭐ PROVEN TO BE THE ONLY REASON: with that one line back on the old rule the old value passes. The fixture did not move. Was 2125978012891394948 (shipped).
@@ -383,7 +384,8 @@ public sealed class SkillTests
     // re-priced. ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) the old value passes. The fixture's (a valley built in code, flat by the code's default) did not move.
     // Was 3174496459823721064 (shipped).
     // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 2791566434779995178 (shipped).
-    [InlineData(true, 2133452663258429047UL)]
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 2133452663258429047.
+    [InlineData(true, 5396889957682360957UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

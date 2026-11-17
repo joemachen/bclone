@@ -1912,7 +1912,7 @@ public partial class Main
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
         // ⭐ "resting at Eastfield", not "resting at home", for a farmhand out at the steading (D511).
-        string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager));
+        string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager), unhoused: !world.HouseholdOf(villager).HasHome);
 
         // ⭐ "climbing home", not "walking home", while the leg crosses steep ground (D735, `heights.md §6`).
         if (world.IsClimbing(villager) && doing.StartsWith("walking", StringComparison.Ordinal))
@@ -2756,8 +2756,16 @@ public partial class Main
         }
 
         int days = home.Water / aDay;
-        return days == 0 ? $"{jar} — less than a day's; somebody will fill it at their next rest at home."
-            : $"{jar} — enough for {days:N0} {(days == 1 ? "day" : "days")}.";
+        if (home.Water > aDay * world.Config.WaterLowDays)
+        {
+            return $"{jar} — enough for {days:N0} {(days == 1 ? "day" : "days")}.";
+        }
+
+        // ⭐ Low enough to send somebody (`water_low_days`, D782): said, with when.
+        string left = days == 0 ? "less than a day's" : $"{days:N0} {(days == 1 ? "day's" : "days'")}";
+        return home.HasHome
+            ? $"{jar} — {left} left; somebody will fetch more the next time one of them is home."
+            : $"{jar} — {left} left; nobody can fetch more until they have a house.";
     }
 
     /// <summary>
@@ -3831,7 +3839,7 @@ public partial class Main
             foreach (string said in new[]
             {
                 $"No water — {new string('W', SimWorld.NameLengthLimit)} has gone to the river.",
-                "A jar of water, 9,999 of 9,999 — less than a day's; somebody will fill it at their next rest at home.",
+                "A jar of water, 9,999 of 9,999 — less than a day's left; somebody will fetch more the next time one of them is home.",
             })
             {
                 WaterLine(card, said, dry: true);

@@ -2189,6 +2189,19 @@ public sealed record SimConfig
     public int WaterJar { get; init; } = 120;
 
     /// <summary>
+    /// A jar is low — somebody at home goes for it — when it holds this many days of its living members' drink or fewer (D782).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Never "less than one day's"</b>, which it was from D778 to D781: the jar of 120 divides by every family size from
+    /// one to six, so a jar drunk a whole day at a time steps 6, 3, 0 and is never <i>less than a day's</i> until it is empty —
+    /// every jar ran dry before anybody went. ⭐ <b>5, measured</b> (D782, with the trip asked at any moment at home): over 100
+    /// valleys the housed families' days spent dry 15 % → 2 %, survival within the noise; on Joe's own village from its fifth
+    /// year, 21 % → 0.4 %. 10 bought the last 2 % for twice the trips' extra time.
+    /// </remarks>
+    [JsonPropertyName("water_low_days")]
+    public int WaterLowDays { get; init; } = 5;
+
+    /// <summary>
     /// The water each living member of a household drinks on each day's turn (D778). Zero: nobody drinks, so a
     /// household goes once and its jar stays full.
     /// </summary>
@@ -6231,6 +6244,11 @@ public sealed record SimConfig
         if (HomePathSearchTiles <= 0)
         {
             throw new SimConfigException($"home_path_search_tiles must be greater than zero (got {HomePathSearchTiles}).");
+        }
+
+        if (WaterLowDays <= 0)
+        {
+            throw new SimConfigException($"water_low_days must be greater than zero (got {WaterLowDays}).");
         }
 
         if (HomeWellWeight < 0 || HomeWellReachTiles <= 0 || WellDrawTicks <= 0 || WaterJar <= 0 || WaterPerPersonPerDay < 0)

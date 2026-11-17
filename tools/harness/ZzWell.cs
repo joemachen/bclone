@@ -17,6 +17,9 @@ namespace Bclone.Sim.Tests;
 // the shipped cold start, the opening played, a granary and a warehouse at Year 3 — on seeds 200–299 (ZZ_SEEDS=a,b
 // narrows), ZZ_YEARS (50). ZZ_LABEL names the arm.
 //
+// D782: ZZ_LOW = water_low_days (shipped if unset); drydays / homedays count, once a day, the housed living households and
+// those of them with an empty jar.
+//
 // One ZZW line a run: alive, peak, starved, cold, born; trips begun; and the able adults' years by kind — walking to the
 // well and drawing, resting, working at a trade, fetching for the household, seeking warmth, eating. ZZ_STATES=1 adds
 // ZzSchool's ZZT line (`school.py --states` sums it).
@@ -42,7 +45,9 @@ public sealed class ZzWell
             ?? shipped.WaterJar.ToString(System.Globalization.CultureInfo.InvariantCulture));
         string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (well ? $"w{trip}" : "base") + (noise != 0 ? $"n{noise}" : "");
 
-        SimConfig config = shipped with { Seed = seed, WaterJar = trip };
+        int low = int.Parse(Environment.GetEnvironmentVariable("ZZ_LOW")
+            ?? shipped.WaterLowDays.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        SimConfig config = shipped with { Seed = seed, WaterJar = trip, WaterLowDays = low };
         SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
@@ -61,6 +66,7 @@ public sealed class ZzWell
         var stateTicks = new long[Enum.GetValues<VillagerState>().Length + 1];
         var before = new Dictionary<int, VillagerState>();
         int peak = 0, trips = 0, wellYear = -1;
+        long dryDays = 0, homeDays = 0;
         long toWell = 0, resting = 0, adultTicks = 0;
         for (int t = 0; t < config.TicksPerYear * years; t++)
         {
@@ -75,6 +81,20 @@ public sealed class ZzWell
             }
 
             loop.StepOnce();
+            if (t % config.TicksPerDay == 0)
+            {
+                foreach (Household h in world.Households)
+                {
+                    if (h.HasHome && world.LivingMembersOf(h) > 0)
+                    {
+                        homeDays++;
+                        if (h.Water <= 0)
+                        {
+                            dryDays++;
+                        }
+                    }
+                }
+            }
             peak = Math.Max(peak, world.Population);
             if (well && wellYear < 0 && world.Wells.Count > 0)
             {
@@ -122,7 +142,7 @@ public sealed class ZzWell
         int perYear = config.TicksPerYear;
         _o.WriteLine(
             $"ZZW {arm} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} born {born} "
-            + $"wellyear {wellYear} trips {trips} adultyears {adultTicks / perYear} wellticks {toWell} restyears {resting / perYear}");
+            + $"wellyear {wellYear} trips {trips} adultyears {adultTicks / perYear} wellticks {toWell} restyears {resting / perYear} drydays {dryDays} homedays {homeDays}");
         if (states)
         {
             _o.WriteLine($"ZZT {arm} {seed} " + string.Join(" ", Enum.GetValues<VillagerState>()

@@ -1562,10 +1562,7 @@ public partial class VillageMap : Control
                 return;
             }
 
-            Vector2 under = ToTile(click.Position);
-            GridPos asked = _world!.WhatStandsUnder(PointUnderTheCursor(click.Position))
-                ?? new GridPos(Mathf.RoundToInt(under.X), Mathf.RoundToInt(under.Y));
-            WhatsHereAsked?.Invoke(asked);
+            WhatsHereAsked?.Invoke(TileUnderTheCursor(click.Position));
             AcceptEvent();
             return;
         }
@@ -1616,11 +1613,7 @@ public partial class VillageMap : Control
             // rectangle alone.** A 1×1 turned 45° between tile centres is drawn away from
             // the middle of its own anchor tile, and D331 deliberately lets that anchor be clicked
             // anyway. Asking the rectangle first and the tile second can only ADD a hit.
-            Vector2 hit = ToTile(click.Position);
-            GridPos tile = _world!.WhatStandsUnder(PointUnderTheCursor(click.Position))
-                ?? new GridPos(Mathf.RoundToInt(hit.X), Mathf.RoundToInt(hit.Y));
-
-            BuildingClicked?.Invoke(tile);
+            BuildingClicked?.Invoke(TileUnderTheCursor(click.Position));
             AcceptEvent();
             return;
         }
@@ -1880,10 +1873,22 @@ public partial class VillageMap : Control
         }
     }
 
+    /// <summary>
+    /// ⭐ The tile a click means: the anchor of the building drawn under the point, else the tile under it (D338) — <b>one
+    /// resolver for every click</b> (D782). The card's click asked the building first since D338, but Demolish, Empty and Move
+    /// rounded to the tile, so a pile placed off a tile's centre opened its card and then said <i>"There is nothing there to
+    /// pull down"</i> over most of its own drawing (Joe, 2026-11-16). The fallback can only add a hit (D331's anchor).
+    /// </summary>
+    private GridPos TileUnderTheCursor(Vector2 screen)
+    {
+        Vector2 tile = ToTile(screen);
+        return _world!.WhatStandsUnder(PointUnderTheCursor(screen))
+            ?? new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+    }
+
     private void PlaceOrPullDown(Vector2 at)
     {
-        Vector2 tile = ToTile(at);
-        var where = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
+        GridPos where = TileUnderTheCursor(at);
 
         if (_brush != 0)
         {

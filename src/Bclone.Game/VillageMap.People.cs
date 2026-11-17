@@ -274,6 +274,12 @@ public partial class VillageMap
             var rect = new Rect2(feet - (new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
             DrawTextureRect(held.Texture, rect, tile: false);
 
+            // ⭐ The water pail at their side (`water-need.md §2e`, D782) — the dots' stand-in, hung at a person's hip height.
+            if (_pails.TryGetValue(villager.Id, out bool full))
+            {
+                DrawThePail(feet - new Vector2(0f, tall * 0.42f), tall * 0.16f, full);
+            }
+
             Vector2 overHead = feet - new Vector2(0f, tall);
             float r = Mathf.Max(3f, tall * 0.12f);
             if (WalkInProgressOf(villager.Id) is float walking)

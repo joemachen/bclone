@@ -402,7 +402,8 @@ public sealed class StockLimitTests
     // 2460416229105199918.
     // RE-TAKEN (D779) — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Was 2939480164378330515.
     // RE-TAKEN (D780) — the founders start with a full jar (`water-need.md §5` step 4), so their first trips come forty days later. ⭐ PROVEN BY ABLATION: with the founding's jars started empty the old value passes; the dry sentence changes no state. Was 5505396747410913982.
-    private const ulong FixtureFiftyYearHash = 5003805206828685583UL;
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 5003805206828685583.
+    private const ulong FixtureFiftyYearHash = 5890220585761650289UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -538,7 +539,8 @@ public sealed class StockLimitTests
     // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 17224396567075353750.
     // RE-TAKEN (D779) — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Was 17613434144534984246.
     // RE-TAKEN (D780) — the founders start with a full jar (`water-need.md §5` step 4), so their first trips come forty days later. ⭐ PROVEN BY ABLATION: with the founding's jars started empty the old value passes; the dry sentence changes no state. Was 720234075894929209.
-    private const ulong ShippedFiftyYearHash = 1516272682464998280UL;
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 1516272682464998280.
+    private const ulong ShippedFiftyYearHash = 17238108172460108976UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

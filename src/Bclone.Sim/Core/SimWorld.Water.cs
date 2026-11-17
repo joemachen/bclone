@@ -59,8 +59,8 @@ public sealed partial class SimWorld
 
     /// <summary>
     /// ⭐ THE HOUSEHOLD CARD'S WATER SENTENCE (D780, `water-need.md` call 3A: <i>"No water — Dovlow has gone to the river"</i>):
-    /// null while there is water in the jar; who has gone and where once somebody has; that somebody will at their next rest
-    /// at home, otherwise (Joe, D780: <i>"Say it, don't rush"</i>).
+    /// null while there is water in the jar; who has gone and where once somebody has; that somebody will the next time one
+    /// of them is home, otherwise (Joe, D780: <i>"Say it, don't rush"</i>; "at their next rest at home" until D782).
     /// </summary>
     public string? WaterNoteFor(Household household)
     {
@@ -88,7 +88,10 @@ public sealed partial class SimWorld
             }
         }
 
-        return "No water — somebody will go at their next rest at home";
+        // ⭐ A family with no house cannot fetch (the trip sets out from a door, D778): say what will change it (D782).
+        return household.HasHome
+            ? "No water — somebody will go the next time one of them is home"
+            : "No water — somebody will go once they have a house";
     }
 
     /// <summary>Every land tile beside the river, in row order, rebuilt when the terrain changes.</summary>

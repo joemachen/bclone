@@ -1,7 +1,7 @@
 # Spec: Water as a household need — the well's clock becomes the larder's
 
 > Status: **📝 SPECCED (D775, 2026-11-15, Joe: *"water is next for systems"*); ✅ ALL FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*)
-> — 🔨 ON `slice/water-need`; ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); ✅ STEP 4 (D780, §2d): RUNNING DRY IS SAID, NOT RUSHED (Joe); ✅ STEP 6 (D781, §2e): THE VIEW — THE CARD'S LINE, NEEDS, THE PAIL; JOE PLAYS IT NEXT.** *(Read "STEP 6, THE VIEW, NEXT" at D780.)* *(Read "STEP 4, RUNNING DRY, NEXT" at D779.)* *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
+> — 🔨 ON `slice/water-need` (Joe played it, D782: *"looks good! proceed!"*; what his log showed fixed first, *"Fix it first"*); ✅ STEP 1 (D428's trace, D777, §2a): NO MEASURABLE COST; ✅ STEP 2 (D778, §2b): WATER AT HOME — THE JAR, THE DRINK, THE TRIP THAT FILLS IT; ✅ STEP 3 (D779, §2c): THE RIVER BANK; ✅ CALL 4, JOE'S JAR OF 120 (D779); ✅ STEP 4 (D780, §2d): RUNNING DRY IS SAID, NOT RUSHED (Joe); ✅ STEP 6 (D781, §2e): THE VIEW — THE CARD'S LINE, NEEDS, THE PAIL; ✅ PLAYED, AND A JAR FILLED BEFORE IT RUNS DRY (D782, §2f, Joe: *"any time at home"*); THE MERGE AT HIS WORD.** *(Read "JOE PLAYS IT NEXT" at D781.)* *(Read "STEP 6, THE VIEW, NEXT" at D780.)* *(Read "STEP 4, RUNNING DRY, NEXT" at D779.)* *(Read "STEP 3 NEXT" at D778.)* *(Read "STEP 2 NEXT" at D777.)* *(Read "STEP 1 … UNDER WAY" at D776.)* *(Read "⏸️ FOUR CALLS JOE'S … NOTHING BUILT" at D775.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1` (needs), §2.6 (one cost field)
 > · Phase 6, the ordered list's item 2 (D750). Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `organic-housing.md §9.12` (the well, D427 — **the baseline this is measured against is §9.12f**),
@@ -154,9 +154,10 @@ block at all. **Goldens:** **four constants in two goldens and one pin moved, ea
 **Water is on screen, and nothing in the sim moved for it.**
 
 - **The household's card** has a water line under the handcart's: *"A jar of water, 87 of 120 — enough for 29 days."* while it
-  lasts; *"… — less than a day's; somebody will fill it at their next rest at home."* when it is low enough to send somebody;
+  lasts; *"… — less than a day's; somebody will fill it at their next rest at home."* when it is low enough to send somebody
+  *(since D782, §2f: "… — 3 days' left; somebody will fetch more the next time one of them is home.")*;
   and, once it is dry, **the sim's own sentence in amber** (`SimWorld.WaterNoteFor`, §2d): *"No water — somebody will go at
-  their next rest at home."* / *"No water — Mabel has gone to the river."* Hidden for a household nobody lives in.
+  their next rest at home."* *(since D782: "… the next time one of them is home.")* / *"No water — Mabel has gone to the river."* Hidden for a household nobody lives in.
 - **A person's NEEDS** has a fourth pill: *Water*, or *No water* in amber, with the household line as its tooltip. The jar is
   the household's, so every member reads the same.
 - **The pail** (the art lane's to draw properly, §4 — this is the stand-in, in the map's ink and its water colour): an empty pail
@@ -168,6 +169,39 @@ block at all. **Goldens:** **four constants in two goldens and one pin moved, ea
 - **The probe's `water:` line** reads the household card full and dry (and amber), the pill both ways with its tooltip, the
   widest line against the card's width (the longest name gone to the river; a jar in the thousands), and the pail's whole walk
   posed — out, drawn, home, given up, dead. the `water:` line red-checked, four mutants, every one red where aimed: the dry line not amber **1**, the pill's words swapped **2** (dry and full), an empty pail carried home after giving up **1**, a draw that leaves the pail empty **2**; all reverted by marker, the diff read back.
+
+### 2f. ✅ Played, and a jar filled before it runs dry (D782; Joe: *"looks good! proceed!"*, *"Fix it first"*, *"any time at home"*)
+
+**Joe played it and it looked right — his game log said otherwise.** His two families ran dry in the first year and **stayed dry five years**, until a well; after that every jar ran fully dry before anybody went (19 dry spells for two families). Two faults in the rule, neither on screen:
+
+1. **"Less than a day's" was only ever empty.** The jar of 120 divides by every family size from one to six and is drunk a whole day at a time, so it steps 6, 3, 0 and is never *less than a day's* until it is empty. **Now:** low at **`water_low_days` (5) of the family's drink or fewer** — data, measured.
+2. **The trip was asked only where a rest began** — when an adult had run out of work, which in a young village no adult does: his came home thirty to fifty times each in those five years and every time went straight back out. **Now:** asked **first in `Decide`, whenever an adult stands at their own door with empty hands** — still never ahead of eating, warmth or the restock, never off a job under way.
+
+**Measured** (`tools/harness/ZzWell.cs` with a dry-day count, D780's 100 valleys, paired; and his own save run on). Put to Joe with the price — about one more starved a valley in fifty unattended years, borderline, survivors unchanged, none on his village — against keeping the ask where a rest begins (his village 17 % dry); **he chose *"any time at home"*.**
+
+| 100 valleys, 50 years, jar 120 | dry family-days | water time | Δ alive (± s.e.) | Δ starved (± s.e.) |
+|---|---|---|---|---|
+| D781 — empty only, asked where a rest began | **14.45 %** | 2.56 % | — | — |
+| any moment at home, empty only | 8.74 % | 2.75 % | −0.43 ± 0.37 | +0.69 ± 0.60 |
+| 5 days left, where a rest began | 8.61 % | 2.86 % | +0.31 ± 0.31 | +0.45 ± 0.51 |
+| **5 days left, any moment at home (✅ Joe's pick)** | **1.59 %** | 3.10 % | **−0.10 ± 0.26** | **+1.20 ± 0.59** |
+| 10 days left, any moment at home | 0.43 % | 3.48 % | −0.48 ± 0.28 | +0.67 ± 0.52 |
+
+| Joe's village (his year-5 save, ten years on) | dry family-days | trips | water time | alive |
+|---|---|---|---|---|
+| D781 | **508 of 2,400 (21 %)** | 59 | 2.66 % | 11 |
+| any moment at home, empty only | 208 (9 %) | 67 | 2.98 % | 11 |
+| 5 days left, where a rest began | 406 (17 %) | 68 | 3.02 % | 11 |
+| **5 days left, any moment at home (✅)** | **9 (0.4 %)** | 78 | 3.41 % | 11 |
+| 10 days left, any moment at home | 0 | 96 | 4.22 % | 11 |
+
+**The sentences follow the rule:** *"… has run out of water — somebody will go for it the next time one of them is home."*, *"No water — somebody will go the next time one of them is home"*, and the card inside the margin: *"A jar of water, 9 of 120 — 3 days' left; somebody will fetch more the next time one of them is home."* **A family with no house is told the truth** (Joe, Year 19: *"It shows these people (oakland underwood) 'resting at home' in the field?"*). His save says the Underwoods had no house — their "home" was the founding site (1, 0), the cart long gone — and their jar was empty with no way to fill it (a trip sets out from a door). The card now reads *"resting in the open — no house yet"* / *"walking back to where they sleep — no house yet"*, and their dry jar *"No water — somebody will go once they have a house"* (the log line too; low, *"nobody can fetch more until they have a house"*). Words only: no state, no golden; the probe's `relief:` line accepts *"climbing back to where they sleep"* as well as *"climbing home"*, since its posed founder has no house yet.
+
+**The lanes bar 0.8 → 0.85** (`TheFoundingHubWearsLanesNotABlock`, at Joe's pick, as put to him): families fetching before the jar is dry wear the hub to **510 block tiles against 637 — 0.80**, four tiles over 0.8; still just over what the game does, the hub's block still his ⏸️ item.
+
+**And the pail on the painted people.** The art lane's people (A93) reached `main` while this slice was open; on the default look they are drawn instead of the dots and returned before the dots' pail, so a plain merge would have hidden it. `main` was merged into the slice (904b658) and `DrawThePeople` hangs the same pail at a person's hip. ⚠️ No probe sees that draw call: the hook scores zero, written down — Joe's eyes.
+
+**Guards:** `AnAdultAtHomeGoesForALowJarBeforeWork`, `TheJarIsLowAtItsLastDays` (the margin's exact edge), `AFamilyWithNoHouseIsToldTheTruth`; `TheJarSaysWhenToGo` at the margin; `EveryDrySpellIsSaidOnce` reads a tick's sentences before its refills (a jar can now be said dry and filled on one tick). **sim, 5 mutants, every one red where aimed:** the at-home ask removed **2**, the margin's edge back to *less than* **1**, the margin back to one day **1**, the unhoused dry note ignoring the house **1**, the unhoused rest ignoring it **1**; **view, 1:** Demolish back to the rounded tile **1** (`demolish:`). All restored by bytes, 0 markers.
 
 ## 3. ✅ Joe's four calls — all as recommended (D776, *"All as recommended"*)
 

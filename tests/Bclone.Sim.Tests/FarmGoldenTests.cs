@@ -304,7 +304,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D625) — doors, the behaviour commit (D622–D625, `doors.md §11`), folded at Joe's word (D623: *"fold commits 2, 3 and 4's sim changes into one behaviour commit … goldens re-taken once"*): doorsteps kept clear, walks and catchment through the door, the founding's and an unmarked building's facings, a farmhouse, a barn and the cart with no door, the door priced into the economy (`DoorTiles`, `gather_yield` 123 → 135), the hay put out nearest the barn, a tend that would outlast summer not begun, and the three bugs the change surfaced (an emergency sent a villager whose arms were full, the re-founders' cart food was never counted in, a door opened into a pocket beside the founding site). ⭐ PROVEN: the parent commit (b10667c, D621) holds the old value with the suite green (1837 / 0 / 5), and every value here was read twice, identical. Was 335095228686958537.
     // RE-TAKEN (D678) — the workshop is learned by felling wood (`workshop-and-the-carpenter.md §4.1a`, Joe's 2,500): this scenario clears a wood with the harvest brush and fells **3,180 logs in twenty years**, so in it the village learns the workshop — `WorkshopLearned` (a tag byte) and `ShownTheTechTree` flip and the moment is raised. The spec's §4.1b had not probed this runner (private) and expected it not to cross; it does, and that is a finding written there, not a re-pin by habit. The fifty-year goldens (1,602–1,770 felled) hold. ⭐ PROVEN TO BE THE ONLY REASON: with the crossing alone switched off (`&& false` on `SimWorld.Felled`'s test) the old value passes; the parent (5b548ad, D677) holds it with the suite green. Was 12490923102850685382.
     // RE-TAKEN (D779) — every household walks for its water — with no well nearer, to the river bank (`water-need.md §5` step 3) — at Joe's jar of 120. ⭐ PROVEN BY ABLATION: with the bank never offered (`TryDrawWater` reading no `NearestBank`) the old value passes. Was 1511204165858373425.
-    private const ulong SeamGoldenHash = 1442264922084308000UL;
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 1442264922084308000.
+    private const ulong SeamGoldenHash = 5473338158645883485UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -394,7 +395,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D678) — the workshop learned in this scenario at 3,180 logs felled, as `SeamGoldenHash` above; the same
     // proof (the crossing switched off, the old value passes). Was 10861144845569800999.
     // Was 15219620512651737054 before D779 (the river bank, as above) — ⚠️ hidden behind the first assert until it was re-taken (D735's trap).
-    private const ulong SeamBeforeAnybodyGotBetter = 1039095688598838064UL;
+    // RE-TAKEN (D782), with its golden above, for the same reason and the same ablation: D781's water rule put back, the old value passes. Was 1039095688598838064.
+    private const ulong SeamBeforeAnybodyGotBetter = 3501960786095513977UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

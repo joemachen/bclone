@@ -599,6 +599,11 @@ public sealed class DesirePathTests
     /// draw — and <b>0.74 since every village walks to the river</b> (D779; the river made the hub thinner, not thicker). The
     /// bar is set just over what the game does; why the hub wears a block at all is its own item on Joe's ⏸️ list.
     /// </para>
+    /// <para>
+    /// ⛔ AND 0.85 (D782, at Joe's pick of the water trip asked at any moment at home, as put to him). Families fetching water
+    /// before the jar runs dry walk door to well or bank a fifth more often: <b>510 block tiles against 637 — 0.80</b>, four
+    /// tiles over 0.8. Still just over what the game does; the hub's block is still his ⏸️ item.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheFoundingHubWearsLanesNotABlock()
@@ -617,12 +622,12 @@ public sealed class DesirePathTests
 
         _output.WriteLine($"fifteen years in twenty-four valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
         Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in twenty-four valleys — the villages wore no paths (§2.6)");
-        Assert.True(kept * 10 <= cut * BlockBarTenths,
+        Assert.True(kept * 100 <= cut * BlockBarHundredths,
             $"keeping to the lanes left {kept} block tiles against {cut} — not a thinner network");
     }
 
-    /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in tenths of the corner-cutting village's block.</summary>
-    private const int BlockBarTenths = 8;
+    /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in hundredths of the corner-cutting village's block.</summary>
+    private const int BlockBarHundredths = 85;
 
     /// <summary>
     /// ⭐⭐ A commute along a packed lane treads every tile it passes over — <b>no break in the

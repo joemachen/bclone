@@ -3,6 +3,7 @@ using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
 using Bclone.Sim.Persistence;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -298,16 +299,15 @@ public sealed class WellTests
     }
 
     /// <summary>
-    /// ⛔ THE JAR SAYS WHEN (D778, `water-need.md §5` step 2): a household sets off only when its water cannot cover
-    /// another day of its living members' drink, and never two housemates at once — at the jar shipped and at a jar
-    /// of a single day for two. <i>(Was <c>OneTripPerHouseholdPerInterval</c>, the 20-day clock's guard, D427.)</i>
+    /// ⛔ THE JAR SAYS WHEN (D778, D782, `water-need.md §5` step 2): a household sets off only when its jar holds
+    /// <c>water_low_days</c> of its living members' drink or less, and never two housemates at once — at the jar shipped and
+    /// at jars below the margin. <i>(Was <c>OneTripPerHouseholdPerInterval</c>, the 20-day clock's guard, D427; "less than
+    /// another day's" until D782, which a jar of 120 never was until empty. The margin's exact edge is
+    /// <see cref="TheJarIsLowAtItsLastDays"/>'s.)</i>
     /// </summary>
     [Theory]
     [InlineData(null)]
     [InlineData(2)]
-    // ⚠️ A jar of exactly one day for the fixture's households of three — the arm that bites on "less than a day" against
-    // "a day or less" (D778's red check: the shipped jar and the jar of two both scored zero on that off-by-one, because
-    // 40 never lands on a multiple of three and two is below three either way).
     [InlineData(3)]
     public void TheJarSaysWhenToGo(int? jar)
     {
@@ -316,8 +316,74 @@ public sealed class WellTests
 
         Assert.True(trips.Count >= 10, $"only {trips.Count} trips in two years");
         Assert.Equal(1, mostOutAtOnce);
-        Assert.All(trips, t => Assert.True(t.WaterAtSetOff < config.WaterPerPersonPerDay * t.LivingAtSetOff,
+        Assert.All(trips, t => Assert.True(t.WaterAtSetOff <= config.WaterPerPersonPerDay * config.WaterLowDays * t.LivingAtSetOff,
             $"household {t.HouseholdId} set off on day {t.Day} with {t.WaterAtSetOff} in the jar for {t.LivingAtSetOff}"));
+    }
+
+    /// <summary>
+    /// ⭐ AT HOME, THE JAR BEFORE THE WORK (D782). Joe's village ran dry in its first year and stayed dry five: every adult
+    /// always had work, and the trip was asked only where a rest began, when somebody had run out of it. An adult standing at
+    /// their own door with empty hands, choosing what to do next, goes for a low jar — and a jar above the margin sends nobody.
+    /// </summary>
+    [Fact]
+    public void AnAdultAtHomeGoesForALowJarBeforeWork()
+    {
+        (SimWorld world, Villager adult, Household home) = SomebodyAtTheirDoor();
+        home.Water = world.Config.WaterJar;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.False(OutForWater(adult), $"{adult.Name} went for a full jar");
+
+        // A world of its own: a Decide sends them off, and the next is not asked at the door.
+        (world, adult, home) = SomebodyAtTheirDoor();
+        home.Water = world.Config.WaterPerPersonPerDay * world.LivingMembersOf(home);
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.True(OutForWater(adult), $"{adult.Name}, at home with a day's water left, chose {adult.State} instead");
+    }
+
+    /// <summary>
+    /// ⛔ THE MARGIN'S EDGE (D782): <c>water_low_days</c> of the family's drink sends somebody; one drop more does not. The
+    /// D778 rule was "less than", and at a jar that divides by the family it only ever met the edge at empty.
+    /// </summary>
+    [Fact]
+    public void TheJarIsLowAtItsLastDays()
+    {
+        (SimWorld world, Villager adult, Household home) = SomebodyAtTheirDoor();
+        int margin = world.Config.WaterPerPersonPerDay * world.Config.WaterLowDays * world.LivingMembersOf(home);
+
+        home.Water = margin + 1;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.False(OutForWater(adult), $"{adult.Name} went with {margin + 1} in the jar, a drop over the margin of {margin}");
+
+        (world, adult, home) = SomebodyAtTheirDoor();
+        home.Water = margin;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.True(OutForWater(adult), $"{adult.Name} stayed with {margin} in the jar, the margin itself");
+    }
+
+    /// <summary>A fixture village a year on, with a well, stepped until an adult stands at their own door with empty hands and
+    /// nobody from the house is out for water — the moment <c>Decide</c> is asked at home.</summary>
+    private static (SimWorld World, Villager Adult, Household Home) SomebodyAtTheirDoor()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        loop.Step(world.Config.TicksPerYear);
+        ObstacleTests.RaiseAWellNearTheFounding(world, 3);
+        for (int t = 0; t < world.Config.TicksPerYear; t++)
+        {
+            loop.StepOnce();
+            foreach (Villager v in world.Villagers)
+            {
+                if (v.Alive && v.CanWork && !v.IsCarrying && world.HouseholdOf(v).HasHome && v.Tile == world.HomePlaceOf(v)
+                    && v.State is VillagerState.Resting or VillagerState.Idle
+                    && !world.Villagers.Any(o => o.Alive && o.HouseholdId == v.HouseholdId && OutForWater(o)))
+                {
+                    v.ActionTicksRemaining = 0;
+                    return (world, v, world.HouseholdOf(v));
+                }
+            }
+        }
+
+        throw new InvalidOperationException("nobody stood at their own door in a year");
     }
 
     /// <summary>
@@ -615,8 +681,10 @@ public sealed class WellTests
 
     /// <summary>
     /// ⭐ ACCEPTANCE 3 — SAID, AND NEVER TWICE A SPELL: over a year at a jar of three, a household of three runs dry often; every
-    /// sentence names a household whose jar is empty on its tick, and no household is said dry twice without being filled
-    /// between. Nobody dies of it: there is no thirst (call 3A).
+    /// sentence names a household whose jar the day's drink emptied on its tick, and no household is said dry twice without
+    /// being filled between. Nobody dies of it: there is no thirst (call 3A). ⚠️ Since D782 a jar can be said dry and filled on
+    /// one tick — somebody was already on the way, the drink runs before the drawing ends — so the tick's sentences are read
+    /// before its refills, and a jar said dry may read empty or brim-full.
     /// </summary>
     [Fact]
     public void EveryDrySpellIsSaidOnce()
@@ -630,23 +698,45 @@ public sealed class WellTests
         {
             int before = sink.Entries.Count;
             loop.StepOnce();
-            foreach (Household h in world.Households.Where(h => h.Water > 0))
-            {
-                saidAndNotFilled.Remove(h.Id);
-            }
-
             foreach (string line in sink.Entries.Skip(before).Select(e => e.Message).Where(m => m.Contains(RanDry, StringComparison.Ordinal)))
             {
                 said++;
                 Household? h = world.Households.FirstOrDefault(x => line.StartsWith($"The {x.Name} household ", StringComparison.Ordinal));
                 Assert.NotNull(h);
-                Assert.Equal(0, h!.Water);
+                Assert.True(h!.Water == 0 || h.Water == world.Config.WaterJar, $"tick {world.Tick}: the {h.Name} household said dry with {h.Water}");
                 Assert.True(saidAndNotFilled.Add(h.Id), $"tick {world.Tick}: the {h.Name} household said dry twice in one spell");
+            }
+
+            foreach (Household h in world.Households.Where(h => h.Water > 0))
+            {
+                saidAndNotFilled.Remove(h.Id);
             }
         }
 
         _output.WriteLine($"{said} dry spells said in a year at a jar of three");
         Assert.True(said > 0, "nobody ran dry at a jar of three");
+    }
+
+    /// <summary>
+    /// ⭐ A FAMILY WITH NO HOUSE IS TOLD THE TRUTH (D782, Joe's Underwoods, Year 19: <i>"resting at home"</i> out in the open, and
+    /// a dry jar promised a trip that cannot set out without a door). Their rest and their dry jar say so — and what changes it.
+    /// </summary>
+    [Fact]
+    public void AFamilyWithNoHouseIsToldTheTruth()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        Household unhoused = world.Households.First(h => world.LivingMembersOf(h) > 0);
+        unhoused.HomePosition = null; // posed: a family whose house is not built yet
+        Villager member = world.Villagers.First(v => v.Alive && v.HouseholdId == unhoused.Id);
+        unhoused.Water = 0;
+        Assert.Equal("No water — somebody will go once they have a house", world.WaterNoteFor(unhoused));
+
+        member.State = VillagerState.Resting;
+        Assert.Equal("resting in the open — no house yet", member.DescribeState(null, false, unhoused: true));
+        Assert.Equal("resting at home", member.DescribeState(null, false, unhoused: false));
+        member.State = VillagerState.TravelingHome;
+        Assert.Equal("walking back to where they sleep — no house yet", member.DescribeState(null, false, unhoused: true));
     }
 
     /// <summary>⭐ The founders start with a full jar (D780), so a new valley does not open with every family dry.</summary>
@@ -673,7 +763,7 @@ public sealed class WellTests
         wet.Water = world.Config.WaterJar;
         dry.Water = 0;
         Assert.Null(world.WaterNoteFor(wet));
-        Assert.Equal("No water — somebody will go at their next rest at home", world.WaterNoteFor(dry));
+        Assert.Equal("No water — somebody will go the next time one of them is home", world.WaterNoteFor(dry));
 
         Villager? went = null;
         for (int t = 0; t < world.Config.TicksPerSeason && went is null; t++)

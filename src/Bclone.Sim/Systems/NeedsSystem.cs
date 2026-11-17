@@ -70,7 +70,8 @@ public sealed class NeedsSystem : ISimSystem
             // already empty is never read past its first line above. Nobody goes for it at once; the next rest at home does.
             if (household.Water == 0 && drink > 0)
             {
-                world.Narrate($"The {household.Name} household has run out of water — somebody will go for it at their next rest at home.");
+                world.Narrate($"The {household.Name} household has run out of water — "
+                    + (household.HasHome ? "somebody will go for it the next time one of them is home." : "somebody will go for it once they have a house."));
             }
         }
     }

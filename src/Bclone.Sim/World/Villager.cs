@@ -835,7 +835,11 @@ public sealed class Villager
     /// <c>RestsAtTheSteading</c>, asked by the caller, so a farmhand reads <em>"resting at
     /// Eastfield"</em> where they are, not <em>"resting at home"</em> where they are not.
     /// </param>
-    public string DescribeState(string? workplaceName = null, bool atTheSteading = false)
+    /// <param name="unhoused">
+    /// ⭐ Whether their household has no house yet (D782, Joe: <i>"It shows these people … 'resting at home' in the field?"</i>) —
+    /// they rest at the cart, or the founding site once it is gone, out in the open, and it is said so, not called home.
+    /// </param>
+    public string DescribeState(string? workplaceName = null, bool atTheSteading = false, bool unhoused = false)
     {
         if (JustAte && Alive)
         {
@@ -856,14 +860,14 @@ public sealed class Villager
             VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}"
                 // The works' cart home for the night (`handcart.md §13.2b`); the household's as before (§8).
                 : PushingACart ? (IsCarrying ? "pushing a load home" : CartForTheWorks ? "pushing the handcart home for the night" : "pushing the cart home")
-                : "walking home",
+                : unhoused ? "walking back to where they sleep — no house yet" : "walking home",
             VillagerState.TravelingToTrees => $"walking to {where}",
             VillagerState.Cutting => "felling trees",
             VillagerState.TravelingToHut => $"walking to {where}",
             VillagerState.MakingFirewood => SplitsThisStint > 0
             ? $"splitting logs into firewood, the {SplitsThisStint + 1}{(SplitsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} split of the day"
             : "splitting logs into firewood",
-            VillagerState.Resting => atTheSteading ? $"resting at {where}" : "resting at home",
+            VillagerState.Resting => atTheSteading ? $"resting at {where}" : unhoused ? "resting in the open — no house yet" : "resting at home",
             VillagerState.Dead => "dead",
             VillagerState.HaulingToStore => "carrying a load to the store",
             // The shopper with the household's cart (`handcart.md §8`): the same errand, a thing on the map behind them.
