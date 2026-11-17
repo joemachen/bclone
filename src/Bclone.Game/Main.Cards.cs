@@ -72,6 +72,9 @@ public partial class Main
         /// <summary>The building's condition, under its status (D556, Joe: <i>"described state + % wear"</i>). Hidden on a person.</summary>
         public required Label Wear { get; init; }
 
+        /// <summary>The day the building now standing was finished (`the-cards.md §6`, D784). Hidden on a person and a site.</summary>
+        public required Label Established { get; init; }
+
         /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
         public required Label Door { get; init; }
 
@@ -445,6 +448,9 @@ public partial class Main
         Label wear = Wrapped(Muted(string.Empty));
         wear.Visible = false;
         column.AddChild(wear);
+        Label established = Wrapped(Muted(string.Empty));
+        established.Visible = false;
+        column.AddChild(established);
 
         // ---- where its door is, when not on its front (`doors.md §12.4`) ----
         Label door = Wrapped(Muted(string.Empty));
@@ -571,6 +577,7 @@ public partial class Main
             Light = light,
             Status = status,
             Wear = wear,
+            Established = established,
             Door = door,
             House = house,
             Cart = cart,
@@ -787,6 +794,7 @@ public partial class Main
 
         // Each building's writer says its condition; a person, a site and anything without a row says none.
         card.Wear.Visible = false;
+        card.Established.Visible = false;
         card.Door.Visible = false;
         card.House.Visible = false;
         card.Cart.Visible = false;
@@ -1393,6 +1401,13 @@ public partial class Main
     {
         Title(card, store.Name, renamable: true);
         Wear(card, world.WearOf(store), world.Config);
+        if (store.Kind == StoreKind.Cart)
+        {
+            // ⭐ Never built, so never established (`the-cards.md §6`, D784): it came with them.
+            card.Established.Visible = true;
+            card.Established.Text = CameWithTheFounders;
+        }
+
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(store)));
 
         int used = store.Store.Capacity - store.Store.FreeSpace;
@@ -2837,6 +2852,8 @@ public partial class Main
         Card card, WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
     {
         (string Text, bool Warn)? line = WearLine(report, config, isABridge, closed, keptOpenBecause);
+        card.Established.Visible = report is not null;
+        card.Established.Text = report is WearReport r ? EstablishedLine(r.Raised, config) : string.Empty;
         card.Wear.Visible = line is not null;
         card.Portrait.Wear = report?.State ?? Condition.Sound;
         if (line is { } said)
@@ -2845,6 +2862,16 @@ public partial class Main
             card.Wear.Modulate = said.Warn ? LightStopped : new Color(1, 1, 1, 0.7f);
         }
     }
+
+    /// <summary>
+    /// ⭐ THE DAY IT WAS ESTABLISHED (`the-cards.md §6`, D784, Joe: <i>"every building should have an 'Established: Spring 23,
+    /// year 16' type of date in its card"</i>) — the day the building now standing was finished, in the calendar a birthday
+    /// is written in; the founding said as the founding.
+    /// </summary>
+    private const string CameWithTheFounders = "Came with the founders.";
+
+    internal static string EstablishedLine(ulong raised, SimConfig config) =>
+        raised == 0 ? $"Established at the founding — {SimClock.FromTick(0, config)}." : $"Established {SimClock.FromTick(raised, config)}.";
 
     /// <summary>
     /// A building's condition in a sentence (`building-condition.md §4.2, §6`; Joe, D556: <i>"described state + % wear"</i>)
