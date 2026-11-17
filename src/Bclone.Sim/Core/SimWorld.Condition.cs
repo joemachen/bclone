@@ -107,7 +107,8 @@ public sealed partial class SimWorld
             ConditionRules.YearsUntil(wear, next, row, Config),
             ConditionRules.SeasonsUntil(wear, Condition.Ruin, row, Config),
             Math.Max(raisedAt, repairedAt),
-            repairedAt > raisedAt);
+            repairedAt > raisedAt,
+            raisedAt);
     }
 
     /// <summary>How many times the season's walk has run — the probe's and the guards' way to see it is seasonal, not per tick.</summary>
