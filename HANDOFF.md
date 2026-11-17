@@ -10445,7 +10445,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **NEXT FOR SYSTEMS, ASKED BY JOE (2026-11-16): EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
+- ⏸️ **🔨 being built on `slice/established-date` (D784; Joe's go, relayed: *"Next: add the established line"*) — EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
 
 - ⏸️ **FOR THE ART LANE (Joe, 2026-11-16): paths across a crop field are drawn plain** — *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"* (his Year 35 and 38 screenshots: a pale smooth band across the painted crops). The worn paths are the art lane's shader (A72, A82) and the crops its painting; not touched from the systems lane.
 
