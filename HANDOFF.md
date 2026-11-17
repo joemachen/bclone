@@ -1,5 +1,13 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/school-wording` — ✅ BUILT (D786, 2026-11-16; Joe, relayed: *"yes fix the school wording"*): THE TWO SCHOOL WORDINGS D773 FOUND. THE
+> MERGE AT HIS WORD.** Nothing in `Main.cs` or `Main.Cards.cs` (the art lane's UI hook-in is in them): `SchoolSystem.cs` and
+> `SchoolTests.cs` only.
+> - (a) The ask for another school is counted only while a school **is taught** — a standing school with a teacher at work — not from the day it stands: untaught, nobody can have a place, so nobody is left without one, and the school's own card already says *"Nobody teaches here"*. (b) A pupil's time at school is said in years once there is one, seasons under a year, *"less than a season"* under that (`SchoolRoll.HowLong`): never *"after 0 years"*.
+> - **The founding hub's block:** left as it is — *"the hub thing is okay for now"*; its ⏸️ line closed.
+> - **Four checks:** suite **2072 / 0 / 5 of 2077 in 20m37**; view build 0 warnings (`--no-incremental`); probe **165** `[widths]` lines, 126 ✅, 0 ⛔, `school:` ✅, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 438 lines, unchanged — the count and the latch are unhashed (a cache and narration bookkeeping, D766), the sentences are not state
+> - **Guards:** two mutants, both red where aimed: the ask counted from a standing school again **1**, *"0 years"* again **3** (the three under-a-year cases); restored by bytes, 0 markers
+>
 > **✅ THE ESTABLISHED LINE MERGED INTO `main` AND PUSHED AT JOE'S WORD (D785, 2026-11-16, *"Merge and push"*); `slice/established-date`
 > DELETED. ▶️ THE ART LANE'S UI HOOK-IN CAN START** — `main` is the D785 docs commit; the art lane merges `main` into `art` first
 > (`Main.Cards.cs` gained the `Established` label and two lines in `Wear()`; `Main.cs` one probe call; `Main.EstablishedProbe.cs`
@@ -9567,6 +9575,14 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D786 PAID FOR — "NO PLACE" BEFORE THERE ARE ANY PLACES
+
+- **⛔ A shortfall is counted against what is offered, not against what stands.** The school's ask counted children from the
+  day the building stood, so it said *"no place at school"* with every place empty and the teacher not yet started — a true
+  count of the wrong thing. Ask *"is anything offered yet?"* before *"is anybody left over?"*.
+- **⚠️ A mutant the compiler can fold does not build** (`if (true)` → CS0162 unreachable, an error here). Bend the condition
+  so it cannot be folded: `years >= 0`.
+
 ## ⛔ THE TRAP D784 PAID FOR — A GUARD'S CHECK THAT CAN SKIP ITSELF
 
 - **⚠️ A probe check under `if (world.TheCart is …)` passes silently when there is no cart.** Red-check every branch that can be
@@ -10470,7 +10486,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **FOR THE ART LANE (Joe, 2026-11-16): paths across a crop field are drawn plain** — *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"* (his Year 35 and 38 screenshots: a pale smooth band across the painted crops). The worn paths are the art lane's shader (A72, A82) and the crops its painting; not touched from the systems lane.
 
-- ⏸️ **THE FOUNDING HUB WEARS A BLOCK, NOT LANES — THE D414 BAR WAS NEVER MET ON A WIDE SAMPLE (D780, 2026-11-16).** Found while
+- ✅ **LEFT AS IT IS — JOE, 2026-11-16, relayed by the coordinator session: *"the hub thing is okay for now"* (D786).** *(It read ⏸️, his to call, D780–D785; the bar is 0.85 since D782.)* **THE FOUNDING HUB WEARS A BLOCK, NOT LANES — THE D414 BAR WAS NEVER MET ON A WIDE SAMPLE (D780, 2026-11-16).** Found while
   widening `TheFoundingHubWearsLanesNotABlock` to 24 valleys at Joe's word: the shipped walk's worn block against the
   corner-cutters' read **0.82 before water** (bar 0.7; twelve valleys had passed it by the draw since D612), 0.74 with the river,
   0.76 now. The bar is 0.8 for now, just over what the game does. **His to call:** whether a thinner hub is still wanted, and if
@@ -10487,7 +10503,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
   hall's tabs stay last; warm clothing stops being optional unless he moves it out at the review. The review itself is not
   started. ⭐ From now on every systems spec names the buildings, goods and villager states the art lane will have to draw.
-- ⏸️ **TWO SMALL SCHOOL WORDINGS HIS ASHBOURNE LOG SHOWED (D773), JOE'S TO CALL, NOT BUILT.** (a) *"5 children of school age have no
+- ⏸️ **✅ BUILT on `slice/school-wording` (D786; Joe, 2026-11-16, relayed by the coordinator session: *"yes fix the school wording"*), THE MERGE AT HIS WORD — TWO SMALL SCHOOL WORDINGS HIS ASHBOURNE LOG SHOWED (D773).** (a) The ask for another school is counted only while a school **is taught** — a standing school with a teacher at work — not from the day it stands: untaught, nobody can have a place, so nobody is left without one, and the school's own card already says *"Nobody teaches here"*. (b) A pupil's time at school is said in years once there is one, seasons under a year, *"less than a season"* under that (`SchoolRoll.HowLong`): never *"after 0 years"*. *(Read "JOE'S TO CALL, NOT BUILT" until 2026-11-16.)* (a) *"5 children of school age have no
   place at school — another teacher … would bring 6 more"* was said before the teacher had started: 5 children, 6 places, nobody in
   them yet. (b) A child who turns 12 inside the first year *"leaves school 1 after 0 years"* (Moswyld, Eldar). He said there was no
   problem; fix either only at his word.

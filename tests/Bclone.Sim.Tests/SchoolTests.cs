@@ -281,6 +281,57 @@ public sealed class SchoolTests
     //  Step 4 — what the school says (D765, §6)
     // ---------------------------------------------------------------
 
+    /// <summary>
+    /// ⭐ NO ASK BEFORE ANYBODY TEACHES (D786, Joe's Ashbourne log, D773): a school standing with no teacher leaves nobody
+    /// "without a place" — nobody can have one yet — so the village says nothing and counts nobody waiting; once a teacher
+    /// starts and the places fall short, it asks, once.
+    /// </summary>
+    [Fact]
+    public void AnUntaughtSchoolAsksForNothing()
+    {
+        var sink = new InMemoryLogSink();
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        SimWorld world = loop.World;
+        world.LearnTheSchool();
+        Workplace school = FoodChainTests.RaiseA(world, BuildingKind.School);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        List<Villager> living = world.Villagers.Where(v => v.Alive).OrderBy(v => v.Id).ToList();
+        int[] ages = { 12, 13, 14 };
+        for (int i = 0; i < ages.Length; i++)
+        {
+            living[i + 1].AgeYears = ages[i];
+            living[i + 1].LifeStage = AgeingSystem.StageForAge(ages[i], living[i + 1].Vigour, config);
+        }
+
+        world.SetJobLimit(JobKind.Teacher, 0);
+        loop.Step(config.TicksPerDay);
+        Assert.Empty(school.WorkerIds);
+        Assert.Equal(0, world.ChildrenWaitingForSchool);
+        Assert.DoesNotContain(sink.Entries, e => e.Message.Contains("no place at school", StringComparison.Ordinal));
+
+        FoodChainTests.OnlyOneTradeWorks(world, JobKind.Teacher);
+        loop.Step(config.LabourSlackTicks + config.TicksPerDay);
+        Assert.NotEmpty(school.WorkerIds);
+        Assert.Single(sink.Entries, e => e.Message.Contains("no place at school", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// ⭐ NEVER "AFTER 0 YEARS" (D786, Joe's Ashbourne log, D773): a pupil who leaves inside their first year is said to have
+    /// been there seasons, or less than a season.
+    /// </summary>
+    [Theory]
+    [InlineData(0, "less than a season")]
+    [InlineData(1, "a season")]
+    [InlineData(3, "3 seasons")]
+    [InlineData(4, "a year")]
+    [InlineData(9, "2 years")]
+    public void ALeaverIsSaidToHaveBeenThereSomeTime(int seasons, string said)
+    {
+        SimConfig config = Config;
+        Assert.Equal(said, SchoolRoll.HowLong((seasons * config.TicksPerSeason) + 1, config));
+    }
+
     [Fact]
     public void TheSchoolSaysItsPlacesAndAsksForAnotherOnce()
     {
