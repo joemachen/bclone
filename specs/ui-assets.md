@@ -173,9 +173,13 @@ does not), a call for Joe. Fill colour from the building's map colour.
 | `tailors-shop.png` | a shop with shears on its sign |
 | `workshop.png` | a shed with a cartwheel (the carpenter, D678) |
 | `school.png` | a small house with a slate and a bell |
-| `cabin.png` | a log cabin (home tier 1) |
-| `cottage.png` | a stone cottage (tier 2) |
-| `manor.png` | a manor (tier 3) |
+| `house.png` | a log cabin (home tier 1; the data's row is *house*) |
+| `stone-cottage.png` | a stone cottage (tier 2) |
+| `insulated-manor.png` | a manor (tier 3) |
+
+*Every icon is named after its row's name in the data, lower case, apostrophes dropped, words hyphened (A111) — the
+three home tiers were renamed from `cabin`, `cottage` and `manor` so the game finds them with no list of exceptions. A
+modder's building is drawn by adding `<its name>.png` here.*
 
 ### 4.3 Trades (18) — `icons/trades/`
 **What each carries, not who**: the trade's tool or yield, in its trade colour (`TradeGlyph`; the teacher's colour is still

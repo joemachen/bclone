@@ -547,6 +547,7 @@ public partial class Main : Control
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());
+        GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -1120,9 +1121,10 @@ public partial class Main : Control
         ForceUpdateTransform();
         float markedWidth = _momentParagraphs.GetCombinedMinimumSize().X;
         Node[] rows = _momentParagraphs.GetChildren().ToArray();
+        static string? MarkOf(Node mark) => mark is MomentGlyph glyph ? glyph.Mark.ToString() : (mark as UiIcon)?.Of;
         string Row(int i) => i < rows.Length && rows[i] is HBoxContainer row && row.GetChildCount() == 2
-            && row.GetChild(0) is MomentGlyph glyph && row.GetChild(1) is Label text
-                ? $"{glyph.Mark}:{text.Text}"
+            && MarkOf(row.GetChild(0)) is string mark && row.GetChild(1) is Label text
+                ? $"{mark}:{text.Text}"
                 : "not a mark and a paragraph";
         if (rows.Length != 2 || Row(0) != $"Nomads:{first}" || Row(1) != $"Bridge:{second}")
         {
@@ -2283,6 +2285,7 @@ public partial class Main : Control
         }
 
         UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_libraryButton, world.AFreeLibraryIsOwed);
 
         // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
         // "Library" being typed here. D240 is why: the build bar said *"gatherer's hut"* for a
@@ -2389,6 +2392,7 @@ public partial class Main : Control
             tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind)
                 || world.Bridges.Exists(b => b.Kind == kind);
             UiLook.Tint(button, tried ? UiLook.Text : UiLook.Owed);
+            UiIcons.MarkOwed(button, !tried);
         }
     }
 
@@ -2433,6 +2437,7 @@ public partial class Main : Control
         }
 
         UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_smithyButton, world.AFreeSmithyIsOwed);
         _smithyButton.Text = world.AFreeSmithyIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
             : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy));
@@ -2602,6 +2607,7 @@ public partial class Main : Control
         }
 
         UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_townHallButton, world.ATownHallIsOwed);
 
         _townHallButton.Text = world.ATownHallIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.TownHall)) + " ★"
@@ -2863,7 +2869,8 @@ public partial class Main : Control
             // Every paragraph keeps the mark's column, marked or not, so the text of each starts at the same edge.
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", MomentMarkGap);
-            row.AddChild(new MomentGlyph(i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None));
+            MomentMark mark = i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None;
+            row.AddChild(UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide));
             text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
             row.AddChild(text);
             _momentParagraphs.AddChild(row);
@@ -4345,13 +4352,13 @@ public partial class Main : Control
     }
 
     /// <summary>A chip, a number that cannot widen, and a name — one cell of a bar.</summary>
-    private static Label AddBarCell(HBoxContainer row, Color? chip, string name, float width = BarAmountWidth)
+    private static Label AddBarCell(HBoxContainer row, Control? mark, string name, float width = BarAmountWidth)
     {
         var cell = new HBoxContainer();
         cell.AddThemeConstantOverride("separation", 5);
-        if (chip is Color colour)
+        if (mark is not null)
         {
-            cell.AddChild(WorldChip(colour));
+            cell.AddChild(mark);
         }
 
         // ⚠️ `Fill`, not the `ExpandFill` the Overview's cells had: in a row of cells an
@@ -4366,7 +4373,8 @@ public partial class Main : Control
 
     private void AddGoodsCell(HBoxContainer row, SimWorld world, Goods goods)
     {
-        Label held = AddBarCell(row, ChipColour(goods), world.GoodsCatalog.NameOf(goods));
+        string goodsName = world.GoodsCatalog.NameOf(goods);
+        Label held = AddBarCell(row, UiIcons.Or("goods", goodsName, () => WorldChip(ChipColour(goods)), UiIcons.BarSide), goodsName);
         _goodsReadouts.Add((goods, held));
 
         // ⭐ THE ⚠ WHEN THE PLAYER'S LIMIT IS MET (D409). Joe: *"there should be a message or signal
@@ -4431,7 +4439,7 @@ public partial class Main : Control
                 continue;
             }
 
-            Control chip = Chip(ChipColour(goods));
+            Control chip = UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
             Label name = Muted(world.GoodsCatalog.NameOf(goods));
             table.AddChild(chip);
             table.AddChild(name);
@@ -4498,10 +4506,10 @@ public partial class Main : Control
 
         HBoxContainer counts = BarRow();
         lines.AddChild(counts);
-        _populationCell = AddBarCell(counts, VillageMap.AdultColour, "villagers", HeadcountWidth);
+        _populationCell = AddBarCell(counts, WorldChip(VillageMap.AdultColour), "villagers", HeadcountWidth);
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
-        _childrenCell = AddBarCell(counts, VillageMap.ChildColour, "children", HeadcountWidth);
-        _eldersCell = AddBarCell(counts, VillageMap.ElderColour, "elders", HeadcountWidth);
+        _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
+        _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
         _laborersCell = AddBarCell(counts, null, "laborers", HeadcountWidth);
 
         // The valley's name is the one word that says which run you are watching — derived
@@ -5463,7 +5471,7 @@ public partial class Main : Control
     /// <summary>Three cells for one trade.</summary>
     private void AddProfessionRow(GridContainer table, JobKind kind)
     {
-        var glyph = new TradeGlyph(kind);
+        Control glyph = UiIcons.Or("trades", _loop.World.JobsCatalog.NameOf(kind), () => new TradeGlyph(kind));
         table.AddChild(glyph);
 
         // ⚠️ A Label ignores the mouse unless told otherwise, and a tooltip needs the mouse.
@@ -7266,7 +7274,7 @@ public partial class Main : Control
 
     private void AddStockLimitRow(GridContainer table, Goods goods)
     {
-        Control chip = Chip(ChipColour(goods));
+        Control chip = UiIcons.Or("goods", _loop.World.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
         Label name = Body(GoodsName(_loop.World, goods));
         table.AddChild(chip);
         table.AddChild(name);
@@ -7751,7 +7759,7 @@ public partial class Main : Control
 
             Button button = StripButton(
                 Titled(catalogue.NameOf(kind)),
-                new BuildingGlyph(kind, known),
+                UiIcons.Or("buildings", catalogue.NameOf(kind), () => new BuildingGlyph(kind, known)),
                 () => _map.BeginBuilding(captured));
 
             if (kind == BuildingKind.Library)
@@ -7827,7 +7835,8 @@ public partial class Main : Control
             }
 
             BuildingKind captured = kind;
-            Button button = StripButton(label, new BuildingGlyph(kind, true), () => ChooseHomesAs(captured));
+            Button button = StripButton(
+                label, UiIcons.Or("buildings", catalogue.NameOf(kind), () => new BuildingGlyph(kind, true)), () => ChooseHomesAs(captured));
             _homesAs.Add((kind, button));
             _stripRow.AddChild(button);
         }
@@ -7887,7 +7896,7 @@ public partial class Main : Control
 
         void Add(BuildTab tab, BuildCategory category, string label, ToolMark mark, System.Action act)
         {
-            Button button = StripButton(label, new ToolGlyph(mark), act);
+            Button button = StripButton(label, UiIcons.Or("tools", mark.ToString(), () => new ToolGlyph(mark)), act);
             _strip.Add((tab, category, button, null, mark));
             _stripRow.AddChild(button);
         }
@@ -7951,6 +7960,15 @@ public partial class Main : Control
         mark.AnchorRight = 0.5f;
         mark.AnchorTop = 0f;
         mark.AnchorBottom = 0f;
+        // ⭐ A painted icon is the button's own icon, laid out over the label by the button (A111) — a 20 px picture
+        // placed by hand ran into the label's capitals. A glyph keeps its hand placement.
+        if (mark is UiIcon icon)
+        {
+            icon.ShowOn(button);
+            button.Pressed += act;
+            return button;
+        }
+
         mark.OffsetLeft = -7f;
         mark.OffsetRight = 7f;
         mark.OffsetTop = 4f;

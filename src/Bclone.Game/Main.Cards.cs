@@ -184,6 +184,7 @@ public partial class Main
         public required VBoxContainer Box { get; init; }
         public required OptionButton Keep { get; init; }
         public required Label Job { get; init; }
+        public required TextureRect JobIcon { get; init; }
         public required VBoxContainer ToolSection { get; init; }
         public required ProgressBar ToolBar { get; init; }
         public required Label ToolUses { get; init; }
@@ -874,7 +875,7 @@ public partial class Main
                     var goods = (Goods)g;
                     var row = new HBoxContainer { Visible = false };
                     row.AddThemeConstantOverride("separation", 6);
-                    row.AddChild(Chip(ChipColour(goods)));
+                    row.AddChild(UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods))));
                     Label name = Body(GoodsName(world, goods));
                     name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
                     name.ClipText = true;
@@ -1934,6 +1935,7 @@ public partial class Main
             : villager.CanWork ? "Laborer — goes where the village needs hands"
             : "A child — too young to work";
         UiLook.Tint(p.Job, noted ? LightStopped : UiLook.Text);
+        UiIcons.Show(p.JobIcon, "trades", job is not null ? world.JobsCatalog.NameOf(job.Kind) : null);
         p.Job.TooltipText = card.Status.TooltipText;
 
         // ---- TOOL (D391, D430) ----
@@ -2237,7 +2239,13 @@ public partial class Main
         VBoxContainer work = Section("WORK");
         Label job = Wrapped(Body(string.Empty));
         job.MouseFilter = MouseFilterEnum.Stop;
-        work.AddChild(job);
+        job.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        TextureRect jobIcon = UiIcons.Slot();
+        var jobRow = new HBoxContainer();
+        jobRow.AddThemeConstantOverride("separation", 6);
+        jobRow.AddChild(jobIcon);
+        jobRow.AddChild(job);
+        work.AddChild(jobRow);
         OptionButton keep = AtRowSize(new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, FitToLongestItem = false });
         keep.GetPopup().AddThemeFontSizeOverride("font_size", RowSize);
         work.AddChild(keep);
@@ -2307,6 +2315,7 @@ public partial class Main
             Box = box,
             Keep = keep,
             Job = job,
+            JobIcon = jobIcon,
             ToolSection = toolSection,
             ToolBar = toolBar,
             ToolUses = toolUses,

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqt6cv4vdw3sb"
-path="res://.godot/imported/cabin.png-0e26ce75c50c5e46e8c03adbed26248c.ctex"
+uid="uid://bvn1p36d00qge"
+path="res://.godot/imported/insulated-manor.png-521777b5c17d5f13e9f00a2d38637e8f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/icons/buildings/cabin.png"
-dest_files=["res://.godot/imported/cabin.png-0e26ce75c50c5e46e8c03adbed26248c.ctex"]
+source_file="res://textures/ui/icons/buildings/insulated-manor.png"
+dest_files=["res://.godot/imported/insulated-manor.png-521777b5c17d5f13e9f00a2d38637e8f.ctex"]
 
 [params]
 

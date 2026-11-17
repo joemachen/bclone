@@ -6,7 +6,7 @@
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), and two calls are Joe's (§9.7); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -300,7 +300,7 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
 1. ✅ **The seam (§4), byte-identical — BUILT (A110, §9.5).** Every skin and colour above read from a theme, today's
    values where the theme names none. Probe `ui theme:`. With step 2's seven constructor swaps, the only commits
    that edit the systems lane's files for the look.
-2. **The icons — one art-lane loader.** One art-lane file (`UiIcons.cs`): a `TextureRect` at 20 logical px, loaded from
+2. ✅ **The icons — one art-lane loader — BUILT (A111, §9.6).** One art-lane file (`UiIcons.cs`): a `TextureRect` at 20 logical px, loaded from
    `textures/ui/icons/<set>/<id>.png`, keyed by the data id, never by a hard-coded list. **A row with no file falls
    back to today's code glyph**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and `GoodsPalette` stay
    as the modder's fallback, untouched (Data-driven, CLAUDE.md). The owed buildings take their `-owed` file. The seven
@@ -365,3 +365,51 @@ first in-game render. The four as they were asked:*
   characters: the Established probe, merged since, builds and demolishes a pile before it. The seam changes no text,
   and colour tags are not counted.
  **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 20 m 34 s; the view build 0 warnings; the probe 127 ✅ and 0 ⛔, bar height 151, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
+
+### 9.6 ✅ Step 2 as built — the painted icons (A111)
+- **`UiIcons.cs`** (the art lane's) finds an icon by **the thing's own name**:
+  - A building's, good's or trade's row name in the data, or a tool's or moment's mark, becomes a file name: lower case,
+    apostrophes dropped, words hyphened (*woodcutter's hut* → `woodcutters-hut.png`, `HarvestTrees` → `harvest-trees.png`).
+  - **No file means the glyph that stood there**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and the
+    goods chips stay as a modder's fallback, untouched.
+  - The home tiers' files were renamed to their rows' names (`house`, `stone-cottage`, `insulated-manor`) rather than
+    keeping a list of exceptions.
+  - Files are loaded once and kept, misses too; drawn through their mipmaps.
+- **Where they land:**
+  - **The build bar:** every building and tool.
+    - The icon is the button's own icon, laid out above the label by the button.
+    - Placed by hand at 20 px (as the 14 px glyphs were), it ran into the label's capitals; that showed in the first
+      render, not the arithmetic.
+    - An owed building swaps to its `-owed` file wherever the bar already turned it amber: the free library, smithy and
+      town hall, and anything untried.
+  - **The Professions table:** all 18 rows.
+  - **A person's card:** a trade icon beside *"Smith at smithy 1"* (A109, call 3).
+  - **The roster:** the trade column's icon (A109, call 3).
+  - **The moment pop-up's marks:** at 26.
+  - **Goods** on cards, the trading post's window and the stock limits: at 20.
+  - **⚠️ The top bar's goods: at 10, the chip's own size.** The bar had 6 px to spare at 75 % (`bars:`); at 20 it ran 31
+    px under the right column. A bigger icon there needs room the bar does not have. ⏸️ Joe's call (§9.7).
+  - Villager counts keep their colour swatches: there is no icon for an adult.
+- **⏸️ The control bar is 177 tall, not 151 (+26)**: each building row is taller to hold its icon above the label.
+  That is call 1 (§9.4), shown to Joe before 151 is written over (§9.7).
+- **Probe `ui icons:`** (`Main.UiIconsProbe.cs`):
+  - 77 icons found by name, no row without its file, each at its master size with mipmaps.
+  - 37 bar buttons carry theirs, the tallest wanting 74 px.
+  - The library shows owed and goes back.
+  - A posed worker's card and the roster show the trade.
+  - The 18 Professions rows are painted.
+  - A name with no file keeps its glyph.
+  - **Red-checked: four breaks in one run, four reds** (the slug keeping apostrophes, the owed swap dead, the card's
+    slot never shown, the roster's icon only for children).
+- **The checks:**
+  - Probe: 128 ✅ and 0 ⛔; tile centres ✅, new game ✅, `bars:` ✅, `done.`.
+  - View build: 0 warnings.
+  - The suite was not re-run. It does not build the game (D11), and no file in `src/Bclone.Sim`, `tests/` or `data/`
+    changed since step 1's run (2066 passed). No golden moved.
+  - Renders of his summer save: `D:\Projects\brushes\ui\hookin\step2_game.png`, `step2_bar.png`.
+
+### 9.7 ⏸️ Joe's calls from step 2
+1. **The control bar, 151 → 177** (call 1 as agreed: measured on the first render, shown to him, then written down).
+   Recommended: accept it. The icons need the room, and step 3's painted strip will be measured again.
+2. **The top bar's goods icons at 10 px** (today's chip size), because the bar is full. Recommended: keep 10 for now. The
+   alternative is 20 px with the goods' names dropped from the top bar (the name on hover), which frees the room.

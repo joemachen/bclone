@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://lscfukkqjs72"
-path="res://.godot/imported/cabin-owed.png-06f44c24acb64e1cb275cd69eea762bf.ctex"
+uid="uid://c1xfg1fwt6jmh"
+path="res://.godot/imported/stone-cottage.png-804a39b47ac26e48b29c71273ab80674.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/icons/buildings/cabin-owed.png"
-dest_files=["res://.godot/imported/cabin-owed.png-06f44c24acb64e1cb275cd69eea762bf.ctex"]
+source_file="res://textures/ui/icons/buildings/stone-cottage.png"
+dest_files=["res://.godot/imported/stone-cottage.png-804a39b47ac26e48b29c71273ab80674.ctex"]
 
 [params]
 

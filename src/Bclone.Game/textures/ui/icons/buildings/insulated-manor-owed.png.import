@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bvn1p36d00qge"
-path="res://.godot/imported/manor.png-ee49c6f93bef1c3018e36ed0ab6e53dc.ctex"
+uid="uid://ccjwotw5xubm0"
+path="res://.godot/imported/insulated-manor-owed.png-5ba908c107f1b78c6a689f28d513a251.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/icons/buildings/manor.png"
-dest_files=["res://.godot/imported/manor.png-ee49c6f93bef1c3018e36ed0ab6e53dc.ctex"]
+source_file="res://textures/ui/icons/buildings/insulated-manor-owed.png"
+dest_files=["res://.godot/imported/insulated-manor-owed.png-5ba908c107f1b78c6a689f28d513a251.ctex"]
 
 [params]
 

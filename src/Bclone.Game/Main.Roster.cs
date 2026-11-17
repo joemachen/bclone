@@ -223,6 +223,12 @@ public partial class Main
             item.SetText(1, age);
             item.SetTextAlignment(1, HorizontalAlignment.Right);
             item.SetText(2, row.Work);
+            if (!row.Child && UiIcons.Find("trades", row.Work) is Texture2D trade)
+            {
+                item.SetIcon(2, trade);
+                item.SetIconMaxWidth(2, (int)UiIcons.Side);
+            }
+
             item.SetTextOverrunBehavior(2, TextServer.OverrunBehavior.TrimEllipsis);
             item.SetMetadata(0, row.Id);
             _rosterItems.Add((row.Id, item));
