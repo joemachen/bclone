@@ -32,17 +32,24 @@ internal static class UiLook
     internal const string Type = "BcloneLook";
 
     private static Theme? _theme;
+    private static Theme? _worn;
     private static bool _read;
     private static readonly Dictionary<string, StyleBox> Kept = new();
 
-    /// <summary>The theme the look reads — the project's (<c>[gui] theme/custom</c>) unless <see cref="Use"/> said otherwise.</summary>
+    /// <summary>The room inside a slate panel, logical px.</summary>
+    private const int SlateInside = 6;
+
+    /// <summary>
+    /// The theme the look reads: the one <see cref="Wear"/> put on (<see cref="LookLoader"/>, at start), else the project's
+    /// (<c>[gui] theme/custom</c>), unless <see cref="Use"/> says otherwise for a while.
+    /// </summary>
     private static Theme? Theme
     {
         get
         {
             if (!_read)
             {
-                _theme = ThemeDB.GetProjectTheme();
+                _theme = _worn ?? ThemeDB.GetProjectTheme();
                 _read = true;
             }
 
@@ -50,7 +57,17 @@ internal static class UiLook
         }
     }
 
-    /// <summary>Read from this theme from now on (null: today's slate everywhere) — the probe's, and a look switched in play.</summary>
+    /// <summary>The look the game wears — put on once, at start, before any window is built.</summary>
+    internal static void Wear(Theme? theme)
+    {
+        _worn = theme;
+        PutBack();
+    }
+
+    /// <summary>Whether the game wears a look other than slate — for the probe.</summary>
+    internal static bool WearsALook => _worn is not null || ThemeDB.GetProjectTheme() is not null;
+
+    /// <summary>Read from this theme for a while (null: today's slate everywhere) — the probe's; <see cref="PutBack"/> ends it.</summary>
     internal static void Use(Theme? theme)
     {
         _theme = theme;
@@ -58,8 +75,8 @@ internal static class UiLook
         Kept.Clear();
     }
 
-    /// <summary>The project's theme again.</summary>
-    internal static void UseTheProjectTheme()
+    /// <summary>The look the game wears again.</summary>
+    internal static void PutBack()
     {
         _read = false;
         Kept.Clear();
@@ -158,11 +175,56 @@ internal static class UiLook
     //  Tinting text
     // ---------------------------------------------------------------
 
-    /// <summary>Give this text (or control) a role's colour — the one way a site tints.</summary>
-    internal static void Tint(CanvasItem item, Color colour) => item.Modulate = colour;
+    /// <summary>
+    /// Whether the look colours text by its font colour (ink on parchment) rather than by multiplying white text
+    /// (slate) — the theme's <c>tints_by_font</c> constant.
+    /// </summary>
+    internal static bool TintsByFont =>
+        Theme is { } theme && theme.HasConstant("tints_by_font", Type) && theme.GetConstant("tints_by_font", Type) != 0;
+
+    /// <summary>
+    /// Give this text (or control) a role's colour — the one way a site tints. On slate a multiply of the white text; on a
+    /// look that <see cref="TintsByFont"/>, a label's or a button's font colour, since a multiply cannot lighten ink or
+    /// turn it amber.
+    /// </summary>
+    internal static void Tint(CanvasItem item, Color colour)
+    {
+        if (!TintsByFont)
+        {
+            item.Modulate = colour;
+            return;
+        }
+
+        switch (item)
+        {
+            case Label label:
+                label.AddThemeColorOverride("font_color", colour);
+                break;
+            case Button button:
+                button.AddThemeColorOverride("font_color", colour);
+                button.AddThemeColorOverride("font_pressed_color", colour);
+                button.AddThemeColorOverride("font_hover_pressed_color", colour);
+                button.AddThemeColorOverride("font_focus_color", colour);
+                break;
+            case RichTextLabel text:
+                text.AddThemeColorOverride("default_color", colour);
+                break;
+            default:
+                item.Modulate = colour;
+                break;
+        }
+    }
 
     /// <summary>The colour <see cref="Tint"/> last gave it.</summary>
-    internal static Color TintOf(CanvasItem item) => item.Modulate;
+    internal static Color TintOf(CanvasItem item) => !TintsByFont ? item.Modulate : item switch
+    {
+        Label or Button => ((Control)item).GetThemeColor("font_color"),
+        RichTextLabel text => text.GetThemeColor("default_color"),
+        _ => item.Modulate,
+    };
+
+    /// <summary>A whole thing faded, not tinted: the tech tree's card not yet seen (45 % on slate, as it was).</summary>
+    internal static Color Fade => Named("fade", new Color(1f, 1f, 1f, 0.45f));
 
     // ---------------------------------------------------------------
     //  The skins
@@ -179,6 +241,45 @@ internal static class UiLook
             return named;
         }
 
+        return SlatePanel(alpha);
+    }
+
+    /// <summary>
+    /// A bar across the screen — the control bar, the top bar's boxes (A113): a scroll on its side in a look that paints
+    /// one, the same slate as a window where it does not.
+    /// </summary>
+    internal static StyleBox Strip(float alpha = 1f) => NamedBox("strip") ?? Panel(alpha);
+
+    /// <summary>
+    /// One of the top bar's boxes (the goods, the villagers). Its own role because that bar is full — 6 px to spare at
+    /// 75 % (A111) — so a look gives it a frame no wider than slate's.
+    /// </summary>
+    internal static StyleBox TopBox(float alpha = 1f) => NamedBox("top_box") ?? Panel(alpha);
+
+    /// <summary>
+    /// How much wider than slate a window (<paramref name="card"/> false) or a card is in this look, so the words inside
+    /// keep slate's room: the frame's sides less slate's 6 + 6. Zero on slate, and zero in a look whose theme does not set
+    /// <c>grows_by_frame</c> — then the frame's room comes out of the words instead (Joe's call, <c>ui-art.md §9.8</c>).
+    /// </summary>
+    internal static float FrameWidth(bool card)
+    {
+        if (Theme is not { } theme || !theme.HasConstant("grows_by_frame", Type) || theme.GetConstant("grows_by_frame", Type) == 0)
+        {
+            return 0f;
+        }
+
+        StyleBox skin = card ? Card(false) : Panel();
+        return Mathf.Max(0f, skin.ContentMarginLeft + skin.ContentMarginRight - (2 * SlateInside));
+    }
+
+    /// <summary>
+    /// A tech tree card in its state — <c>known</c>, <c>insight</c>, <c>fogged</c> — when the look paints one; null on slate,
+    /// where the card keeps the theme's default panel as it always has.
+    /// </summary>
+    internal static StyleBox? TechCard(string state) => NamedBox("tech_" + state);
+
+    private static StyleBoxFlat SlatePanel(float alpha)
+    {
         var skin = new StyleBoxFlat
         {
             BgColor = new Color(0.08f, 0.09f, 0.10f, alpha),
@@ -186,7 +287,7 @@ internal static class UiLook
         };
 
         skin.SetBorderWidthAll(1);
-        skin.SetContentMarginAll(6);
+        skin.SetContentMarginAll(SlateInside);
         skin.SetCornerRadiusAll(3);
         return skin;
     }
@@ -207,15 +308,21 @@ internal static class UiLook
         if (NamedBox(selected ? "card_selected" : "card") is { } named)
         {
             skin = named;
-            if (margin > 0)
+            if (margin > SlateInside)
             {
+                // A painted card's room is its chrome's (clear of the roll and the bar); a person's gets the same extra
+                // on top of it that slate gives (12 where slate's is 6), not 12 in place of it.
+                float extra = margin - SlateInside;
                 skin = (StyleBox)named.Duplicate();
-                skin.SetContentMarginAll(margin);
+                skin.ContentMarginLeft = named.ContentMarginLeft + extra;
+                skin.ContentMarginRight = named.ContentMarginRight + extra;
+                skin.ContentMarginTop = named.ContentMarginTop + extra;
+                skin.ContentMarginBottom = named.ContentMarginBottom + extra;
             }
         }
         else
         {
-            var flat = (StyleBoxFlat)Panel(0.96f);
+            var flat = SlatePanel(0.96f);
             flat.BorderWidthTop = flat.BorderWidthBottom = flat.BorderWidthLeft = flat.BorderWidthRight = 1;
             flat.BorderColor = selected ? SelectedEdge : CardEdge;
             if (margin > 0)

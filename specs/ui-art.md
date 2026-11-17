@@ -6,7 +6,7 @@
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -306,7 +306,7 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
    as the modder's fallback, untouched (Data-driven, CLAUDE.md). The owed buildings take their `-owed` file. The seven
    sites in 9.2 swap one constructor each. Probe `ui icons:`: every catalogue row finds its file or says it fell back;
    each file loads at 80 × 80 (moments 104), mipmapped.
-3. **The chrome and controls through the theme.** The 2× masters need a small custom StyleBox to draw at half
+3. ✅ **The chrome and controls through the theme — BUILT (A113, §9.8).** The 2× masters need a small custom StyleBox to draw at half
    (`ui-assets.md §1.5`; Godot's `StyleBoxTexture` draws texture pixels 1 : 1). The UI-size setting (`Main.Settings.cs`,
    `SetUiScale`) must keep them sharp at 75–150 %. Probe: `bar height` re-measured (see call 1); the contrast line
    over the theme's own colours (4.5:1).
@@ -414,3 +414,58 @@ first in-game render. The four as they were asked:*
    Recommended: accept it. The icons need the room, and step 3's painted strip will be measured again.
 2. **The top bar's goods icons at 10 px** (today's chip size), because the bar is full. Recommended: keep 10 for now. The
    alternative is 20 px with the goods' names dropped from the top bar (the name on hover), which frees the room.
+
+### 9.8 ✅ Step 3 as built — the parchment look (A113, Joe: *"A, frames add width"*)
+- **The look is a theme, built in the art lane's files.**
+  - `ParchmentLook.cs` builds the theme from the painted chrome and controls.
+  - `LookLoader.cs` (an autoload, `project.godot [autoload]`) puts it on the root window and on `UiLook` before any
+    window is built. `BCLONE_LOOK=slate` starts in slate, for a before-and-after render only.
+  - `PaintedPatch.cs` draws a 2× or 4× 9-patch at half or a quarter of its pixels. Godot's own draws 1 : 1.
+  - `SizedTexture.cs` lets a 4× checkbox report and draw at 14 px.
+- **What it skins:**
+  - The game's own roles: windows (the hung scroll), cards (the selected one with its illuminated bar), the control bar
+    (a scroll on its side, A113's `UiLook.Strip`), the top bar's boxes (a torn slip with slate's 6 px inside, because
+    that bar is full, `UiLook.TopBox`), pills (ribbons), bars, the pause sheet, and the tech tree's cards (known, in
+    sight, fogged; `UiLook.TechCard`).
+  - What a theme alone reaches: buttons (ink; a faint wash on hover; a rubric swash under a held one), checkboxes (an
+    inked ring, a wax seal when ticked), the drop-down's arrow, fields, menus, tooltips, the scrollbars, the rules, the
+    roster's Tree and the log's RichTextLabel.
+- **Text is ink.** On a look that sets `tints_by_font`, `UiLook.Tint` gives a label or a button its font colour; a
+  multiply cannot turn ink amber. Two older probe checks that read amber off `Modulate` now ask `UiLook.TintOf`.
+- **The palette's words, measured** (`ui contrast:`, on the sheet and its darkest mottle, 4.5 : 1 at least): ink 9.9;
+  verdigris 5.0; rubric 4.7. Gold leaf is 2.1 on its own sheet, so an owed gift's words are a darkened gold (4.6); the
+  leaf stays in the painting. The probe's first run caught the dim ink at 4.30, now `#644f3c` at 4.78.
+- **The frames' room is measured, not guessed.** The first render put the selected card's illuminated bar over each
+  line's first letter and the bar's hint line on the strip's torn foot. The content margins now come from where each
+  painting is opaque:
+  - window: 15 / 22 / 20 / 14;
+  - card: 28 on the left, selected or not, so a card does not jump when picked;
+  - strip: 30 / 12 / 30 / 20.
+  - A person's extra room (D432) is added on top of the chrome's, not in place of it.
+- **⭐ Joe's call — the frames add their own width.** The theme's `grows_by_frame` makes `DefaultPanelWidth` and
+  `CardWidth` slate's plus the frame's extra (windows +23, cards +36). The words keep slate's room: whole names in the
+  roster, the lodge's *"meat · leather"*, the widest villager name. Option B (today's footprint) failed three probe
+  lines and trimmed the roster's names (`D:\Projects\brushes\ui\hookin\step3_room.png`).
+  - **The right column starts under the bars where the top bar reaches it** (`TheBarMeetsTheRightColumn`), as the left
+    one always has (D378). At a 1280 window at 75 % the bar ends at 963 and the column would begin at 943; at Joe's
+    1920 they do not meet and nothing moves.
+  - ⚠️ It is decided when the panels are arranged (launch, and *Reset panels*). A bar that grows later, with goods
+    newly known, waits for a reset.
+- **The control bar is still 177** (A112's guard): the strip's room is inside the rows' own height.
+- **Probes:**
+  - `ui theme:` checks that the worn look inks a tinted label (not a multiply), and still checks slate under no theme.
+  - `ui contrast:` is new.
+  - `bars:` checks that the right column really starts under the bars when they meet.
+  - `tech tree:` holds the painted cards at 160.
+  - **Red-checked: three breaks, three reds.** Labels tinted the old way reddened `ui theme:` (and the older amber
+    checks); the frames not growing reddened `panels:`, `cards:` and `villager card:`; the right column never stepping
+    down reddened `bars:`. ⚠️ **That last one scored zero in the first run**, because the frames-not-growing break made
+    the columns too narrow to meet the bar. It was run again on its own and went red.
+  - The contrast line's red was real data (two roles at 4.30).
+- **Not in this step** (next, still the art lane's):
+  - The hand-drawn glyph buttons: grip `⋮⋮`, pin `⌖`, close `✕`, find, fold, and the Professions' `–`/`+`. Their
+    painted controls (`controls/grip.png` …) wait on their sites in `Main.cs`.
+  - The card's working light (a ColorRect), the window title's scroll label, the washes, and the roll-up.
+  - Fonts (step 4) and screens (step 5).
+- Renders: `D:\Projects\brushes\ui\hookin\step3_game.png`, `step3_room.png`.
+- **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).

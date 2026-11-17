@@ -121,13 +121,17 @@ public partial class TechTreeView : Control
         (TechState state, int progress, int of) = at;
 
         var card = new PanelContainer { CustomMinimumSize = new Vector2(CardWidth, CardHeight) };
+        if (UiLook.TechCard(state.ToString().ToLowerInvariant()) is { } painted)
+        {
+            card.AddThemeStyleboxOverride("panel", painted);
+        }
         var box = new VBoxContainer();
         box.AddThemeConstantOverride("separation", 4);
         card.AddChild(box);
 
         if (state == TechState.Fogged)
         {
-            card.Modulate = UiLook.Dim;
+            card.Modulate = UiLook.Fade;
             box.AddChild(Line("?", 15, bold: true));
             box.AddChild(Line("Not yet seen.", 12));
             return card;

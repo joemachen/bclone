@@ -21,6 +21,10 @@ run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+Look="*res://LookLoader.cs"
+
 [display]
 
 window/size/viewport_width=1280

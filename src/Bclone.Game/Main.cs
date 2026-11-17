@@ -547,6 +547,7 @@ public partial class Main : Control
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());
+        GD.Print(TheWordsReadOnParchment());
         GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
@@ -1316,9 +1317,25 @@ public partial class Main : Control
             return $"[widths] bars: ⛔ posing the popup's rows moves it {popupBefore.X:F0}x{popupBefore.Y:F0} → {popupAfter.X:F0}x{popupAfter.Y:F0}";
         }
 
+        // ⭐ Where they meet, the right column starts under the bars (A113) — measured by the same rule the layout uses.
+        bool meets = TheBarMeetsTheRightColumn(after.X, 1280f);
+        float highest = float.MaxValue;
+        foreach ((PanelContainer panel, bool right) in _docked)
+        {
+            highest = right && panel.Visible ? Mathf.Min(highest, panel.Position.Y) : highest;
+        }
+
+        if (meets && highest < TopOfTheLeftColumn() - 1f)
+        {
+            return $"[widths] bars: ⛔ {where} — they meet, and a right-column window still starts at {highest:F0}px, above the bars' foot at {TopOfTheLeftColumn():F0}px";
+        }
+
         return barEnds < columnBegins
             ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}"
-            : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
+            : meets
+                ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}, so the "
+                  + $"right column starts under the bars, at {TopOfTheLeftColumn():F0}px"
+                : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
     }
 
     /// <summary>
@@ -4316,7 +4333,7 @@ public partial class Main : Control
     {
         SimWorld world = _loop.World;
         var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
 
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 3);
@@ -4498,7 +4515,7 @@ public partial class Main : Control
     private PanelContainer BuildVillagersBox()
     {
         var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
 
         var lines = new VBoxContainer();
         lines.AddThemeConstantOverride("separation", 3);
@@ -6032,7 +6049,7 @@ public partial class Main : Control
     }
 
     /// <summary>How wide a panel starts. It is free to be dragged, not resized.</summary>
-    private const float DefaultPanelWidth = 300f;
+    private static float DefaultPanelWidth => 300f + UiLook.FrameWidth(card: false);
 
     /// <summary>
     /// The most the inspector's contents stand before they scroll (D367; a ceiling since B3, when
@@ -6066,7 +6083,7 @@ public partial class Main : Control
         // debug frame counter sits in the gap under the bar, where it can actually be read — it
         // used to sit at the corner, under the Overview.
         float leftY = TopOfTheLeftColumn();
-        float rightY = Edge;
+        float rightY = TheBarMeetsTheRightColumn(BarWidest(), Size.X) ? leftY : Edge;
 
         // *What's here* starts where it started (B3): beside its tile, from the next one.
         _whatsHereWasDragged = false;
@@ -6142,6 +6159,18 @@ public partial class Main : Control
     /// makes for every panel it stacks. Asked of the bar's minimum as well as its size, because
     /// a panel that has not settled reports a size of nothing.
     /// </remarks>
+    /// <summary>
+    /// Whether a top bar this wide reaches the right column in a window this wide (A113). The painted frames widened the
+    /// columns (Joe: <i>"A, frames add width"</i>), and at a 1280 window at 75 % the bar ran 20 px under the right one —
+    /// so where they meet, the right column starts under the bars as the left one always has (D378); where they do not,
+    /// it keeps the top, beside the bar, as before.
+    /// </summary>
+    private bool TheBarMeetsTheRightColumn(float barWidth, float windowWidth) =>
+        _topBar is { Visible: true } && Edge + (barWidth * _uiScale) >= windowWidth - Edge - DefaultPanelWidth;
+
+    /// <summary>The top bar's width as laid out — its cells are fixed-width (D367), so numbers growing do not widen it.</summary>
+    private float BarWidest() => _topBar is null ? 0f : Mathf.Max(_topBar.Size.X, _topBar.GetCombinedMinimumSize().X);
+
     private float TopOfTheLeftColumn()
     {
         if (_topBar is null || !_topBar.Visible)
@@ -6170,7 +6199,7 @@ public partial class Main : Control
         // ⚠️ The bar is the one panel that stays see-through: it spans the window, so a solid
         // one would wall off the bottom of the valley. Every other window is something the
         // player reads, and the map showing through a table of numbers costs legibility.
-        panel.AddThemeStyleboxOverride("panel", PanelSkin(spanWidth ? 0.72f : 1f));
+        panel.AddThemeStyleboxOverride("panel", spanWidth ? UiLook.Strip(0.72f) : PanelSkin());
 
         bool right = corner is Corner.TopRight or Corner.BottomRight;
         bool bottom = corner is Corner.BottomLeft or Corner.BottomRight;

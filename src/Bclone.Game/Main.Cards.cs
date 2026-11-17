@@ -211,7 +211,7 @@ public partial class Main
     private Card? _selectedCard;
 
     /// <summary>A card's width in logical pixels — fixed, like every panel since D367.</summary>
-    private const float CardWidth = 268f;
+    private static float CardWidth => 268f + UiLook.FrameWidth(card: true);
 
     /// <summary>The room between a person's card's border and what it says (D432) — twice a panel's.</summary>
     private const int PersonCardMargin = 12;
@@ -3820,7 +3820,7 @@ public partial class Main
             string dry = world.WaterNoteFor(home) + ".";
             if (card.Water.Text != dry || UiLook.TintOf(card.Water) != LightStopped)
             {
-                faults.Add($"a dry jar's card reads \"{card.Water.Text}\"{(card.Water.Modulate == LightStopped ? string.Empty : ", not amber")}, not \"{dry}\"");
+                faults.Add($"a dry jar's card reads \"{card.Water.Text}\"{(UiLook.TintOf(card.Water) == LightStopped ? string.Empty : ", not amber")}, not \"{dry}\"");
             }
 
             // The widest either line can be: the longest name gone to the river, and a low jar in the thousands.
@@ -4387,7 +4387,7 @@ public partial class Main
             }
 
             bool warns = report.State >= Condition.Worn;
-            if (warns != (posed.Wear.Modulate == LightStopped))
+            if (warns != (UiLook.TintOf(posed.Wear) == LightStopped))
             {
                 faults.Add($"a card saying {what} is {(warns ? "not amber" : "amber")}");
             }

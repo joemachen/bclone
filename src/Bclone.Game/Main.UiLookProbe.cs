@@ -24,7 +24,21 @@ public partial class Main
             }
         }
 
-        bool projectNamesALook = ThemeDB.GetProjectTheme() is { } project && project.GetColorList(UiLook.Type).Length > 0;
+        bool projectNamesALook = UiLook.WearsALook;
+
+        // ---- in a worn look that inks its words, a tint is the label's font colour, not a multiply (A113) ----
+        if (UiLook.TintsByFont)
+        {
+            var inked = new Label();
+            UiLook.Tint(inked, UiLook.Stopped);
+            if (!inked.GetThemeColor("font_color").IsEqualApprox(UiLook.Stopped) || inked.Modulate != Colors.White)
+            {
+                faults.Add("the worn look's tint is not the label's ink");
+            }
+
+            inked.Free();
+        }
+
         UiLook.Use(null);
         try
         {
@@ -107,7 +121,7 @@ public partial class Main
             // ---- a theme that names an entry is obeyed; what it does not name stays slate ----
             var theme = new Theme();
             var odd = new Color(0.9f, 0.1f, 0.8f);
-            var box = new StyleBoxFlat { BgColor = odd };
+            var box = new StyleBoxFlat { BgColor = odd, ContentMarginLeft = 4, ContentMarginRight = 4, ContentMarginTop = 4, ContentMarginBottom = 4 };
             theme.SetColor("stopped", UiLook.Type, odd);
             theme.SetStylebox("card", UiLook.Type, box);
             UiLook.Use(theme);
@@ -118,9 +132,9 @@ public partial class Main
                 faults.Add("a theme's card is not used");
             }
 
-            if (UiLook.Card(false, 12) is not { } roomy || ReferenceEquals(roomy, box) || !Mathf.IsEqualApprox(roomy.ContentMarginLeft, 12f))
+            if (UiLook.Card(false, 12) is not { } roomy || ReferenceEquals(roomy, box) || !Mathf.IsEqualApprox(roomy.ContentMarginLeft, 10f))
             {
-                faults.Add("a theme's card is not given a person's room");
+                faults.Add("a theme's card is not given a person's extra room on top of its own (4 + 6)");
             }
 
             if (UiLook.Card(true) is not StyleBoxFlat slateSelected || !slateSelected.BorderColor.IsEqualApprox(new Color("#ffd76a")))
@@ -135,14 +149,58 @@ public partial class Main
         }
         finally
         {
-            UiLook.UseTheProjectTheme();
+            UiLook.PutBack();
             RefreshCards(_loop.World);
         }
 
         return faults.Count == 0
-            ? $"[widths] ui theme: ✅ {(projectNamesALook ? "the project names a look" : "no look named — slate")}: 28 roles and 4 skins are "
+            ? $"[widths] ui theme: ✅ {(projectNamesALook ? "a look is worn; under no theme" : "no look named — slate")}: 28 roles and 4 skins are "
               + "the slate their sites had; an open card wears the look's kept skin; a theme's named entries are obeyed and the "
               + "rest stay slate; a tint reads back"
             : $"[widths] ui theme: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ EVERY WORD THE PARCHMENT LOOK COLOURS READS ON IT (Non-Negotiable §1.1, <c>ui-assets.md §1.3</c>): each text role's
+    /// ink against the sheet and against its darkest mottle (−10 a channel), 4.5 : 1 at least (WCAG's sum, sRGB).
+    /// </summary>
+    private static string TheWordsReadOnParchment()
+    {
+        static double Lum(Color c)
+        {
+            static double Linear(double v) => v <= 0.03928 ? v / 12.92 : System.Math.Pow((v + 0.055) / 1.055, 2.4);
+            return (0.2126 * Linear(c.R)) + (0.7152 * Linear(c.G)) + (0.0722 * Linear(c.B));
+        }
+
+        static double Ratio(Color a, Color b)
+        {
+            double la = Lum(a);
+            double lb = Lum(b);
+            return (System.Math.Max(la, lb) + 0.05) / (System.Math.Min(la, lb) + 0.05);
+        }
+
+        Color sheet = ParchmentLook.Parchment;
+        Color mottle = new(sheet.R - (10f / 255f), sheet.G - (10f / 255f), sheet.B - (10f / 255f));
+        var faults = new List<string>();
+        double worst = double.MaxValue;
+        string worstRole = string.Empty;
+        foreach ((string role, Color colour) in ParchmentLook.Words)
+        {
+            double ratio = System.Math.Min(Ratio(colour, sheet), Ratio(colour, mottle));
+            if (ratio < worst)
+            {
+                worst = ratio;
+                worstRole = role;
+            }
+
+            if (ratio < 4.5)
+            {
+                faults.Add($"{role} reads at {ratio:F2}:1");
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] ui contrast: ✅ {ParchmentLook.Words.Length} text roles on the parchment and its darkest mottle, the faintest {worstRole} at {worst:F2}:1 (4.5 wanted)"
+            : $"[widths] ui contrast: ⛔ {string.Join("; ", faults)}";
     }
 }
