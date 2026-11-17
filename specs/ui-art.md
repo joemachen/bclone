@@ -6,7 +6,8 @@
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is planned in §9 and waits on the systems lane's Established-date slice; four calls are Joe's (§9.4). The
+> The hook-in is planned in §9 and waits on the systems lane's Established-date slice; Joe's four calls are answered,
+> all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
 > **Status: ✍️ specced and mocked on `art` (A96); ⭐ Joe's answers and the look REMOCKED as manuscript scrolls (A97,
@@ -265,7 +266,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
 4. Joe plays it (`.\run.bat`); merge at his word.
 
-## 9. ⏸️ The hook-in — the plan (A108, 2026-11-16), WAITING ON THE ESTABLISHED-DATE SLICE
+## 9. ⏸️ The hook-in — the plan (A108, 2026-11-16; his calls answered, A109), WAITING ON THE ESTABLISHED-DATE SLICE
 
 **Joe's order (relayed 2026-11-16): *"Next: add the established line / then hook in the UI and villagers"*.** The art is
 in `main` (A107): 169 files in `src/Bclone.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
@@ -278,7 +279,7 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
 - **Portraits: none, by design** (B12, D431 — *a villager has no picture*); reopening that is Joe's call, not this piece's.
 - **What is left is the 18 trade icons** (`icons/trades/`). Today the Professions table draws a code glyph
   (`Main.cs` `AddProfessionRow`, `new TradeGlyph(kind)`); a person's card and the roster name the trade in words only.
-  `ui-assets.md §4.3` says the icons *"may join the cards and the roster"* — ⏸️ Joe's call (9.4, call 3).
+  `ui-assets.md §4.3` says the icons *"may join the cards and the roster"* — ✅ they do, the word kept (A109).
 - Still the systems lane's one line (A93): the teacher's colour in `TradeGlyph.cs`, which is also the fallback glyph.
 
 ### 9.2 Where the art lands today (counted on c220e7a)
@@ -317,7 +318,10 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
    title's.
 7. **Joe plays it** (`.\run.bat`); merge at his word.
 
-### 9.4 ⏸️ Joe's calls before it starts (plain words; each has a recommendation)
+### 9.4 ✅ Joe's calls — ALL AS RECOMMENDED (A109, 2026-11-16, *"all as recommended"*)
+*What stands: the bar height re-measured on the first render, shown to him and written down as the new guard; the
+chip dropped; trade icons on the card and in the roster as well, the word kept; the title face picked from the
+first in-game render. The four as they were asked:*
 1. **The control bar gets taller.** The parchment strip has rolls at its ends and a thicker edge than today's slate, so
    the probe's `bar height` (151 since D475) will change. Recommended: measure it on the first render, show him, and
    write the new number down as the guard.

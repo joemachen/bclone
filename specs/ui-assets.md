@@ -107,8 +107,8 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 **All icons: 20 × 20 logical, master 80 × 80 with 5 px clear on every side (the drawing in 70 × 70), on transparent.**
 *(A101, Joe: "yes raise icons to 20 logical px" — from 14 × 14 / 64 × 64. Moments stay 26. Controls — checkbox, pin,
 close and the rest of §3 — are not icons and keep their sizes.)*
-They sit straight on the parchment — ⏸️ **D637's parchment chip under pictures of world things was for slate panels; on
-a parchment sheet it is redundant, so recommended dropped** (Joe's to confirm when the build starts). States are separate
+They sit straight on the parchment — ✅ **D637's parchment chip under pictures of world things was for slate panels; on
+a parchment sheet it is redundant, so dropped** (A109, Joe: *"all as recommended"*). States are separate
 files named `<name>-<state>.png`.
 
 ### 4.1 Goods (16) — `icons/goods/`
@@ -179,7 +179,7 @@ does not), a call for Joe. Fill colour from the building's map colour.
 
 ### 4.3 Trades (18) — `icons/trades/`
 **What each carries, not who**: the trade's tool or yield, in its trade colour (`TradeGlyph`; the teacher's colour is still
-the systems lane's one line, A93). Shown on the Professions table, and may join the cards and the roster.
+the systems lane's one line, A93). Shown on the Professions table, a person's card and the roster's trade column, the word kept beside it (A109).
 
 | File | Draw | File | Draw |
 |---|---|---|---|
