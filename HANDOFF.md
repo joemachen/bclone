@@ -10487,7 +10487,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
   hall's tabs stay last; warm clothing stops being optional unless he moves it out at the review. The review itself is not
   started. ⭐ From now on every systems spec names the buildings, goods and villager states the art lane will have to draw.
-- ⏸️ **TWO SMALL SCHOOL WORDINGS HIS ASHBOURNE LOG SHOWED (D773), JOE'S TO CALL, NOT BUILT.** (a) *"5 children of school age have no
+- ⏸️ **🔨 being built on `slice/school-wording` (Joe, 2026-11-16, relayed by the coordinator session: *"yes fix the school wording"*) — TWO SMALL SCHOOL WORDINGS HIS ASHBOURNE LOG SHOWED (D773).** *(Read "JOE'S TO CALL, NOT BUILT" until 2026-11-16.)* (a) *"5 children of school age have no
   place at school — another teacher … would bring 6 more"* was said before the teacher had started: 5 children, 6 places, nobody in
   them yet. (b) A child who turns 12 inside the first year *"leaves school 1 after 0 years"* (Moswyld, Eldar). He said there was no
   problem; fix either only at his word.
