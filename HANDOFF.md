@@ -1,5 +1,15 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); NEXT, SYSTEMS: THE ESTABLISHED DATE ON EVERY BUILDING'S CARD (his ask, D782). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/established-date` — ✅ BUILT (D784, 2026-11-16; Joe's go, relayed: *"Next: add the established line"*): EVERY BUILDING'S CARD SAYS WHEN IT
+> WAS ESTABLISHED. THE MERGE AT HIS WORD — ⚠️ THE ART LANE'S UI HOOK-IN WAITS ON IT** (it edits `Main.cs` / `Main.Cards.cs`; this
+> slice's card change is small: one label, its reset, two lines in `Wear()`, the cart's three in `ShowStore`, one probe call in
+> `Main.cs`; the probe itself is in its own file, `Main.EstablishedProbe.cs`).
+> *"Established Day 23, Spring, Year 16."* under the wear line on every standing building's card, from the stamp the sim already
+> keeps (D552) — nothing new stored, saved or hashed.
+> - ⏸️ **JOE'S CALL — the Established line's cases** (`the-cards.md §6`), built as recommended: a founding-day building reads *"Established at the founding — Day 1, Spring, Year 1."*; a free building its laying-out day; the cart *"Came with the founders."*; **a building moved, a house raised a tier or a bridge rebuilt in stone reads the day the building now standing was finished** (the stamp restarts with its wear; keeping the first date would be a new saved, hashed fact and every golden moved); a site or a family with no house, no line. Written *"Established Day 23, Spring, Year 16."*, the birthday's calendar, not his *"Spring 23, year 16"* — one calendar on every card. Any of it is one line to change.
+> - **Four checks:** suite **2066 / 0 / 5 of 2071 in 15m25**; view build 0 warnings (`--no-incremental`); probe **165** `[widths]` lines (164 + the new `established:`), 126 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 438 lines, unchanged — nothing new is stored, saved or hashed
+> - **Guards:** probe `established:`, four mutants: the day dropped **1**, the line never shown **1**, the cart's sentence gone **1**, a site forced to show a line **0** — written down (D326): a site's card branches away before the wear call, so nothing there ever sets the line, and it stays hidden because every card starts with it hidden; restored by bytes, 0 markers
+>
 > **✅ WATER MERGED INTO `main` AND PUSHED AT JOE'S WORD (D783, 2026-11-16, *"Merge and push"*); `slice/water-need` DELETED.** The merge is
 > `3f3a7cc`, its tree byte-identical to the slice's last commit, so D782's four checks are the merged tree's. ⚠️ **`art` is behind
 > `main` by this merge** — the art lane merges `main` in first: `VillageMap.People.cs` gained the pail's hook (D782) and
@@ -9552,6 +9562,12 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D784 PAID FOR — A GUARD'S CHECK THAT CAN SKIP ITSELF
+
+- **⚠️ A probe check under `if (world.TheCart is …)` passes silently when there is no cart.** Red-check every branch that can be
+  skipped (D784: the cart's mutant scored 1, so it ran); and a mutant that scores zero because the code it bends is never
+  reached (a site's card never calls `Wear()`) is a fact about the structure, written down, not a hole to paper over.
+
 ## ⛔ THE TRAP D782 PAID FOR — A VERDICT FROM THE SCREEN, A LOG GREP THAT READ NOTHING, AND THE OTHER LANE'S MERGE
 
 - **⛔ "Looks good" from a play is the screen's verdict; the log has its own.** Joe approved water and its pail; his game log said
@@ -10445,7 +10461,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **NEXT FOR SYSTEMS, ASKED BY JOE (2026-11-16): EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
+- ⏸️ **✅ BUILT on `slice/established-date` (D784; Joe's go, relayed: *"Next: add the established line"*), THE MERGE AT HIS WORD — EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
 
 - ⏸️ **FOR THE ART LANE (Joe, 2026-11-16): paths across a crop field are drawn plain** — *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"* (his Year 35 and 38 screenshots: a pale smooth band across the painted crops). The worn paths are the art lane's shader (A72, A82) and the crops its painting; not touched from the systems lane.
 

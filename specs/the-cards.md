@@ -1,7 +1,7 @@
 # Spec: The cards — one building or person, five parts, and nothing else
 
 **Decisions:** D376 (this document), D377, D378, D379, D380, D488 (B3, *What's here*), D431–D432 (§2a, a person's card); §4a and §5's Resources rows superseded by D410. Neighbours: D80, D104, D113, D147, D169, D311, D350, D367, D372.
-**Status:** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) — played (*"villager cards are perfect for now"*) and merged (D433).** ✅ ***What's here* fits its text, opens on top and beside its tile, and stays shut until asked — BUILT (2026-10-04, D488, B3), played (*"works perfectly"*) and merged (D489).** Owner: Joe + Claude Code.
+**Status:** ✅ **§6, the Established line (D784), BUILT on `slice/established-date`, ⏸️ its cases Joe's to confirm; the merge at his word.** ✅ **Slice 1 BUILT (2026-09-15, D376), the controls folded onto the card the same day (D377), and slice 2 — the two top bars — BUILT the same day (D378): the Overview panel is gone; Joe's four notes on the lot are D379, his next four D380.** 🔨 **§2a — a person's card in sections — BUILT (2026-09-29, D431), played, and cut down on his notes (D432) — played (*"villager cards are perfect for now"*) and merged (D433).** ✅ ***What's here* fits its text, opens on top and beside its tile, and stays shut until asked — BUILT (2026-10-04, D488, B3), played (*"works perfectly"*) and merged (D489).** Owner: Joe + Claude Code.
 
 ---
 
@@ -283,3 +283,33 @@ the bar instead of the popup scores nothing on either line, because `Amount()` c
 whatever they sit in — that check is the 58 → 140 measurement above, not a guard. Two windowed
 `BCLONE_SHOT`s (handoff trap 39) looked at: the founding with `more ▾` open, and a card twelve
 years in; the hook is not in the tree.
+
+
+---
+
+## 6. Established — the day a building was finished (D784) — ✅ built on `slice/established-date`
+
+**Joe (2026-11-16):** *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*; his go, relayed by the coordinator session: *"Next: add the established line"*.
+
+**What it reads.** Every standing building's card gets one muted line under its wear line, in the calendar a person's card
+already uses for a birthday: *"Established Day 23, Spring, Year 16."* The day is the sim's own stamp — `RaisedAtTick` on
+stores, workplaces, wells, libraries, the town hall and bridges, `HomeRaisedAtTick` on a house (`building-condition.md §4.1`,
+D552) — so **nothing new is stored, saved or hashed, and no golden can move**. The card reads it through the wear report it
+already asks for (`SimWorld.WearOf`), which gains the raised stamp beside the later of the two (`WearReport.Raised`); one call
+writes both lines, on every kind of building card at once.
+
+**The cases, with the recommendation put to Joe (⏸️ his):**
+
+| Case | Recommended | Why |
+|---|---|---|
+| A building the founders put up on the first day | *"Established at the founding — Day 1, Spring, Year 1."* | The founding is the village's own date; saying so reads better than a bare Day 1. |
+| A free building (a stockpile, a builder's hut) | The day it was laid out, like any other | It went up the moment it was marked on clear ground — that is its day. |
+| The founders' cart | *"Came with the founders."* | It was never built; a date would be invented. |
+| A building moved, a house raised a tier, a bridge rebuilt in stone | The day the building **now standing** was finished | The stamp is reset by those rebuilds, because the wear starts again. Keeping the first date through them would need a new saved and hashed fact — every golden moved for a line of text. |
+| A site still being built, or a family with no house | No line | Nothing stands yet. |
+| A house a family moved into, empty, after another died out | The house's day, not the family's | The stamp travels with the house (D552). |
+
+**The probe** (`established:` — the view has no tests, D11): a building finished on a posed day reads that day; one finished
+at the founding reads the founding sentence; the cart its sentence; a site no line; and the widest line holds the card's width.
+
+**Built (D784):** `WearReport.Raised` (the raised stamp alone, beside `Since`, the later of the two) from `SimWorld.Report`; `Main.Cards.cs` one label, `Established`, under the wear line, written in `Wear()` — the one call every building card already makes — by `EstablishedLine`, and the cart's sentence after it in `ShowStore`; the probe in `Main.EstablishedProbe.cs`. probe `established:`, four mutants: the day dropped **1**, the line never shown **1**, the cart's sentence gone **1**, a site forced to show a line **0** — written down (D326): a site's card branches away before the wear call, so nothing there ever sets the line, and it stays hidden because every card starts with it hidden; restored by bytes, 0 markers.

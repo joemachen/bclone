@@ -19,9 +19,11 @@ public enum Condition
 /// What a card says about a thing's wear (`building-condition.md §6`, D556) — read off the two stamps and the row
 /// whenever it is drawn, never stored. <see cref="Percent"/> runs toward fallen in and is null for a row that never
 /// wears; <see cref="YearsToNext"/> is to the next state; <see cref="SeasonsToRuin"/> is for the failing card;
-/// <see cref="Since"/> is the later stamp and <see cref="Mended"/> says which one it was.
+/// <see cref="Since"/> is the later stamp and <see cref="Mended"/> says which one it was; <see cref="Raised"/> is the first
+/// alone — the day the building now standing was finished, the card's <i>Established</i> line (`the-cards.md §6`, D784).
 /// </summary>
-public readonly record struct WearReport(Condition State, int? Percent, int? YearsToNext, int? SeasonsToRuin, ulong Since, bool Mended);
+public readonly record struct WearReport(
+    Condition State, int? Percent, int? YearsToNext, int? SeasonsToRuin, ulong Since, bool Mended, ulong Raised = 0);
 
 /// <summary>
 /// Condition is <b>derived</b> from two stamps and the calendar — never a counter anybody decrements
