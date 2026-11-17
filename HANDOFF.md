@@ -1,6 +1,11 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); NEXT, SYSTEMS: THE ESTABLISHED DATE ON EVERY BUILDING'S CARD (his ask, D782). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
-> **🔨 `slice/established-date` — ✅ BUILT (D784, 2026-11-16; Joe's go, relayed: *"Next: add the established line"*): EVERY BUILDING'S CARD SAYS WHEN IT
+> **✅ THE ESTABLISHED LINE MERGED INTO `main` AND PUSHED AT JOE'S WORD (D785, 2026-11-16, *"Merge and push"*); `slice/established-date`
+> DELETED. ▶️ THE ART LANE'S UI HOOK-IN CAN START** — `main` is the D785 docs commit; the art lane merges `main` into `art` first
+> (`Main.Cards.cs` gained the `Established` label and two lines in `Wear()`; `Main.cs` one probe call; `Main.EstablishedProbe.cs`
+> is new). Its cases went in as recommended. **▶️ Next for systems:** the systems-complete review (D776, the exit gate's item 7).
+>
+> **✅ `slice/established-date` — ✅ BUILT (D784, 2026-11-16; Joe's go, relayed: *"Next: add the established line"*): EVERY BUILDING'S CARD SAYS WHEN IT
 > WAS ESTABLISHED. THE MERGE AT HIS WORD — ⚠️ THE ART LANE'S UI HOOK-IN WAITS ON IT** (it edits `Main.cs` / `Main.Cards.cs`; this
 > slice's card change is small: one label, its reset, two lines in `Wear()`, the cart's three in `ShowStore`, one probe call in
 > `Main.cs`; the probe itself is in its own file, `Main.EstablishedProbe.cs`).
@@ -10461,7 +10466,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **✅ BUILT on `slice/established-date` (D784; Joe's go, relayed: *"Next: add the established line"*), THE MERGE AT HIS WORD — EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
+- ✅ **MERGED INTO `main` AND PUSHED (D785, *"Merge and push"*) from `slice/established-date` (D784; Joe's go, relayed: *"Next: add the established line"*), THE MERGE AT HIS WORD — EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
 
 - ⏸️ **FOR THE ART LANE (Joe, 2026-11-16): paths across a crop field are drawn plain** — *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"* (his Year 35 and 38 screenshots: a pale smooth band across the painted crops). The worn paths are the art lane's shader (A72, A82) and the crops its painting; not touched from the systems lane.
 
