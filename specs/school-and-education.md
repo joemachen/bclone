@@ -7,7 +7,7 @@
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
 > 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6); ✅ STEP 4, THE
 > VIEW (D765, §12.7); ✅ STEP 5, SAVES AND THE HASH (D766, §12.8) — NO GOLDEN MOVED; ✅ SEVEN YEARS, 5–12, AND COATS FROM
-> FIVE (D767, §12.9); ✅ MERGED INTO `main` AT JOE'S WORD (D769); ✅ PLAYED AND APPROVED (D773, Joe: *"it looks good. and children get coats now"*); ✅ THE TWO WORDINGS HIS LOG SHOWED, FIXED (D786, §12.10, *"yes fix the school wording"*).** *(Read "UNPLAYED (D769). ⏳ JOE PLAYS IT." until D773.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> FIVE (D767, §12.9); ✅ MERGED INTO `main` AT JOE'S WORD (D769); ✅ PLAYED AND APPROVED (D773, Joe: *"it looks good. and children get coats now"*); ✅ THE TWO WORDINGS HIS LOG SHOWED, FIXED (D786, §12.10, *"yes fix the school wording"*) AND MERGED AND PUSHED AT HIS WORD (D787).** *(Read "UNPLAYED (D769). ⏳ JOE PLAYS IT." until D773.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
