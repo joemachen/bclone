@@ -1,7 +1,9 @@
 # Spec: Systems complete — the review of everything owed, and the workplan that finishes it
 
 > Status: **📝 WRITTEN (D788, 2026-11-16) on `slice/systems-complete` — the review and its workplan, docs only; nothing built.
-> ⏸️ Joe's calls in §6, each with a recommendation; the workplan (§5) is a proposal until he says so.**
+> ✅ JOE'S TEN CALLS ANSWERED, ALL AS RECOMMENDED (D789, 2026-11-17, *"All as recommended"*) — the cut line in §3 holds, and
+> §5.1's W1–W13 is Phase 6's list (DESIGN §4). ▶️ Next for systems: W1, the batch trade as a row.**
+> *(Read "⏸️ Joe's calls in §6, each with a recommendation; the workplan (§5) is a proposal until he says so" until D789.)*
 > Phase 6, between water (D783) and morale (D750's order, D776). Format per `METHODOLOGY.md §2`, loosely: this is a review,
 > not a mechanic, so its "tests" are the exit gate's item 7 and the checks in §8.
 >
@@ -183,8 +185,8 @@ one `slice/`, spec first, his calls before code, played before merge — as ever
 | **W8** | **Drought, then fire and blight** — each foretold, on the map, answerable (the well, a firebreak, rotation and the second crop) | A | M + M | last of the pressures (§0.1 admits a pressure once its answer exists); gate item 6 | dry ground, a burning building and its ruin, a blighted field |
 | **W9** | **Paving** — the player paints over an emerged path to pave it in stone (gravel, then cobble), cheaper than packed earth and fossilised (§2.6); auto-pave stays a later policy | A | M | the last unbuilt §2 mechanic; the art lane is waiting for it | gravel and cobble paths; *paving* |
 | **W10** | **Warm clothing** — sheep a second herd on the barn and pasture, shearing, wool, the wool coat at the tailor (no chill outdoors, none under a fireless roof; children still coatless, D659) | A | L | D776's default; after W1, so the coat is a row | sheep, fleece, wool, wool coat; *shearing* |
-| **W11** | **The caravan and the cart road** (`trade.md §4.7`) — Joe's call whether it is in | A | M–L | its blocker is gone; trade is §2.4's pillar | caravan, cart road; *trading at the road* |
-| **W12** | **The two gifts** — the fountain (`Home` recentres on it) and the Shining Rock (what it does is Joe's) | civic | S + S | before the tabs, so the collections list them | fountain, the Shining Rock |
+| **W11** | **The caravan and the cart road** (`trade.md §4.7`) — in, at Joe's call 4 (D789) | A | M–L | its blocker is gone; trade is §2.4's pillar | caravan, cart road; *trading at the road* |
+| **W12** | **The two gifts** — the fountain (`Home` recentres on it) and the Shining Rock (a monument found after some ore is mined, in the collections, no effect on the economy — call 7, D789) | civic | S + S | before the tabs, so the collections list them | fountain, the Shining Rock |
 | **W13** | **The town hall's tabs** — founders and collections, the knowledge screen, charts | A | L | last, by D776: it lists everything | the tabs' art (the UI lane's) |
 | — | **The gate**: items 2–5 (a golden reaching the Phase 6 systems, the QA walk, the docs true, the four checks) | gate | M | — | — |
 
@@ -210,7 +212,14 @@ crops, animals, and the ~60 code-only numbers) — after which a crop, an animal
 Full settings and ironman mode (D507–D508, Phase 4.5's leftovers); camera rotation and the build icons' tooltips (view work,
 the art lane's UI pass if anybody's); audio, HUD, winter shaders, the release workflow (already Phase 8's).
 
-## 6. ⏸️ Joe's calls — in plain words, each with a recommendation
+## 6. ✅ Joe's calls — in plain words, each with a recommendation
+
+> ✅ **All ten answered as recommended (D789, 2026-11-17, *"All as recommended"*).** So: the cut line holds; the mason's
+> yard stays on the map as the horizon and its card is to say *"later"* (housekeeping, §5.1); warm clothing, the caravan,
+> paving and the cemetery are in, as W10, W11, W9 and W4; the Shining Rock is a monument with no effect on the economy, the
+> fountain is in, the bell tower stays parked; the named-villager lock, the kitchen garden, the ox cart and the five extra
+> unlock routes are out of Phase 6, full settings and ironman go to Phase 8; the order is W1–W13; `worktree-slice-cart-home`
+> is deleted (D789), and the Phase 6 QA walk covers §4.5's merged-but-unplayed pieces. *(Heading read "⏸️" until D789.)*
 
 1. **Where "done" is.** Phase 6 ends when the *systems* are in: the new ways a village can live or fail (morale, health,
    drought, fire, paving, the wool coat, the hall's tabs). More crops, more animals, more workshops — the variety — come
@@ -248,7 +257,7 @@ them again in its own section before it is built.
 
 ## 8. Acceptance — how item 7 is checked
 
-- **Joe answers §6** (the cut line first — nothing else in §5 is settled without it), and the answers go into §7 and into
+- ✅ **Joe answers §6** — answered, all as recommended (D789) — (the cut line first — nothing else in §5 is settled without it), and the answers go into §7 and into
   DESIGN §4's Phase 6 list, which becomes this workplan.
 - **Item 7 holds when** every row of §5.1 that he keeps is built, played and merged, and §4.2's half-built rows are finished
   or moved out in his words — each with its §7 entry.
