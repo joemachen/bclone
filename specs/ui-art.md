@@ -6,7 +6,7 @@
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is planned in §9 and waits on the systems lane's Established-date slice; Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -266,7 +266,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
 4. Joe plays it (`.\run.bat`); merge at his word.
 
-## 9. ⏸️ The hook-in — the plan (A108, 2026-11-16; his calls answered, A109), WAITING ON THE ESTABLISHED-DATE SLICE
+## 9. 🔨 The hook-in — the plan (A108, 2026-11-16; his calls answered, A109); BEING BUILT ON `art` (Joe: *"UI hook-in can start now"*, the Established-date slice merged, D785)
 
 **Joe's order (relayed 2026-11-16): *"Next: add the established line / then hook in the UI and villagers"*.** The art is
 in `main` (A107): 169 files in `src/Bclone.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
@@ -297,9 +297,9 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
 | Seasons, alerts | the font's ⚠ and ⛔ inside log strings | in text, not controls |
 
 ### 9.3 The build — one commit each, on `art`, each with its probe line, red-checked (D326)
-1. **The seam (§4), byte-identical.** Every skin and colour above read from a theme, the shipped theme set to today's
-   values. Probe `ui theme:`: the default theme reproduces slate. The only commit that edits the systems lane's files
-   for the look.
+1. ✅ **The seam (§4), byte-identical — BUILT (A110, §9.5).** Every skin and colour above read from a theme, today's
+   values where the theme names none. Probe `ui theme:`. With step 2's seven constructor swaps, the only commits
+   that edit the systems lane's files for the look.
 2. **The icons — one art-lane loader.** One art-lane file (`UiIcons.cs`): a `TextureRect` at 20 logical px, loaded from
    `textures/ui/icons/<set>/<id>.png`, keyed by the data id, never by a hard-coded list. **A row with no file falls
    back to today's code glyph**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and `GoodsPalette` stay
@@ -331,3 +331,37 @@ first in-game render. The four as they were asked:*
    column. Recommended: both (one 20 px icon, the word kept beside it).
 4. **The title face** (reopened in A99): which of his fonts heads the windows. Recommended: decide on the first in-game
    render rather than from a mock.
+
+### 9.5 ✅ Step 1 as built — the seam (A110)
+- **`UiLook.cs`** (the art lane's): every role and skin asked for by name and answered from the project theme's
+  `BcloneLook` type when the theme names it, or with the literal that stood at the site before. **No theme names any
+  entry today, so the screen is slate to the byte.** A look is now a theme and textures; nothing below needs
+  `Main.cs` again for colour.
+  - **Text roles:** `text`, `text_faint` (55 %, `Muted`), `text_soft` (70 %), `text_hint` (65 %), `text_dim` (45 %),
+    `text_ghost` (35 %), `text_strong` (80 %).
+  - **States:** `working`, `stopped`, `selected_edge`, `card_edge`, `owed`, `held`, `refused`, `saved`, `known`,
+    `tree_edge`, `empty`, `stamp`, `founding_mark`, `pause_shade`.
+  - **The log:** `log_death`, `log_life`, `log_discovery`, `log_warning`, `log_building`, `log_season`, `log_ordinary`.
+  - **Skins:** `panel`, `card`, `card_selected`, `pill_met`, `pill_unmet`, `bar_track`, `bar_fill`, `backdrop`,
+    `title_band`, `pause_sheet`.
+  - Kept skins (cards, pills, bars) are made once a theme; `Use(theme)` lets them go.
+- **Text is tinted through `UiLook.Tint`**, never `Modulate` at the site. Slate's tint is still a `Modulate`, so nothing
+  moved. Parchment's ink cannot take a multiply (amber over ink is still ink), so step 3 changes that one helper.
+  `UiLook.TintOf` replaces the two sites that read a state back out of `Modulate` (the card's status, the Removal tab).
+- **The sites:** 49 edits in seven files (`Main.cs`, `Main.Cards.cs`, `Main.Saves.cs`, `NewGameScreen.cs`,
+  `PauseScreen.cs`, `TitleScreen.cs`, `TechTreeView.cs`); 144 lines out, 58 in.
+  - **Left behind on purpose:** `WorldChip`'s swatch (`Main.cs`), the D637 parchment chip that step 2 drops (A109).
+  - **Counted after:** no other colour literal, `Modulate =` at a site or `new StyleBoxFlat` in those files. A
+    `Modulate` set on a whole card stays: the tech tree's fogged card fades as a whole.
+- **Probe `ui theme:`** (`Main.UiLookProbe.cs`) checks four things:
+  - the 28 roles and 4 skins are the literals their sites had;
+  - an open card wears the look's own kept skin (by reference), so the card code makes none of its own;
+  - a theme that names `stopped` and `card` is obeyed, and what it does not name stays slate;
+  - a tint reads back.
+  - **Red-checked: four breaks in one run, four reds.** A role's value, the theme's boxes ignored, the card wrapper
+    making its own box, and a tint that does nothing. The dead tint also turned three older lines red (`cards:`,
+    `water:`, `destroy:`), so those sites are proven to go through the seam.
+- **Everything else the probe measures is unchanged** against A107's run, timings aside. `vlog` grew 992 → 1361
+  characters: the Established probe, merged since, builds and demolishes a pile before it. The seam changes no text,
+  and colour tags are not counted.
+ **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 20 m 34 s; the view build 0 warnings; the probe 127 ✅ and 0 ⛔, bar height 151, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).

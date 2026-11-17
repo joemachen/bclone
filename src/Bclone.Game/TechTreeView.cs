@@ -32,8 +32,8 @@ public partial class TechTreeView : Control
     private const float Gap = 28f;
     private const float Margin = 8f;
 
-    private static readonly Color Lit = new(0.62f, 0.86f, 0.58f);
-    private static readonly Color Edge = new(1f, 1f, 1f, 0.35f);
+    private static Color Lit => UiLook.Known;
+    private static Color Edge => UiLook.TreeEdge;
 
     private readonly List<(TechNodeRow Node, PanelContainer Card, Vector2 At)> _cards = new();
 
@@ -127,7 +127,7 @@ public partial class TechTreeView : Control
 
         if (state == TechState.Fogged)
         {
-            card.Modulate = new Color(1f, 1f, 1f, 0.45f);
+            card.Modulate = UiLook.Dim;
             box.AddChild(Line("?", 15, bold: true));
             box.AddChild(Line("Not yet seen.", 12));
             return card;
@@ -136,7 +136,7 @@ public partial class TechTreeView : Control
         Label name = Line(node.Name, 15, bold: true);
         if (state == TechState.Known)
         {
-            name.Modulate = Lit;
+            UiLook.Tint(name, Lit);
         }
 
         box.AddChild(name);
@@ -197,7 +197,7 @@ public partial class TechTreeView : Control
         label.AddThemeFontSizeOverride("font_size", size);
         if (!bold)
         {
-            label.Modulate = new Color(1f, 1f, 1f, 0.8f);
+            UiLook.Tint(label, UiLook.Strong);
         }
 
         return label;

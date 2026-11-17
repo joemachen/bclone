@@ -218,9 +218,8 @@ public partial class Main
     /// <summary>How many people a home's list shows before it scrolls (Joe: *"a vertical scrollbar"*).</summary>
     private const int PeopleRowsShown = 4;
 
-    private static readonly Color LightWorking = new("#7fbf7a");
-    private static readonly Color LightStopped = new("#ffc759");
-    private static readonly Color CardSelectedEdge = new("#ffd76a");
+    private static Color LightWorking => UiLook.Working;
+    private static Color LightStopped => UiLook.Stopped;
 
     // ---------------------------------------------------------------
     //  Opening, pinning, closing
@@ -350,27 +349,9 @@ public partial class Main
     /// three number cells are a third of what is inside the margin, and at twelve the lodge's
     /// <i>"meat · leather"</i> (D423) no longer fit and read <i>"meat · others"</i>.
     /// </summary>
-    private static StyleBoxFlat CardSkin(bool selected, bool roomy = false) =>
-        CardSkins[(selected ? 1 : 0) + (roomy ? 2 : 0)];
-
-    /// <summary>Made once — a card is re-skinned on every refresh, and a new box a frame is garbage for nothing.</summary>
-    private static readonly StyleBoxFlat[] CardSkins =
-    {
-        MakeCardSkin(false, false), MakeCardSkin(true, false), MakeCardSkin(false, true), MakeCardSkin(true, true),
-    };
-
-    private static StyleBoxFlat MakeCardSkin(bool selected, bool roomy)
-    {
-        StyleBoxFlat skin = PanelSkin(0.96f);
-        skin.BorderWidthTop = skin.BorderWidthBottom = skin.BorderWidthLeft = skin.BorderWidthRight = 1;
-        skin.BorderColor = selected ? CardSelectedEdge : new Color("#3a3f47");
-        if (roomy)
-        {
-            skin.SetContentMarginAll(PersonCardMargin);
-        }
-
-        return skin;
-    }
+    /// <remarks>Made once and kept by the look (<see cref="UiLook.Card"/>) — a card is re-skinned on every refresh.</remarks>
+    private static StyleBox CardSkin(bool selected, bool roomy = false) =>
+        UiLook.Card(selected, roomy ? PersonCardMargin : 0);
 
     // ---------------------------------------------------------------
     //  Building one
@@ -1082,9 +1063,9 @@ public partial class Main
                     take.ButtonPressed = allowed;
                     take.Text = allowed ? "✓" : "✕";
                     take.TooltipText = allowed ? $"takes {GoodsName(world, goods)} — click to refuse" : $"refuses {GoodsName(world, goods)} — click to take";
-                    Color tone = allowed && held > 0 ? Colors.White : new Color(1, 1, 1, 0.55f);
-                    name.Modulate = tone;
-                    amount.Modulate = tone;
+                    Color tone = allowed && held > 0 ? UiLook.Text : UiLook.Faint;
+                    UiLook.Tint(name, tone);
+                    UiLook.Tint(amount, tone);
                 }
 
                 c.LimitRow!.Visible = store.Kind == StoreKind.Market;
@@ -1810,7 +1791,7 @@ public partial class Main
 
         if (rebuilding is not null)
         {
-            Status(card, working: card.Status.Modulate == Colors.White, $"{card.Status.Text} {rebuilding}");
+            Status(card, working: UiLook.TintOf(card.Status) == UiLook.Text, $"{card.Status.Text} {rebuilding}");
         }
 
         card.WorkersRow.Visible = false;
@@ -1952,7 +1933,7 @@ public partial class Main
         p.Job.Text = job is not null ? $"{ProfessionName(world, job.Kind)} at {job.Name}"
             : villager.CanWork ? "Laborer — goes where the village needs hands"
             : "A child — too young to work";
-        p.Job.Modulate = noted ? LightStopped : Colors.White;
+        UiLook.Tint(p.Job, noted ? LightStopped : UiLook.Text);
         p.Job.TooltipText = card.Status.TooltipText;
 
         // ---- TOOL (D391, D430) ----
@@ -1967,7 +1948,7 @@ public partial class Main
             p.ToolBar.Value = uses;
             p.ToolBar.Visible = uses > 0;
             p.ToolUses.Text = uses > 0 ? $"{Capitalise(held.Name)} — {uses} / {held.ToolUses}" : "No tool — works slower";
-            p.ToolUses.Modulate = uses > 0 ? new Color(1, 1, 1, 0.7f) : LightStopped;
+            UiLook.Tint(p.ToolUses, uses > 0 ? UiLook.Soft : LightStopped);
 
             // What a tool does is one hover away (D432): the section says how much is left.
             p.ToolSection.TooltipText = uses > 0
@@ -1986,7 +1967,7 @@ public partial class Main
             p.CoatBar.Value = days;
             p.CoatBar.Visible = days > 0;
             p.CoatText.Text = CoatLine(days, world.Config.DaysPerSeason);
-            p.CoatText.Modulate = days > 0 ? new Color(1, 1, 1, 0.7f) : LightStopped;
+            UiLook.Tint(p.CoatText, days > 0 ? UiLook.Soft : LightStopped);
             p.CoatSection.TooltipText = days > 0
                 ? $"A roof you wear: open ground chills {villager.Name} only as a roof does. {days} winter days left — it wears a day every winter day."
                 : $"No coat: open ground chills {villager.Name} at the open's rate, a roof at the roof's. A tailor's shop sews coats from leather; any adult fetches one from a store.";
@@ -2154,24 +2135,6 @@ public partial class Main
         }
     }
 
-    private static readonly StyleBoxFlat PillFine = Pill(LightWorking);
-    private static readonly StyleBoxFlat PillWanting = Pill(LightStopped);
-
-    private static StyleBoxFlat Pill(Color colour)
-    {
-        var skin = new StyleBoxFlat
-        {
-            BgColor = colour with { A = 0.18f },
-            BorderColor = colour with { A = 0.7f },
-        };
-
-        skin.SetBorderWidthAll(1);
-        skin.SetCornerRadiusAll(9);
-        skin.ContentMarginLeft = skin.ContentMarginRight = 8;
-        skin.ContentMarginTop = skin.ContentMarginBottom = 1;
-        return skin;
-    }
-
     /// <summary>The card's coat line (`clothing.md §3.3`): the winters left, rounded up — a day left is still its last winter.</summary>
     internal static string CoatLine(int coatDays, int daysPerSeason)
     {
@@ -2199,9 +2162,9 @@ public partial class Main
     private static void SetNeed((PanelContainer Pill, Label Text) need, bool fine, string text, string why)
     {
         need.Text.Text = text;
-        need.Text.Modulate = fine ? LightWorking : LightStopped;
+        UiLook.Tint(need.Text, fine ? LightWorking : LightStopped);
         need.Pill.TooltipText = why;
-        need.Pill.AddThemeStyleboxOverride("panel", fine ? PillFine : PillWanting);
+        need.Pill.AddThemeStyleboxOverride("panel", UiLook.Pill(met: fine));
     }
 
     /// <summary>A section's head: a small caps word and a rule (D431).</summary>
@@ -2212,17 +2175,6 @@ public partial class Main
         row.AddChild(Muted(text));
         row.AddChild(new HSeparator { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter });
         return row;
-    }
-
-    private static readonly StyleBoxFlat BarBack = BarSkin(new Color(1, 1, 1, 0.10f));
-    private static readonly StyleBoxFlat BarFill = BarSkin(LightWorking);
-
-    private static StyleBoxFlat BarSkin(Color colour)
-    {
-        var skin = new StyleBoxFlat { BgColor = colour };
-        skin.SetCornerRadiusAll(3);
-        skin.SetContentMarginAll(0);
-        return skin;
     }
 
     /// <summary>A thin bar in the working green (D432 — the theme's grey fill read as empty).</summary>
@@ -2236,8 +2188,8 @@ public partial class Main
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
         };
-        bar.AddThemeStyleboxOverride("background", BarBack);
-        bar.AddThemeStyleboxOverride("fill", BarFill);
+        bar.AddThemeStyleboxOverride("background", UiLook.Bar(fill: false));
+        bar.AddThemeStyleboxOverride("fill", UiLook.Bar(fill: true));
         return bar;
     }
 
@@ -2714,7 +2666,7 @@ public partial class Main
     {
         card.Light.Color = working ? LightWorking : LightStopped;
         card.Status.Text = sentence;
-        card.Status.Modulate = working ? Colors.White : LightStopped;
+        UiLook.Tint(card.Status, working ? UiLook.Text : LightStopped);
     }
 
     private static void Number(Card card, int slot, string value, string key)
@@ -2742,7 +2694,7 @@ public partial class Main
     {
         card.Water.Visible = said is not null;
         card.Water.Text = said ?? string.Empty;
-        card.Water.Modulate = dry ? LightStopped : new Color(1, 1, 1, 0.55f);
+        UiLook.Tint(card.Water, dry ? LightStopped : UiLook.Faint);
     }
 
     /// <summary>
@@ -2859,7 +2811,7 @@ public partial class Main
         if (line is { } said)
         {
             card.Wear.Text = said.Text;
-            card.Wear.Modulate = said.Warn ? LightStopped : new Color(1, 1, 1, 0.7f);
+            UiLook.Tint(card.Wear, said.Warn ? LightStopped : UiLook.Soft);
         }
     }
 
@@ -3857,7 +3809,7 @@ public partial class Main
             home.Water = 0;
             RefreshCards(world);
             string dry = world.WaterNoteFor(home) + ".";
-            if (card.Water.Text != dry || card.Water.Modulate != LightStopped)
+            if (card.Water.Text != dry || UiLook.TintOf(card.Water) != LightStopped)
             {
                 faults.Add($"a dry jar's card reads \"{card.Water.Text}\"{(card.Water.Modulate == LightStopped ? string.Empty : ", not amber")}, not \"{dry}\"");
             }

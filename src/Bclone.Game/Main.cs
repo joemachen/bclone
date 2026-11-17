@@ -546,6 +546,7 @@ public partial class Main : Control
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheEstablishedLineReads());
+        GD.Print(TheLookIsOneDoor());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -2281,9 +2282,7 @@ public partial class Main : Control
             return;
         }
 
-        _libraryButton.Modulate = world.AFreeLibraryIsOwed
-            ? new Color(1f, 0.85f, 0.4f)
-            : Colors.White;
+        UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
 
         // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
         // "Library" being typed here. D240 is why: the build bar said *"gatherer's hut"* for a
@@ -2389,7 +2388,7 @@ public partial class Main : Control
         {
             tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind)
                 || world.Bridges.Exists(b => b.Kind == kind);
-            button.Modulate = tried ? Colors.White : new Color(1f, 0.85f, 0.4f);
+            UiLook.Tint(button, tried ? UiLook.Text : UiLook.Owed);
         }
     }
 
@@ -2433,7 +2432,7 @@ public partial class Main : Control
             return;
         }
 
-        _smithyButton.Modulate = world.AFreeSmithyIsOwed ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+        UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
         _smithyButton.Text = world.AFreeSmithyIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
             : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy));
@@ -2602,9 +2601,7 @@ public partial class Main : Control
             return;
         }
 
-        _townHallButton.Modulate = world.ATownHallIsOwed
-            ? new Color(1f, 0.85f, 0.4f)
-            : Colors.White;
+        UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
 
         _townHallButton.Text = world.ATownHallIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.TownHall)) + " ★"
@@ -3124,7 +3121,7 @@ public partial class Main : Control
 
         bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
         _unhousedLabel.Text = $"{unhoused} unhoused";
-        _unhousedLabel.Modulate = nowhereToBuild ? Colors.White : new Color(1, 1, 1, 0.55f);
+        UiLook.Tint(_unhousedLabel, nowhereToBuild ? UiLook.Text : UiLook.Faint);
         ShowShortfall(
             _unhousedLabel,
             nowhereToBuild,
@@ -4122,7 +4119,7 @@ public partial class Main : Control
     }
 
     /// <summary>The village log's timestamp column — present, and quiet.</summary>
-    private static readonly Color StampColour = new("#7f8c94");
+    private static Color StampColour => UiLook.Stamp;
 
     private static int LivingHouseholds(SimWorld world)
     {
@@ -4638,7 +4635,7 @@ public partial class Main : Control
 
         foreach ((string name, string reason) in NotYetInTheValley)
         {
-            table.AddChild(Chip(new Color(1, 1, 1, 0.10f)));
+            table.AddChild(Chip(UiLook.Empty));
             table.AddChild(Muted(name));
 
             Label why = Muted(reason);
@@ -4687,7 +4684,7 @@ public partial class Main : Control
         };
 
         toggle.AddThemeFontSizeOverride("font_size", 12);
-        toggle.Modulate = new Color(1, 1, 1, 0.45f);
+        UiLook.Tint(toggle, UiLook.Dim);
 
         VBoxContainer opening = inside;
         toggle.Toggled += open =>
@@ -4903,16 +4900,7 @@ public partial class Main : Control
     /// nothing is.</b> Deaths take the red the food chip already uses and discoveries the gold
     /// the library gift used, so a colour means the same thing in two places.
     /// </remarks>
-    private static Color ColourOf(LogCategory category) => category switch
-    {
-        LogCategory.Death => new Color(0.85f, 0.40f, 0.40f),
-        LogCategory.Life => new Color(0.55f, 0.80f, 0.55f),
-        LogCategory.Discovery => new Color(0.91f, 0.77f, 0.41f),
-        LogCategory.Warning => new Color(1f, 0.78f, 0.35f),
-        LogCategory.Building => new Color(0.62f, 0.72f, 0.85f),
-        LogCategory.Season => new Color(0.60f, 0.62f, 0.60f),
-        _ => new Color(0.88f, 0.88f, 0.86f),
-    };
+    private static Color ColourOf(LogCategory category) => UiLook.Log(category);
 
     /// <summary>Rebuild the whole log — the one thing a filter change has to do.</summary>
     /// <remarks>
@@ -6480,7 +6468,7 @@ public partial class Main : Control
             contents.Visible = startOpen;
 
             header.AddThemeFontSizeOverride("font_size", 12);
-            header.Modulate = new Color(1, 1, 1, 0.55f);
+            UiLook.Tint(header, UiLook.Faint);
             header.Toggled += open =>
             {
                 contents.Visible = open;
@@ -6506,7 +6494,7 @@ public partial class Main : Control
             };
 
             grip.AddThemeFontSizeOverride("font_size", 12);
-            grip.Modulate = new Color(1, 1, 1, 0.35f);
+            UiLook.Tint(grip, UiLook.Ghost);
             MakeDraggable(grip, panel);
             handle.AddChild(grip);
 
@@ -6516,7 +6504,7 @@ public partial class Main : Control
             // ✕, the card's own glyph, at the far right where the card keeps it (D380).
             var close = new Button { Text = "✕", Flat = true, TooltipText = "Close this window" };
             close.AddThemeFontSizeOverride("font_size", 12);
-            close.Modulate = new Color(1, 1, 1, 0.55f);
+            UiLook.Tint(close, UiLook.Faint);
             close.Pressed += () => CloseTheWindow(panel);
             handle.AddChild(close);
 
@@ -7124,19 +7112,7 @@ public partial class Main : Control
     /// numbers costs legibility and buys nothing. **The bar is the exception because it runs the
     /// width of the screen** — solid, it would wall off the bottom of the valley entirely.
     /// </remarks>
-    private static StyleBoxFlat PanelSkin(float alpha = 1f)
-    {
-        var skin = new StyleBoxFlat
-        {
-            BgColor = new Color(0.08f, 0.09f, 0.10f, alpha),
-            BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.55f),
-        };
-
-        skin.SetBorderWidthAll(1);
-        skin.SetContentMarginAll(6);
-        skin.SetCornerRadiusAll(3);
-        return skin;
-    }
+    private static StyleBox PanelSkin(float alpha = 1f) => UiLook.Panel(alpha);
 
     /// <summary>
     /// A label that wraps instead of running off the edge or ending in an ellipsis.
@@ -8211,7 +8187,7 @@ public partial class Main : Control
         {
             // A pressed tab is where you are looking; the tint says where your hand is. They are
             // different questions and they are answered in different channels on purpose.
-            button.Modulate = held == tab ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+            UiLook.Tint(button, held == tab ? UiLook.Held : UiLook.Text);
         }
 
         BuildingKind? building = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
@@ -8601,7 +8577,7 @@ public partial class Main : Control
             }
 
             Button removal = _tabButtons.Find(t => t.Tab == BuildTab.Removal).Button;
-            if (removal.Modulate == Colors.White)
+            if (UiLook.TintOf(removal) == UiLook.Text)
             {
                 faults.Add("the Removal tab did not light");
             }
@@ -8681,7 +8657,7 @@ public partial class Main : Control
         };
 
         _frameCounter.AddThemeFontSizeOverride("font_size", 11);
-        _frameCounter.AddThemeColorOverride("font_color", new Color(1f, 1f, 1f, 0.45f));
+        _frameCounter.AddThemeColorOverride("font_color", UiLook.Dim);
         AddChild(_frameCounter);
     }
 
@@ -8882,7 +8858,7 @@ public partial class Main : Control
     {
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", 12);
-        label.Modulate = new Color(1, 1, 1, 0.55f);
+        UiLook.Tint(label, UiLook.Faint);
         return label;
     }
 }

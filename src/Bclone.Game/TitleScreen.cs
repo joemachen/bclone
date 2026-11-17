@@ -88,7 +88,7 @@ public sealed partial class TitleScreen : Control
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         var floor = new Panel();
-        floor.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color(0.07f, 0.08f, 0.08f) });
+        floor.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
         floor.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(floor);
 
@@ -160,12 +160,7 @@ public sealed partial class TitleScreen : Control
     {
         // ⭐ A dimmed band down the left, so the words read over any valley.
         var band = new PanelContainer { CustomMinimumSize = new Vector2(340, 0) };
-        band.AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(0.05f, 0.06f, 0.06f, 0.82f),
-            ContentMarginLeft = 40,
-            ContentMarginRight = 40,
-        });
+        band.AddThemeStyleboxOverride("panel", UiLook.TitleBand());
         band.SetAnchorsAndOffsetsPreset(LayoutPreset.LeftWide);
         band.OffsetRight = 340;
         Band = band;
@@ -178,7 +173,8 @@ public sealed partial class TitleScreen : Control
         title.AddThemeFontSizeOverride("font_size", 56);
         column.AddChild(title);
 
-        var build = new Label { Text = _build, Modulate = new Color(1, 1, 1, 0.55f) };
+        var build = new Label { Text = _build };
+        UiLook.Tint(build, UiLook.Faint);
         build.AddThemeFontSizeOverride("font_size", 13);
         column.AddChild(build);
         column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 28) });
@@ -206,10 +202,10 @@ public sealed partial class TitleScreen : Control
         _refusal = new Label
         {
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            Modulate = new Color(1f, 0.55f, 0.45f),
             Visible = false,
             CustomMinimumSize = new Vector2(240, 0),
         };
+        UiLook.Tint(_refusal, UiLook.Refused);
         _refusal.AddThemeFontSizeOverride("font_size", 13);
         column.AddChild(_refusal);
         return band;
