@@ -6,7 +6,7 @@
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), and two calls are Joe's (§9.7); Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -408,7 +408,8 @@ first in-game render. The four as they were asked:*
     changed since step 1's run (2066 passed). No golden moved.
   - Renders of his summer save: `D:\Projects\brushes\ui\hookin\step2_game.png`, `step2_bar.png`.
 
-### 9.7 ⏸️ Joe's calls from step 2
+### 9.7 ✅ Joe's calls from step 2 — BOTH AS RECOMMENDED (A112, *"Yes to both"*)
+*The control bar's guard is 177 (CLAUDE.md); the top bar's goods icons stay at 10 px. The two as asked:*
 1. **The control bar, 151 → 177** (call 1 as agreed: measured on the first render, shown to him, then written down).
    Recommended: accept it. The icons need the room, and step 3's painted strip will be measured again.
 2. **The top bar's goods icons at 10 px** (today's chip size), because the bar is full. Recommended: keep 10 for now. The
