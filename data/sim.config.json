@@ -1290,17 +1290,27 @@
 
   // THE WELL (D427, organic-housing.md 9.12). A timber head and a little stone --
   // TECH-EXAMPLE says ten cut stone, halved because nobody cuts stone yet (D384).
-  // No water mechanic: a household walks to its nearest well and back every
-  // water_trip_every_days, and the lane their feet wear is the point. NOT daily:
-  // a day is four ticks and the walk is about twelve, so a trip a day is somebody
-  // at the well for ever. 20 is Joe's pick (D427), a PLACEHOLDER for pathing: every
-  // 10 days cost 21 shipped villagers of 169, every 20 is within the noise. In
-  // Phase 6 the household's water need decides when somebody goes, not a clock.
+  //
+  // WATER AT HOME (D778-D779, water-need.md). Each household keeps a jar; every
+  // living member drinks water_per_person_per_day of it on each day's turn, and
+  // when it cannot cover another day an adult at home walks to the nearer of a
+  // well (within home_well_reach_tiles) and the river bank, and fills it to
+  // water_jar. 120 is Joe's pick (D779): two go every 60 days, three every 40,
+  // five every 24. NOT 40 (the old 20-day clock for two): with every village
+  // walking to the river, often 15-25 tiles off -- ten days there and back -- 40
+  // cost 0.6 villagers a valley over 100 valleys and a farm's harvest 79 -> 66 %.
   "well_logs": 10,
   "well_stone": 15,
   "well_work_ticks": 20,
   "well_draw_ticks": 2,
-  "water_trip_every_days": 20,
+  "water_jar": 120,
+  "water_per_person_per_day": 1,
+  // A jar is low -- somebody at home goes for it -- at this many days of its
+  // family's drink or fewer (D782). NOT "less than a day's" (D778-D781): 120
+  // divides by every family size up to six, so that was only ever empty, and
+  // every jar ran dry first. 5, measured: dry family-days 15 % -> 2 % over 100
+  // valleys, 21 % -> 0.4 % on Joe's village; survival within the noise.
+  "water_low_days": 5,
 
   // BRIDGES (D40, D546, D547, D549, specs/bridges.md). A deck over the water, one
   // tile wide: the tiles stay river and become walkable. Pressed on one bank and

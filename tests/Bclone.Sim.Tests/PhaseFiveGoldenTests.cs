@@ -68,7 +68,15 @@ public sealed class PhaseFiveGoldenTests
     // valley has hills, a slope raises a tile's price in the one cost field, so every walk is re-priced, and the heights are
     // hashed. ⭐ PROVEN BY ABLATION: with `height_levels` 1 in the shipped data (every valley flat, so no slope and no height mixed) both old values pass. Was 2488598668680717856.
     // RE-TAKEN (D736) — the hills smoothed (Joe, playing Hilly: "things look a little weird"): 256 fine levels in place of 16, the ground smoothed before rounding, steepness counted land to land. The flat valley's path is untouched (`height_levels` 1 returns before any of it), so the ablation above still stands. Was 3617843879071782529.
-    private const ulong PhaseFiveGoldenHash = 1863475448240955389UL;
+    // RE-TAKEN (D778), BOTH — water at home (`water-need.md §2b`): this village has a well, and its households now go when their
+    // jar runs low (every 40/n days for n living) instead of every 20, and the jar is hashed in place of the day; and the pose
+    // keeps 100 firewood, not 300, because at 300 the herd hung on one boat (the keep line says how it was measured). Those are
+    // the commit's two changes to what this village runs; nothing else in it touches the sim. Was 1863475448240955389.
+    // RE-TAKEN (D779), BOTH — the river bank (`water-need.md §5` step 3) and Joe's jar of 120: this village has a well, so its
+    // households near the river go to the bank and the rest go a third as often. ⭐ PROVEN BY ABLATION: with the bank never offered
+    // and `water_jar` back at 40 in the data, both old values pass. Was 2969974743799576693.
+    // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 11880347252707744900.
+    private const ulong PhaseFiveGoldenHash = 8844724117288582951UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
     // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
@@ -76,7 +84,10 @@ public sealed class PhaseFiveGoldenTests
     // Was 7275266205845974493 before D735 (real heights, as above). ⚠️ First read as unmoved: the test stops at its first
     // failed assert, and the posed hash above failed first, hiding this one until it was re-taken.
     // Was 11978217067257029817 before D736 (the hills smoothed, as above) — caught on the re-run this time.
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 4967655042257212333UL;
+    // Was 4967655042257212333 before D778 (water at home and the keep of 100, as above) — read off the same run as the posed one.
+    // Was 1205823903075181310 before D779 (the river bank and the jar of 120, as above).
+    // RE-TAKEN (D782), with its golden above, for the same reason and the same ablation: D781's water rule put back, the old value passes. Was 13179634247122399127.
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 6070121895935123193UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);
@@ -158,7 +169,12 @@ public sealed class PhaseFiveGoldenTests
         TradeTests.RaiseAPost(world);
         Workplace barn = HerdTests.RaiseABarn(world);
         HerdTests.GivePasture(world, barn, 20);
-        world.TradeKeep.Set(Goods.Firewood, 300);
+        // ⚠️ KEEP 100, NOT 300 (D778) — measured. At 300 the herd hung on one boat: Larkspur's in the fall of Year 14 bought
+        // two cattle only if the post held enough firewood to pay, and that was true at a water trip every 20 or 21 days and
+        // false at 15, 19 and 25 (and at every jar from 40 to 80 once water moved home). At 200, 100 and 0 cattle landed,
+        // calves were born and leather was culled in all 27 arms — 4 trip intervals on the old code, 5 jars on the new —
+        // so 100 is the middle of a band, not the edge of one. The pose is a player's order either way.
+        world.TradeKeep.Set(Goods.Firewood, 100);
         world.TradeBuy.Set(Goods.Stone, 50);
         Assert.True(world.SetTradeBuyHead(4).Allowed);
 

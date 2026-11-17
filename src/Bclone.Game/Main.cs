@@ -544,6 +544,7 @@ public partial class Main : Control
         GD.Print(TheSchoolIsSaid());
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
+        GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -588,6 +589,7 @@ public partial class Main : Control
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheSitesShowThroughTheCanopy());
         GD.Print(_map.TheFreeBuildingsWaitingAreDrawn());
+        GD.Print(_map.TheDemolishFindsWhatIsDrawn());
         GD.Print(_map.ThePaintedDepositsHold());
         GD.Print(_map.ThePaintedCropsHold());
         GD.Print(_map.TheHillEdgesHold());

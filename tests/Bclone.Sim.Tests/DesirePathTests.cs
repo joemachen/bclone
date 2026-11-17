@@ -593,12 +593,23 @@ public sealed class DesirePathTests
     /// valley alone going 16 → 24 block tiles; on twelve it read <b>0.688 before the market and 0.682 after</b>, so the
     /// market did not thicken the hub and six valleys were the coin, one size up. Stronger, not looser: the bar stays 0.7.
     /// </para>
+    /// <para>
+    /// ⛔ TWENTY-FOUR, AND THE BAR 0.8 (D780, Joe: <i>"Widen and re-set bars"</i>). Twelve were a coin too: on twenty-four the
+    /// village read <b>0.82 before water</b> — the 0.7 bar was never met on a wide sample, and twelve valleys passed it by the
+    /// draw — and <b>0.74 since every village walks to the river</b> (D779; the river made the hub thinner, not thicker). The
+    /// bar is set just over what the game does; why the hub wears a block at all is its own item on Joe's ⏸️ list.
+    /// </para>
+    /// <para>
+    /// ⛔ AND 0.85 (D782, at Joe's pick of the water trip asked at any moment at home, as put to him). Families fetching water
+    /// before the jar runs dry walk door to well or bank a fifth more often: <b>510 block tiles against 637 — 0.80</b>, four
+    /// tiles over 0.8. Still just over what the game does; the hub's block is still his ⏸️ item.
+    /// </para>
     /// </remarks>
     [Fact]
     public void TheFoundingHubWearsLanesNotABlock()
     {
         int kept = 0, keptPaths = 0, cut = 0, cutPaths = 0;
-        foreach (ulong? seed in new ulong?[] { null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 })
+        foreach (ulong? seed in new ulong?[] { null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 })
         {
             SimConfig config = seed is ulong s ? Config with { Seed = s } : Config;
             (int k, int kp) = BlockTilesAfter(config, 15);
@@ -609,14 +620,14 @@ public sealed class DesirePathTests
             cutPaths += cp;
         }
 
-        _output.WriteLine($"fifteen years in twelve valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
-        Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in twelve valleys — the villages wore no paths (§2.6)");
-        Assert.True(kept * 10 <= cut * BlockBarTenths,
+        _output.WriteLine($"fifteen years in twenty-four valleys: {kept} block tiles of {keptPaths} path tiles keeping to the lanes; {cut} of {cutPaths} cutting corners");
+        Assert.True(keptPaths >= 60, $"only {keptPaths} path tiles in twenty-four valleys — the villages wore no paths (§2.6)");
+        Assert.True(kept * 100 <= cut * BlockBarHundredths,
             $"keeping to the lanes left {kept} block tiles against {cut} — not a thinner network");
     }
 
-    /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in tenths of the corner-cutting village's block.</summary>
-    private const int BlockBarTenths = 7;
+    /// <summary>The bar for <see cref="TheFoundingHubWearsLanesNotABlock"/>, in hundredths of the corner-cutting village's block.</summary>
+    private const int BlockBarHundredths = 85;
 
     /// <summary>
     /// ⭐⭐ A commute along a packed lane treads every tile it passes over — <b>no break in the

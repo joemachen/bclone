@@ -359,6 +359,8 @@ public sealed class SaveLoadTests : IDisposable
             "_deepestGenerationFor", "_deepestGeneration",
             // Children left without a school place at the last labour pass (D765): the school roll sets it each pass.
             "ChildrenWaitingForSchool",
+            // The river's bank tiles (D779): derived from the terrain, rebuilt when its counter moves.
+            "_banks", "_banksBuiltAt",
         }),
         (typeof(Villager), Kept.Saved, new[]
         {
@@ -375,7 +377,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Household), Kept.Saved, new[]
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
-            "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "WaterDrawnOnDay", "Stockpile", "_memberIds",
+            "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse",
         }),
         (typeof(Workplace), Kept.Saved, new[]

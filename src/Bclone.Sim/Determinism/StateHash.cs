@@ -234,12 +234,12 @@ public static class StateHash
             // bit that decides whether somebody walks next tick, so it is state, not a reading.
             hash = MixUInt32(hash, (household.ToppingUpFood ? 1u : 0u) | (household.ToppingUpFirewood ? 2u : 0u));
 
-            // The day the household last went for water (D427) — it decides whether somebody walks
-            // to the well, so it is state. ⛔ Sparse: never set in a village with no well.
-            if (household.WaterDrawnOnDay != 0)
+            // The water in the household's jar (D778; until then the day it last went, D427) — it decides
+            // whether somebody walks to the well, so it is state. ⛔ Sparse: never filled in a village with no well.
+            if (household.Water != 0)
             {
                 hash = MixByte(hash, 3);
-                hash = MixUInt32(hash, (uint)household.WaterDrawnOnDay);
+                hash = MixUInt32(hash, (uint)household.Water);
             }
 
             // The larder and what it has ever produced — the same loop MixStore uses, and

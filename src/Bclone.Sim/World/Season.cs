@@ -374,6 +374,15 @@ public enum VillagerState
 
     /// <summary>A teacher at the school, a lesson at a time (D754).</summary>
     Teaching,
+
+    /// <summary>Walking to the river bank for the household's water, where no well is nearer (D779, `water-need.md §5` step 3).</summary>
+    /// <remarks>⛔ Not <see cref="TravelingToWater"/>, the fisher's walk, nor <see cref="WalkingToTheWell"/>: the art lane draws the
+    /// bank and the well apart (`water-need.md §4`), and the arrival must know which it is checking. At the end of the list, so
+    /// no state already saved or hashed changes its number.</remarks>
+    WalkingToTheRiver,
+
+    /// <summary>At the river bank, drawing water — <c>well_draw_ticks</c>, then home (D779).</summary>
+    DrawingAtTheRiver,
 }
 
 /// <summary>

@@ -80,6 +80,12 @@ public partial class Main
 
         /// <summary>A household's handcart and the trips left in it (Slice H, `handcart.md §8`) — or a market's or a post's (`handcart.md §13.5`). Hidden on every other kind, and with no cart.</summary>
         public required Label Cart { get; init; }
+
+        /// <summary>
+        /// A household's water jar (`water-need.md §5` step 6): how much is in it and how long it lasts, or the sim's sentence
+        /// once it has run dry (D780), in amber. Hidden on every other kind, and for a household nobody lives in.
+        /// </summary>
+        public required Label Water { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
@@ -455,6 +461,11 @@ public partial class Main
         cart.Visible = false;
         column.AddChild(cart);
 
+        // ---- a household's water jar (`water-need.md §5` step 6) ----
+        Label water = Wrapped(Muted(string.Empty));
+        water.Visible = false;
+        column.AddChild(water);
+
         // ---- a person's sections (D431) ----
         VillagerParts person = BuildPersonParts();
         column.AddChild(person.Box);
@@ -563,6 +574,7 @@ public partial class Main
             Door = door,
             House = house,
             Cart = cart,
+            Water = water,
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
@@ -778,6 +790,7 @@ public partial class Main
         card.Door.Visible = false;
         card.House.Visible = false;
         card.Cart.Visible = false;
+        card.Water.Visible = false;
         card.Portrait.Wear = Condition.Sound;
 
         bool shown = card.Subject.Kind switch
@@ -1732,6 +1745,7 @@ public partial class Main
         Wear(card, world.WearOf(home), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(home)));
         CartLine(card, CartSentence(world, home));
+        WaterLine(card, WaterSentence(world, home), dry: home.Water <= 0);
 
         // ⭐ THE HOUSE ITSELF (`house-tiers.md §6`, D722): its tier, what it burns against a cabin, how long it keeps them
         // without a fire — and, while the builders rebuild it, the bridge's sentence (D704) on the status, which wraps.
@@ -1898,7 +1912,7 @@ public partial class Main
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
         // ⭐ "resting at Eastfield", not "resting at home", for a farmhand out at the steading (D511).
-        string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager));
+        string doing = villager.DescribeState(job?.Name, world.RestsAtTheSteading(villager), unhoused: !world.HouseholdOf(villager).HasHome);
 
         // ⭐ "climbing home", not "walking home", while the leg crosses steep ground (D735, `heights.md §6`).
         if (world.IsClimbing(villager) && doing.StartsWith("walking", StringComparison.Ordinal))
@@ -1983,6 +1997,11 @@ public partial class Main
         bool housed = home.HomePosition is not null;
         SetNeed(p.Needs[2], housed, housed ? "Housed" : "No roof",
             housed ? $"Lives with the {home.Name} household." : $"The {home.Name} household has no home yet.");
+
+        // ⭐ WATER (`water-need.md §5` step 6): the household's jar, the household card's own sentence as the tooltip. Amber
+        // while it is dry — a want, said (Joe, D780: "Say it, don't rush"); nobody is harmed by it (call 3A).
+        bool watered = home.Water > 0;
+        SetNeed(p.Needs[3], watered, watered ? "Water" : "No water", WaterSentence(world, home) ?? string.Empty);
 
         // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
         var trades = TheirTrades(world, villager);
@@ -2289,7 +2308,7 @@ public partial class Main
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
         needsRow.AddThemeConstantOverride("v_separation", 4);
-        var needs = new (PanelContainer, Label)[3];
+        var needs = new (PanelContainer, Label)[4]; // fed, warm, housed, water (`water-need.md §5` step 6)
         for (int i = 0; i < needs.Length; i++)
         {
             var pill = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
@@ -2701,6 +2720,52 @@ public partial class Main
     {
         card.Cart.Visible = said is not null;
         card.Cart.Text = said ?? string.Empty;
+    }
+
+    /// <summary>Write the household's water line — amber while the jar is dry — or hide it (`water-need.md §5` step 6).</summary>
+    private static void WaterLine(Card card, string? said, bool dry)
+    {
+        card.Water.Visible = said is not null;
+        card.Water.Text = said ?? string.Empty;
+        card.Water.Modulate = dry ? LightStopped : new Color(1, 1, 1, 0.55f);
+    }
+
+    /// <summary>
+    /// <i>"A jar of water, 87 of 120 — enough for 29 days."</i> while it lasts; <i>"… less than a day's; somebody will fill it at
+    /// their next rest at home."</i> when it is low; the sim's own sentence once it is dry (D780,
+    /// <see cref="SimWorld.WaterNoteFor"/>); null for a household nobody lives in. One copy for both cards and the probe.
+    /// </summary>
+    private static string? WaterSentence(SimWorld world, Household home)
+    {
+        int living = world.LivingMembersOf(home);
+        if (living == 0)
+        {
+            return null;
+        }
+
+        if (world.WaterNoteFor(home) is string dry)
+        {
+            return dry + ".";
+        }
+
+        string jar = $"A jar of water, {home.Water:N0} of {world.Config.WaterJar:N0}";
+        int aDay = world.Config.WaterPerPersonPerDay * living;
+        if (aDay == 0)
+        {
+            return jar + ".";
+        }
+
+        int days = home.Water / aDay;
+        if (home.Water > aDay * world.Config.WaterLowDays)
+        {
+            return $"{jar} — enough for {days:N0} {(days == 1 ? "day" : "days")}.";
+        }
+
+        // ⭐ Low enough to send somebody (`water_low_days`, D782): said, with when.
+        string left = days == 0 ? "less than a day's" : $"{days:N0} {(days == 1 ? "day's" : "days'")}";
+        return home.HasHome
+            ? $"{jar} — {left} left; somebody will fetch more the next time one of them is home."
+            : $"{jar} — {left} left; nobody can fetch more until they have a house.";
     }
 
     /// <summary>
@@ -3727,6 +3792,121 @@ public partial class Main
                 + $"{read}, Keep this house as it is {(keepOffered ? "offered" : "not offered before a stone house is learned")}, "
                 + $"Rebuild older homes reaches the village both ways, and every tier's line and the longest rebuild fit {CardWidth:F0}"
             : $"[widths] house tiers: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ WATER ON SCREEN (`water-need.md §5` step 6) — <b>a probe line</b>: a household's card reads its jar while there is water
+    /// and the sim's sentence, amber, once it is dry; a person's NEEDS reads <i>Water</i> / <i>No water</i> with the same sentence
+    /// as its tooltip; the widest of either holds the card's width; and the pail goes out empty, comes home full, and is put down
+    /// at home or when nothing was drawn.
+    /// </summary>
+    private string TheWaterIsOnTheCards()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Household? home = world.Households.FirstOrDefault(h => world.LivingMembersOf(h) > 0);
+        if (home is null)
+        {
+            return "[widths] water: ⛔ no family to open a card on";
+        }
+
+        Villager member = world.Villagers.First(v => v.Alive && v.HouseholdId == home.Id);
+        int jar = world.Config.WaterJar;
+        int was = home.Water;
+        float widest = 0f;
+        string? full = null;
+        try
+        {
+            // ---- the household's card: full, then dry ----
+            home.Water = jar;
+            OpenCard(new CardSubject(CardKind.Household, home.Id));
+            Card card = _selectedCard!;
+            full = WaterSentence(world, home);
+            if (!card.Water.Visible || card.Water.Text != full || full?.StartsWith($"A jar of water, {jar:N0} of {jar:N0} — enough for ", StringComparison.Ordinal) != true)
+            {
+                faults.Add($"a full jar's card reads \"{(card.Water.Visible ? card.Water.Text : "(hidden)")}\"");
+            }
+
+            home.Water = 0;
+            RefreshCards(world);
+            string dry = world.WaterNoteFor(home) + ".";
+            if (card.Water.Text != dry || card.Water.Modulate != LightStopped)
+            {
+                faults.Add($"a dry jar's card reads \"{card.Water.Text}\"{(card.Water.Modulate == LightStopped ? string.Empty : ", not amber")}, not \"{dry}\"");
+            }
+
+            // The widest either line can be: the longest name gone to the river, and a low jar in the thousands.
+            foreach (string said in new[]
+            {
+                $"No water — {new string('W', SimWorld.NameLengthLimit)} has gone to the river.",
+                "A jar of water, 9,999 of 9,999 — less than a day's left; somebody will fetch more the next time one of them is home.",
+            })
+            {
+                WaterLine(card, said, dry: true);
+                ForceUpdateTransform();
+                widest = Mathf.Max(widest, card.Panel.GetCombinedMinimumSize().X);
+            }
+
+            if (widest > CardWidth + 1f)
+            {
+                faults.Add($"the water line widens a household's card to {widest:F0}");
+            }
+
+            CloseCard(card);
+
+            // ---- the person's NEEDS ----
+            OpenCard(new CardSubject(CardKind.Villager, member.Id));
+            Card person = _selectedCard!;
+            (PanelContainer pill, Label text) = person.Person.Needs[3];
+            if (text.Text != "No water" || pill.TooltipText != dry)
+            {
+                faults.Add($"a dry household's member reads \"{text.Text}\" — \"{pill.TooltipText}\"");
+            }
+
+            home.Water = jar;
+            RefreshCards(world);
+            if (text.Text != "Water" || pill.TooltipText != full)
+            {
+                faults.Add($"a full household's member reads \"{text.Text}\" — \"{pill.TooltipText}\"");
+            }
+
+            CloseCard(person);
+        }
+        finally
+        {
+            home.Water = was;
+            RefreshCards(world);
+        }
+
+        // ---- the pail ----
+        var none = new Dictionary<int, bool>();
+        Dictionary<int, bool> setOff = VillageMap.CarryTheWater(none,
+            new[] { (1, VillagerState.WalkingToTheRiver), (2, VillagerState.Resting), (3, VillagerState.TravelingHome), (4, VillagerState.WalkingToTheWell) });
+        Dictionary<int, bool> drawn = VillageMap.CarryTheWater(setOff,
+            new[] { (1, VillagerState.DrawingAtTheRiver), (3, VillagerState.TravelingHome), (4, VillagerState.TravelingHome) });
+        Dictionary<int, bool> homeward = VillageMap.CarryTheWater(drawn, new[] { (1, VillagerState.TravelingHome) });
+        Dictionary<int, bool> rested = VillageMap.CarryTheWater(homeward, new[] { (1, VillagerState.Resting) });
+        Dictionary<int, bool> died = VillageMap.CarryTheWater(homeward, Array.Empty<(int, VillagerState)>());
+        if (setOff.Count != 2 || setOff[1] || setOff[4])
+        {
+            faults.Add($"setting off carries {string.Join(", ", setOff)} (want 1 and 4, empty)");
+        }
+
+        if (drawn.Count != 1 || !drawn[1])
+        {
+            faults.Add($"after the draw {string.Join(", ", drawn)} (want 1, full; 4 gave up with nothing drawn)");
+        }
+
+        if (homeward.Count != 1 || !homeward[1] || rested.Count != 0 || died.Count != 0)
+        {
+            faults.Add("a full pail was not carried home, or was kept past home or death");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] water: ✅ a household's card reads its jar ({full}) and, dry, the sim's sentence in amber; a person's NEEDS reads "
+                + $"Water / No water with it; the widest line holds {CardWidth:F0} ({widest:F0}); the pail goes out empty, comes home full, "
+                + "and is put down at home, on giving up, or with the dead"
+            : $"[widths] water: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()

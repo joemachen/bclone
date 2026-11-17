@@ -12671,6 +12671,10 @@ public sealed partial class SimWorld : IObstacles
                 HomePosition = home is HomeSite site ? HomeAnchorOn(site.Front, site.Facing) : null,
                 HomeFacing = home?.Facing ?? Angle.Zero,
                 WhyHere = home?.WhyHere ?? "",
+
+                // ⭐ A full jar (D780), so a new valley does not open with every family running for water; a household
+                // formed later (a marriage, a band that knocks) starts empty and fetches its first at once.
+                Water = config.WaterJar,
             };
 
             // The founders' plots are claimed and fenced as everyone else's are (D386, D388) —
@@ -15246,7 +15250,7 @@ public sealed partial class SimWorld : IObstacles
 
         foreach (SaveReader household in save.Objects("households"))
         {
-            Households.Add(Household.FromSave(household));
+            Households.Add(Household.FromSave(household, Config.WaterJar));
         }
 
         foreach (SaveReader workplace in save.Objects("workplaces"))

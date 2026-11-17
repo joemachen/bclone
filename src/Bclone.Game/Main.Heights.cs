@@ -55,7 +55,10 @@ public partial class Main
             OpenCard(new CardSubject(CardKind.Villager, villager.Id));
             said = _selectedCard!.Status.Text;
             CloseCard(_selectedCard);
-            if (!said.Contains("limbing home", StringComparison.Ordinal))
+            // ⚠️ The founding world houses nobody yet, so the posed founder climbs "back to where they sleep — no house yet"
+            // (D782); either way home, the verb is the climb.
+            if (!said.Contains("limbing home", StringComparison.Ordinal)
+                && !said.Contains("limbing back to where they sleep", StringComparison.Ordinal))
             {
                 faults.Add($"a villager walking home across the steepest tile reads \"{said}\"");
             }

@@ -1244,15 +1244,18 @@ public sealed class Household
     public bool ToppingUpFirewood { get; set; }
 
     /// <summary>
-    /// The day somebody from this household last set off for the well — <see cref="SimWorld.Today"/>'s
-    /// count, <b>0 if never</b> (D427, `organic-housing.md §9.12`).
+    /// The water in the household's jar at home (D778, `water-need.md §5` step 2; Joe's call 1A: a number the household
+    /// keeps, not a good) — <b>0 for an empty jar</b>.
     /// </summary>
     /// <remarks>
-    /// Taken when they set off, not when they come home, so a housemate who reaches a rest a tick
-    /// later does not go too. Hashed once it is set: a village with no well never sets it, and
-    /// hashes as it did before wells existed.
+    /// Filled to <c>water_jar</c> when somebody from the household finishes drawing at a well; every living member
+    /// drinks <c>water_per_person_per_day</c> of it on each day's turn (<c>NeedsSystem</c>), never below empty. When it
+    /// cannot cover another day, an adult at home goes for more (<c>BehaviorSystem.TryDrawWater</c>); the day it empties the
+    /// log says so, and nobody rushes (Joe, D780). The founders start full (D780). ⛔ <b>Hashed only when there
+    /// is water in it</b>; <b>saved always</b> (D780 — a save without the key is from before water, and reads full).
+    /// <i>(Replaces <c>WaterDrawnOnDay</c>, the 20-day clock's day, D427 — retired at D778.)</i>
     /// </remarks>
-    public int WaterDrawnOnDay { get; set; }
+    public int Water { get; set; }
 
     /// <summary>
     /// The trips left in the household's handcart — <b>0 for no cart</b> (`handcart.md §3`, §6; Slice H, Joe's call
@@ -1351,13 +1354,14 @@ public sealed class Household
         ["day_for_a_child"] = DayForAChild,
         ["topping_up_food"] = ToppingUpFood,
         ["topping_up_firewood"] = ToppingUpFirewood,
-        ["water_drawn_on_day"] = WaterDrawnOnDay,
+        // Every household's, empty or not (D780) — so a save from before water, with no key, is told apart from a dry jar and reads full.
+        ["water"] = Water,
         ["handcart_uses"] = HandcartUses,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
 
-    internal static Household FromSave(SaveReader save)
+    internal static Household FromSave(SaveReader save, int waterJar)
     {
         var household = new Household
         {
@@ -1376,7 +1380,7 @@ public sealed class Household
             DayForAChild = save.Int("day_for_a_child"),
             ToppingUpFood = save.Bool("topping_up_food"),
             ToppingUpFirewood = save.Bool("topping_up_firewood"),
-            WaterDrawnOnDay = save.Int("water_drawn_on_day"),
+            Water = save.HasValue("water") ? save.Int("water") : waterJar,
             HandcartUses = save.Int("handcart_uses"),
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };

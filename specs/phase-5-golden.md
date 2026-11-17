@@ -137,7 +137,8 @@ Release, with the probe sampling every tick. Three things §5 did not foresee ha
   a reason to cross.
 - **A herd posed at tick 0 dies in year 1.** Herdsmen give way whenever food comes first, and four founders' food
   always comes first. The herd arrives by trade instead: a pasture is painted round the barn and an animal order is set
-  (`SetTradeBuyHead(4)`; refused without a pasture). Trade orders are posed too, keep 300 firewood and buy up to 50
+  (`SetTradeBuyHead(4)`; refused without a pasture). Trade orders are posed too, keep 300 firewood *(100 since D778: at 300 the herd
+  hung on one boat's credit, and a water trip a day either side of 20 lost it)* and buy up to 50
   stone, because a merchant is only wanted once the player has asked for something (`LabourQuota.MerchantsWanted`).
 - **`StoneEverDug` counts digging by hand only**, as the quarry's unlock. The quarry's own output never passes through
   it, so the coverage reads stone held in stores and villager-ticks spent `Quarrying`.
@@ -397,7 +398,8 @@ before year 29, so the pinned village is one that lives. §5's pose with D643's 
 
 - at tick 0: the farm **marked**, and its ground painted when it stands; a mill, a bakery, a quarry on 6 tiles of rock, a
   mine on 6 of iron, a smithy, a well near the founding, a trading post, a barn with 20 tiles of pasture; orders to keep
-  300 firewood, buy up to 50 stone and buy up to 4 head;
+  300 firewood *(⛔ 100 since D778 — measured: at 300 cattle landed only at a water trip every 20 or 21 days, not 15, 19 or
+  25; at 200, 100 and 0 in all 27 arms of the old clock and the new jar)*, buy up to 50 stone and buy up to 4 head;
 - the first tick the village has held 10 (`MostEverAlive`): a bridge at the first crossing, and a well marked across it;
 - whenever a herd stands and no living adult is pinned to it: the newest living adult pinned herdsman (the player's own
   control, `SetPinnedTrade`).

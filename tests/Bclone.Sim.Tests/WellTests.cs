@@ -2,6 +2,8 @@ using Bclone.Sim.Config;
 using Bclone.Sim.Core;
 using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Persistence;
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -149,7 +151,16 @@ public sealed class WellTests
     // -----------------------------------------------------------------
 
     /// <summary>One water trip, as the ticks saw it.</summary>
-    private sealed record Trip(int VillagerId, int HouseholdId, int Day, bool LeftFromHome, bool DrewAtTheWell, int DrawTicks, bool WentHome, bool BrokeOffForShelter = false);
+    /// <remarks>Water: the household's jar as they set off and as the trip closed, and how many lived there as they set off (D778).
+    /// The river (D779): whether it was a trip to the bank, whether the drawing stood on a bank tile, the walks to the nearest
+    /// well and bank from home as they set off (−1 for none), and the ticks spent walking out.</remarks>
+    private sealed record Trip(int VillagerId, int HouseholdId, int Day, bool LeftFromHome, bool DrewAtTheWell, int DrawTicks, bool WentHome,
+        bool BrokeOffForShelter = false, int WaterAtSetOff = 0, int LivingAtSetOff = 0, int WaterAtEnd = -1,
+        bool AtTheRiver = false, bool DrewBesideTheRiver = false, int WellWalk = -1, int BankWalk = -1, int WalkTicks = 0);
+
+    private static bool Walking(VillagerState s) => s is VillagerState.WalkingToTheWell or VillagerState.WalkingToTheRiver;
+
+    private static bool Drawing(VillagerState s) => s is VillagerState.DrawingWater or VillagerState.DrawingAtTheRiver;
 
     /// <summary>
     /// A fixture village with a well raised near the founding, run for some years, and every trip
@@ -158,10 +169,23 @@ public sealed class WellTests
     private static (SimWorld World, Well Well, List<Trip> Trips, int MostOutAtOnce) RunWithAWell(
         int years, SimConfig? config = null, int wellFrom = 3)
     {
+        (SimWorld world, Well? well, List<Trip> trips, int most) = Run(years, config, wellFrom);
+        return (world, well!, trips, most);
+    }
+
+    /// <summary>The same, with no well raised: every trip is to the river bank (D779).</summary>
+    private static (SimWorld World, List<Trip> Trips, int MostOutAtOnce) RunWithoutAWell(int years, SimConfig? config = null)
+    {
+        (SimWorld world, _, List<Trip> trips, int most) = Run(years, config, wellFrom: null);
+        return (world, trips, most);
+    }
+
+    private static (SimWorld World, Well? Well, List<Trip> Trips, int MostOutAtOnce) Run(int years, SimConfig? config, int? wellFrom)
+    {
         SimLoop loop = Loop(config);
         SimWorld world = loop.World;
         loop.Step(world.Config.TicksPerYear);
-        Well well = ObstacleTests.RaiseAWellNearTheFounding(world, wellFrom);
+        Well? well = wellFrom is int from0 ? ObstacleTests.RaiseAWellNearTheFounding(world, from0) : null;
 
         var trips = new List<Trip>();
         var open = new Dictionary<int, Trip>();
@@ -186,38 +210,48 @@ public sealed class WellTests
                 GridPos from = stoodOn.TryGetValue(v.Id, out GridPos f) ? f : v.Tile;
                 stoodOn[v.Id] = v.Tile;
 
-                if (now is VillagerState.WalkingToTheWell or VillagerState.DrawingWater)
+                if (Walking(now) || Drawing(now))
                 {
                     outByHousehold[v.HouseholdId] = outByHousehold.GetValueOrDefault(v.HouseholdId) + 1;
                 }
 
-                if (was != VillagerState.WalkingToTheWell && now is VillagerState.WalkingToTheWell or VillagerState.DrawingWater
-                    && !open.ContainsKey(v.Id))
+                if (!Walking(was) && (Walking(now) || Drawing(now)) && !open.ContainsKey(v.Id))
                 {
                     // Set off this tick — one step already taken, so "from home" is where they stood
                     // the tick before.
                     Household h = world.HouseholdOf(v);
-                    open[v.Id] = new Trip(v.Id, v.HouseholdId, h.WaterDrawnOnDay,
-                        from == world.RestingPlaceOf(v), false, 0, false);
+                    int wellWalk = world.NearestWell(from, out int wTiles) is null ? -1 : wTiles;
+                    int bankWalk = world.NearestBank(from, out int bTiles) is null ? -1 : bTiles;
+                    open[v.Id] = new Trip(v.Id, v.HouseholdId, world.Today,
+                        from == world.RestingPlaceOf(v), false, 0, false,
+                        WaterAtSetOff: h.Water, LivingAtSetOff: world.LivingMembersOf(h),
+                        AtTheRiver: now is VillagerState.WalkingToTheRiver or VillagerState.DrawingAtTheRiver,
+                        WellWalk: wellWalk, BankWalk: bankWalk, WalkTicks: Walking(now) ? 1 : 0);
+                }
+                else if (open.TryGetValue(v.Id, out Trip? walking) && Walking(now))
+                {
+                    open[v.Id] = walking with { WalkTicks = walking.WalkTicks + 1 };
                 }
 
                 if (open.TryGetValue(v.Id, out Trip? trip))
                 {
-                    if (now == VillagerState.DrawingWater)
+                    if (Drawing(now))
                     {
                         open[v.Id] = trip with
                         {
-                            DrewAtTheWell = trip.DrewAtTheWell || v.Tile == well.Tile,
+                            DrewAtTheWell = trip.DrewAtTheWell || (well is not null && v.Tile == well.Tile),
+                            DrewBesideTheRiver = trip.DrewBesideTheRiver || (now == VillagerState.DrawingAtTheRiver && world.IsBank(v.Tile)),
                             DrawTicks = trip.DrawTicks + 1,
                         };
                     }
-                    else if (now != VillagerState.WalkingToTheWell)
+                    else if (!Walking(now))
                     {
                         open.Remove(v.Id);
                         trips.Add(trip with
                         {
                             WentHome = now is VillagerState.TravelingHome or VillagerState.Resting,
                             BrokeOffForShelter = now == VillagerState.SeekingShelter,
+                            WaterAtEnd = world.HouseholdOf(v).Water,
                         });
                     }
                 }
@@ -250,7 +284,8 @@ public sealed class WellTests
         // turns dangerously cold mid-spell goes for shelter. Under the scattered seams the fixture's
         // second winter did that once (1 tick drawn, then `SeekingShelter`). Such a trip is counted
         // and drawn, and must have gone for shelter — nowhere else.
-        List<Trip> drawn = trips.Where(t => t.DrawTicks > 0 && !t.BrokeOffForShelter).ToList();
+        // The well's trips: a household nearer the river than this well draws at the bank instead (D779), and is not this guard's.
+        List<Trip> drawn = trips.Where(t => t.DrawTicks > 0 && !t.BrokeOffForShelter && !t.AtTheRiver).ToList();
         Assert.NotEmpty(drawn);
         Assert.All(drawn, t => Assert.True(t.DrewAtTheWell, "drew somewhere that is not the well"));
         // At least the spell — a meal taken at the well holds the count for a tick, because eating
@@ -258,48 +293,534 @@ public sealed class WellTests
         Assert.All(drawn, t => Assert.InRange(t.DrawTicks, world.Config.WellDrawTicks, world.Config.WellDrawTicks + 1));
         Assert.All(drawn, t => Assert.True(t.WentHome, "left the well for somewhere that is not home"));
         Assert.Equal(drawn.Count, well.Draws); // a spell the cold broke off is not a draw
+
+        // ⭐ And the draw fills the household's jar (D778, `water-need.md §5` step 2) — to the brim, on the tick it ends.
+        Assert.All(drawn, t => Assert.Equal(world.Config.WaterJar, t.WaterAtEnd));
     }
 
     /// <summary>
-    /// ⛔ One trip per household per <c>water_trip_every_days</c>, and never two housemates out at
-    /// once — at the interval shipped and at the shortest there is.
+    /// ⛔ THE JAR SAYS WHEN (D778, D782, `water-need.md §5` step 2): a household sets off only when its jar holds
+    /// <c>water_low_days</c> of its living members' drink or less, and never two housemates at once — at the jar shipped and
+    /// at jars below the margin. <i>(Was <c>OneTripPerHouseholdPerInterval</c>, the 20-day clock's guard, D427; "less than
+    /// another day's" until D782, which a jar of 120 never was until empty. The margin's exact edge is
+    /// <see cref="TheJarIsLowAtItsLastDays"/>'s.)</i>
     /// </summary>
     [Theory]
-    [InlineData(10)]
-    [InlineData(1)]
-    public void OneTripPerHouseholdPerInterval(int everyDays)
+    [InlineData(null)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void TheJarSaysWhenToGo(int? jar)
     {
-        SimConfig config = Config with { WaterTripEveryDays = everyDays };
+        SimConfig config = jar is int size ? Config with { WaterJar = size } : Config;
         (_, _, List<Trip> trips, int mostOutAtOnce) = RunWithAWell(years: 2, config);
 
         Assert.True(trips.Count >= 10, $"only {trips.Count} trips in two years");
         Assert.Equal(1, mostOutAtOnce);
-
-        foreach (IGrouping<int, Trip> household in trips.GroupBy(t => t.HouseholdId))
-        {
-            int[] days = household.Select(t => t.Day).OrderBy(d => d).ToArray();
-            for (int i = 1; i < days.Length; i++)
-            {
-                Assert.True(days[i] - days[i - 1] >= everyDays,
-                    $"household {household.Key} went on day {days[i - 1]} and again on day {days[i]}");
-            }
-        }
+        Assert.All(trips, t => Assert.True(t.WaterAtSetOff <= config.WaterPerPersonPerDay * config.WaterLowDays * t.LivingAtSetOff,
+            $"household {t.HouseholdId} set off on day {t.Day} with {t.WaterAtSetOff} in the jar for {t.LivingAtSetOff}"));
     }
 
-    /// <summary>⛔ No well, no trip — and nothing about the household's water is ever written.</summary>
+    /// <summary>
+    /// ⭐ AT HOME, THE JAR BEFORE THE WORK (D782). Joe's village ran dry in its first year and stayed dry five: every adult
+    /// always had work, and the trip was asked only where a rest began, when somebody had run out of it. An adult standing at
+    /// their own door with empty hands, choosing what to do next, goes for a low jar — and a jar above the margin sends nobody.
+    /// </summary>
     [Fact]
-    public void NoWellNoTrip()
+    public void AnAdultAtHomeGoesForALowJarBeforeWork()
+    {
+        (SimWorld world, Villager adult, Household home) = SomebodyAtTheirDoor();
+        home.Water = world.Config.WaterJar;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.False(OutForWater(adult), $"{adult.Name} went for a full jar");
+
+        // A world of its own: a Decide sends them off, and the next is not asked at the door.
+        (world, adult, home) = SomebodyAtTheirDoor();
+        home.Water = world.Config.WaterPerPersonPerDay * world.LivingMembersOf(home);
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.True(OutForWater(adult), $"{adult.Name}, at home with a day's water left, chose {adult.State} instead");
+    }
+
+    /// <summary>
+    /// ⛔ THE MARGIN'S EDGE (D782): <c>water_low_days</c> of the family's drink sends somebody; one drop more does not. The
+    /// D778 rule was "less than", and at a jar that divides by the family it only ever met the edge at empty.
+    /// </summary>
+    [Fact]
+    public void TheJarIsLowAtItsLastDays()
+    {
+        (SimWorld world, Villager adult, Household home) = SomebodyAtTheirDoor();
+        int margin = world.Config.WaterPerPersonPerDay * world.Config.WaterLowDays * world.LivingMembersOf(home);
+
+        home.Water = margin + 1;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.False(OutForWater(adult), $"{adult.Name} went with {margin + 1} in the jar, a drop over the margin of {margin}");
+
+        (world, adult, home) = SomebodyAtTheirDoor();
+        home.Water = margin;
+        BehaviorSystem.DecideForTest(world, adult);
+        Assert.True(OutForWater(adult), $"{adult.Name} stayed with {margin} in the jar, the margin itself");
+    }
+
+    /// <summary>A fixture village a year on, with a well, stepped until an adult stands at their own door with empty hands and
+    /// nobody from the house is out for water — the moment <c>Decide</c> is asked at home.</summary>
+    private static (SimWorld World, Villager Adult, Household Home) SomebodyAtTheirDoor()
     {
         SimLoop loop = Loop();
         SimWorld world = loop.World;
-        for (int t = 0; t < world.Config.TicksPerYear * 5; t++)
+        loop.Step(world.Config.TicksPerYear);
+        ObstacleTests.RaiseAWellNearTheFounding(world, 3);
+        for (int t = 0; t < world.Config.TicksPerYear; t++)
         {
             loop.StepOnce();
-            Assert.DoesNotContain(world.Villagers,
-                v => v.State is VillagerState.WalkingToTheWell or VillagerState.DrawingWater);
+            foreach (Villager v in world.Villagers)
+            {
+                if (v.Alive && v.CanWork && !v.IsCarrying && world.HouseholdOf(v).HasHome && v.Tile == world.HomePlaceOf(v)
+                    && v.State is VillagerState.Resting or VillagerState.Idle
+                    && !world.Villagers.Any(o => o.Alive && o.HouseholdId == v.HouseholdId && OutForWater(o)))
+                {
+                    v.ActionTicksRemaining = 0;
+                    return (world, v, world.HouseholdOf(v));
+                }
+            }
         }
 
-        Assert.All(world.Households, h => Assert.Equal(0, h.WaterDrawnOnDay));
+        throw new InvalidOperationException("nobody stood at their own door in a year");
+    }
+
+    /// <summary>
+    /// ⭐ ACCEPTANCE 1 (`water-need.md §6`): a household's trips follow its size — at the same jar, a big household goes
+    /// more often than a small one.
+    /// </summary>
+    [Fact]
+    public void ABiggerHouseholdGoesMoreOften()
+    {
+        (_, _, List<Trip> trips, _) = RunWithAWell(years: 12);
+
+        // From each trip to the same household's next, by how many lived there when the first set off.
+        var gaps = trips.GroupBy(t => t.HouseholdId)
+            .SelectMany(g =>
+            {
+                Trip[] inOrder = g.OrderBy(t => t.Day).ToArray();
+                return inOrder.Zip(inOrder.Skip(1), (a, b) => (Living: a.LivingAtSetOff, Days: b.Day - a.Day));
+            })
+            .ToList();
+        foreach (IGrouping<int, (int Living, int Days)> size in gaps.GroupBy(g => g.Living).OrderBy(g => g.Key))
+        {
+            _output.WriteLine($"{size.Key} living: {size.Count()} gaps, {size.Average(g => g.Days):F1} days on average");
+        }
+
+        var small = gaps.Where(g => g.Living <= 2).ToList();
+        var big = gaps.Where(g => g.Living >= 4).ToList();
+        Assert.NotEmpty(small);
+        Assert.NotEmpty(big);
+        Assert.True(big.Average(g => g.Days) < small.Average(g => g.Days),
+            $"households of four or more went every {big.Average(g => g.Days):F1} days, of two or fewer every {small.Average(g => g.Days):F1}");
+    }
+
+    /// <summary>
+    /// ⭐ JOE'S PICK (D779, `water-need.md` call 4): the shipped jar and drink send a household of two every sixty days and one
+    /// of three every forty. <i>(Was <c>AHouseholdOfTwoGoesEveryTwentyDaysAsTheClockDid</c>, step 2's promise — D427's clock at
+    /// a jar of 40 — which the river made too dear, D779.)</i>
+    /// </summary>
+    [Fact]
+    public void AHouseholdOfTwoGoesEverySixtyDaysAtJoesJar()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        int aDayForTwo = 2 * shipped.WaterPerPersonPerDay;
+        Assert.Equal(0, shipped.WaterJar % aDayForTwo);
+        Assert.Equal(60, shipped.WaterJar / aDayForTwo);
+        Assert.Equal(40, shipped.WaterJar / (3 * shipped.WaterPerPersonPerDay));
+    }
+
+    /// <summary>
+    /// ⭐ Every living member drinks <c>water_per_person_per_day</c> on each day's turn, and a jar goes no lower than
+    /// empty (D778). <b>The needs pass alone</b>, twice on a day's first tick (D779): since the river, a run refills a low
+    /// jar on the way, which is the trip's guard and not this one's.
+    /// </summary>
+    [Fact]
+    public void EachDayDrinksAShareForEveryoneLiving()
+    {
+        SimWorld world = Loop().World;
+        Assert.Equal(0UL, world.Tick % (ulong)world.Config.TicksPerDay);
+        List<Household> pairs = world.Households.Where(h => world.LivingMembersOf(h) >= 2).Take(2).ToList();
+        Assert.Equal(2, pairs.Count);
+        Household full = pairs[0];
+        Household nearlyDry = pairs[1];
+        int per = world.Config.WaterPerPersonPerDay;
+        int living = world.LivingMembersOf(full);
+        full.Water = world.Config.WaterJar;
+        nearlyDry.Water = 1;
+
+        var needs = new Bclone.Sim.Systems.NeedsSystem();
+        needs.Execute(world);
+        needs.Execute(world);
+
+        Assert.Equal(living, world.LivingMembersOf(full));
+        Assert.Equal(world.Config.WaterJar - (2 * living * per), full.Water);
+        Assert.Equal(0, nearlyDry.Water);
+    }
+
+    /// <summary>⛔ Sparse: an empty jar is not in the hash, so a village with no well hashes as it did before water (D778).</summary>
+    [Fact]
+    public void AJarWithWaterIsInTheHashAndAnEmptyOneIsNot()
+    {
+        SimWorld world = Loop().World;
+        foreach (Household household in world.Households)
+        {
+            household.Water = 0; // the founders' jars start full (D780)
+        }
+
+        ulong none = StateHash.Compute(world);
+        world.Households[0].Water = 3;
+        Assert.NotEqual(none, StateHash.Compute(world));
+        world.Households[0].Water = 0;
+        Assert.Equal(none, StateHash.Compute(world));
+    }
+
+    /// <summary>
+    /// ⭐ The jar is saved — every household's, empty or not (D780) — so a save from before D778, with no <c>water</c> key
+    /// and an old <c>water_drawn_on_day</c>, loads with every jar <b>full</b>, as the founders' start (Joe's format-13 saves
+    /// still load, and nobody in them runs dry on the first tick). <i>(Was <c>TheJarIsSavedAndAnOldSaveReadsItEmpty</c>: an
+    /// empty jar was written null until D780, and a dry household would have loaded indistinguishable from an old save.)</i>
+    /// </summary>
+    [Fact]
+    public void TheJarIsSavedAndAnOldSaveReadsItFull()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        Assert.All(world.Households, h => Assert.Equal(world.Config.WaterJar, h.Water));
+        ulong full = StateHash.Compute(world);
+        Household dry = world.Households[1];
+        dry.Water = 0;
+        System.Text.Json.Nodes.JsonObject withADryOne = SaveGame.Capture(loop, "test", "2026-11-15 12:00", "test");
+        SimWorld dryBack = SaveGame.Load(
+            System.Text.Json.Nodes.JsonNode.Parse(SaveFile.TextOf(withADryOne))!.AsObject(), world.Config, null).World;
+        Assert.Equal(0, dryBack.FindHousehold(dry.Id)!.Water);
+        dry.Water = world.Config.WaterJar;
+        Household household = world.Households[0];
+        household.Water = 7;
+        ulong wet = StateHash.Compute(world);
+
+        System.Text.Json.Nodes.JsonObject document = SaveGame.Capture(loop, "test", "2026-11-15 12:00", "test");
+        SimWorld back = SaveGame.Load(
+            System.Text.Json.Nodes.JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null).World;
+        Assert.Equal(7, back.FindHousehold(household.Id)!.Water);
+        Assert.Equal(wet, StateHash.Compute(back));
+
+        // The same village as a save from before water: every household's `water` key off, the retired key on.
+        System.Text.Json.Nodes.JsonObject older = System.Text.Json.Nodes.JsonNode.Parse(SaveFile.TextOf(document))!.AsObject();
+        Assert.Equal(world.Households.Count, AsAnOldSave(older));
+        SimWorld oldBack = SaveGame.Load(older, world.Config, null).World;
+        Assert.All(oldBack.Households, h => Assert.Equal(world.Config.WaterJar, h.Water));
+        Assert.Equal(full, StateHash.Compute(oldBack));
+    }
+
+    /// <summary>Every household's <c>water</c> key removed and <c>water_drawn_on_day</c> put beside its <c>larder</c>, as a
+    /// save before D778 had them — how many households carried the key. (A household is the object with a larder and members: a
+    /// <c>water</c> key elsewhere in the save is something else's.)</summary>
+    private static int AsAnOldSave(System.Text.Json.Nodes.JsonNode? node)
+    {
+        int removed = 0;
+        if (node is System.Text.Json.Nodes.JsonObject obj)
+        {
+            if (obj.ContainsKey("larder") && obj.ContainsKey("members"))
+            {
+                removed += obj.Remove("water") ? 1 : 0;
+                obj["water_drawn_on_day"] = 12;
+            }
+
+            foreach (KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> child in obj.ToList())
+            {
+                removed += AsAnOldSave(child.Value);
+            }
+        }
+        else if (node is System.Text.Json.Nodes.JsonArray array)
+        {
+            foreach (System.Text.Json.Nodes.JsonNode? item in array)
+            {
+                removed += AsAnOldSave(item);
+            }
+        }
+
+        return removed;
+    }
+
+    // -----------------------------------------------------------------
+    //  The river bank (D779, `water-need.md §5` step 3; Joe's call 2A)
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ NO WELL, AND THE RIVER (D779): a village with no well draws at the river bank — home, the bank, home; a land tile
+    /// beside the water, the jar filled to the brim, one housemate out at a time. <i>(Was <c>NoWellNoTrip</c>, D427: with no
+    /// well nobody walked for water at all, a need that did nothing until a building — call 2B, which Joe did not pick.)</i>
+    /// </summary>
+    [Fact]
+    public void WithNoWellTheyDrawAtTheRiverBank()
+    {
+        (SimWorld world, List<Trip> trips, int mostOutAtOnce) = RunWithoutAWell(years: 2);
+        List<Trip> drawn = trips.Where(t => t.DrawTicks > 0 && !t.BrokeOffForShelter).ToList();
+        _output.WriteLine($"{trips.Count} trips, {drawn.Count} drawn; walks out {string.Join(", ", trips.Select(t => t.WalkTicks).Distinct().OrderBy(n => n))} ticks");
+
+        Assert.Empty(world.Wells);
+        Assert.True(trips.Count >= 10, $"only {trips.Count} trips in two years");
+        Assert.Equal(1, mostOutAtOnce);
+        Assert.All(trips, t => Assert.True(t.AtTheRiver, $"villager {t.VillagerId} went to a well that does not exist"));
+        Assert.All(trips, t => Assert.True(t.LeftFromHome, $"villager {t.VillagerId} set off from somewhere that is not home"));
+        Assert.NotEmpty(drawn);
+        Assert.All(drawn, t => Assert.True(t.DrewBesideTheRiver, "drew somewhere that is not the bank"));
+        Assert.All(drawn, t => Assert.True(t.WentHome, "left the bank for somewhere that is not home"));
+        Assert.All(drawn, t => Assert.Equal(world.Config.WaterJar, t.WaterAtEnd));
+    }
+
+    /// <summary>
+    /// ⭐ ACCEPTANCE 2 (`water-need.md §6`): the nearer of the well and the bank — a well within reach whose walk from home is
+    /// no longer than the bank's is taken, and otherwise the bank. In a valley whose river is far from the houses, a well by them
+    /// is used; in the fixture's own, whose river runs three to six tiles from the homes, a well seven out is not.
+    /// </summary>
+    [Theory]
+    [InlineData(FarFromTheRiver, 3, true)]
+    [InlineData(0UL, AwayFromTheCore, false)]
+    public void TheNearerOfTheWellAndTheBankIsTaken(ulong seed, int wellFrom, bool wellUsed)
+    {
+        SimConfig config = seed == 0 ? Config : Config with { Seed = seed };
+        (_, _, List<Trip> trips, _) = RunWithAWell(years: 2, config, wellFrom);
+        int toTheWell = trips.Count(t => !t.AtTheRiver);
+        _output.WriteLine($"{trips.Count} trips: {toTheWell} to the well, {trips.Count - toTheWell} to the bank; "
+            + string.Join("; ", trips.GroupBy(t => (t.WellWalk, t.BankWalk)).Select(g => $"well {g.Key.WellWalk} bank {g.Key.BankWalk}: {g.Count()}")));
+
+        Assert.True(trips.Count >= 10, $"only {trips.Count} trips in two years");
+        Assert.All(trips, t => Assert.Equal(!(t.WellWalk >= 0 && (t.BankWalk < 0 || t.WellWalk <= t.BankWalk)), t.AtTheRiver));
+        Assert.Equal(wellUsed, toTheWell > 0);
+    }
+
+    /// <summary>
+    /// A fixture seed whose founding is seventeen tiles' walk from the river bank (measured over seeds 1–40, D779: from 6 to 29,
+    /// and the fixture's own seed three to six from its homes).
+    /// </summary>
+    private const ulong FarFromTheRiver = 16;
+
+    /// <summary>
+    /// ⭐ THE WELL'S PAYOFF IS WALKING SAVED (call 2A): the same village with a well by the houses walks less to fetch its water
+    /// than with only the river.
+    /// </summary>
+    [Fact]
+    public void AWellByTheHousesShortensTheWalk()
+    {
+        SimConfig far = Config with { Seed = FarFromTheRiver };
+        (_, List<Trip> river, _) = RunWithoutAWell(years: 2, far);
+        (_, _, List<Trip> well, _) = RunWithAWell(years: 2, far, wellFrom: 3);
+        double riverWalk = river.Average(t => t.WalkTicks);
+        double wellWalk = well.Average(t => t.WalkTicks);
+        _output.WriteLine($"to the river: {river.Count} trips, {riverWalk:F1} ticks out on average; with a well 3 tiles out: {well.Count} trips, {wellWalk:F1}");
+        Assert.True(wellWalk < riverWalk, $"a well by the houses walked {wellWalk:F1} ticks out against the river's {riverWalk:F1}");
+    }
+
+    // -----------------------------------------------------------------
+    //  Running dry (D780, `water-need.md §5` step 4; Joe's call 3A, and D780: "Say it, don't rush")
+    // -----------------------------------------------------------------
+
+    private static bool OutForWater(Villager v) => Walking(v.State) || Drawing(v.State);
+
+    private const string RanDry = "has run out of water";
+
+    /// <summary>
+    /// ⭐ SAID THE DAY IT RUNS DRY, ONCE (call 3A: <i>"and says so"</i>): the day's drink that empties a jar says so, naming the
+    /// household; a day that finds it already empty says nothing. <b>The needs pass alone</b>, so no trip can fill it between.
+    /// </summary>
+    [Fact]
+    public void AJarThatRunsDryIsSaidOnce()
+    {
+        var sink = new InMemoryLogSink();
+        SimWorld world = SimFactory.CreatePhase0(Config, sink).World;
+        Household household = world.Households.First(h => world.LivingMembersOf(h) > 0);
+        household.Water = world.Config.WaterPerPersonPerDay * world.LivingMembersOf(household); // exactly a day
+        var needs = new Bclone.Sim.Systems.NeedsSystem();
+
+        int before = sink.Entries.Count;
+        needs.Execute(world);
+        string[] first = sink.Entries.Skip(before).Select(e => e.Message).Where(m => m.Contains(RanDry, StringComparison.Ordinal)).ToArray();
+        before = sink.Entries.Count;
+        needs.Execute(world);
+        int second = sink.Entries.Skip(before).Count(e => e.Message.Contains(RanDry, StringComparison.Ordinal));
+
+        _output.WriteLine(string.Join(" | ", first));
+        Assert.Equal(0, household.Water);
+        Assert.Single(first);
+        Assert.StartsWith($"The {household.Name} household {RanDry}", first[0], StringComparison.Ordinal);
+        Assert.Equal(0, second);
+    }
+
+    /// <summary>
+    /// ⭐ NOBODY RUSHES (Joe, D780): the dry household's adults go on with what they were doing — nobody is out for water the tick
+    /// it is said — and it is filled at a rest at home, as every trip is, within the season.
+    /// </summary>
+    [Fact]
+    public void ADryJarWaitsForARestAtHome()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        loop.Step(world.Config.TicksPerYear);
+        Household dry = world.Households.First(h => h.HasHome && world.LivingMembersOf(h) > 0
+            && !world.Villagers.Any(v => v.HouseholdId == h.Id && OutForWater(v)));
+        var awayFromHome = world.Villagers.Where(v => v.Alive && v.HouseholdId == dry.Id && v.CanWork && v.Tile != world.HomePlaceOf(v))
+            .ToDictionary(v => v.Id, v => v.State);
+        dry.Water = 0;
+
+        loop.StepOnce();
+        Assert.All(world.Villagers.Where(v => awayFromHome.ContainsKey(v.Id)),
+            v => Assert.False(OutForWater(v), $"{v.Name} dropped {awayFromHome[v.Id]} to walk for water"));
+
+        int ticks = 1;
+        for (; ticks < world.Config.TicksPerSeason && dry.Water == 0; ticks++)
+        {
+            loop.StepOnce();
+        }
+
+        _output.WriteLine($"the {dry.Name} jar filled after {ticks} ticks");
+        Assert.True(dry.Water > 0, "a dry jar was not filled in a season");
+    }
+
+    /// <summary>
+    /// ⭐ ACCEPTANCE 3 — SAID, AND NEVER TWICE A SPELL: over a year at a jar of three, a household of three runs dry often; every
+    /// sentence names a household whose jar the day's drink emptied on its tick, and no household is said dry twice without
+    /// being filled between. Nobody dies of it: there is no thirst (call 3A). ⚠️ Since D782 a jar can be said dry and filled on
+    /// one tick — somebody was already on the way, the drink runs before the drawing ends — so the tick's sentences are read
+    /// before its refills, and a jar said dry may read empty or brim-full.
+    /// </summary>
+    [Fact]
+    public void EveryDrySpellIsSaidOnce()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config with { WaterJar = 3 }, sink);
+        SimWorld world = loop.World;
+        var saidAndNotFilled = new HashSet<int>();
+        int said = 0;
+        for (int t = 0; t < world.Config.TicksPerYear; t++)
+        {
+            int before = sink.Entries.Count;
+            loop.StepOnce();
+            foreach (string line in sink.Entries.Skip(before).Select(e => e.Message).Where(m => m.Contains(RanDry, StringComparison.Ordinal)))
+            {
+                said++;
+                Household? h = world.Households.FirstOrDefault(x => line.StartsWith($"The {x.Name} household ", StringComparison.Ordinal));
+                Assert.NotNull(h);
+                Assert.True(h!.Water == 0 || h.Water == world.Config.WaterJar, $"tick {world.Tick}: the {h.Name} household said dry with {h.Water}");
+                Assert.True(saidAndNotFilled.Add(h.Id), $"tick {world.Tick}: the {h.Name} household said dry twice in one spell");
+            }
+
+            foreach (Household h in world.Households.Where(h => h.Water > 0))
+            {
+                saidAndNotFilled.Remove(h.Id);
+            }
+        }
+
+        _output.WriteLine($"{said} dry spells said in a year at a jar of three");
+        Assert.True(said > 0, "nobody ran dry at a jar of three");
+    }
+
+    /// <summary>
+    /// ⭐ A FAMILY WITH NO HOUSE IS TOLD THE TRUTH (D782, Joe's Underwoods, Year 19: <i>"resting at home"</i> out in the open, and
+    /// a dry jar promised a trip that cannot set out without a door). Their rest and their dry jar say so — and what changes it.
+    /// </summary>
+    [Fact]
+    public void AFamilyWithNoHouseIsToldTheTruth()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        Household unhoused = world.Households.First(h => world.LivingMembersOf(h) > 0);
+        unhoused.HomePosition = null; // posed: a family whose house is not built yet
+        Villager member = world.Villagers.First(v => v.Alive && v.HouseholdId == unhoused.Id);
+        unhoused.Water = 0;
+        Assert.Equal("No water — somebody will go once they have a house", world.WaterNoteFor(unhoused));
+
+        member.State = VillagerState.Resting;
+        Assert.Equal("resting in the open — no house yet", member.DescribeState(null, false, unhoused: true));
+        Assert.Equal("resting at home", member.DescribeState(null, false, unhoused: false));
+        member.State = VillagerState.TravelingHome;
+        Assert.Equal("walking back to where they sleep — no house yet", member.DescribeState(null, false, unhoused: true));
+    }
+
+    /// <summary>⭐ The founders start with a full jar (D780), so a new valley does not open with every family dry.</summary>
+    [Fact]
+    public void TheFoundersStartWithAFullJar()
+    {
+        SimWorld world = Loop().World;
+        Assert.All(world.Households, h => Assert.Equal(world.Config.WaterJar, h.Water));
+    }
+
+    /// <summary>
+    /// ⭐ THE CARD'S SENTENCE (call 3A: <i>"No water — Dovlow has gone to the river"</i>): nothing while there is water; that
+    /// somebody will go at their next rest at home while nobody has; who has gone and where once somebody has.
+    /// </summary>
+    [Fact]
+    public void TheCardSaysWhoHasGoneForTheWater()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        loop.Step(world.Config.TicksPerYear);
+        Household dry = world.Households.First(h => h.HasHome && world.LivingMembersOf(h) > 0
+            && !world.Villagers.Any(v => v.HouseholdId == h.Id && OutForWater(v)));
+        Household wet = world.Households.First(h => h.Id != dry.Id);
+        wet.Water = world.Config.WaterJar;
+        dry.Water = 0;
+        Assert.Null(world.WaterNoteFor(wet));
+        Assert.Equal("No water — somebody will go the next time one of them is home", world.WaterNoteFor(dry));
+
+        Villager? went = null;
+        for (int t = 0; t < world.Config.TicksPerSeason && went is null; t++)
+        {
+            loop.StepOnce();
+            went = world.Villagers.FirstOrDefault(v => v.HouseholdId == dry.Id && OutForWater(v));
+        }
+
+        Assert.NotNull(went);
+        string? note = world.WaterNoteFor(dry);
+        _output.WriteLine(note);
+        Assert.NotNull(note);
+        Assert.StartsWith($"No water — {went!.Name} has gone to the ", note, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⭐ THE BANK IS THE ONE COST FIELD'S (§2.6): for every home, the bank is a land tile beside the river that nothing stands
+    /// on, and no such tile in the whole valley — looked for tile by tile, not from the world's own list — is a cheaper walk home.
+    /// </summary>
+    [Fact]
+    public void TheBankIsBesideTheRiverAndTheCheapestWalkHome()
+    {
+        SimLoop loop = Loop();
+        SimWorld world = loop.World;
+        loop.Step(world.Config.TicksPerYear);
+        GeneratedMap map = world.Map;
+        var everyBank = new List<GridPos>();
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x < map.MinX + map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                bool beside = new[] { new GridPos(x + 1, y), new GridPos(x - 1, y), new GridPos(x, y + 1), new GridPos(x, y - 1) }
+                    .Any(n => map.Contains(n) && map.TerrainAt(n) == Terrain.Water);
+                if (map.TerrainAt(at) != Terrain.Water && beside && !world.StandsOn(at))
+                {
+                    everyBank.Add(at);
+                }
+            }
+        }
+
+        Assert.NotEmpty(everyBank);
+        List<Household> housed = world.Households.Where(h => h.HomeTile is not null).ToList();
+        Assert.NotEmpty(housed);
+        foreach (Household household in housed)
+        {
+            GridPos home = household.HomeTile!.Value;
+            GridPos? bank = world.NearestBank(home, out int tiles);
+            Assert.NotNull(bank);
+            Assert.Contains(bank!.Value, everyBank);
+            Assert.True(world.IsBank(bank.Value));
+            int cost = world.TravelCost.Cost(bank.Value, home);
+            int cheapest = everyBank.Select(b => world.TravelCost.Cost(b, home)).Where(c => c != TravelCostField.Unreachable).Min();
+            _output.WriteLine($"{household.Surname}: bank {bank} at {tiles} tiles ({cost}); cheapest anywhere {cheapest}");
+            Assert.Equal(cheapest, cost);
+            Assert.Equal(cost / TravelCostField.BaseTileCost, tiles);
+        }
     }
 
     /// <summary>
@@ -334,8 +855,8 @@ public sealed class WellTests
     /// the same village with the same well and no trips leaves it grass.
     /// </summary>
     /// <remarks>
-    /// ⚠️ <b>The control keeps the well and stops the trips</b> (an interval nobody reaches, so each
-    /// household goes once). Its first draft compared against a village with no well at all and
+    /// ⚠️ <b>The control keeps the well and stops the trips</b> (nobody drinks, so each household goes once and its
+    /// jar stays full — an interval nobody reaches until D778). Its first draft compared against a village with no well at all and
     /// scored zero with the trips switched off: a standing well bends everybody else's walks round
     /// it, and at three tiles from the founding that alone wears the ring beside it.
     /// </remarks>
@@ -344,7 +865,7 @@ public sealed class WellTests
     {
         (SimWorld world, Well well, List<Trip> trips, _) = RunWithAWell(years: 2, wellFrom: AwayFromTheCore);
         (SimWorld still, Well same, List<Trip> once, _) = RunWithAWell(
-            years: 2, Config with { WaterTripEveryDays = 1_000_000 }, AwayFromTheCore);
+            years: 2, Config with { WaterPerPersonPerDay = 0 }, AwayFromTheCore);
         Assert.Equal(well.Tile, same.Tile);
 
         int worn = WornBeside(world, well.Tile);

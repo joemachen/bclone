@@ -1,5 +1,51 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED, AT HIS WORD — NOTHING CLAIMED. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). NO BRANCH OPEN BUT `art`.** *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — 🔨 CLAIMED ON `slice/water-need` (D775), SPECCED, FOUR CALLS HIS. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772). `slice/water-need` OPEN (D775).** *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/water-need` — ✅ PLAYED (D782, *"looks good! proceed!"*); WHAT HIS LOG SHOWED, FIXED (*"Fix it first"*, *"any time at home"*); THE MERGE AT HIS WORD.**
+> - **Water:** his families ran dry in year 1 and stayed dry five years. The trip was asked only where a rest began (an adult out
+>   of work — a young village never is), and *"less than a day's"* at a jar of 120 was only ever empty. Now: low at
+>   `water_low_days` 5, asked whenever an adult stands at their door. Dry family-days 14 % → 1.6 % (100 valleys), 21 % → 0.4 % (his);
+>   +1.2 ± 0.6 starved in unattended valleys, survivors unchanged — put to him, his pick.
+> - **A family with no house is told the truth** (Joe, Year 19: *"It shows these people (oakland underwood) 'resting at home' in the field?"*). His save says the Underwoods had no house — their "home" was the founding site (1, 0), the cart long gone — and their jar was empty with no way to fill it (a trip sets out from a door). The card now reads *"resting in the open — no house yet"* / *"walking back to where they sleep — no house yet"*, and their dry jar *"No water — somebody will go once they have a house"* (the log line too; low, *"nobody can fetch more until they have a house"*). Words only: no state, no golden; the probe's `relief:` line accepts *"climbing back to where they sleep"* as well as *"climbing home"*, since its posed founder has no house yet.
+> - **A stockpile that refused Demolish** (his screenshot: `stockpile 1` at (−1.18, 0.96)). A one-tile pile placed near a tile's corner claims only the tile under its centre (D319) while most of it is drawn over three neighbours; Demolish, Empty and Move rounded the click to a tile — *"There is nothing there to pull down"* — while the card's click had asked the building under the point since D338. One resolver now, `VillageMap.TileUnderTheCursor`, for every click; probe `demolish:` marks a pile 0.72 into a tile on clear ground and pulls it down by its overhang.
+> - **The pail on the painted people:** `main` merged into the slice (904b658); `DrawThePeople` hangs it. Unprobed, written down.
+> - **The lanes bar 0.8 → 0.85** (`TheFoundingHubWearsLanesNotABlock`, at Joe's pick, as put to him): families fetching before the jar is dry wear the hub to **510 block tiles against 637 — 0.80**, four tiles over 0.8; still just over what the game does, the hub's block still his ⏸️ item.
+> - **Four checks:** suite **2066 / 0 / 5 of 2071 in 20m49 (Joe's game open beside it)**; view build 0 warnings (`--no-incremental`); probe **164** `[widths]` lines (163 + the new `demolish:`), 125 ✅, 0 ⛔, `water:` ✅, `demolish:` ✅, bar **151**, tile centres ✅, new game ✅, `done.`, no probe Godot left (Joe's own game was open beside it and left alone); **eight goldens re-taken, each proven by ablation** (D781's water rule put back — no ask at home, *less than*, one day — and every old value passes): the two skill fifty-years, the two stock-limit fifty-years, the farm golden and its before-anybody-got-better, the Phase 5 golden and its; the walking-clock pin 49 at 20 / 141 / 507 → 48 at 20 / 141 / 494; goldens 430 → 438 lines, the eight new constants and their eight *Was* lines, nothing else
+> - **Guards:** **sim, 5 mutants, every one red where aimed:** the at-home ask removed **2**, the margin's edge back to *less than* **1**, the margin back to one day **1**, the unhoused dry note ignoring the house **1**, the unhoused rest ignoring it **1**; **view, 1:** Demolish back to the rounded tile **1** (`demolish:`). All restored by bytes, 0 markers
+>
+> **🔨 `slice/water-need` — ✅ STEP 6 BUILT (D781, 2026-11-16): WATER ON SCREEN — EVERY STEP OF THE SPEC IS BUILT; JOE PLAYS IT NEXT.**
+> The household card's water line (*"A jar of water, 87 of 120 — enough for 29 days."*; dry, the sim's sentence in amber), a fourth
+> NEEDS pill on a person's card (*Water* / *No water*, the line as its tooltip), and a stand-in pail on the map — empty going, full
+> coming home — remembered by the view, not the sim (water is not a good). **What Joe should look for:** a family's water line counting
+> down on its card, the pail on somebody walking to and from the river or the well (a family of three goes about every forty days,
+> of two every sixty), and the *less than a day's* line just before. A fully dry, amber jar is rare by design: it needs nobody home
+> to rest before it empties. Nothing in the sim moved; no golden.
+> - **Four checks:** suite **2063 / 0 / 5 of 2068 in 17m48** (nothing in the sim or the tests moved); view build 0 warnings (`--no-incremental`); probe **162** `[widths]` lines (161 + the new `water:`), 123 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 430 lines, unchanged
+> - **Guards:** the `water:` line red-checked, four mutants, every one red where aimed: the dry line not amber **1**, the pill's words swapped **2** (dry and full), an empty pail carried home after giving up **1**, a draw that leaves the pail empty **2**; all reverted by marker, the diff read back
+>
+> **🔨 `slice/water-need` — ✅ STEP 4 BUILT (D780, 2026-11-16): RUNNING DRY IS SAID, NOT RUSHED.** Built first as call 3A read
+> (a dry household sends somebody off their work at once) and measured: −0.56 ± 0.32 alive a valley, for a need that harms
+> nobody. Joe: *"Say it, don't rush"* — the log says it the day the jar empties, once; the next rest at home fills it; the
+> founders start full. And *"Widen and re-set bars"*: the farm and lanes guards on 24 valleys, bars 70 % and 0.8. Four golden constants and one pin re-taken, proven by ablation (the founders' full jar).
+> - **Four checks:** suite **2063 / 0 / 5 of 2068 in 19m27** (the two widened guards are about two minutes of it; one earlier run read 25m15, the machine — back to back, fifty fixture years took 16.1 s on HEAD and 15.4 s on the tree); view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines, 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 427 → 430 lines — the four re-taken constants and three *Was* lines, nothing else.
+> - **Guards:** 5 new in `WellTests` (said once the day it runs dry; a dry jar waits for a rest at home; every dry spell said once in a year at a jar of three — 36; the founders start full; the card's sentence), plus the save test reading an old save full. Mutants: the sentence removed **2** red, said every dry day **2**, the card naming nobody **1**, the founders empty **2**, the trip's at-home test removed **0** (a near-equivalent — it is asked only where a rest at home begins; zero kept and written down), a rush put back **5** (the no-rush guard among them). The rush's own seven, before Joe took it out: 2, 2, 6, 3 (a first build of the switch-off scored 1 — the D780 trap), 4, 1, 9. The two widened guards: measured, not mutated (75 % against 70, 0.76 against 0.8).
+>
+> **🔨 `slice/water-need` — ✅ STEP 3 BUILT (D779, 2026-11-15): THE RIVER BANK, AND JOE'S JAR OF 120.** With no well nearer, a
+> household walks to the bank tile cheapest to walk home from. At step 2's jar of 40 that was too dear — a river 15–25 tiles off
+> is ten days a trip — so the jar went to Joe (call 4) with measurements: *"120 (Recommended)"*. Eight golden constants and one pin re-taken, each proven by ablation; three posed guards fixed at their poses (the herdsman's jar, the lodge's hunter already out and its cap edge).
+> - **Four checks:** suite **2058 / 0 / 5 of 2063 in 17m05**; view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines, 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 420 → 427 lines — the eight re-taken constants and seven *Was* lines, nothing else.
+> - **Guards:** 5 new in `WellTests` (the bank with no well; the nearer of well and bank, both ways; a well by the houses shortens the walk, 18.0 → 1.5 ticks out; the bank is the cheapest walk home against a tile-by-tile search; Joe's jar), 7 mutants: bank always **4** red, well always **1**, the first bank not the cheapest **3**, stood-on banks not skipped **0** (a near-equivalent: the field to the home walls every building tile but the home's own, so a built-on bank is unreachable anyway — zero kept and written down), no river trips **3**, the river not filling the jar **2**, the river not a claim **3**.
+>
+> **🔨 `slice/water-need` — ✅ STEP 2 BUILT (D778, 2026-11-15): WATER AT HOME.** *(The jar of 40 below is 120 since D779.)* Each household keeps a jar (`water_jar` 40), every
+> living member drinks `water_per_person_per_day` (1) a day, and somebody goes to the well when it cannot cover another day — the
+> 20-day clock retired, a household of two keeping it. ⚠️ Measured: five go every 13 days though their jar lasts 8 (the trip waits
+> for a rest at home) — step 4's number. No format step: Joe's saves load with empty jars. One golden moved, the Phase 5 village's, which has a well — and its herd chain was found hanging on one boat, so its pose keeps 100 firewood, not 300 (27 arms measured).
+> - **Four checks:** suite **2054 / 0 / 5 of 2059 in 17m08** (a first run read 21m36 with that golden red; the re-run is level with D771's 17m04); view build 0 warnings (`--no-incremental`); probe 161 `[widths]` lines (159 at D771 — A86–A87's two came with `main`), 122 ✅, 0 ⛔, bar **151**, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 418 → 420 lines — the two Phase 5 constants moved and their old values are quoted beside them, nothing else.
+> - **Guards:** 7 new in `WellTests`, 8 mutants: the fill short 1 red, a flat drink 1, the jar unhashed 1, unsaved 1, `water_jar` 30 1, every jar starting at 1 2 (`NoWellNoTrip` scores **zero** on it; the hash and save guards catch it); the low rule off by one on its slow line **0** — a near-equivalent, because the member-list line answers first — and on both lines **0** until a jar of exactly a day was added, then **1** (`TheJarSaysWhenToGo(3)`). The keep back at 300 turns `EveryPhaseFiveChainTurnsOver` red (seen, not mutated: it is the run that found it).
+>
+> **🔨 `slice/water-need` (D775, 2026-11-15) — WATER AS A HOUSEHOLD NEED, SPECCED, ⏸️ FOUR CALLS JOE'S.** Joe: *"water is next for systems"*.
+> `specs/water-need.md` §3. Recommended: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Then the order of work, §5, starting with D428's
+> unexplained cost. Nothing built; the docs commit only.
+>
 > **✅ THE SCHOOL PLAYED AND APPROVED (D773, 2026-11-15)** — Joe: *"i played the school. it looks good. and children get coats now"*, then *"yeah there was no problem, i was approving it"*. His Ashbourne
 > log read against `school-and-education.md §12.8`: steps 1–3 seen, 4 and 6 not reached yet, and the coats all as designed (DESIGN §7 D773).
 > Two small things are on the ⏸️ list for him, not built. Docs only; not pushed. *(Pushed at his word the same day: *"fine for now, we'll review all messages later. push."*)*
@@ -9500,6 +9546,86 @@ Read `git status` after staging, every time.
 - ⚠️ **§5's *"60–80 is a 6–8× change"* was true against the burn of 2026-08-23 (8–10) and stale against today's 24** (D365). A
   multiple in a warning is a dated measurement: recompute it from the config before quoting it to Joe.
 
+## ⛔ THE TRAP D782 PAID FOR — A VERDICT FROM THE SCREEN, A LOG GREP THAT READ NOTHING, AND THE OTHER LANE'S MERGE
+
+- **⛔ "Looks good" from a play is the screen's verdict; the log has its own.** Joe approved water and its pail; his game log said
+  every jar ran dry and two families went five years without a trip. Read `src/Bclone.Game/logs/bclone-*.log` (UTF-8) before
+  recording a play — the memory note says so, and this session first read **`logs\run_*.log`, which is UTF-16** (PowerShell's
+  `Tee-Object`): `grep` found **0 matches** and it looked like nothing happened. His saves are gzip.
+- **⛔ A rule's edge at a round number.** *"Less than a day's"* against a jar that divides by every family size is *"empty"*. The
+  D778 red-check found the off-by-one only at a jar of three; nobody asked what 120 does. Pose the shipped numbers.
+- **⛔ "At their next rest" is not "soon" in a busy village.** A behaviour hung on the rest spell runs only when an adult has run
+  out of work — the harness's unattended villages do, often; a played young village does not. Measure on his save too.
+- **⛔ Before merging a slice, `git log slice..main`, and read every shared function `main` changed — not just the conflicts.** The
+  painted people returned before the dots' pail; git merged it cleanly. Merge `main` into the slice, fix and check there.
+- **⚠️ A free building is not a site.** A probe that marked a stockpile and looked for a construction site found none, kept
+  marking, and littered the founding with piles — three other probe lines went red. A pile owes nothing: it stands at once, or
+  waits for its ground to be cleared (and paints the clearing). Ask `GroundIsClearAt` first, and stop on the first mark.
+
+## ⛔ THE TRAP D781 PAID FOR — A SED THAT MATCHED TWICE
+
+- **⛔ Count an anchor before a `sed` writes it, and stop on anything but 1.** A one-line fix (`float widest = 0f;` → add a line
+  after it) counted **2** and ran anyway: the second hit was the card probe's own `widest`, 300 lines down, and the view build's
+  `CS0219` was the only thing that said so. The memory rule is "count every anchor before writing" — counting is not enough;
+  a count of 2 is the stop. *(The Python edit scripts exit on any count but 1; `sed` does not.)*
+- **⭐ A view fact the sim does not hold can be remembered by the view, honestly, if it is never shown wrong.** The pail is drawn
+  from states seen a tick at a time; what it cannot know (a save loaded mid-walk, a tick missed) it does not draw. Putting a
+  "carrying water" field in the sim would have hashed a picture and moved every golden.
+
+## ⛔ THE TRAP D780 PAID FOR — A RUSH FOR A NEED THAT HARMS NOBODY, AND A MUTANT THAT STILL RAN THE CALL
+
+- **⭐ Ask where an errand's hours come from before ranking it above work.** D777 measured the water trip free *because it came
+  out of rest*; ranking the dry trip above work moved its hours into work, and with no thirst to answer it cost 0.56 alive a
+  valley for nothing. An errand above work needs a harm it prevents, or it is a tax.
+- **⛔ `if (Call() && false-thing)` does not switch `Call` off** — the call runs, does its work, and only the `if` is false. D4
+  scored one red that way; with the false thing first (`villager.Id < 0 && Call()`) it scored three. **Put the switch before the
+  call.**
+- **A small-sample guard near its bar is a coin, and widening it can show the bar was never met.** The lanes guard read 0.82 on
+  twenty-four valleys before water; twelve had passed it for months. Widen before blaming the change in front of you, and
+  measure the commit before it on the same sample (`git archive` into the scratchpad).
+- **The suite read 25m15 once and 17m32 the next run, same code.** Back to back, fifty fixture years took 16.1 s on HEAD and
+  15.4 s on the tree. The clock is an instrument — read it twice before chasing it (D417).
+
+## ⛔ THE TRAP D779 PAID FOR — A MUTANT THAT CANNOT BE SWAPPED BACK, AND A TIME SCALE NOBODY DID THE SUM ON
+
+- **⛔ A mutant whose replacement is empty, or a bare `)`, cannot be swapped back by text.** The reverse swap counts its anchor,
+  finds thousands, and stops — leaving the mutant in the tree. Twice in one run (R4's empty string, R7's `)`); both found by
+  counting the restored text afterwards, and one of them was in an **untracked** new file that `git diff --stat` cannot show.
+  **Replace with a marker comment, never with nothing, and count the restored line after every mutant run.**
+- **⭐ Do the walk's sum before shipping a need.** A day is four ticks and a villager walks about a tile a tick, so a trip of N
+  tiles costs N/2 days. A jar sized for a well five tiles off (step 2's 40) bought thirteen days of water for a ten-day walk to a
+  far river. The harness said so in one run; the arithmetic would have said it before any run.
+- **The fixtures do not read `data/sim.config.json`.** `VillageFixtures.Village` starts from C# defaults, so a size measured on a
+  fixture moves with the `SimConfig` default, not the data file — and a golden posed on `ShippedConfig` moves with the data. Both
+  were changed together here; change one and half the suite measures the other number.
+- **Posed tests sit on edges.** Three guards here failed on a pose, not a rule: a cap set at exactly twice what was held, a
+  hunter already out when the rows were set, a herdsman's household errand. Trace the tick it goes wrong (who, what state, what
+  the rule read) before touching the rule — each trace here took one run.
+
+## ⛔ THE TRAP D778 PAID FOR — A SAVE'S NULL IS A KEY, AND A FIXTURE'S FAMILIES ARE ALL ONE SIZE
+
+- **A sparse save key is written `"key": null`, not left out.** `SaveWriter` keeps nulls (`keeps_its_house` does the same),
+  so a test that counted the households carrying `water` found both, where one had water. "Absent" in a save means stripped
+  by the test, and only a stripped key is what an old save looks like — `save.HasValue` reads both the same way.
+- **The village fixture's households were all three strong for four years** — a size test over them had nothing to compare and
+  failed `NotEmpty`. Twelve years gave 2s to 5s. Before a guard compares across a property, print the property's spread
+  (D423: pose the shape that makes the claim bite).
+- **A golden that holds a well moves when water does** — `PhaseFiveGoldenTests` poses one, so "the goldens move at step 7" was
+  never true for it. Grep the goldens' poses for the thing you change before planning when they move.
+- **⛔ A COVERAGE GUARD CAN HANG ON ONE EVENT.** The Phase 5 golden's *"cattle landed"* rested on one boat in Year 14 finding
+  enough firewood at the post; a water trip a day either side of 20 lost it, on the old code as much as the new. **Before
+  "fixing" a chain that stopped, nudge the input on the old code too** (`git archive HEAD` into the scratchpad, never a
+  worktree): if the old code breaks under the same nudge, it is the pose, and the pose is what changes (D418's rule run the
+  other way).
+
+## ⛔ THE TRAP D773 PAID FOR — JOE'S GAME LOG IS NOT `godot.log`
+
+- **His village's log is `src/Bclone.Game/logs/bclone-<date>-<time>.log`** (`Main.cs`, the `FileLogSink`, every `[life]` line and
+  DEBUG behaviour, tick-stamped). `%APPDATA%\Godot\app_userdata\bclone\logs\godot.log` holds only frame timings and skips, and
+  `logs/run_*.log` in the repo is `run.bat`'s console in UTF-16. A save holds no narration at all (`moments` is empty). Grepping
+  `godot.log` for the school found nothing and nearly read as *"the walk never happened"*. **Copy the newest `bclone-*.log` with the
+  saves before reading either.**
+
 ## ⛔ THE TRAP D771 PAID FOR — A STATE FIX MUST FOLLOW THE ERRAND PAST ITS ARRIVAL
 
 - **D768 set the clearing errand's state for the walk out and its guard asked only about the walk out** — empty-handed
@@ -10312,8 +10438,22 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **NEXT FOR SYSTEMS, ASKED BY JOE (2026-11-16): EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
+
+- ⏸️ **FOR THE ART LANE (Joe, 2026-11-16): paths across a crop field are drawn plain** — *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"* (his Year 35 and 38 screenshots: a pale smooth band across the painted crops). The worn paths are the art lane's shader (A72, A82) and the crops its painting; not touched from the systems lane.
+
+- ⏸️ **THE FOUNDING HUB WEARS A BLOCK, NOT LANES — THE D414 BAR WAS NEVER MET ON A WIDE SAMPLE (D780, 2026-11-16).** Found while
+  widening `TheFoundingHubWearsLanesNotABlock` to 24 valleys at Joe's word: the shipped walk's worn block against the
+  corner-cutters' read **0.82 before water** (bar 0.7; twelve valleys had passed it by the draw since D612), 0.74 with the river,
+  0.76 now. The bar is 0.8 for now, just over what the game does. **His to call:** whether a thinner hub is still wanted, and if
+  so, a slice to find what wears the block. Nothing built.
+
+- ⏸️ **🔨 being built on `slice/water-need` — WATER AS A HOUSEHOLD NEED (D775, 2026-11-15, Joe: *"water is next for systems"*). ✅ ALL
+  FOUR CALLS AS RECOMMENDED (D776, *"All as recommended"*); ✅ step 1, D428's trace (D777): no measurable cost on today's code, the hours come out of rest; ✅ step 2, water at home (D778): the jar, the drink and the trip that fills it; ✅ step 3, the river bank, and his jar of 120 (D779); ✅ step 4, running dry said, not rushed (D780, *"Say it, don't rush"*); ✅ step 6, the view (D781): the card's water line, a NEEDS pill, a stand-in pail; ✅ played, and a jar filled before it runs dry (D782, *"any time at home"*); the merge at his word.** *(Read "Joe plays it next" at D781.)* *(Read "step 6, the view, next" at D780.)* *(Read "step 4 … next" at D779.)* *(Read "step 3 … next" at D778.)* *(Read "step 2 next" at D777.)* Phase 6
+  item 2. `specs/water-need.md` §3 holds his four calls, each with a recommendation: (1) water a number the household keeps at home, not a good; (2) drawn at the nearer of a well or the river bank, so the well's payoff is walking saved (every golden moves); (3) nobody dies of thirst, a dry household goes at once and says so; (4) the jar and the daily drink measured before his pick. Nothing built until he answers.
 - ⏸️ **✅ MERGED INTO `main` AT JOE'S WORD (A94, *"Played it, merge"*, c269441) AND PUSHED (A95, *"Push it"*) — THE VILLAGERS (A93: E, people standing up in the manner of illuminated manuscripts, at his *"Yes, build E"*; `villager-art.md §8`; renders `D:\Projects\brushes\villagers\built_people.jpg`). The teacher's colour in `TradeGlyph.cs` is the systems lane's one line.** The history (A90, 2026-11-15, `specs/villager-art.md`), **Joe's next art piece: *"i want to work on villagers for the next art piece. And then the UI"* — the lane's order: the villagers, then the parchment-and-wood interface.** Every villager is a dot coloured only by age; the job, the load, the coat and the state are in the sim and nowhere on the map. **Mocked on copies of his saves** (Hollowmere Years 63 and 85, Ashbourne Year 20; `D:\Projects\brushes\villagers\villagers_options.jpg`, `villagers_catalogue.jpg`, `villagers_design.jpg`): **A** a painted token, **B** a painted figure from above in trade colours (hat, tool, load, coat), **C** the same in homespun as the concept's lineup. Trade pairs that look alike at the middle zoom: today 171 of 171, A 5, B 4, C 34. **Joe rejected all three (*"i hate all of those. make them look like actual people."*) — remocked as D, people standing up as in his lineup sheet (A91, `villager-art.md §3a`; `people_options.jpg`, `people_closeup.jpg`, `people_large.jpg`); Then *"you're heading in the right direction, now let's incorporate a little flavour from some real life examples"* (seven manuscript pages) — **E, D with the illuminations' gowns, pigments, ink folds, coifs, hoods and curls** (A92, `villager-art.md §3b`; `illum_options.jpg`, `illum_closeup.jpg`, `illum_large.jpg`). ⏸️ his calls now §6a: D or E, standing people on the top-down map, 0.72 of a tile tall, plus calls 3 and 4 below.** Calls on A–C (§6), each recommended: (1) B; (2) a third bigger than today's dot; (3) people indoors not drawn on the roof; (4) the teacher the library's blue, deepened. Nothing built. **And his running list** (*"take note of the systems work being done and all of the buildings and art pieces that will have to be created for that"*) is `art-inventory.md §15`, in D750's order, kept current from each systems spec's art section (D774).
-- ⏸️ **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15), JOE'S TO CALL.** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
+- ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
+  the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
   `DESIGN.md §4` Phase 6. **Recommended:** a seventh exit-gate item (the phase ends when everything on the reviewed list is
   built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
   hall's tabs stay last; warm clothing stops being optional unless he moves it out at the review. The review itself is not

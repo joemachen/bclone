@@ -669,7 +669,7 @@ sparsely: a village with no well hashes as it did before this slice.
 with a home, at the moment they would **begin a rest spell at home** — the spot the rest spell's own
 comment reserved for *"a destination worth walking to"* (the pub, the church; the well is first).
 It fires when wells exist, a well is within `home_well_reach_tiles` by the cost field, the
-household's last trip was `water_trip_every_days` or more ago (`Household.WaterDrawnOnDay`, hashed
+household's last trip was `water_trip_every_days` or more ago *(⛔ retired D778: the household's jar decides now, `water-need.md §2b`)* (`Household.WaterDrawnOnDay`, hashed
 when set), and no housemate is already on one. The claim is taken when they set off. They walk
 there (`WalkingToTheWell`), stand `well_draw_ticks` (`DrawingWater`), and walk home. Nothing is
 carried and nothing is drunk — the water mechanic is Phase 6. ⛔ **Hunger, cold and an emptied
@@ -727,7 +727,9 @@ founding (just past the opening's paint). Alive / starved:
 - ⭐ **The building costs nothing; the trips do, about in proportion to how often.** Every 10 days
   is 21 shipped villagers below main — four times the noise — and every 20 is within it. An
   ablation (the trip offered only at `Decide`'s rest, not `GoHome`'s) read the same (145), so it is
-  **not** the job-holder's idle moment; the mechanism is unproven (an adult off on a 20-tick walk
+  **not** the job-holder's idle moment; the mechanism is unproven *(⛔ void — it does not reproduce: re-measured on 100
+  valleys with a noise arm, every 5, 10 and 20 days are within the noise; the trip's hours come out of rest, D777,
+  `water-need.md §2a`)* (an adult off on a 20-tick walk
   when work comes back is the hypothesis).
 - ⚠️ **Where the as-played well stands, the lane is mostly the village's own.** Worn tiles within
   three of the well: 13.9 with the trips off, 14.2 at every 10 days. The trips wear a lane of their

@@ -2175,18 +2175,38 @@ public sealed record SimConfig
     public int TendTicks { get; init; } = 4;
 
     /// <summary>
-    /// How many days apart a household walks to its well (D427, `organic-housing.md §9.12`).
+    /// How much water a household's jar holds — filled to the brim at a well (D778, `water-need.md §5` step 2).
     /// </summary>
     /// <remarks>
-    /// ⛔ <b>Not "daily", and that is arithmetic, not taste.</b> A day is <see cref="TicksPerDay"/>
-    /// — four ticks — and a walk to a well five tiles off and back is about twelve, so a trip a day
-    /// is somebody from every household at the well for ever. <b>Twenty is Joe's pick (D427), a
-    /// placeholder for pathing</b> — every ten days cost 21 shipped villagers of 169 over fifty years,
-    /// every twenty is within the noise (§9.12f). ⭐ In Phase 6 the household's water need decides when
-    /// somebody goes, and that table is the baseline it is measured against.
+    /// ⭐ <b>120, Joe's pick (D779, `water-need.md` call 4), measured</b>: at one a person a day a household of two goes every
+    /// sixty days, three every forty, five every twenty-four. ⛔ <b>Not 40</b>, which was the D427 clock's price (two every
+    /// twenty days) and was right only while nobody walked further than a well: since the river (D779) a household with no well
+    /// walks to the bank, often fifteen to twenty-five tiles — ten days there and back, at four ticks a day — and over 100
+    /// valleys a jar of 40 cost 0.59 ± 0.30 alive a valley, with more starved, and took a farm's harvest from 79 % to 66 %.
+    /// At 120: −0.27 ± 0.34 and 75 %; 2.6 % of adult time on water.
     /// </remarks>
-    [JsonPropertyName("water_trip_every_days")]
-    public int WaterTripEveryDays { get; init; } = 20;
+    [JsonPropertyName("water_jar")]
+    public int WaterJar { get; init; } = 120;
+
+    /// <summary>
+    /// A jar is low — somebody at home goes for it — when it holds this many days of its living members' drink or fewer (D782).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Never "less than one day's"</b>, which it was from D778 to D781: the jar of 120 divides by every family size from
+    /// one to six, so a jar drunk a whole day at a time steps 6, 3, 0 and is never <i>less than a day's</i> until it is empty —
+    /// every jar ran dry before anybody went. ⭐ <b>5, measured</b> (D782, with the trip asked at any moment at home): over 100
+    /// valleys the housed families' days spent dry 15 % → 2 %, survival within the noise; on Joe's own village from its fifth
+    /// year, 21 % → 0.4 %. 10 bought the last 2 % for twice the trips' extra time.
+    /// </remarks>
+    [JsonPropertyName("water_low_days")]
+    public int WaterLowDays { get; init; } = 5;
+
+    /// <summary>
+    /// The water each living member of a household drinks on each day's turn (D778). Zero: nobody drinks, so a
+    /// household goes once and its jar stays full.
+    /// </summary>
+    [JsonPropertyName("water_per_person_per_day")]
+    public int WaterPerPersonPerDay { get; init; } = 1;
 
     // ---------------------------------------------------------------
     //  Storage (D30, D32)
@@ -6226,12 +6246,17 @@ public sealed record SimConfig
             throw new SimConfigException($"home_path_search_tiles must be greater than zero (got {HomePathSearchTiles}).");
         }
 
-        if (HomeWellWeight < 0 || HomeWellReachTiles <= 0 || WellDrawTicks <= 0 || WaterTripEveryDays <= 0)
+        if (WaterLowDays <= 0)
+        {
+            throw new SimConfigException($"water_low_days must be greater than zero (got {WaterLowDays}).");
+        }
+
+        if (HomeWellWeight < 0 || HomeWellReachTiles <= 0 || WellDrawTicks <= 0 || WaterJar <= 0 || WaterPerPersonPerDay < 0)
         {
             throw new SimConfigException(
-                "home_well_weight cannot be negative, and home_well_reach_tiles, well_draw_ticks and "
-                + $"water_trip_every_days must be greater than zero (got {HomeWellWeight}, "
-                + $"{HomeWellReachTiles}, {WellDrawTicks}, {WaterTripEveryDays}).");
+                "home_well_weight and water_per_person_per_day cannot be negative, and home_well_reach_tiles, "
+                + $"well_draw_ticks and water_jar must be greater than zero (got {HomeWellWeight}, "
+                + $"{WaterPerPersonPerDay}, {HomeWellReachTiles}, {WellDrawTicks}, {WaterJar}).");
         }
 
         if (TendTicks < 0)

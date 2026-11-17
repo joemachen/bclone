@@ -366,8 +366,17 @@ public sealed class VillagerPointTests
         // houses face their lanes (D388, kept) and the economy is priced with the door — 48 trips, the 1st/10th/20th at
         // 20 / 141 / 492. Proven: the parent commit (b10667c, D621) holds 53 at 7 / 119 / 313 with the suite green, and the
         // new numbers read twice, identical. Were 53 at 7 / 119 / 313.
+        // ⚠️ RE-PINNED (D779), not for the clock: every household walks to the river bank for its water (`water-need.md §5`
+        // step 3), so the gatherers' days fall differently — 49 trips, the 1st/10th/20th at 20 / 141 / 494. Proven by ablation:
+        // with the bank never offered the old 48 at 20 / 141 / 492 return. Were 48 at 20 / 141 / 492.
+        // ⚠️ RE-PINNED (D780), not for the clock: the founders start with a full jar, so their first water trips come later — 49
+        // trips, the 1st/10th/20th at 20 / 141 / 507. Proven by ablation: with the founding's jars empty the old 494 returns.
+        // Were 49 at 20 / 141 / 494.
+        // ⚠️ RE-PINNED (D782), not for the clock: a jar is low at five days' drink and the trip is asked whenever an adult is at
+        // their door (Joe: "any time at home") — 48 trips, the 1st/10th/20th at 20 / 141 / 494. Proven by ablation: with D781's
+        // rule put back the old 49 at 20 / 141 / 507 return. Were 49 at 20 / 141 / 507.
         Assert.Equal(48, entries);
-        Assert.Equal(new ulong[] { 20, 141, 492 }, at);
+        Assert.Equal(new ulong[] { 20, 141, 494 }, at);
     }
 
     /// <summary>
