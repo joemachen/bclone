@@ -5,6 +5,10 @@
 > (`ui-assets.md`) stands as written. What is reopened: rolls, curls, washes, the title faces and the palette. The assets
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
+> **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
+> The hook-in is planned in §9 and waits on the systems lane's Established-date slice; four calls are Joe's (§9.4). The
+> status below is A97's, kept as the record.**
+>
 > **Status: ✍️ specced and mocked on `art` (A96); ⭐ Joe's answers and the look REMOCKED as manuscript scrolls (A97,
 > 2026-11-15, §8) — the look, the fonts, the seam and the name are settled; ⏸️ three calls his (§8.5); NOTHING BUILT —
 > no theme, no font, no code.** §5–§6 are A96's first round, kept as the record; §8 supersedes them where they differ. Joe's order (A90): *"i want to work on villagers for the next art piece. And then the UI"*; the
@@ -251,7 +255,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 
 **Every image the look needs, with sizes, states and drawing rules: `specs/ui-assets.md` (A98).**
 
-### 8.6 The build, once he answers (replaces §7)
+### 8.6 The build, once he answers (replaces §7) — ⚠️ superseded by §9 (A108)
 
 1. The seam (§4) — panels, text roles, state colours, **and the log's inline colours**, read from the theme; today's
    values by default, byte-identical; probe `ui theme:`; red-checked. After water merges, on `art`.
@@ -260,3 +264,66 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
    contrast line over the theme's colours.
 3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
 4. Joe plays it (`.\run.bat`); merge at his word.
+
+## 9. ⏸️ The hook-in — the plan (A108, 2026-11-16), WAITING ON THE ESTABLISHED-DATE SLICE
+
+**Joe's order (relayed 2026-11-16): *"Next: add the established line / then hook in the UI and villagers"*.** The art is
+in `main` (A107): 169 files in `src/Bclone.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
+systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` too, and the two lanes never edit
+`Main.cs`/`Main.Cards.cs` at once (§4). Planning only until then; read off `main` c220e7a.
+
+### 9.1 What "the villagers" leaves to hook in
+- **On the map: nothing.** The painted people are built and wired (`villager-art.md §8`, A93–A95):
+  `PersonPainter.cs` paints each person, and `VillageMap.People.cs` draws them.
+- **Portraits: none, by design** (B12, D431 — *a villager has no picture*); reopening that is Joe's call, not this piece's.
+- **What is left is the 18 trade icons** (`icons/trades/`). Today the Professions table draws a code glyph
+  (`Main.cs` `AddProfessionRow`, `new TradeGlyph(kind)`); a person's card and the roster name the trade in words only.
+  `ui-assets.md §4.3` says the icons *"may join the cards and the roster"* — ⏸️ Joe's call (9.4, call 3).
+- Still the systems lane's one line (A93): the teacher's colour in `TradeGlyph.cs`, which is also the fallback glyph.
+
+### 9.2 Where the art lands today (counted on c220e7a)
+| What | Today | Sites |
+|---|---|---|
+| Panels | `PanelSkin()` (`Main.cs:7126`, a slate `StyleBoxFlat`) | 6 uses in `Main.cs`, `Main.Cards.cs` |
+| Cards | `CardSkin()`/`MakeCardSkin()` (`Main.Cards.cs:350`) | 10, incl. `Main.PostWindow.cs`, `Main.RegionWindow.cs` |
+| Text and state colours | `Muted`; `LightWorking`/`LightStopped`/`CardSelectedEdge` (`Main.Cards.cs:218–220`) | 75 `Muted`, 20 lights |
+| Other skins | `new StyleBoxFlat` / `AddThemeStyleboxOverride` | title, pause and new-game screens, the bars |
+| Buildings | `new BuildingGlyph(kind, known)` — the build bar, the homes strip | `Main.cs:7777`, `7853` |
+| Tools | `new ToolGlyph(mark)` — the build bar's tools | `Main.cs:7913` |
+| Trades | `new TradeGlyph(kind)` — the Professions table | `Main.cs:5477` |
+| Moments | `new MomentGlyph(mark)` — beside a moment's text | `Main.cs:2868` |
+| Goods | `Chip(ChipColour(goods))` — a coloured square | 5: `Main.cs` ×3, `Main.Cards.cs`, `Main.PostWindow.cs` |
+| Seasons, alerts | the font's ⚠ and ⛔ inside log strings | in text, not controls |
+
+### 9.3 The build — one commit each, on `art`, each with its probe line, red-checked (D326)
+1. **The seam (§4), byte-identical.** Every skin and colour above read from a theme, the shipped theme set to today's
+   values. Probe `ui theme:`: the default theme reproduces slate. The only commit that edits the systems lane's files
+   for the look.
+2. **The icons — one art-lane loader.** One art-lane file (`UiIcons.cs`): a `TextureRect` at 20 logical px, loaded from
+   `textures/ui/icons/<set>/<id>.png`, keyed by the data id, never by a hard-coded list. **A row with no file falls
+   back to today's code glyph**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and `GoodsPalette` stay
+   as the modder's fallback, untouched (Data-driven, CLAUDE.md). The owed buildings take their `-owed` file. The seven
+   sites in 9.2 swap one constructor each. Probe `ui icons:`: every catalogue row finds its file or says it fell back;
+   each file loads at 80 × 80 (moments 104), mipmapped.
+3. **The chrome and controls through the theme.** The 2× masters need a small custom StyleBox to draw at half
+   (`ui-assets.md §1.5`; Godot's `StyleBoxTexture` draws texture pixels 1 : 1). The UI-size setting (`Main.Settings.cs`,
+   `SetUiScale`) must keep them sharp at 75–150 %. Probe: `bar height` re-measured (see call 1); the contrast line
+   over the theme's own colours (4.5:1).
+4. **The fonts.** Joe's chosen faces into `src/Bclone.Game/fonts/` with their licences (the untracked `fonts/` is
+   his source; nothing ships without a licence file beside it).
+5. **The screens.** The title band and seal, new game, the tech cards, and `boot_splash`. The app icon still waits on
+   the name.
+6. **The roll-up** (§8.4: the window winds into `chrome/roll.png`); a probe line that a folded window's height is its
+   title's.
+7. **Joe plays it** (`.\run.bat`); merge at his word.
+
+### 9.4 ⏸️ Joe's calls before it starts (plain words; each has a recommendation)
+1. **The control bar gets taller.** The parchment strip has rolls at its ends and a thicker edge than today's slate, so
+   the probe's `bar height` (151 since D475) will change. Recommended: measure it on the first render, show him, and
+   write the new number down as the guard.
+2. **The small parchment square behind pictures of things** (D637) was there to lift icons off dark slate. On parchment
+   it adds nothing. Recommended: drop it.
+3. **Trade icons beyond the Professions table:** beside the trade's name on a person's card, and in the roster's trade
+   column. Recommended: both (one 20 px icon, the word kept beside it).
+4. **The title face** (reopened in A99): which of his fonts heads the windows. Recommended: decide on the first in-game
+   render rather than from a mock.
