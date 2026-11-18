@@ -5,6 +5,8 @@
 > (`ui-assets.md`) stands as written. What is reopened: rolls, curls, washes, the title faces and the palette. The assets
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
+> **⛔ THE SCROLLS ARE GONE (A114, 2026-11-17) — Joe: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."*** Every roll is out of the look: the windows, cards and bar are the same parchment sheets repainted without them, and the roll-up (§8.4, §9.3 step 6) is dropped. What reads below about rolls is the record.
+>
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
 > The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
@@ -312,10 +314,9 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
    over the theme's own colours (4.5:1).
 4. **The fonts.** Joe's chosen faces into `src/Bclone.Game/fonts/` with their licences (the untracked `fonts/` is
    his source; nothing ships without a licence file beside it).
-5. **The screens.** The title band and seal, new game, the tech cards, and `boot_splash`. The app icon still waits on
+5. **The screens.** The title band (a plain `chrome/sheet.png` since A114) and seal, new game (`chrome/sheet-large.png`), the tech cards, and `boot_splash`. The app icon still waits on
    the name.
-6. **The roll-up** (§8.4: the window winds into `chrome/roll.png`); a probe line that a folded window's height is its
-   title's.
+6. ~~**The roll-up**~~ — **dropped (A114)**: Joe hates the scrolls; a window folds as it always has.
 7. **Joe plays it** (`.\run.bat`); merge at his word.
 
 ### 9.4 ✅ Joe's calls — ALL AS RECOMMENDED (A109, 2026-11-16, *"all as recommended"*)
@@ -465,7 +466,7 @@ first in-game render. The four as they were asked:*
 - **Not in this step** (next, still the art lane's):
   - The hand-drawn glyph buttons: grip `⋮⋮`, pin `⌖`, close `✕`, find, fold, and the Professions' `–`/`+`. Their
     painted controls (`controls/grip.png` …) wait on their sites in `Main.cs`.
-  - The card's working light (a ColorRect), the window title's scroll label, the washes, and the roll-up.
+  - The card's working light (a ColorRect) and the washes. *(The title's scroll label and the roll-up: retired, A114.)*
   - Fonts (step 4) and screens (step 5).
 - Renders: `D:\Projects\brushes\ui\hookin\step3_game.png`, `step3_room.png`.
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).

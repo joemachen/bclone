@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1sjvyasiex6h"
-path="res://.godot/imported/title-label.png-575b57552ed597dd07ecb2cac1ef66fe.ctex"
+uid="uid://clm88ierj7rgi"
+path="res://.godot/imported/sheet-selected.png-9c0b726c0ca3bdd386dc47695d0a48ef.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/chrome/title-label.png"
-dest_files=["res://.godot/imported/title-label.png-575b57552ed597dd07ecb2cac1ef66fe.ctex"]
+source_file="res://textures/ui/chrome/sheet-selected.png"
+dest_files=["res://.godot/imported/sheet-selected.png-9c0b726c0ca3bdd386dc47695d0a48ef.ctex"]
 
 [params]
 

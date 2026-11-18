@@ -68,16 +68,16 @@ it smears. The centre stretches both ways: washes there are soft and large on pu
 small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws texture pixels 1 : 1); noted for the build,
 `ui-art.md §8.6`.
 
-## 2. The scroll chrome
+## 2. The chrome — parchment, no scrolls (A114)
+
+*Joe, 2026-11-17: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."* The hung scroll's roll, the strip's rolled ends, the modal's roll, the scroll-shaped title label, the roll alone (for the roll-up) and the title screen's hanging scroll are **retired** — their files removed from `textures/ui/`, their Photoshop masters kept in `D:\Projects\brushes\ui\psd\p2\chrome\`. The same sheets were repainted without rolls by the same script (`p2_chrome.jsx`: `sheet`, `sheet-selected`, `band`, `sheet-large`).*
 
 | File | Master size | Margins L/T/R/B (master px) | What it is | States |
 |---|---|---|---|---|
-| `chrome/window.png` | 720 × 840 | 40 / 44 / 40 / 44 | **The hung scroll** (A101): one roll across the top (Ø ≈ 28) with turned walnut knobs inside the corners; the sheet hanging from it, its sides and foot torn and lightly scorched — the scorched band about 23 master px at most (A101: *"thinner"*) — the roll's shadow on it, washes in the centre. Every window and card. | — |
-| `chrome/window-selected.png` | 720 × 840 | 56 / 44 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; vine sprouts only in its corners. The card being worked with. | — |
-| `chrome/strip.png` | 1800 × 240 | 56 / 20 / 56 / 16 | **A scroll on its side**: rolls at the left and right ends (curls top and bottom), the sheet between with inked top and bottom edges. The build bar, the two top bars, short and folded windows. | — |
-| `chrome/title-label.png` | 400 × 68 | 28 / 16 / 28 / 16 | **A small scroll label** with curled ends, the style frame's *VILLAGE MENU* plate; window titles sit on it. | normal, hover (a shade warmer) |
-| `chrome/roll.png` | 720 × 40 | — | **The top roll alone**, at the window's own x: closing winds the sheet up into it, its foot rising, and the code fattens the roll to 1.35× height as it fills (A106). Same knobs as the window's. | — |
-| `chrome/modal.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet** for the moment pop-up, the passing banner, pause and settings: the hung scroll's form, larger, with a heavier roll (Ø ≈ 40). | — |
+| `chrome/sheet.png` | 720 × 840 | 40 / 40 / 40 / 44 | **A torn, lightly scorched parchment sheet**, torn on all four sides, washes in the centre — no roll (A114). Every window and card. | — |
+| `chrome/sheet-selected.png` | 720 × 840 | 56 / 40 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; a vine sprout at its foot only. The card being worked with. | — |
+| `chrome/band.png` | 1800 × 240 | 40 / 20 / 40 / 20 | **A long torn sheet** across the screen — no rolls at its ends (A114). The control bar. | — |
+| `chrome/sheet-large.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet**, the window's form, heavier rim: the moment pop-up, the passing banner, pause and settings, the new-game screen — no roll (A114). | — |
 | `chrome/slip.png` | 240 × 120 | 20 / 16 / 20 / 16 | **A torn slip**, no rolls: tooltips and drop-down menus. | — |
 | `chrome/wash-1.png` … `wash-4.png` | 512 × 512 | — | **Washes on their own**, optional: tea, ochre, green and umber blots with pooled rims on transparent, so each window can carry a different stain (placed by a hash of the window's name, never by chance). | — |
 
@@ -224,9 +224,9 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 
 | File | Master | What it is |
 |---|---|---|
-| `screens/title-band.png` | 9-patch, 760 × 2160, margins 60/80/60/80 | a long hanging scroll down the left of the title screen |
+| *(title band)* | — | the title screen's band down the left is `chrome/sheet.png` (A114: the hanging scroll is retired) |
 | `screens/seal.png` | 512 × 512 | **a wax seal, blank** (the name is a placeholder) — lumpy edge, a pressed ring, lit upper left |
-| `screens/new-game.png` | 9-patch as `chrome/modal.png` | the new-game screen's sheet behind its controls (today a flat dark fill) |
+| *(new game)* | — | the new-game screen's sheet is `chrome/sheet-large.png` (A114: the modal with its roll is retired) |
 | `screens/tech-card-known.png` · `-fogged.png` · `-locked.png` | 9-patch 352 × 320, margins 24 | the tech tree's cards: known in its building's colour wash, fogged as a grey silhouette (`tech-tree-map.md §3.6`), locked inked only |
 | `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Bclone.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
 | `screens/splash.png` | 1920 × 1080 | the boot splash on parchment (today Godot's) — `project.godot`'s `boot_splash` |
@@ -241,14 +241,14 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 
 | Set | Files |
 |---|---|
-| Chrome | 7 (+ 4 optional washes) |
+| Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
 | Controls | 16 pieces, ~30 files with states |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |
 | Tools | 12 |
 | Seasons, alerts, moments | 9 |
-| Screens | 8 (+ the `.ico`) |
+| Screens | 6 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's |
 | **Total** | **≈ 160 files**, of which the icons are 113 |
 | Optional | ~10 |
 

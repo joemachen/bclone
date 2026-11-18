@@ -3,7 +3,7 @@ using Godot;
 namespace Bclone.Game;
 
 /// <summary>
-/// The hung-scroll look (A101–A106), as a theme (<c>ui-art.md §9.3</c> step 3, A113): the painted chrome and controls in
+/// The parchment look (A101–A106; its scrolls removed, A114), as a theme (<c>ui-art.md §9.3</c> step 3, A113): the painted chrome and controls in
 /// <c>textures/ui/</c>, the manuscript palette (<c>ui-assets.md §1.4</c>), and text in ink — worn by
 /// <see cref="LookLoader"/> before any window is built.
 /// </summary>
@@ -70,17 +70,17 @@ internal static class ParchmentLook
         theme.SetColor("pause_shade", t, new Color(0.10f, 0.07f, 0.04f, 0.45f));
         theme.SetColor("fade", t, new Color(1f, 1f, 1f, 0.5f));
 
-        // The hung scroll: one roll across the top (≈14 logical), torn sides and foot. Text clears the roll and the scorch.
-        PaintedPatch window = PaintedPatch.Make(Tex("chrome/window.png"), 0.5f, new Vector4(40, 44, 40, 44), new Vector4(15, 22, 20, 14));
+        // A torn, lightly scorched sheet — no roll (A114, Joe: "keep the parchment and remove the scrolls"). Text clears the scorch.
+        PaintedPatch window = PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(15, 12, 20, 14));
         theme.SetStylebox("panel", t, window);
-        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/window.png"), 0.5f, new Vector4(40, 44, 40, 44), new Vector4(28, 22, 20, 14)));
+        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(28, 12, 20, 14)));
 
         // Selected: the illuminated bar down the left (≈9 logical) — the same room inside, so a card does not jump when picked.
         theme.SetStylebox(
-            "card_selected", t, PaintedPatch.Make(Tex("chrome/window-selected.png"), 0.5f, new Vector4(56, 44, 40, 44), new Vector4(28, 22, 20, 14)));
+            "card_selected", t, PaintedPatch.Make(Tex("chrome/sheet-selected.png"), 0.5f, new Vector4(56, 40, 40, 44), new Vector4(28, 12, 20, 14)));
 
-        // The control bar: a scroll on its side, rolls at both ends (≈14 logical each at this scale).
-        theme.SetStylebox("strip", t, PaintedPatch.Make(Tex("chrome/strip.png"), 0.5f, new Vector4(56, 20, 56, 16), new Vector4(30, 12, 30, 20)));
+        // The control bar: a long torn sheet across the screen — no rolls at its ends (A114).
+        theme.SetStylebox("strip", t, PaintedPatch.Make(Tex("chrome/band.png"), 0.5f, new Vector4(40, 20, 40, 20), new Vector4(15, 12, 20, 20)));
 
         // The top bar's boxes: a torn slip, no rolls — slate's own 6 px inside, because that bar is full (A111).
         theme.SetStylebox("top_box", t, PaintedPatch.Make(Tex("chrome/slip.png"), 0.5f, new Vector4(20, 16, 20, 16), new Vector4(6, 6, 6, 6)));
@@ -89,7 +89,7 @@ internal static class ParchmentLook
         theme.SetStylebox("pill_unmet", t, PaintedPatch.Make(Tex("controls/pill-unmet.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
         theme.SetStylebox("bar_track", t, PaintedPatch.Make(Tex("controls/bar-track.png"), 0.25f, new Vector4(8, 0, 8, 0), Vector4.Zero));
         theme.SetStylebox("bar_fill", t, PaintedPatch.Make(Tex("controls/bar-fill.png"), 0.25f, new Vector4(8, 0, 8, 0), Vector4.Zero));
-        theme.SetStylebox("pause_sheet", t, PaintedPatch.Make(Tex("chrome/modal.png"), 0.5f, new Vector4(60, 60, 60, 60), new Vector4(24, 30, 26, 22)));
+        theme.SetStylebox("pause_sheet", t, PaintedPatch.Make(Tex("chrome/sheet-large.png"), 0.5f, new Vector4(60, 60, 60, 60), new Vector4(24, 22, 26, 22)));
 
         // The tech tree's cards (ui-assets.md §5): known in a colour wash, in sight inked only, fogged a grey silhouette.
         foreach ((string state, string file) in new[] { ("known", "known"), ("insight", "locked"), ("fogged", "fogged") })

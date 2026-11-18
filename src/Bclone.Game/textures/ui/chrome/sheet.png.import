@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://btix4y0jqgmce"
-path="res://.godot/imported/modal.png-589d380d3d29d5a7b816a26fd4072cbc.ctex"
+uid="uid://vf8dn4kr23hf"
+path="res://.godot/imported/sheet.png-631a342d0aed70418f77483adb0f843a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/chrome/modal.png"
-dest_files=["res://.godot/imported/modal.png-589d380d3d29d5a7b816a26fd4072cbc.ctex"]
+source_file="res://textures/ui/chrome/sheet.png"
+dest_files=["res://.godot/imported/sheet.png-631a342d0aed70418f77483adb0f843a.ctex"]
 
 [params]
 
