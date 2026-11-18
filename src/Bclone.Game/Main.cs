@@ -5742,6 +5742,10 @@ public partial class Main : Control
         // tool is in your hand, including the harvest brushes two rows below.
         controls.AddChild(TheCancelButton());
 
+        // The bar's main row is headers, every word of it (A120, Joe: *"BUILD is considered a header - everything in that
+        // main row is"*).
+        UiLook.HeadersIn(controls);
+
         // ⭐ THE FILTER, AND IT IS A ROW OF ITS OWN BECAUSE IT ANSWERS A DIFFERENT QUESTION.
         // The tabs say what KIND of act; the chips say which buildings are worth looking at
         // right now. `TECH-EXAMPLE.md` names forty-five buildings, and forty-five icons in one
@@ -6505,6 +6509,7 @@ public partial class Main : Control
             contents.Visible = startOpen;
 
             header.AddThemeFontSizeOverride("font_size", 12);
+            UiLook.Header(header);
             UiLook.Tint(header, UiLook.Faint);
             header.Toggled += open =>
             {

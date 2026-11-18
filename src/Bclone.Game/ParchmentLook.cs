@@ -104,9 +104,17 @@ internal static class ParchmentLook
             theme.SetStylebox("tech_" + state, t, PaintedPatch.Make(Tex("screens/tech-card-" + file + ".png"), 0.5f, new Vector4(24, 24, 24, 24), new Vector4(8, 3, 8, 3)));
         }
 
-        // Joe's font (A119): Archivo Narrow, a condensed sans like his reference panel's, SemiBold for its weight. SIL OFL,
-        // the licence beside it in fonts/ArchivoNarrow/.
-        theme.DefaultFont = GD.Load<FontFile>("res://fonts/ArchivoNarrow/ArchivoNarrow-SemiBold.ttf");
+        // Joe's pair (A120): Grenze Gotisch for every word, Metamorphous for the headers — window titles, card titles, a
+        // card's section heads (UiLook.Header marks them). Both SIL OFL, their licences beside them in fonts/.
+        // (A119's Archivo Narrow stays in fonts/ArchivoNarrow/, unused.)
+        theme.DefaultFont = GD.Load<FontFile>("res://fonts/GrenzeGotisch/GrenzeGotisch-VariableFont_wght.ttf");
+        Font header = GD.Load<FontFile>("res://fonts/Metamorphous/Metamorphous-Regular.ttf");
+        theme.SetConstant("card_room", t, 20); // the widest own name in Metamorphous fits the card's head (D467)
+        foreach ((string variation, string type) in new[] { (UiLook.HeaderLabel, "Label"), (UiLook.HeaderButton, "Button") })
+        {
+            theme.SetTypeVariation(variation, type);
+            theme.SetFont("font", variation, header);
+        }
 
         DefaultTypes(theme);
         return theme;

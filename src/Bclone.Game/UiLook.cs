@@ -92,6 +92,30 @@ internal static class UiLook
     //  The text's roles
     // ---------------------------------------------------------------
 
+    /// <summary>The theme type variations a look gives its header face (A120): a label's, a button's.</summary>
+    internal const string HeaderLabel = "HeaderLabel";
+
+    internal const string HeaderButton = "HeaderButton";
+
+    /// <summary>
+    /// Mark this label or button as a header — a window's title, a card's, a card's section head — so a look that names a
+    /// header face sets it in that (A120, Joe's Metamorphous). On slate the mark names nothing and the text is as it was.
+    /// </summary>
+    internal static void Header(Control control) =>
+        control.ThemeTypeVariation = control is Button ? HeaderButton : HeaderLabel;
+
+    /// <summary>Mark every button and label directly in this row as a header — the control bar's main row (A120).</summary>
+    internal static void HeadersIn(Node row)
+    {
+        foreach (Node child in row.GetChildren())
+        {
+            if (child is Button or Label)
+            {
+                Header((Control)child);
+            }
+        }
+    }
+
     /// <summary>Text as it is — the untinted state a tint goes back to.</summary>
     internal static Color Text => Named("text", Colors.White);
 
@@ -269,7 +293,10 @@ internal static class UiLook
         }
 
         StyleBox skin = card ? Card(false) : Panel();
-        return Mathf.Max(0f, skin.ContentMarginLeft + skin.ContentMarginRight - (2 * SlateInside));
+        // A card may also want room for its look's title face: card_room (A120, Metamorphous, a broad face, set a
+        // person's widest own name 18 px past the card).
+        float titles = card && theme.HasConstant("card_room", Type) ? theme.GetConstant("card_room", Type) : 0f;
+        return Mathf.Max(0f, skin.ContentMarginLeft + skin.ContentMarginRight - (2 * SlateInside)) + titles;
     }
 
     /// <summary>

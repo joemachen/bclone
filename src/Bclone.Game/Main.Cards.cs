@@ -382,6 +382,7 @@ public partial class Main
         head.AddChild(grip);
 
         Label title = Body(string.Empty);
+        UiLook.Header(title);
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         title.ClipText = true;
         title.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
@@ -2174,7 +2175,9 @@ public partial class Main
     {
         var row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", 6);
-        row.AddChild(Muted(text));
+        Label head = Muted(text);
+        UiLook.Header(head);
+        row.AddChild(head);
         row.AddChild(new HSeparator { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter });
         return row;
     }
