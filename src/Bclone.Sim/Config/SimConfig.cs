@@ -4013,6 +4013,64 @@ public sealed record SimConfig
     /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
     public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
 
+    /// <summary>
+    /// The batch trades (`specs/batch-trade.md §3`, W1) — a file's own list, or null for the built-in four.
+    /// </summary>
+    /// <remarks>
+    /// Null means <em>"the built-in four, priced from this config's own keys"</em> — <see cref="Buildings"/>'s rule and for
+    /// its reason: <c>wheat_per_grind</c>, <c>sew_ticks</c> and the rest stay one number each, and every
+    /// <c>Config with { GrindTicks = … }</c> in the suite still means what it says. A list given here is the whole list.
+    /// </remarks>
+    [JsonPropertyName("batch_trades")]
+    public IReadOnlyList<BatchRow>? BatchTrades { get; init; }
+
+    /// <summary>The batch trades this config describes — its own list, or the built-in four. The world builds its catalogue once.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<BatchRow> BatchRows => BatchTrades ?? DefaultBatchRows();
+
+    /// <summary>
+    /// The built-in four, in hiring order — which, inside a <see cref="QuotaBand"/>, is the order the quota takes them.
+    /// </summary>
+    private IReadOnlyList<BatchRow> DefaultBatchRows() => new[]
+    {
+        new BatchRow
+        {
+            Trade = JobKind.Tailor, Input = World.Goods.Leather, InputPerBatch = LeatherPerCoat,
+            Output = World.Goods.Clothing, OutputPerBatch = 1, Ticks = SewTicks, PerStint = SewsPerStint,
+            Verb = "sew", OneOf = "a coat", WalkTo = "the tailor's shop", Working = "sewing coats",
+            FirstBatch = "cutting a hide for a coat",
+            Stop = BatchStop.EveryoneClothed, Hands = BatchHands.ShortfallOverAYear, QuotaBand = QuotaBand.AfterTools,
+            StandsDownInFamine = true,
+        },
+
+        // ⭐ The carpenter's recipe is the product's (D446's shape, Joe's D675 call 3): the workshop's `MakeGood` and its
+        // `made_from`. ⛔ Never a firing: a saw-pit has no fire, so the oven's winter-firewood guard is never asked.
+        new BatchRow
+        {
+            Trade = JobKind.Carpenter, FromTheProduct = true, OutputPerBatch = 1, Ticks = MakeTicks, PerStint = MakesPerStint,
+            Verb = "make", OneOf = "a {product}", WalkTo = "the workshop", Working = "making {products}",
+            FirstBatch = "truing a wheel for a {product}",
+            Stop = BatchStop.EveryHouseholdCarted, Hands = BatchHands.ShortfallOverAYear, QuotaBand = QuotaBand.AfterTools,
+        },
+        new BatchRow
+        {
+            Trade = JobKind.Miller, Input = World.Goods.Wheat, InputPerBatch = WheatPerGrind,
+            Output = World.Goods.Flour, OutputPerBatch = FlourPerGrind, Ticks = GrindTicks, PerStint = GrindsPerStint,
+            Verb = "grind", OneOf = "a grind", WalkTo = "the mill", Working = "grinding wheat", StintWord = "grind",
+            FirstBatch = "grinding wheat at the stones",
+            Stop = BatchStop.FedFirst | BatchStop.OvensSupplied, Hands = BatchHands.EverySeatWithWork,
+            QuotaBand = QuotaBand.AfterStone,
+        },
+        new BatchRow
+        {
+            Trade = JobKind.Baker, Input = World.Goods.Flour, InputPerBatch = FlourPerBake,
+            Output = World.Goods.Bread, OutputPerBatch = BreadPerBake, Firing = FirewoodPerFiring, Ticks = BakeTicks,
+            PerStint = BakesPerStint, Verb = "bake", OneOf = "a bake", WalkTo = "the bakery", Working = "baking bread",
+            StintWord = "batch", FirstBatch = "lighting the oven",
+            Stop = BatchStop.None, Hands = BatchHands.EverySeatWithWork, QuotaBand = QuotaBand.AfterStone,
+        },
+    };
+
     /// <summary>The built-in ten, priced from this config's own keys — and wearing at the config's years (D552).</summary>
     private IReadOnlyList<BuildingRow> DefaultBuildings() => WithTheShippedWear(new[]
     {
@@ -6397,6 +6455,7 @@ public sealed record SimConfig
         }
         ValidateSkills();
         ValidateTechniques();
+        ValidateBatchRows();
     }
 
     /// <summary>Check the techniques catalogue says something the village can actually learn.</summary>
@@ -7153,6 +7212,82 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"founding_trades lists {FoundingTrades.Count} trades and the founding deals {dealt} "
                 + $"(founding_masters {FoundingMasters} + founding_journeymen {FoundingJourneymen}).");
+        }
+    }
+
+    /// <summary>
+    /// Every batch row names a trade with a hut, goods that exist and a stint that takes time; one row a trade
+    /// (`batch-trade.md §3`). The keys the built-in four are priced from are checked above, so this is a modder's list's
+    /// guard.
+    /// </summary>
+    private void ValidateBatchRows()
+    {
+        IReadOnlyList<BatchRow> rows = BatchRows;
+        var seen = new HashSet<JobKind>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BatchRow row = rows[i];
+            string at = $"batch_trades[{i}] ({row.Trade})";
+            if (!seen.Add(row.Trade))
+            {
+                throw new SimConfigException($"{at} repeats a trade: one row a trade, or two recipes would argue over one hut.");
+            }
+
+            JobRow? job = null;
+            for (int j = 0; j < JobsCatalog.Count; j++)
+            {
+                if (JobsCatalog[j].Id == (int)row.Trade)
+                {
+                    job = JobsCatalog[j];
+                }
+            }
+
+            if (job?.WorksAt is null)
+            {
+                throw new SimConfigException($"{at} names a trade with no job row, or one that works at no building.");
+            }
+
+            if (row.Ticks < 1 || row.PerStint < 1 || row.OutputPerBatch < 1 || row.Firing < 0)
+            {
+                throw new SimConfigException(
+                    $"{at} needs ticks, per_stint and output_per_batch of at least one and a firing of at least nought "
+                    + $"(got {row.Ticks}, {row.PerStint}, {row.OutputPerBatch}, {row.Firing}).");
+            }
+
+            if (!row.FromTheProduct && (row.InputPerBatch < 1 || !IsAGood(row.Input) || !IsAGood(row.Output)))
+            {
+                throw new SimConfigException(
+                    $"{at} needs an input and an output that are goods, and an input_per_batch of at least one "
+                    + $"(got {row.Input}, {row.Output}, {row.InputPerBatch}).");
+            }
+
+            if (row.Hands == BatchHands.ShortfallOverAYear
+                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted)) == 0)
+            {
+                throw new SimConfigException(
+                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed or "
+                    + "EveryHouseholdCarted) — there would be nothing to divide.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Verb) || string.IsNullOrWhiteSpace(row.OneOf)
+                || string.IsNullOrWhiteSpace(row.WalkTo) || string.IsNullOrWhiteSpace(row.Working)
+                || string.IsNullOrWhiteSpace(row.FirstBatch))
+            {
+                throw new SimConfigException($"{at} is missing its words (verb, one_of, walk_to, working, first_batch).");
+            }
+        }
+
+        bool IsAGood(World.Goods goods)
+        {
+            for (int g = 0; g < GoodsCatalog.Count; g++)
+            {
+                if (GoodsCatalog[g].Id == (int)goods)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

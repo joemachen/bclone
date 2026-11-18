@@ -2,7 +2,8 @@
 
 > Status: **🔨 BUILDING on `slice/batch-trade`. 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
 > recommended"*) — one shared pair of states, the trade a field beside it (§7). ✅ Step 1, today pinned (D792): 28 tests,
-> 11 mutants, 11 red. Steps 2–6 next (§6), each its own commit with the goldens checked.**
+> 11 mutants, 11 red. ✅ Steps 2 and 4 — the row, and hands and stops by it (D793, one commit). ▶️ Step 5 (with what is
+> left of 3), then 6.**
 > Phase 6, W1 of the workplan (`systems-complete.md §5.1`, D788–D789): the enabler before beer (W3), health's herbs (W6)
 > and the wool coat (W10), each of which would otherwise be a fifth, sixth and seventh hand-written copy.
 >
@@ -52,6 +53,16 @@ brewer (W3), the herbalist (W6) and the wool coat (W10) would each copy them aga
 
 `SimConfig.BatchRows` — one `BatchRow` per batch trade, in hiring order, built from today's config keys (no new key,
 no number changes):
+
+> **✅ Built (D793)** in `World/BatchTrade.cs`: `BatchRow`, the rule enums `BatchStop` (flags), `BatchHands`, `QuotaBand`,
+> and `BatchCatalog`, which the world builds once as `SimWorld.Batches`, indexed by job id. `SimConfig.BatchTrades`
+> (`batch_trades`) is a modder's whole list; **null means the built-in four priced from this config's keys** —
+> `Buildings`' rule and for its reason: a row built once as a property default would keep the shipped numbers through
+> every `Config with { … }` (`ABatchRowReadsTheConfigsOwnKeys`). The columns as built: `from_the_product`, `one_of`,
+> `walk_to`, `working`, `stint_word`, `first_batch` (the table's *idle*); `{product}` / `{products}` are the output's name,
+> one and many, put in by `SimWorld.Worded`. Validation at load: one row a trade, a job with a hut, ticks/per_stint/
+> output of at least one, goods that exist, the words, and a shortfall-hired row's stop naming a shortfall
+> (`ABadBatchRowIsRefused`).
 
 | Column | Miller | Baker | Tailor | Carpenter |
 |---|---|---|---|---|
@@ -115,11 +126,21 @@ Traced (the order-sensitive details, each with its guard in §6):
    its stop sentences; its quota want on a posed village; the quota's take order. Many exist
    (`TheCarpenterJoinsEveryBatchTradeSwitch`, `FoodChainTests`, `TailorTests`, `WorkshopTests`) — the new ones fill
    the gaps, and **a guard that cannot fail is counted as zero and written down** (D326).
-2. **The row** — `BatchRow`, `SimConfig.BatchRows` and its validation; `BatchFor` reads it. Goldens unchanged.
+2. ✅ **(D793.)** **The row** — `BatchRow`, `SimConfig.BatchRows` and its validation; `BatchFor` reads it. Goldens
+   unchanged (the suite on step 2 alone: 2101 / 1 / 5 in 16m15 — the one red the save guard naming `Batches`, fixed).
 3. **The switches** — states, predicates, errand arms, words, skill, `KnowsOf`, `AStandingShopIsShortOf` read the
-   rows; the baker default throws. Goldens unchanged.
-4. **Hands and stops** — the quota's bands, `BatchSeatsWanted` / the shortfall rule by the row's `hands`,
-   `WhyTheBatchWaits` by the row's `stop`, `VillageEconomy`'s one sum. Goldens unchanged.
+   rows; the baker default throws. Goldens unchanged. **⚠️ Under A (D792) the state switches are deleted by step 5, not
+   rewritten here** — so the rest of this step (`KnowsOf`, the idle note, `SetMakeGood`; `AStandingShopIsShortOf`
+   already asked `BatchFor`) landed with step 4 (D793), and the states with step 5.
+4. ✅ **(D793.)** **Hands and stops** — the quota's bands, `BatchSeatsWanted` / the shortfall rule by the row's `hands`,
+   `WhyTheBatchWaits` by the row's `stop`, `VillageEconomy`'s one sum. Goldens unchanged. `LabourQuota`'s four named
+   batch parameters became one array by job id (`batch:`); `MillersWanted` … `CarpentersWanted` stay as named readers
+   over `BatchHandsWanted` (`Main.cs` reads `CarpentersWanted`). **Red-check: 9 mutants; 4 red first time, 5 zero —
+   one a no-op of mine (invalid), four real gaps:** a band moved or the famine rule flipped changes no number in a
+   four-hand village; the mill's *"ovens have flour enough"* stop had **no test anywhere**; the year's divisor can't
+   show while one tailor is wanted either way. Three tests added (`TheShippedBatchRowsRulesAreAsSpecced`,
+   `EachBatchTradesOwnStopReadsAsShipped`, `AShortfallTradeIsHiredByTheYearsWorkUpToTheSeats`); **all 8 valid mutants
+   red.**
 5. **The states** — per Joe's call (§7). The view's `AtWork` / `GoingToWork` read a sim helper rather than eight names.
 6. **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
    config alone — no sim code — and watches a villager hired, walk, work, deliver, be described and grow its skill.

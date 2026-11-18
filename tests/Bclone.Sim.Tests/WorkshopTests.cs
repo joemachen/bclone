@@ -291,7 +291,7 @@ public sealed class WorkshopTests
 
         TheWarehouse(world).Store.Add(Goods.Logs, 100);
         int wanted = LabourQuota.CarpentersWanted(world);
-        _output.WriteLine($"shortfall {LabourQuota.HandcartsShortfall(world)}, a carpenter makes {VillageEconomy.HandcartsMadePerYearAtWorst(world.Config)} a year: {wanted} wanted of {workshop.Capacity} seats.");
+        _output.WriteLine($"shortfall {LabourQuota.HandcartsShortfall(world)}, a carpenter makes {VillageEconomy.BatchesPerYearAtWorst(world.Config, world.Batches.For(JobKind.Carpenter)!)} a year: {wanted} wanted of {workshop.Capacity} seats.");
         Assert.True(wanted > 0, "Households without carts, logs on the shelf, and no carpenter wanted.");
         Assert.True(wanted <= workshop.Capacity);
         Assert.Equal(wanted, LabourQuota.For(world).Needed(JobKind.Carpenter));

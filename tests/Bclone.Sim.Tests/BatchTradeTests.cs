@@ -106,6 +106,53 @@ public sealed class BatchTradeTests
         Assert.Equal(expected, world.BatchFor(trade));
     }
 
+    /// <summary>
+    /// §6 step 2: the built-in rows are priced from the config's own keys — ⛔ a row built once as a property default would
+    /// keep the shipped numbers through every <c>Config with { … }</c>, and the suite's posed villages would stop meaning
+    /// anything (`BuildingRow`'s reason, `SimConfig.Buildings`).
+    /// </summary>
+    [Fact]
+    public void ABatchRowReadsTheConfigsOwnKeys()
+    {
+        SimConfig c = Config with { GrindTicks = 9, BreadPerBake = 13, SewsPerStint = 3, MakeTicks = 7, FirewoodPerFiring = 2 };
+        SimWorld world = SimFactory.CreatePhase0(c, new InMemoryLogSink()).World;
+
+        Assert.Equal(9, world.BatchFor(JobKind.Miller)!.Value.Ticks);
+        Assert.Equal(13, world.BatchFor(JobKind.Baker)!.Value.OutputPerBatch);
+        Assert.Equal(2, world.BatchFor(JobKind.Baker)!.Value.Firing);
+        Assert.Equal(3, world.BatchFor(JobKind.Tailor)!.Value.PerStint);
+        Assert.Equal(7, world.BatchFor(JobKind.Carpenter)!.Value.Ticks);
+    }
+
+    /// <summary>§6 step 2 (§3's validation): a modder's bad batch row is refused at load, saying which and why.</summary>
+    [Fact]
+    public void ABadBatchRowIsRefused()
+    {
+        IReadOnlyList<BatchRow> shipped = Config.BatchRows;
+        BatchRow tailor = shipped[0];
+        var bad = new (string Why, BatchRow[] Rows, string Says)[]
+        {
+            ("two rows, one trade", shipped.Append(tailor).ToArray(), "repeats a trade"),
+            ("no such trade", new[] { tailor with { Trade = (JobKind)99 } }, "no job row"),
+            ("a batch of no time", new[] { tailor with { Ticks = 0 } }, "ticks"),
+            ("nothing a stint", new[] { tailor with { PerStint = 0 } }, "per_stint"),
+            ("no such good", new[] { tailor with { Input = (Goods)99 } }, "input"),
+            ("no input", new[] { tailor with { InputPerBatch = 0 } }, "input_per_batch"),
+            ("no words", new[] { tailor with { Verb = " " } }, "words"),
+        };
+
+        foreach ((string why, BatchRow[] rows, string says) in bad)
+        {
+            SimConfigException refused = Assert.Throws<SimConfigException>(() => (Config with { BatchTrades = rows }).Validate());
+            _output.WriteLine($"{why}: {refused.Message}");
+            Assert.Contains("batch_trades", refused.Message, StringComparison.Ordinal);
+            Assert.Contains(says, refused.Message, StringComparison.Ordinal);
+        }
+
+        // And the shipped four, given back as a modder's own list, are accepted.
+        (Config with { BatchTrades = shipped.ToArray() }).Validate();
+    }
+
     /// <summary>§6 step 1: no other trade has a batch — the smith keeps his own path (D446).</summary>
     [Fact]
     public void NoOtherTradeHasABatch()
@@ -259,6 +306,100 @@ public sealed class BatchTradeTests
             world.WhyTheBatchWaits(hut));
     }
 
+    /// <summary>
+    /// §6 step 1, filled at step 4 (D793): each trade's <b>own</b> stop, with no limit set — the mill while the ovens have
+    /// flour enough, the tailor while everyone is clothed, the workshop while every household has a cart, the oven while
+    /// the homes want their firewood. ⚠️ Found missing by step 4's red-check: no test anywhere read the mill's ovens rule.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Trades))]
+    public void EachBatchTradesOwnStopReadsAsShipped(JobKind trade)
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Workplace hut = RaiseTheHut(world, trade);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        Batch batch = world.BatchFor(trade)!.Value;
+        StoreTaking(world, batch.Input).Store.Add(batch.Input, batch.InputPerBatch * 4);
+        Assert.Null(world.WhyTheBatchWaits(hut));
+
+        string expected;
+        switch (trade)
+        {
+            case JobKind.Miller:
+                int enough = LabourQuota.FlourWantedForTheOvens(world);
+                StoreTaking(world, Goods.Flour).Store.Add(Goods.Flour, enough);
+                expected = $"Nothing to grind — the ovens have flour enough ({enough} stored).";
+                break;
+            case JobKind.Tailor:
+                int coats = LabourQuota.ClothingWanted(world);
+                StoreTaking(world, Goods.Clothing).Store.Add(Goods.Clothing, coats);
+                expected = $"Nothing to sew — every adult has a coat, and the shelves hold a year's wear ({coats} stored).";
+                break;
+            case JobKind.Carpenter:
+                int carts = LabourQuota.HandcartsWanted(world) + LabourQuota.HandcartSpare;
+                StoreTaking(world, Goods.Handcart).Store.Add(Goods.Handcart, carts);
+                expected = $"Nothing to make — every household has a handcart, and the shelves hold one for the next ({carts} stored).";
+                break;
+            default:
+                foreach (Household household in world.Households)
+                {
+                    household.Stockpile.TakeAll(Goods.Firewood);
+                }
+
+                foreach (StoreBuilding store in world.StoreBuildings)
+                {
+                    store.Store.TakeAll(Goods.Firewood);
+                }
+
+                expected = "Nothing to bake — the village needs its firewood for the winter.";
+                break;
+        }
+
+        Assert.Equal(expected, world.WhyTheBatchWaits(hut));
+    }
+
+    /// <summary>
+    /// §6 step 4 (D793): the shipped rows' rules, column by column — ⭐ the guard for what a four-hand village cannot show
+    /// (step 4's red-check: a band moved, or the famine rule flipped, changed no number in the sweep below).
+    /// </summary>
+    [Fact]
+    public void TheShippedBatchRowsRulesAreAsSpecced()
+    {
+        string Rule(BatchRow r) => $"{r.Trade}: {r.Stop}, {r.Hands}, {r.QuotaBand}, famine {(r.StandsDownInFamine ? "stands down" : "works")}"
+            + (r.FromTheProduct ? ", the product's recipe" : string.Empty);
+
+        Assert.Equal(
+            new[]
+            {
+                "Tailor: EveryoneClothed, ShortfallOverAYear, AfterTools, famine stands down",
+                "Carpenter: EveryHouseholdCarted, ShortfallOverAYear, AfterTools, famine works, the product's recipe",
+                "Miller: FedFirst, OvensSupplied, EverySeatWithWork, AfterStone, famine works",
+                "Baker: None, EverySeatWithWork, AfterStone, famine works",
+            },
+            Config.BatchRows.Select(Rule));
+    }
+
+    /// <summary>
+    /// §6 step 4 (D793): a shortfall-hired trade is hired by the shortfall over one hand's year, capped by the seats — posed
+    /// with a tailor so slow a year is one coat, so the divisor shows (in the shipped village one tailor is wanted either way).
+    /// </summary>
+    [Fact]
+    public void AShortfallTradeIsHiredByTheYearsWorkUpToTheSeats()
+    {
+        SimConfig c = Config with { SewTicks = 1_000_000, TailorShopCapacity = 6 };
+        SimWorld world = SimFactory.CreatePhase0(c, new InMemoryLogSink()).World;
+        RaiseTheHut(world, JobKind.Tailor);
+        ToolsTests.KeepTheVillageWarmAndFed(world);
+        StoreTaking(world, Goods.Leather).Store.Add(Goods.Leather, 200);
+
+        BatchRow tailor = world.Batches.For(JobKind.Tailor)!;
+        Assert.Equal(1, VillageEconomy.BatchesPerYearAtWorst(c, tailor));
+        int shortfall = LabourQuota.ClothingShortfall(world);
+        _output.WriteLine($"shortfall {shortfall}, seats 6: {LabourQuota.TailorsWanted(world)} wanted");
+        Assert.True(shortfall >= 2, "The posed village is not short enough of coats to tell one tailor from several.");
+        Assert.Equal(Math.Min(shortfall, 6), LabourQuota.TailorsWanted(world));
+    }
+
     // ---------------------------------------------------------------
     //  Hands — the quota
     // ---------------------------------------------------------------
@@ -360,17 +501,26 @@ public sealed class BatchTradeTests
         Assert.Equal(At(JobKind.Baker) + 1, At(JobKind.Herdsman));
     }
 
-    /// <summary>§6 step 1: what one tailor sews and one carpenter makes in a year — the two sums §4 makes one.</summary>
+    /// <summary>
+    /// §6 step 1, and step 4's proof: what one tailor sews and one carpenter makes in a year. Pinned on the two sums
+    /// (<c>CoatsSewnPerYearAtWorst</c>, <c>HandcartsMadePerYearAtWorst</c>) before W1, and read since step 4 off the one
+    /// <see cref="VillageEconomy.BatchesPerYearAtWorst"/> that replaced them — the same two integers.
+    /// </summary>
     [Fact]
     public void ABatchTradesYearAtWorstIsAsShipped()
     {
         SimConfig c = Config;
-        _output.WriteLine($"coats {VillageEconomy.CoatsSewnPerYearAtWorst(c)}, handcarts {VillageEconomy.HandcartsMadePerYearAtWorst(c)}");
-        Assert.Equal(CoatsAYear, VillageEconomy.CoatsSewnPerYearAtWorst(c));
-        Assert.Equal(HandcartsAYear, VillageEconomy.HandcartsMadePerYearAtWorst(c));
+        int coats = VillageEconomy.BatchesPerYearAtWorst(c, c.BatchRows.Single(r => r.Trade == JobKind.Tailor));
+        int carts = VillageEconomy.BatchesPerYearAtWorst(c, c.BatchRows.Single(r => r.Trade == JobKind.Carpenter));
+        _output.WriteLine($"coats {coats}, handcarts {carts}");
+        Assert.Equal(CoatsAYear, coats);
+        Assert.Equal(HandcartsAYear, carts);
     }
 
+    /// <summary>Read off the two sums on the day W1 began (D792).</summary>
     private const int CoatsAYear = 20;
+
+    /// <summary>Read off the two sums on the day W1 began (D792).</summary>
     private const int HandcartsAYear = 10;
 
     // ---------------------------------------------------------------

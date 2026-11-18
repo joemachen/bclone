@@ -334,6 +334,8 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(SimWorld), Kept.Data, new[]
         {
             "Config", "GoodsCatalog", "Crops", "JobsCatalog", "TechniquesCatalog", "BuildingsCatalog", "Logger",
+            // The batch trades as rows (W1, D792): built from the config, as the jobs are.
+            "Batches",
         }),
         (typeof(SimWorld), Kept.Cache, new[]
         {
