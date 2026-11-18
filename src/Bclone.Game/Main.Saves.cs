@@ -356,7 +356,7 @@ public partial class Main
         {
             (string sentence, bool saved) = SaveUnderAName(name.Text);
             said.Text = sentence;
-            said.Modulate = saved ? new Color(0.62f, 0.86f, 0.58f) : new Color(1f, 0.55f, 0.45f);
+            UiLook.Tint(said, saved ? UiLook.Saved : UiLook.Refused);
             said.Visible = true;
             if (saved)
             {

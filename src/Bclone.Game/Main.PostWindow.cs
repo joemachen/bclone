@@ -173,7 +173,7 @@ public partial class Main
             var goods = (Goods)g;
             var row = new HBoxContainer { Visible = false };
             row.AddThemeConstantOverride("separation", 4);
-            row.AddChild(Chip(ChipColour(goods)));
+            row.AddChild(UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods))));
             Label name = Body(GoodsName(world, goods));
             name.CustomMinimumSize = new Vector2(PostNameWidth, 0);
             name.SizeFlagsHorizontal = SizeFlags.ExpandFill;

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqt6cv4vdw3sb"
-path="res://.godot/imported/cabin.png-0e26ce75c50c5e46e8c03adbed26248c.ctex"
+uid="uid://dlbii216sbddn"
+path="res://.godot/imported/band.png-2518e67012c0bb6d628a046c52bdac49.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/icons/buildings/cabin.png"
-dest_files=["res://.godot/imported/cabin.png-0e26ce75c50c5e46e8c03adbed26248c.ctex"]
+source_file="res://textures/ui/chrome/band.png"
+dest_files=["res://.godot/imported/band.png-2518e67012c0bb6d628a046c52bdac49.ctex"]
 
 [params]
 

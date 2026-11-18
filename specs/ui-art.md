@@ -5,6 +5,13 @@
 > (`ui-assets.md`) stands as written. What is reopened: rolls, curls, washes, the title faces and the palette. The assets
 > are painted in Photoshop, driven by script, in three phases with his OK at each (A99).**
 >
+> **⛔ THE SCROLLS ARE GONE (A114, 2026-11-17) — Joe: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."*** Every roll is out of the look: the windows, cards and bar are the same parchment sheets repainted without them, and the roll-up (§8.4, §9.3 step 6) is dropped. What reads below about rolls is the record.
+>
+> **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8); Joe's four calls are answered,
+> all as recommended (§9.4, A109). The
+> status below is A97's, kept as the record.**
+>
 > **Status: ✍️ specced and mocked on `art` (A96); ⭐ Joe's answers and the look REMOCKED as manuscript scrolls (A97,
 > 2026-11-15, §8) — the look, the fonts, the seam and the name are settled; ⏸️ three calls his (§8.5); NOTHING BUILT —
 > no theme, no font, no code.** §5–§6 are A96's first round, kept as the record; §8 supersedes them where they differ. Joe's order (A90): *"i want to work on villagers for the next art piece. And then the UI"*; the
@@ -251,7 +258,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 
 **Every image the look needs, with sizes, states and drawing rules: `specs/ui-assets.md` (A98).**
 
-### 8.6 The build, once he answers (replaces §7)
+### 8.6 The build, once he answers (replaces §7) — ⚠️ superseded by §9 (A108)
 
 1. The seam (§4) — panels, text roles, state colours, **and the log's inline colours**, read from the theme; today's
    values by default, byte-identical; probe `ui theme:`; red-checked. After water merges, on `art`.
@@ -260,3 +267,228 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
    contrast line over the theme's colours.
 3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
 4. Joe plays it (`.\run.bat`); merge at his word.
+
+## 9. 🔨 The hook-in — the plan (A108, 2026-11-16; his calls answered, A109); BEING BUILT ON `art` (Joe: *"UI hook-in can start now"*, the Established-date slice merged, D785)
+
+**Joe's order (relayed 2026-11-16): *"Next: add the established line / then hook in the UI and villagers"*.** The art is
+in `main` (A107): 169 files in `src/Bclone.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
+systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` too, and the two lanes never edit
+`Main.cs`/`Main.Cards.cs` at once (§4). Planning only until then; read off `main` c220e7a.
+
+### 9.1 What "the villagers" leaves to hook in
+- **On the map: nothing.** The painted people are built and wired (`villager-art.md §8`, A93–A95):
+  `PersonPainter.cs` paints each person, and `VillageMap.People.cs` draws them.
+- **Portraits: none, by design** (B12, D431 — *a villager has no picture*); reopening that is Joe's call, not this piece's.
+- **What is left is the 18 trade icons** (`icons/trades/`). Today the Professions table draws a code glyph
+  (`Main.cs` `AddProfessionRow`, `new TradeGlyph(kind)`); a person's card and the roster name the trade in words only.
+  `ui-assets.md §4.3` says the icons *"may join the cards and the roster"* — ✅ they do, the word kept (A109).
+- Still the systems lane's one line (A93): the teacher's colour in `TradeGlyph.cs`, which is also the fallback glyph.
+
+### 9.2 Where the art lands today (counted on c220e7a)
+| What | Today | Sites |
+|---|---|---|
+| Panels | `PanelSkin()` (`Main.cs:7126`, a slate `StyleBoxFlat`) | 6 uses in `Main.cs`, `Main.Cards.cs` |
+| Cards | `CardSkin()`/`MakeCardSkin()` (`Main.Cards.cs:350`) | 10, incl. `Main.PostWindow.cs`, `Main.RegionWindow.cs` |
+| Text and state colours | `Muted`; `LightWorking`/`LightStopped`/`CardSelectedEdge` (`Main.Cards.cs:218–220`) | 75 `Muted`, 20 lights |
+| Other skins | `new StyleBoxFlat` / `AddThemeStyleboxOverride` | title, pause and new-game screens, the bars |
+| Buildings | `new BuildingGlyph(kind, known)` — the build bar, the homes strip | `Main.cs:7777`, `7853` |
+| Tools | `new ToolGlyph(mark)` — the build bar's tools | `Main.cs:7913` |
+| Trades | `new TradeGlyph(kind)` — the Professions table | `Main.cs:5477` |
+| Moments | `new MomentGlyph(mark)` — beside a moment's text | `Main.cs:2868` |
+| Goods | `Chip(ChipColour(goods))` — a coloured square | 5: `Main.cs` ×3, `Main.Cards.cs`, `Main.PostWindow.cs` |
+| Seasons, alerts | the font's ⚠ and ⛔ inside log strings | in text, not controls |
+
+### 9.3 The build — one commit each, on `art`, each with its probe line, red-checked (D326)
+1. ✅ **The seam (§4), byte-identical — BUILT (A110, §9.5).** Every skin and colour above read from a theme, today's
+   values where the theme names none. Probe `ui theme:`. With step 2's seven constructor swaps, the only commits
+   that edit the systems lane's files for the look.
+2. ✅ **The icons — one art-lane loader — BUILT (A111, §9.6).** One art-lane file (`UiIcons.cs`): a `TextureRect` at 20 logical px, loaded from
+   `textures/ui/icons/<set>/<id>.png`, keyed by the data id, never by a hard-coded list. **A row with no file falls
+   back to today's code glyph**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and `GoodsPalette` stay
+   as the modder's fallback, untouched (Data-driven, CLAUDE.md). The owed buildings take their `-owed` file. The seven
+   sites in 9.2 swap one constructor each. Probe `ui icons:`: every catalogue row finds its file or says it fell back;
+   each file loads at 80 × 80 (moments 104), mipmapped.
+3. ✅ **The chrome and controls through the theme — BUILT (A113, §9.8).** The 2× masters need a small custom StyleBox to draw at half
+   (`ui-assets.md §1.5`; Godot's `StyleBoxTexture` draws texture pixels 1 : 1). The UI-size setting (`Main.Settings.cs`,
+   `SetUiScale`) must keep them sharp at 75–150 %. Probe: `bar height` re-measured (see call 1); the contrast line
+   over the theme's own colours (4.5:1).
+4. **The fonts.** Joe's chosen faces into `src/Bclone.Game/fonts/` with their licences (the untracked `fonts/` is
+   his source; nothing ships without a licence file beside it).
+5. **The screens.** The title band (a plain `chrome/sheet.png` since A114) and seal, new game (`chrome/sheet-large.png`), the tech cards, and `boot_splash`. The app icon still waits on
+   the name.
+6. ~~**The roll-up**~~ — **dropped (A114)**: Joe hates the scrolls; a window folds as it always has.
+7. **Joe plays it** (`.\run.bat`); merge at his word.
+
+### 9.4 ✅ Joe's calls — ALL AS RECOMMENDED (A109, 2026-11-16, *"all as recommended"*)
+*What stands: the bar height re-measured on the first render, shown to him and written down as the new guard; the
+chip dropped; trade icons on the card and in the roster as well, the word kept; the title face picked from the
+first in-game render. The four as they were asked:*
+1. **The control bar gets taller.** The parchment strip has rolls at its ends and a thicker edge than today's slate, so
+   the probe's `bar height` (151 since D475) will change. Recommended: measure it on the first render, show him, and
+   write the new number down as the guard.
+2. **The small parchment square behind pictures of things** (D637) was there to lift icons off dark slate. On parchment
+   it adds nothing. Recommended: drop it.
+3. **Trade icons beyond the Professions table:** beside the trade's name on a person's card, and in the roster's trade
+   column. Recommended: both (one 20 px icon, the word kept beside it).
+4. **The title face** (reopened in A99): which of his fonts heads the windows. Recommended: decide on the first in-game
+   render rather than from a mock.
+
+### 9.5 ✅ Step 1 as built — the seam (A110)
+- **`UiLook.cs`** (the art lane's): every role and skin asked for by name and answered from the project theme's
+  `BcloneLook` type when the theme names it, or with the literal that stood at the site before. **No theme names any
+  entry today, so the screen is slate to the byte.** A look is now a theme and textures; nothing below needs
+  `Main.cs` again for colour.
+  - **Text roles:** `text`, `text_faint` (55 %, `Muted`), `text_soft` (70 %), `text_hint` (65 %), `text_dim` (45 %),
+    `text_ghost` (35 %), `text_strong` (80 %).
+  - **States:** `working`, `stopped`, `selected_edge`, `card_edge`, `owed`, `held`, `refused`, `saved`, `known`,
+    `tree_edge`, `empty`, `stamp`, `founding_mark`, `pause_shade`.
+  - **The log:** `log_death`, `log_life`, `log_discovery`, `log_warning`, `log_building`, `log_season`, `log_ordinary`.
+  - **Skins:** `panel`, `card`, `card_selected`, `pill_met`, `pill_unmet`, `bar_track`, `bar_fill`, `backdrop`,
+    `title_band`, `pause_sheet`.
+  - Kept skins (cards, pills, bars) are made once a theme; `Use(theme)` lets them go.
+- **Text is tinted through `UiLook.Tint`**, never `Modulate` at the site. Slate's tint is still a `Modulate`, so nothing
+  moved. Parchment's ink cannot take a multiply (amber over ink is still ink), so step 3 changes that one helper.
+  `UiLook.TintOf` replaces the two sites that read a state back out of `Modulate` (the card's status, the Removal tab).
+- **The sites:** 49 edits in seven files (`Main.cs`, `Main.Cards.cs`, `Main.Saves.cs`, `NewGameScreen.cs`,
+  `PauseScreen.cs`, `TitleScreen.cs`, `TechTreeView.cs`); 144 lines out, 58 in.
+  - **Left behind on purpose:** `WorldChip`'s swatch (`Main.cs`), the D637 parchment chip that step 2 drops (A109).
+  - **Counted after:** no other colour literal, `Modulate =` at a site or `new StyleBoxFlat` in those files. A
+    `Modulate` set on a whole card stays: the tech tree's fogged card fades as a whole.
+- **Probe `ui theme:`** (`Main.UiLookProbe.cs`) checks four things:
+  - the 28 roles and 4 skins are the literals their sites had;
+  - an open card wears the look's own kept skin (by reference), so the card code makes none of its own;
+  - a theme that names `stopped` and `card` is obeyed, and what it does not name stays slate;
+  - a tint reads back.
+  - **Red-checked: four breaks in one run, four reds.** A role's value, the theme's boxes ignored, the card wrapper
+    making its own box, and a tint that does nothing. The dead tint also turned three older lines red (`cards:`,
+    `water:`, `destroy:`), so those sites are proven to go through the seam.
+- **Everything else the probe measures is unchanged** against A107's run, timings aside. `vlog` grew 992 → 1361
+  characters: the Established probe, merged since, builds and demolishes a pile before it. The seam changes no text,
+  and colour tags are not counted.
+ **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 20 m 34 s; the view build 0 warnings; the probe 127 ✅ and 0 ⛔, bar height 151, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
+
+### 9.6 ✅ Step 2 as built — the painted icons (A111)
+- **`UiIcons.cs`** (the art lane's) finds an icon by **the thing's own name**:
+  - A building's, good's or trade's row name in the data, or a tool's or moment's mark, becomes a file name: lower case,
+    apostrophes dropped, words hyphened (*woodcutter's hut* → `woodcutters-hut.png`, `HarvestTrees` → `harvest-trees.png`).
+  - **No file means the glyph that stood there**, so `BuildingGlyph`, `TradeGlyph`, `ToolGlyph`, `MomentGlyph` and the
+    goods chips stay as a modder's fallback, untouched.
+  - The home tiers' files were renamed to their rows' names (`house`, `stone-cottage`, `insulated-manor`) rather than
+    keeping a list of exceptions.
+  - Files are loaded once and kept, misses too; drawn through their mipmaps.
+- **Where they land:**
+  - **The build bar:** every building and tool.
+    - The icon is the button's own icon, laid out above the label by the button.
+    - Placed by hand at 20 px (as the 14 px glyphs were), it ran into the label's capitals; that showed in the first
+      render, not the arithmetic.
+    - An owed building swaps to its `-owed` file wherever the bar already turned it amber: the free library, smithy and
+      town hall, and anything untried.
+  - **The Professions table:** all 18 rows.
+  - **A person's card:** a trade icon beside *"Smith at smithy 1"* (A109, call 3).
+  - **The roster:** the trade column's icon (A109, call 3).
+  - **The moment pop-up's marks:** at 26.
+  - **Goods** on cards, the trading post's window and the stock limits: at 20.
+  - **⚠️ The top bar's goods: at 10, the chip's own size.** The bar had 6 px to spare at 75 % (`bars:`); at 20 it ran 31
+    px under the right column. A bigger icon there needs room the bar does not have. ⏸️ Joe's call (§9.7).
+  - Villager counts keep their colour swatches: there is no icon for an adult.
+- **⏸️ The control bar is 177 tall, not 151 (+26)**: each building row is taller to hold its icon above the label.
+  That is call 1 (§9.4), shown to Joe before 151 is written over (§9.7).
+- **Probe `ui icons:`** (`Main.UiIconsProbe.cs`):
+  - 77 icons found by name, no row without its file, each at its master size with mipmaps.
+  - 37 bar buttons carry theirs, the tallest wanting 74 px.
+  - The library shows owed and goes back.
+  - A posed worker's card and the roster show the trade.
+  - The 18 Professions rows are painted.
+  - A name with no file keeps its glyph.
+  - **Red-checked: four breaks in one run, four reds** (the slug keeping apostrophes, the owed swap dead, the card's
+    slot never shown, the roster's icon only for children).
+- **The checks:**
+  - Probe: 128 ✅ and 0 ⛔; tile centres ✅, new game ✅, `bars:` ✅, `done.`.
+  - View build: 0 warnings.
+  - The suite was not re-run. It does not build the game (D11), and no file in `src/Bclone.Sim`, `tests/` or `data/`
+    changed since step 1's run (2066 passed). No golden moved.
+  - Renders of his summer save: `D:\Projects\brushes\ui\hookin\step2_game.png`, `step2_bar.png`.
+
+### 9.7 ✅ Joe's calls from step 2 — BOTH AS RECOMMENDED (A112, *"Yes to both"*)
+*The control bar's guard is 177 (CLAUDE.md); the top bar's goods icons stay at 10 px. The two as asked:*
+1. **The control bar, 151 → 177** (call 1 as agreed: measured on the first render, shown to him, then written down).
+   Recommended: accept it. The icons need the room, and step 3's painted strip will be measured again.
+2. **The top bar's goods icons at 10 px** (today's chip size), because the bar is full. Recommended: keep 10 for now. The
+   alternative is 20 px with the goods' names dropped from the top bar (the name on hover), which frees the room.
+
+### 9.8 ✅ Step 3 as built — the parchment look (A113, Joe: *"A, frames add width"*)
+- **The look is a theme, built in the art lane's files.**
+  - `ParchmentLook.cs` builds the theme from the painted chrome and controls.
+  - `LookLoader.cs` (an autoload, `project.godot [autoload]`) puts it on the root window and on `UiLook` before any
+    window is built. `BCLONE_LOOK=slate` starts in slate, for a before-and-after render only.
+  - `PaintedPatch.cs` draws a 2× or 4× 9-patch at half or a quarter of its pixels. Godot's own draws 1 : 1.
+  - `SizedTexture.cs` lets a 4× checkbox report and draw at 14 px.
+- **What it skins:**
+  - The game's own roles: windows (the hung scroll), cards (the selected one with its illuminated bar), the control bar
+    (a scroll on its side, A113's `UiLook.Strip`), the top bar's boxes (a torn slip with slate's 6 px inside, because
+    that bar is full, `UiLook.TopBox`), pills (ribbons), bars, the pause sheet, and the tech tree's cards (known, in
+    sight, fogged; `UiLook.TechCard`).
+  - What a theme alone reaches: buttons (ink; a faint wash on hover; a rubric swash under a held one), checkboxes (an
+    inked ring, a wax seal when ticked), the drop-down's arrow, fields, menus, tooltips, the scrollbars, the rules, the
+    roster's Tree and the log's RichTextLabel.
+- **Text is ink.** On a look that sets `tints_by_font`, `UiLook.Tint` gives a label or a button its font colour; a
+  multiply cannot turn ink amber. Two older probe checks that read amber off `Modulate` now ask `UiLook.TintOf`.
+- **The palette's words, measured** (`ui contrast:`, on the sheet and its darkest mottle, 4.5 : 1 at least): ink 9.9;
+  verdigris 5.0; rubric 4.7. Gold leaf is 2.1 on its own sheet, so an owed gift's words are a darkened gold (4.6); the
+  leaf stays in the painting. The probe's first run caught the dim ink at 4.30, now `#644f3c` at 4.78.
+- **The frames' room is measured, not guessed.** The first render put the selected card's illuminated bar over each
+  line's first letter and the bar's hint line on the strip's torn foot. The content margins now come from where each
+  painting is opaque:
+  - window: 15 / 22 / 20 / 14;
+  - card: 28 on the left, selected or not, so a card does not jump when picked;
+  - strip: 30 / 12 / 30 / 20.
+  - A person's extra room (D432) is added on top of the chrome's, not in place of it.
+- **⭐ Joe's call — the frames add their own width.** The theme's `grows_by_frame` makes `DefaultPanelWidth` and
+  `CardWidth` slate's plus the frame's extra (windows +23, cards +36). The words keep slate's room: whole names in the
+  roster, the lodge's *"meat · leather"*, the widest villager name. Option B (today's footprint) failed three probe
+  lines and trimmed the roster's names (`D:\Projects\brushes\ui\hookin\step3_room.png`).
+  - **The right column starts under the bars where the top bar reaches it** (`TheBarMeetsTheRightColumn`), as the left
+    one always has (D378). At a 1280 window at 75 % the bar ends at 963 and the column would begin at 943; at Joe's
+    1920 they do not meet and nothing moves.
+  - ⚠️ It is decided when the panels are arranged (launch, and *Reset panels*). A bar that grows later, with goods
+    newly known, waits for a reset.
+- **The control bar is still 177** (A112's guard): the strip's room is inside the rows' own height.
+- **Probes:**
+  - `ui theme:` checks that the worn look inks a tinted label (not a multiply), and still checks slate under no theme.
+  - `ui contrast:` is new.
+  - `bars:` checks that the right column really starts under the bars when they meet.
+  - `tech tree:` holds the painted cards at 160.
+  - **Red-checked: three breaks, three reds.** Labels tinted the old way reddened `ui theme:` (and the older amber
+    checks); the frames not growing reddened `panels:`, `cards:` and `villager card:`; the right column never stepping
+    down reddened `bars:`. ⚠️ **That last one scored zero in the first run**, because the frames-not-growing break made
+    the columns too narrow to meet the bar. It was run again on its own and went red.
+  - The contrast line's red was real data (two roles at 4.30).
+- **Not in this step** (next, still the art lane's):
+  - The hand-drawn glyph buttons: grip `⋮⋮`, pin `⌖`, close `✕`, find, fold, and the Professions' `–`/`+`. Their
+    painted controls (`controls/grip.png` …) wait on their sites in `Main.cs`.
+  - The card's working light (a ColorRect) and the washes. *(The title's scroll label and the roll-up: retired, A114.)*
+  - Fonts (step 4) and screens (step 5).
+- Renders: `D:\Projects\brushes\ui\hookin\step3_game.png`, `step3_room.png`.
+- **A116 — the inked edge** (Joe: *"yes, repaint them like the first one"*). The sheets were repainted with a thin dark ink line, fine tears and a narrow grey edge, and no orange rim. `ui contrast:` now also reads **the paper as painted at every frame's inner edge**, off each master. It went red four times on real data, and each was fixed at the cause:
+  - **3.18:1, the first inked sheets' wide vignette.** The vignette was narrowed into the gap between the ink line and the words.
+  - **1.70:1, the top bar's boxes.** Their 6 px room put the outermost words on the slip's ink line, and had since A113. Fixed with a `PaintedPatch.Outset`: the paper reaches 4–7 px past the box, so the bar does not move.
+  - **3.68 and 4.46:1, the windows' foot and top.** Their room is now 15 / 15 / 20 / 18 (cards 28 / 15 / 20 / 18).
+  - **Every text ink is darkened to 5 : 1 on the painted paper's darkest mottle.** On the flat colour they had passed at 4.5, and that flat colour does not exist anywhere on the painted sheets. New inks: rubric `#8b281b`, verdigris `#2c5526`, gold `#61470e`, ochre `#703f0e`, dim `#5c4837`. Lapis and the muted inks already passed.
+- **A117 — the paper weathered** (Joe: *"i want that too"*): greyer, with fewer and bolder stains, measured against his reference. `ui contrast:` went red at 4.24 (dim ink on the bar's darker stains). The inks were darkened about 12 % against the darkest paper words can sit on, (196, 175, 142):
+  - muted `#503f2c`, dim `#503f30`;
+  - rubric `#7b2318`, verdigris `#264a21`, gold `#553e0c`, ochre `#703f0e` → `#62370c`;
+  - lapis as words `#2a3f7b`.
+  - Each still reads as its colour. The faintest word at any inner edge is now 4.93 : 1.
+- **A121 — the column heads are headers** (Joe: *"Yes, headers"*): the roster's Name / Age / Trade (the Tree's `title_button_font`), Professions' TYPE and ASSIGNED / MAX, and the build queue's # / Site / Materials / Work are set in Metamorphous. Capitals starting ordinary words stay Grenze Gotisch's.
+- **A120 — his font pair.** Joe: *"Use this as header font: ... Metamorphous ... Use this as non-header font: ... Grenze Gotisch"*, then *"BUILD is considered a header - everything in that main row is"*.
+  - **Headers in Metamorphous:** window titles, card titles, a card's section heads, and every button and label in the control bar's main row (Pause through Cancel). `UiLook.Header` and `HeadersIn` mark them with the theme type variations `HeaderLabel` and `HeaderButton`; on slate the marks name nothing.
+  - **Everything else in Grenze Gotisch** (its variable font, default weight). Both are SIL OFL; their licences sit beside them in `src/Bclone.Game/fonts/`. Archivo Narrow (A119) stays there, unused.
+  - ⚠️ **Legibility, shown to him before he settled it:** Grenze Gotisch's capitals are blackletter. All-caps words were nearly unreadable (*BUILD* read *BUICD*) until his main row went to Metamorphous. Capitals that start a word still mislead (*Able* reads *Rble*), including the column heads (*TYPE*, *ASSIGNED / MAX*, *Name / Age / Trade*), and its figures are old-style.
+  - **The layout:** the bar is taller, so its guard is **183** (CLAUDE.md). Metamorphous is broad, and the widest own name overran the card by 18 px, so the theme's `card_room` gives cards 20 px more (D467: a person's own name is never trimmed).
+- **A119 — his font, and the folded windows' smear.** Joe added **Archivo Narrow** (*"i just added a font ... that you can use"*). It is SIL OFL, and the static weights live in `src/Bclone.Game/fonts/ArchivoNarrow/` with the licence. **SemiBold** is the theme's font: Medium read lighter than his reference panel, side by side. It is narrower than Godot's default, so the build bar fits in fewer rows: **bar height 177 → 173**, written into CLAUDE.md's guard. The top bar now ends at 892 at 75 %, clear of the right column, which keeps the top. **His other question, *"what are these blurry looking things?"*** — a folded window's sheet:
+  - **The cause.** A folded window is one title row, so its middle squashed the sheet's 782 master px into about 28. The GPU read a mipmap that small, blurred in every direction, and the sheet's side columns smeared into a band past both ends of the window.
+  - **Found by tinting each painted style a different colour for one render.** The band came out the window's own colour, not some other control's.
+  - **The fix (`PaintedPatch`).** Squashed past 2 : 1, the painting is read without mipmaps, so the squashed axis is sampled sparsely and the other stays sharp. Tile mode was tried first; it crops cleanly but left 1 px seams where the tiles meet the corners.
+  - The sheets' fixed corners are smaller too (28 / 28 / 32 / 30 master px; the band 32 / 20 / 34 / 26), and a box smaller than its corners draws the painting smaller rather than overlapping them.
+- **A118 — no grey margin, a dark muddled ink line** (Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"*). The grey band he saw was a bug as much as a look: A116's script edit appended a comment to a line, and that comment swallowed the vignette's blend mode and opacity. Since A116 the "soft 26 % multiply" was painted as a full grey band. It is removed outright. The ink is now near-black in the dry-brush tip, with a second drifting stroke over it, and the shadow is tight. The faintest word at an inner edge rose to 5.15 : 1.
+- **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).

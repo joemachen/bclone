@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ccjwotw5xubm0"
-path="res://.godot/imported/manor-owed.png-9288b7093926185525812a97b9547262.ctex"
+uid="uid://c7uw7y1hbmcu3"
+path="res://.godot/imported/sheet-large.png-5551ca2eb8169737b607699a84636dad.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/icons/buildings/manor-owed.png"
-dest_files=["res://.godot/imported/manor-owed.png-9288b7093926185525812a97b9547262.ctex"]
+source_file="res://textures/ui/chrome/sheet-large.png"
+dest_files=["res://.godot/imported/sheet-large.png-5551ca2eb8169737b607699a84636dad.ctex"]
 
 [params]
 

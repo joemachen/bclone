@@ -37,23 +37,12 @@ public sealed partial class PauseScreen : Control
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = MouseFilterEnum.Stop;
 
-        var dim = new ColorRect { Color = new Color(0f, 0f, 0f, 0.55f), MouseFilter = MouseFilterEnum.Ignore };
+        var dim = new ColorRect { Color = UiLook.PauseShade, MouseFilter = MouseFilterEnum.Ignore };
         dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(dim);
 
         _panel = new PanelContainer { CustomMinimumSize = new Vector2(320, 0) };
-        _panel.AddThemeStyleboxOverride("panel", new StyleBoxFlat
-        {
-            BgColor = new Color(0.09f, 0.10f, 0.10f, 0.97f),
-            ContentMarginLeft = 24,
-            ContentMarginRight = 24,
-            ContentMarginTop = 20,
-            ContentMarginBottom = 20,
-            CornerRadiusTopLeft = 6,
-            CornerRadiusTopRight = 6,
-            CornerRadiusBottomLeft = 6,
-            CornerRadiusBottomRight = 6,
-        });
+        _panel.AddThemeStyleboxOverride("panel", UiLook.PauseSheet());
         AddChild(_panel);
 
         Body = new VBoxContainer();
@@ -64,7 +53,8 @@ public sealed partial class PauseScreen : Control
         heading.AddThemeFontSizeOverride("font_size", 26);
         Body.AddChild(heading);
 
-        Where = new Label { HorizontalAlignment = HorizontalAlignment.Center, Modulate = new Color(1, 1, 1, 0.65f) };
+        Where = new Label { HorizontalAlignment = HorizontalAlignment.Center };
+        UiLook.Tint(Where, UiLook.Hint);
         Where.AddThemeFontSizeOverride("font_size", 13);
         Body.AddChild(Where);
         Body.AddChild(new Control { CustomMinimumSize = new Vector2(0, 6) });

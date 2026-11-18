@@ -68,16 +68,22 @@ it smears. The centre stretches both ways: washes there are soft and large on pu
 small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws texture pixels 1 : 1); noted for the build,
 `ui-art.md §8.6`.
 
-## 2. The scroll chrome
+## 2. The chrome — parchment, no scrolls (A114), an inked edge (A116)
+
+*Joe, 2026-11-17, shown his own reference beside the game: *"yes, repaint them like the first one"*. **Every sheet's edge is inked, not scorched** (`p2_chrome.jsx`'s `inked` sheets): a crisp dark ink line (`#1e140c` at 92 %), fine tears (a nick every 4 master px, ±1), the paper greying softly in the last few px before the line, and **no** orange wash rim and **no** burnt stroke. The sheets, the band and the slip all wear it.*
+
+*Then, A118 — Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"* **No grey inside the edge at all.** The ink line is near-black (`#140c06` at 100 %) in the dry-brush tip, so its darkness breaks along its length, with a second dry-brush stroke (`#2a1a0e` at 70 %) that drifts up to 2 master px on and off it: the paths' wobbled, mottled rim, in ink. The shadow is a tight dark line under the sheet (2/3 px, blur 2), not a soft grey halo.*
+
+*Joe, the same day: *"i want that too"* — **the paper weathered like his reference** (A117): a cooler base (`#f2e6d0`) and fewer, bolder grey-brown stains (`#7e705c` at 24 %), measured against his image. The middle tone is 217–221 against his 224, the spread 10–11 against 11–14, and the darkest tenth about (209, 187, 153) against his (209, 180, 138). ⚠️ **His heavy darkening under the words was not copied:** on it the coloured inks fail 4.5 : 1 unless they turn near-black. The paper's weathering darkens where words never sit, and the text inks were darkened once more for the stains (`ui-art.md §9.8`).*
+
+*Joe, 2026-11-17: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."* The hung scroll's roll, the strip's rolled ends, the modal's roll, the scroll-shaped title label, the roll alone (for the roll-up) and the title screen's hanging scroll are **retired** — their files removed from `textures/ui/`, their Photoshop masters kept in `D:\Projects\brushes\ui\psd\p2\chrome\`. The same sheets were repainted without rolls by the same script (`p2_chrome.jsx`: `sheet`, `sheet-selected`, `band`, `sheet-large`).*
 
 | File | Master size | Margins L/T/R/B (master px) | What it is | States |
 |---|---|---|---|---|
-| `chrome/window.png` | 720 × 840 | 40 / 44 / 40 / 44 | **The hung scroll** (A101): one roll across the top (Ø ≈ 28) with turned walnut knobs inside the corners; the sheet hanging from it, its sides and foot torn and lightly scorched — the scorched band about 23 master px at most (A101: *"thinner"*) — the roll's shadow on it, washes in the centre. Every window and card. | — |
-| `chrome/window-selected.png` | 720 × 840 | 56 / 44 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; vine sprouts only in its corners. The card being worked with. | — |
-| `chrome/strip.png` | 1800 × 240 | 56 / 20 / 56 / 16 | **A scroll on its side**: rolls at the left and right ends (curls top and bottom), the sheet between with inked top and bottom edges. The build bar, the two top bars, short and folded windows. | — |
-| `chrome/title-label.png` | 400 × 68 | 28 / 16 / 28 / 16 | **A small scroll label** with curled ends, the style frame's *VILLAGE MENU* plate; window titles sit on it. | normal, hover (a shade warmer) |
-| `chrome/roll.png` | 720 × 40 | — | **The top roll alone**, at the window's own x: closing winds the sheet up into it, its foot rising, and the code fattens the roll to 1.35× height as it fills (A106). Same knobs as the window's. | — |
-| `chrome/modal.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet** for the moment pop-up, the passing banner, pause and settings: the hung scroll's form, larger, with a heavier roll (Ø ≈ 40). | — |
+| `chrome/sheet.png` | 720 × 840 | 40 / 40 / 40 / 44 | **A torn, lightly scorched parchment sheet**, torn on all four sides, washes in the centre — no roll (A114). Every window and card. | — |
+| `chrome/sheet-selected.png` | 720 × 840 | 56 / 40 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; a vine sprout at its foot only. The card being worked with. | — |
+| `chrome/band.png` | 1800 × 240 | 40 / 20 / 40 / 20 | **A long torn sheet** across the screen — no rolls at its ends (A114). The control bar. | — |
+| `chrome/sheet-large.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet**, the window's form, heavier rim: the moment pop-up, the passing banner, pause and settings, the new-game screen — no roll (A114). | — |
 | `chrome/slip.png` | 240 × 120 | 20 / 16 / 20 / 16 | **A torn slip**, no rolls: tooltips and drop-down menus. | — |
 | `chrome/wash-1.png` … `wash-4.png` | 512 × 512 | — | **Washes on their own**, optional: tea, ochre, green and umber blots with pooled rims on transparent, so each window can carry a different stain (placed by a hash of the window's name, never by chance). | — |
 
@@ -88,7 +94,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/checkbox.png` | 14 × 14 | 56 × 56 | An inked ring, slightly uneven — a seal's empty socket. **Ticked:** a red wax seal pressed into it, lit upper left, a pressed ring (A102). | empty, ticked, disabled (both at 45 %) |
 | `controls/dropdown-arrow.png` | 10 × 6 | 40 × 24 | A small inked triangle, pointing down. | — |
 | `controls/scroll-track.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A faint inked groove. | — |
-| `controls/scroll-grabber.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A short wound roll, seen end-on at both ends. | normal, hover, held |
+| `controls/scroll-grabber.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | **A slim inked bar** with a tea wash — plain, no roll (A115, Joe: *"Yes, plain grabber"*). | normal, hover (rubric edge), held (a deeper wash) |
 | `controls/bar-track.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | A faint ruled line. | — |
 | `controls/bar-fill.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | **A single wash stroke**, dry-brushed at its end. Tinted in code: verdigris working, rubric warning. | working, warning |
 | `controls/pill.png` | any × 16 | 96 × 64, 9-patch 28/0/28/0 | **A ribbon** with an ink edge: *Fed*, *Warm*, *Housed*. Met: verdigris, swallowtail ends; unmet: rubric, frayed square ends — a change of form as well as colour (A102). | met (verdigris), unmet (rubric) |
@@ -99,7 +105,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
 | `controls/close.png` | 14 × 14 | 56 × 56 | A pen cross (today's `✕`). | normal, hover (rubric) |
 | `controls/find.png` | 14 × 14 | 56 × 56 | A ringed eye, or a magnifying lens. | normal, hover |
-| `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | A tiny roll with an arrow: winding up / unwinding. | normal, hover |
+| `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | **An arrow to or from a pen line** (the sheet's edge): folding up / unfolding — no roll (A115). | normal, hover |
 | `controls/plus.png` / `minus.png` | 12 × 12 | 48 × 48 | Pen plus and minus (the Professions steppers). | normal, hover, disabled |
 
 ## 4. Icons
@@ -107,8 +113,8 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 **All icons: 20 × 20 logical, master 80 × 80 with 5 px clear on every side (the drawing in 70 × 70), on transparent.**
 *(A101, Joe: "yes raise icons to 20 logical px" — from 14 × 14 / 64 × 64. Moments stay 26. Controls — checkbox, pin,
 close and the rest of §3 — are not icons and keep their sizes.)*
-They sit straight on the parchment — ⏸️ **D637's parchment chip under pictures of world things was for slate panels; on
-a parchment sheet it is redundant, so recommended dropped** (Joe's to confirm when the build starts). States are separate
+They sit straight on the parchment — ✅ **D637's parchment chip under pictures of world things was for slate panels; on
+a parchment sheet it is redundant, so dropped** (A109, Joe: *"all as recommended"*). States are separate
 files named `<name>-<state>.png`.
 
 ### 4.1 Goods (16) — `icons/goods/`
@@ -173,13 +179,17 @@ does not), a call for Joe. Fill colour from the building's map colour.
 | `tailors-shop.png` | a shop with shears on its sign |
 | `workshop.png` | a shed with a cartwheel (the carpenter, D678) |
 | `school.png` | a small house with a slate and a bell |
-| `cabin.png` | a log cabin (home tier 1) |
-| `cottage.png` | a stone cottage (tier 2) |
-| `manor.png` | a manor (tier 3) |
+| `house.png` | a log cabin (home tier 1; the data's row is *house*) |
+| `stone-cottage.png` | a stone cottage (tier 2) |
+| `insulated-manor.png` | a manor (tier 3) |
+
+*Every icon is named after its row's name in the data, lower case, apostrophes dropped, words hyphened (A111) — the
+three home tiers were renamed from `cabin`, `cottage` and `manor` so the game finds them with no list of exceptions. A
+modder's building is drawn by adding `<its name>.png` here.*
 
 ### 4.3 Trades (18) — `icons/trades/`
 **What each carries, not who**: the trade's tool or yield, in its trade colour (`TradeGlyph`; the teacher's colour is still
-the systems lane's one line, A93). Shown on the Professions table, and may join the cards and the roster.
+the systems lane's one line, A93). Shown on the Professions table, a person's card and the roster's trade column, the word kept beside it (A109).
 
 | File | Draw | File | Draw |
 |---|---|---|---|
@@ -220,9 +230,9 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 
 | File | Master | What it is |
 |---|---|---|
-| `screens/title-band.png` | 9-patch, 760 × 2160, margins 60/80/60/80 | a long hanging scroll down the left of the title screen |
+| *(title band)* | — | the title screen's band down the left is `chrome/sheet.png` (A114: the hanging scroll is retired) |
 | `screens/seal.png` | 512 × 512 | **a wax seal, blank** (the name is a placeholder) — lumpy edge, a pressed ring, lit upper left |
-| `screens/new-game.png` | 9-patch as `chrome/modal.png` | the new-game screen's sheet behind its controls (today a flat dark fill) |
+| *(new game)* | — | the new-game screen's sheet is `chrome/sheet-large.png` (A114: the modal with its roll is retired) |
 | `screens/tech-card-known.png` · `-fogged.png` · `-locked.png` | 9-patch 352 × 320, margins 24 | the tech tree's cards: known in its building's colour wash, fogged as a grey silhouette (`tech-tree-map.md §3.6`), locked inked only |
 | `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Bclone.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
 | `screens/splash.png` | 1920 × 1080 | the boot splash on parchment (today Godot's) — `project.godot`'s `boot_splash` |
@@ -237,14 +247,14 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 
 | Set | Files |
 |---|---|
-| Chrome | 7 (+ 4 optional washes) |
+| Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
 | Controls | 16 pieces, ~30 files with states |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |
 | Tools | 12 |
 | Seasons, alerts, moments | 9 |
-| Screens | 8 (+ the `.ico`) |
+| Screens | 6 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's |
 | **Total** | **≈ 160 files**, of which the icons are 113 |
 | Optional | ~10 |
 

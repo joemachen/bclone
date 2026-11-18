@@ -140,7 +140,7 @@ public sealed partial class NewGameScreen : Control
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
         var backdrop = new Panel();
-        backdrop.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color(0.07f, 0.08f, 0.08f) });
+        backdrop.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
         backdrop.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(backdrop);
 
@@ -223,9 +223,9 @@ public sealed partial class NewGameScreen : Control
         _refusal = new Label
         {
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            Modulate = new Color(1f, 0.55f, 0.45f),
             Visible = false,
         };
+        UiLook.Tint(_refusal, UiLook.Refused);
         _refusal.AddThemeFontSizeOverride("font_size", 13);
         column.AddChild(_refusal);
 
@@ -347,7 +347,7 @@ public sealed partial class NewGameScreen : Control
     {
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", 13);
-        label.Modulate = new Color(1, 1, 1, 0.65f);
+        UiLook.Tint(label, UiLook.Hint);
         return label;
     }
 
@@ -507,8 +507,8 @@ public sealed partial class NewGameScreen : Control
             (site.Y - _previewWorld.Config.MapMinY + 0.5f) * perTile);
         float radius = Mathf.Max(6f, _previewWorld.Config.StartingResidentialRadius * perTile);
 
-        _mark.DrawArc(at, radius, 0f, Mathf.Tau, 48, new Color(0.98f, 0.78f, 0.46f), 2f, true);
-        _mark.DrawCircle(at, 2.5f, new Color(0.98f, 0.78f, 0.46f));
+        _mark.DrawArc(at, radius, 0f, Mathf.Tau, 48, UiLook.FoundingMark, 2f, true);
+        _mark.DrawCircle(at, 2.5f, UiLook.FoundingMark);
     }
 
     private static string RiverWords(SimConfig config, string course)

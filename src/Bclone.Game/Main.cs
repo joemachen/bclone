@@ -546,6 +546,9 @@ public partial class Main : Control
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheEstablishedLineReads());
+        GD.Print(TheLookIsOneDoor());
+        GD.Print(TheWordsReadOnParchment());
+        GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
@@ -1119,9 +1122,10 @@ public partial class Main : Control
         ForceUpdateTransform();
         float markedWidth = _momentParagraphs.GetCombinedMinimumSize().X;
         Node[] rows = _momentParagraphs.GetChildren().ToArray();
+        static string? MarkOf(Node mark) => mark is MomentGlyph glyph ? glyph.Mark.ToString() : (mark as UiIcon)?.Of;
         string Row(int i) => i < rows.Length && rows[i] is HBoxContainer row && row.GetChildCount() == 2
-            && row.GetChild(0) is MomentGlyph glyph && row.GetChild(1) is Label text
-                ? $"{glyph.Mark}:{text.Text}"
+            && MarkOf(row.GetChild(0)) is string mark && row.GetChild(1) is Label text
+                ? $"{mark}:{text.Text}"
                 : "not a mark and a paragraph";
         if (rows.Length != 2 || Row(0) != $"Nomads:{first}" || Row(1) != $"Bridge:{second}")
         {
@@ -1313,9 +1317,25 @@ public partial class Main : Control
             return $"[widths] bars: ⛔ posing the popup's rows moves it {popupBefore.X:F0}x{popupBefore.Y:F0} → {popupAfter.X:F0}x{popupAfter.Y:F0}";
         }
 
+        // ⭐ Where they meet, the right column starts under the bars (A113) — measured by the same rule the layout uses.
+        bool meets = TheBarMeetsTheRightColumn(after.X, 1280f);
+        float highest = float.MaxValue;
+        foreach ((PanelContainer panel, bool right) in _docked)
+        {
+            highest = right && panel.Visible ? Mathf.Min(highest, panel.Position.Y) : highest;
+        }
+
+        if (meets && highest < TopOfTheLeftColumn() - 1f)
+        {
+            return $"[widths] bars: ⛔ {where} — they meet, and a right-column window still starts at {highest:F0}px, above the bars' foot at {TopOfTheLeftColumn():F0}px";
+        }
+
         return barEnds < columnBegins
             ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}"
-            : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
+            : meets
+                ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}, so the "
+                  + $"right column starts under the bars, at {TopOfTheLeftColumn():F0}px"
+                : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
     }
 
     /// <summary>
@@ -2281,9 +2301,8 @@ public partial class Main : Control
             return;
         }
 
-        _libraryButton.Modulate = world.AFreeLibraryIsOwed
-            ? new Color(1f, 0.85f, 0.4f)
-            : Colors.White;
+        UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_libraryButton, world.AFreeLibraryIsOwed);
 
         // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
         // "Library" being typed here. D240 is why: the build bar said *"gatherer's hut"* for a
@@ -2389,7 +2408,8 @@ public partial class Main : Control
         {
             tried = world.Workplaces.Exists(w => w.Kind == trade || w.Construction?.Kind == kind)
                 || world.Bridges.Exists(b => b.Kind == kind);
-            button.Modulate = tried ? Colors.White : new Color(1f, 0.85f, 0.4f);
+            UiLook.Tint(button, tried ? UiLook.Text : UiLook.Owed);
+            UiIcons.MarkOwed(button, !tried);
         }
     }
 
@@ -2433,7 +2453,8 @@ public partial class Main : Control
             return;
         }
 
-        _smithyButton.Modulate = world.AFreeSmithyIsOwed ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+        UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_smithyButton, world.AFreeSmithyIsOwed);
         _smithyButton.Text = world.AFreeSmithyIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
             : Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy));
@@ -2602,9 +2623,8 @@ public partial class Main : Control
             return;
         }
 
-        _townHallButton.Modulate = world.ATownHallIsOwed
-            ? new Color(1f, 0.85f, 0.4f)
-            : Colors.White;
+        UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        UiIcons.MarkOwed(_townHallButton, world.ATownHallIsOwed);
 
         _townHallButton.Text = world.ATownHallIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.TownHall)) + " ★"
@@ -2866,7 +2886,8 @@ public partial class Main : Control
             // Every paragraph keeps the mark's column, marked or not, so the text of each starts at the same edge.
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", MomentMarkGap);
-            row.AddChild(new MomentGlyph(i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None));
+            MomentMark mark = i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None;
+            row.AddChild(UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide));
             text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
             row.AddChild(text);
             _momentParagraphs.AddChild(row);
@@ -3124,7 +3145,7 @@ public partial class Main : Control
 
         bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
         _unhousedLabel.Text = $"{unhoused} unhoused";
-        _unhousedLabel.Modulate = nowhereToBuild ? Colors.White : new Color(1, 1, 1, 0.55f);
+        UiLook.Tint(_unhousedLabel, nowhereToBuild ? UiLook.Text : UiLook.Faint);
         ShowShortfall(
             _unhousedLabel,
             nowhereToBuild,
@@ -4122,7 +4143,7 @@ public partial class Main : Control
     }
 
     /// <summary>The village log's timestamp column — present, and quiet.</summary>
-    private static readonly Color StampColour = new("#7f8c94");
+    private static Color StampColour => UiLook.Stamp;
 
     private static int LivingHouseholds(SimWorld world)
     {
@@ -4312,7 +4333,7 @@ public partial class Main : Control
     {
         SimWorld world = _loop.World;
         var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
 
         var rows = new VBoxContainer();
         rows.AddThemeConstantOverride("separation", 3);
@@ -4348,13 +4369,13 @@ public partial class Main : Control
     }
 
     /// <summary>A chip, a number that cannot widen, and a name — one cell of a bar.</summary>
-    private static Label AddBarCell(HBoxContainer row, Color? chip, string name, float width = BarAmountWidth)
+    private static Label AddBarCell(HBoxContainer row, Control? mark, string name, float width = BarAmountWidth)
     {
         var cell = new HBoxContainer();
         cell.AddThemeConstantOverride("separation", 5);
-        if (chip is Color colour)
+        if (mark is not null)
         {
-            cell.AddChild(WorldChip(colour));
+            cell.AddChild(mark);
         }
 
         // ⚠️ `Fill`, not the `ExpandFill` the Overview's cells had: in a row of cells an
@@ -4369,7 +4390,8 @@ public partial class Main : Control
 
     private void AddGoodsCell(HBoxContainer row, SimWorld world, Goods goods)
     {
-        Label held = AddBarCell(row, ChipColour(goods), world.GoodsCatalog.NameOf(goods));
+        string goodsName = world.GoodsCatalog.NameOf(goods);
+        Label held = AddBarCell(row, UiIcons.Or("goods", goodsName, () => WorldChip(ChipColour(goods)), UiIcons.BarSide), goodsName);
         _goodsReadouts.Add((goods, held));
 
         // ⭐ THE ⚠ WHEN THE PLAYER'S LIMIT IS MET (D409). Joe: *"there should be a message or signal
@@ -4434,7 +4456,7 @@ public partial class Main : Control
                 continue;
             }
 
-            Control chip = Chip(ChipColour(goods));
+            Control chip = UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
             Label name = Muted(world.GoodsCatalog.NameOf(goods));
             table.AddChild(chip);
             table.AddChild(name);
@@ -4493,7 +4515,7 @@ public partial class Main : Control
     private PanelContainer BuildVillagersBox()
     {
         var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", PanelSkin(0.94f));
+        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
 
         var lines = new VBoxContainer();
         lines.AddThemeConstantOverride("separation", 3);
@@ -4501,10 +4523,10 @@ public partial class Main : Control
 
         HBoxContainer counts = BarRow();
         lines.AddChild(counts);
-        _populationCell = AddBarCell(counts, VillageMap.AdultColour, "villagers", HeadcountWidth);
+        _populationCell = AddBarCell(counts, WorldChip(VillageMap.AdultColour), "villagers", HeadcountWidth);
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
-        _childrenCell = AddBarCell(counts, VillageMap.ChildColour, "children", HeadcountWidth);
-        _eldersCell = AddBarCell(counts, VillageMap.ElderColour, "elders", HeadcountWidth);
+        _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
+        _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
         _laborersCell = AddBarCell(counts, null, "laborers", HeadcountWidth);
 
         // The valley's name is the one word that says which run you are watching — derived
@@ -4638,7 +4660,7 @@ public partial class Main : Control
 
         foreach ((string name, string reason) in NotYetInTheValley)
         {
-            table.AddChild(Chip(new Color(1, 1, 1, 0.10f)));
+            table.AddChild(Chip(UiLook.Empty));
             table.AddChild(Muted(name));
 
             Label why = Muted(reason);
@@ -4687,7 +4709,7 @@ public partial class Main : Control
         };
 
         toggle.AddThemeFontSizeOverride("font_size", 12);
-        toggle.Modulate = new Color(1, 1, 1, 0.45f);
+        UiLook.Tint(toggle, UiLook.Dim);
 
         VBoxContainer opening = inside;
         toggle.Toggled += open =>
@@ -4903,16 +4925,7 @@ public partial class Main : Control
     /// nothing is.</b> Deaths take the red the food chip already uses and discoveries the gold
     /// the library gift used, so a colour means the same thing in two places.
     /// </remarks>
-    private static Color ColourOf(LogCategory category) => category switch
-    {
-        LogCategory.Death => new Color(0.85f, 0.40f, 0.40f),
-        LogCategory.Life => new Color(0.55f, 0.80f, 0.55f),
-        LogCategory.Discovery => new Color(0.91f, 0.77f, 0.41f),
-        LogCategory.Warning => new Color(1f, 0.78f, 0.35f),
-        LogCategory.Building => new Color(0.62f, 0.72f, 0.85f),
-        LogCategory.Season => new Color(0.60f, 0.62f, 0.60f),
-        _ => new Color(0.88f, 0.88f, 0.86f),
-    };
+    private static Color ColourOf(LogCategory category) => UiLook.Log(category);
 
     /// <summary>Rebuild the whole log — the one thing a filter change has to do.</summary>
     /// <remarks>
@@ -5362,8 +5375,12 @@ public partial class Main : Control
         table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
-        table.AddChild(Muted("TYPE"));
-        table.AddChild(Muted("ASSIGNED / MAX"));
+        Label typeHead = Muted("TYPE");
+        Label assignedHead = Muted("ASSIGNED / MAX");
+        UiLook.Header(typeHead); // column heads are headers (A121, Joe: "Yes, headers")
+        UiLook.Header(assignedHead);
+        table.AddChild(typeHead);
+        table.AddChild(assignedHead);
 
         foreach (JobKind kind in JobLimits.Kinds)
         {
@@ -5475,7 +5492,7 @@ public partial class Main : Control
     /// <summary>Three cells for one trade.</summary>
     private void AddProfessionRow(GridContainer table, JobKind kind)
     {
-        var glyph = new TradeGlyph(kind);
+        Control glyph = UiIcons.Or("trades", _loop.World.JobsCatalog.NameOf(kind), () => new TradeGlyph(kind));
         table.AddChild(glyph);
 
         // ⚠️ A Label ignores the mouse unless told otherwise, and a tooltip needs the mouse.
@@ -5728,6 +5745,10 @@ public partial class Main : Control
         // Uncaptioned and on the end, because it belongs to no tab — it puts down whichever
         // tool is in your hand, including the harvest brushes two rows below.
         controls.AddChild(TheCancelButton());
+
+        // The bar's main row is headers, every word of it (A120, Joe: *"BUILD is considered a header - everything in that
+        // main row is"*).
+        UiLook.HeadersIn(controls);
 
         // ⭐ THE FILTER, AND IT IS A ROW OF ITS OWN BECAUSE IT ANSWERS A DIFFERENT QUESTION.
         // The tabs say what KIND of act; the chips say which buildings are worth looking at
@@ -6036,7 +6057,7 @@ public partial class Main : Control
     }
 
     /// <summary>How wide a panel starts. It is free to be dragged, not resized.</summary>
-    private const float DefaultPanelWidth = 300f;
+    private static float DefaultPanelWidth => 300f + UiLook.FrameWidth(card: false);
 
     /// <summary>
     /// The most the inspector's contents stand before they scroll (D367; a ceiling since B3, when
@@ -6070,7 +6091,7 @@ public partial class Main : Control
         // debug frame counter sits in the gap under the bar, where it can actually be read — it
         // used to sit at the corner, under the Overview.
         float leftY = TopOfTheLeftColumn();
-        float rightY = Edge;
+        float rightY = TheBarMeetsTheRightColumn(BarWidest(), Size.X) ? leftY : Edge;
 
         // *What's here* starts where it started (B3): beside its tile, from the next one.
         _whatsHereWasDragged = false;
@@ -6146,6 +6167,18 @@ public partial class Main : Control
     /// makes for every panel it stacks. Asked of the bar's minimum as well as its size, because
     /// a panel that has not settled reports a size of nothing.
     /// </remarks>
+    /// <summary>
+    /// Whether a top bar this wide reaches the right column in a window this wide (A113). The painted frames widened the
+    /// columns (Joe: <i>"A, frames add width"</i>), and at a 1280 window at 75 % the bar ran 20 px under the right one —
+    /// so where they meet, the right column starts under the bars as the left one always has (D378); where they do not,
+    /// it keeps the top, beside the bar, as before.
+    /// </summary>
+    private bool TheBarMeetsTheRightColumn(float barWidth, float windowWidth) =>
+        _topBar is { Visible: true } && Edge + (barWidth * _uiScale) >= windowWidth - Edge - DefaultPanelWidth;
+
+    /// <summary>The top bar's width as laid out — its cells are fixed-width (D367), so numbers growing do not widen it.</summary>
+    private float BarWidest() => _topBar is null ? 0f : Mathf.Max(_topBar.Size.X, _topBar.GetCombinedMinimumSize().X);
+
     private float TopOfTheLeftColumn()
     {
         if (_topBar is null || !_topBar.Visible)
@@ -6174,7 +6207,7 @@ public partial class Main : Control
         // ⚠️ The bar is the one panel that stays see-through: it spans the window, so a solid
         // one would wall off the bottom of the valley. Every other window is something the
         // player reads, and the map showing through a table of numbers costs legibility.
-        panel.AddThemeStyleboxOverride("panel", PanelSkin(spanWidth ? 0.72f : 1f));
+        panel.AddThemeStyleboxOverride("panel", spanWidth ? UiLook.Strip(0.72f) : PanelSkin());
 
         bool right = corner is Corner.TopRight or Corner.BottomRight;
         bool bottom = corner is Corner.BottomLeft or Corner.BottomRight;
@@ -6480,7 +6513,8 @@ public partial class Main : Control
             contents.Visible = startOpen;
 
             header.AddThemeFontSizeOverride("font_size", 12);
-            header.Modulate = new Color(1, 1, 1, 0.55f);
+            UiLook.Header(header);
+            UiLook.Tint(header, UiLook.Faint);
             header.Toggled += open =>
             {
                 contents.Visible = open;
@@ -6506,7 +6540,7 @@ public partial class Main : Control
             };
 
             grip.AddThemeFontSizeOverride("font_size", 12);
-            grip.Modulate = new Color(1, 1, 1, 0.35f);
+            UiLook.Tint(grip, UiLook.Ghost);
             MakeDraggable(grip, panel);
             handle.AddChild(grip);
 
@@ -6516,7 +6550,7 @@ public partial class Main : Control
             // ✕, the card's own glyph, at the far right where the card keeps it (D380).
             var close = new Button { Text = "✕", Flat = true, TooltipText = "Close this window" };
             close.AddThemeFontSizeOverride("font_size", 12);
-            close.Modulate = new Color(1, 1, 1, 0.55f);
+            UiLook.Tint(close, UiLook.Faint);
             close.Pressed += () => CloseTheWindow(panel);
             handle.AddChild(close);
 
@@ -7124,19 +7158,7 @@ public partial class Main : Control
     /// numbers costs legibility and buys nothing. **The bar is the exception because it runs the
     /// width of the screen** — solid, it would wall off the bottom of the valley entirely.
     /// </remarks>
-    private static StyleBoxFlat PanelSkin(float alpha = 1f)
-    {
-        var skin = new StyleBoxFlat
-        {
-            BgColor = new Color(0.08f, 0.09f, 0.10f, alpha),
-            BorderColor = new Color(0.58f, 0.53f, 0.40f, 0.55f),
-        };
-
-        skin.SetBorderWidthAll(1);
-        skin.SetContentMarginAll(6);
-        skin.SetCornerRadiusAll(3);
-        return skin;
-    }
+    private static StyleBox PanelSkin(float alpha = 1f) => UiLook.Panel(alpha);
 
     /// <summary>
     /// A label that wraps instead of running off the edge or ending in an ellipsis.
@@ -7290,7 +7312,7 @@ public partial class Main : Control
 
     private void AddStockLimitRow(GridContainer table, Goods goods)
     {
-        Control chip = Chip(ChipColour(goods));
+        Control chip = UiIcons.Or("goods", _loop.World.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
         Label name = Body(GoodsName(_loop.World, goods));
         table.AddChild(chip);
         table.AddChild(name);
@@ -7775,7 +7797,7 @@ public partial class Main : Control
 
             Button button = StripButton(
                 Titled(catalogue.NameOf(kind)),
-                new BuildingGlyph(kind, known),
+                UiIcons.Or("buildings", catalogue.NameOf(kind), () => new BuildingGlyph(kind, known)),
                 () => _map.BeginBuilding(captured));
 
             if (kind == BuildingKind.Library)
@@ -7851,7 +7873,8 @@ public partial class Main : Control
             }
 
             BuildingKind captured = kind;
-            Button button = StripButton(label, new BuildingGlyph(kind, true), () => ChooseHomesAs(captured));
+            Button button = StripButton(
+                label, UiIcons.Or("buildings", catalogue.NameOf(kind), () => new BuildingGlyph(kind, true)), () => ChooseHomesAs(captured));
             _homesAs.Add((kind, button));
             _stripRow.AddChild(button);
         }
@@ -7911,7 +7934,7 @@ public partial class Main : Control
 
         void Add(BuildTab tab, BuildCategory category, string label, ToolMark mark, System.Action act)
         {
-            Button button = StripButton(label, new ToolGlyph(mark), act);
+            Button button = StripButton(label, UiIcons.Or("tools", mark.ToString(), () => new ToolGlyph(mark)), act);
             _strip.Add((tab, category, button, null, mark));
             _stripRow.AddChild(button);
         }
@@ -7975,6 +7998,15 @@ public partial class Main : Control
         mark.AnchorRight = 0.5f;
         mark.AnchorTop = 0f;
         mark.AnchorBottom = 0f;
+        // ⭐ A painted icon is the button's own icon, laid out over the label by the button (A111) — a 20 px picture
+        // placed by hand ran into the label's capitals. A glyph keeps its hand placement.
+        if (mark is UiIcon icon)
+        {
+            icon.ShowOn(button);
+            button.Pressed += act;
+            return button;
+        }
+
         mark.OffsetLeft = -7f;
         mark.OffsetRight = 7f;
         mark.OffsetTop = 4f;
@@ -8211,7 +8243,7 @@ public partial class Main : Control
         {
             // A pressed tab is where you are looking; the tint says where your hand is. They are
             // different questions and they are answered in different channels on purpose.
-            button.Modulate = held == tab ? new Color(1f, 0.85f, 0.4f) : Colors.White;
+            UiLook.Tint(button, held == tab ? UiLook.Held : UiLook.Text);
         }
 
         BuildingKind? building = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
@@ -8601,7 +8633,7 @@ public partial class Main : Control
             }
 
             Button removal = _tabButtons.Find(t => t.Tab == BuildTab.Removal).Button;
-            if (removal.Modulate == Colors.White)
+            if (UiLook.TintOf(removal) == UiLook.Text)
             {
                 faults.Add("the Removal tab did not light");
             }
@@ -8681,7 +8713,7 @@ public partial class Main : Control
         };
 
         _frameCounter.AddThemeFontSizeOverride("font_size", 11);
-        _frameCounter.AddThemeColorOverride("font_color", new Color(1f, 1f, 1f, 0.45f));
+        _frameCounter.AddThemeColorOverride("font_color", UiLook.Dim);
         AddChild(_frameCounter);
     }
 
@@ -8882,7 +8914,7 @@ public partial class Main : Control
     {
         var label = new Label { Text = text };
         label.AddThemeFontSizeOverride("font_size", 12);
-        label.Modulate = new Color(1, 1, 1, 0.55f);
+        UiLook.Tint(label, UiLook.Faint);
         return label;
     }
 }

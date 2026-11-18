@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dxgoof0xm6us0"
-path="res://.godot/imported/window-selected.png-68ec6c72a30cf3deb68fe25818435216.ctex"
+uid="uid://ba043tgsu5ox7"
+path="res://.godot/imported/stone-cottage-owed.png-f1252140e0b8b6539455485b826f8704.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/chrome/window-selected.png"
-dest_files=["res://.godot/imported/window-selected.png-68ec6c72a30cf3deb68fe25818435216.ctex"]
+source_file="res://textures/ui/icons/buildings/stone-cottage-owed.png"
+dest_files=["res://.godot/imported/stone-cottage-owed.png-f1252140e0b8b6539455485b826f8704.ctex"]
 
 [params]
 
