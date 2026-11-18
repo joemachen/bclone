@@ -469,4 +469,9 @@ first in-game render. The four as they were asked:*
   - The card's working light (a ColorRect) and the washes. *(The title's scroll label and the roll-up: retired, A114.)*
   - Fonts (step 4) and screens (step 5).
 - Renders: `D:\Projects\brushes\ui\hookin\step3_game.png`, `step3_room.png`.
+- **A116 — the inked edge** (Joe: *"yes, repaint them like the first one"*). The sheets were repainted with a thin dark ink line, fine tears and a narrow grey edge, and no orange rim. `ui contrast:` now also reads **the paper as painted at every frame's inner edge**, off each master. It went red four times on real data, and each was fixed at the cause:
+  - **3.18:1, the first inked sheets' wide vignette.** The vignette was narrowed into the gap between the ink line and the words.
+  - **1.70:1, the top bar's boxes.** Their 6 px room put the outermost words on the slip's ink line, and had since A113. Fixed with a `PaintedPatch.Outset`: the paper reaches 4–7 px past the box, so the bar does not move.
+  - **3.68 and 4.46:1, the windows' foot and top.** Their room is now 15 / 15 / 20 / 18 (cards 28 / 15 / 20 / 18).
+  - **Every text ink is darkened to 5 : 1 on the painted paper's darkest mottle.** On the flat colour they had passed at 4.5, and that flat colour does not exist anywhere on the painted sheets. New inks: rubric `#8b281b`, verdigris `#2c5526`, gold `#61470e`, ochre `#703f0e`, dim `#5c4837`. Lapis and the muted inks already passed.
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).

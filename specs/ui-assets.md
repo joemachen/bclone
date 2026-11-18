@@ -68,7 +68,9 @@ it smears. The centre stretches both ways: washes there are soft and large on pu
 small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws texture pixels 1 : 1); noted for the build,
 `ui-art.md §8.6`.
 
-## 2. The chrome — parchment, no scrolls (A114)
+## 2. The chrome — parchment, no scrolls (A114), an inked edge (A116)
+
+*Joe, 2026-11-17, shown his own reference beside the game: *"yes, repaint them like the first one"*. **Every sheet's edge is inked, not scorched** (`p2_chrome.jsx`'s `inked` sheets): a crisp dark ink line (`#1e140c` at 92 %), fine tears (a nick every 4 master px, ±1), the paper greying softly in the last few px before the line, and **no** orange wash rim and **no** burnt stroke. The sheets, the band and the slip all wear it.*
 
 *Joe, 2026-11-17: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."* The hung scroll's roll, the strip's rolled ends, the modal's roll, the scroll-shaped title label, the roll alone (for the roll-up) and the title screen's hanging scroll are **retired** — their files removed from `textures/ui/`, their Photoshop masters kept in `D:\Projects\brushes\ui\psd\p2\chrome\`. The same sheets were repainted without rolls by the same script (`p2_chrome.jsx`: `sheet`, `sheet-selected`, `band`, `sheet-large`).*
 

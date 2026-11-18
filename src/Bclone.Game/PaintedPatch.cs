@@ -46,6 +46,13 @@ public partial class PaintedPatch : StyleBox
     public float Band { get; set; }
 
     /// <summary>
+    /// Logical px the painting reaches past the box on each side (left, top, right, bottom) — paper outside the control's
+    /// own rect, so a box whose room cannot grow (the top bar's, A116) still has clear paper past its outermost words.
+    /// </summary>
+    [Export]
+    public Vector4 Outset { get; set; }
+
+    /// <summary>
     /// A patch of this master at this scale; <paramref name="content"/> is the room inside it, logical px (left, top,
     /// right, bottom) — chosen by what is painted where, so text can sit inside a plain corner but never on a roll.
     /// </summary>
@@ -70,6 +77,8 @@ public partial class PaintedPatch : StyleBox
         {
             rect = new Rect2(rect.Position.X, rect.End.Y - Band, rect.Size.X, Band);
         }
+
+        rect = rect.GrowIndividual(Outset.X, Outset.Y, Outset.Z, Outset.W);
 
         RenderingServer.CanvasItemSetDefaultTextureFilter(toCanvasItem, RenderingServer.CanvasItemTextureFilter.LinearWithMipmaps);
         RenderingServer.CanvasItemAddSetTransform(toCanvasItem, new Transform2D(0f, new Vector2(Scale, Scale), 0f, rect.Position));

@@ -199,8 +199,55 @@ public partial class Main
             }
         }
 
+        // ---- and on the paper as painted where the words begin: each frame's inner edge, read off its master (A116) ----
+        // ⚠️ The flat colour above cannot see an edge vignette; A116's first inked sheets greyed the paper under the outermost
+        // words to 3.2 : 1, and this line was green.
+        Theme look = ParchmentLook.Build();
+        double edgeWorst = double.MaxValue;
+        string edgeWhere = string.Empty;
+        foreach (string box in new[] { "panel", "card", "card_selected", "strip", "top_box" })
+        {
+            if (look.GetStylebox(box, UiLook.Type) is not PaintedPatch patch || patch.Texture?.GetImage() is not { } image)
+            {
+                faults.Add($"no painted {box} to read");
+                continue;
+            }
+
+            if (image.IsCompressed())
+            {
+                image.Decompress();
+            }
+
+            int w = image.GetWidth();
+            int h = image.GetHeight();
+            float s = 1f / patch.Scale;
+            int l = (int)((patch.ContentMarginLeft + patch.Outset.X) * s);
+            int t = (int)((patch.ContentMarginTop + patch.Outset.Y) * s);
+            int r = w - 1 - (int)((patch.ContentMarginRight + patch.Outset.Z) * s);
+            int b = h - 1 - (int)((patch.ContentMarginBottom + patch.Outset.W) * s);
+            foreach ((int x, int y) in new[] { (l, h / 3), (l, h / 2), (l, 2 * h / 3), (r, h / 3), (r, h / 2), (r, 2 * h / 3), (w / 3, t), (w / 2, t), (w / 2, b), (2 * w / 3, b) })
+            {
+                Color paper = image.GetPixel(Mathf.Clamp(x, 0, w - 1), Mathf.Clamp(y, 0, h - 1));
+                foreach ((string role, Color colour) in ParchmentLook.Words)
+                {
+                    double ratio = Ratio(colour, paper with { A = 1f });
+                    if (ratio < edgeWorst)
+                    {
+                        edgeWorst = ratio;
+                        edgeWhere = $"{role} at the {box}'s inner edge ({x}, {y})";
+                    }
+                }
+            }
+        }
+
+        if (edgeWorst < 4.5)
+        {
+            faults.Add($"{edgeWhere} reads at {edgeWorst:F2}:1 on the paper as painted");
+        }
+
         return faults.Count == 0
-            ? $"[widths] ui contrast: ✅ {ParchmentLook.Words.Length} text roles on the parchment and its darkest mottle, the faintest {worstRole} at {worst:F2}:1 (4.5 wanted)"
+            ? $"[widths] ui contrast: ✅ {ParchmentLook.Words.Length} text roles on the parchment and its darkest mottle, the faintest {worstRole} at {worst:F2}:1; "
+              + $"on the paper as painted at every frame's inner edge, the faintest {edgeWorst:F2}:1 (4.5 wanted)"
             : $"[widths] ui contrast: ⛔ {string.Join("; ", faults)}";
     }
 }

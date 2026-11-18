@@ -28,20 +28,24 @@ internal static class ParchmentLook
     internal static readonly Color Ink = new("#2a2018");
     internal static readonly Color InkMuted = new("#5c4833");
     internal static readonly Color InkSoft = new("#4a3a2a");
-    internal static readonly Color InkDim = new("#644f3c"); // #6b5640 read 4.30 : 1 on the mottle (ui contrast:, A113)
+    // ⚠️ The text inks are measured on the paper as painted, its darkest mottle and every frame's inner edge, at 5 : 1 or
+    // more (ui contrast:, A116): on the flat colour alone they passed at 4.5 and read 3.2 under A116's first inked edges.
+    internal static readonly Color InkDim = new("#5c4837"); // #6b5640 4.30 (A113), #644f3c 4.65 on the painted paper (A116)
     internal static readonly Color Rubric = new("#9b2d1f");
     internal static readonly Color Verdigris = new("#2f5a28");
+    internal static readonly Color RubricInk = new("#8b281b"); // the rubric as words: #9b2d1f read 4.55 on the painted paper
+    internal static readonly Color VerdigrisInk = new("#2c5526"); // the verdigris as words: #2f5a28 read 4.85
     internal static readonly Color Lapis = new("#30488c");
-    internal static readonly Color GoldInk = new("#6e5010");
-    internal static readonly Color OchreInk = new("#7a4510");
+    internal static readonly Color GoldInk = new("#61470e"); // #6e5010 read 4.50 on the painted paper
+    internal static readonly Color OchreInk = new("#703f0e"); // #7a4510 read 4.72
 
     /// <summary>The text roles and their colours, for the contrast probe — every one a word read on parchment.</summary>
     internal static readonly (string Role, Color Colour)[] Words =
     {
         ("text", Ink), ("text_faint", InkMuted), ("text_soft", InkSoft), ("text_hint", InkMuted), ("text_dim", InkDim),
-        ("text_strong", Ink), ("working", Verdigris), ("stopped", Rubric), ("owed", GoldInk), ("held", Rubric),
-        ("refused", Rubric), ("saved", Verdigris), ("known", Verdigris), ("stamp", InkDim), ("log_death", Rubric),
-        ("log_life", Verdigris), ("log_discovery", GoldInk), ("log_warning", OchreInk), ("log_building", Lapis),
+        ("text_strong", Ink), ("working", VerdigrisInk), ("stopped", RubricInk), ("owed", GoldInk), ("held", RubricInk),
+        ("refused", RubricInk), ("saved", VerdigrisInk), ("known", VerdigrisInk), ("stamp", InkDim), ("log_death", RubricInk),
+        ("log_life", VerdigrisInk), ("log_discovery", GoldInk), ("log_warning", OchreInk), ("log_building", Lapis),
         ("log_season", InkMuted), ("log_ordinary", Ink),
     };
 
@@ -71,19 +75,22 @@ internal static class ParchmentLook
         theme.SetColor("fade", t, new Color(1f, 1f, 1f, 0.5f));
 
         // A torn, lightly scorched sheet — no roll (A114, Joe: "keep the parchment and remove the scrolls"). Text clears the scorch.
-        PaintedPatch window = PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(15, 12, 20, 14));
+        PaintedPatch window = PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(15, 15, 20, 18));
         theme.SetStylebox("panel", t, window);
-        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(28, 12, 20, 14)));
+        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(28, 15, 20, 18)));
 
         // Selected: the illuminated bar down the left (≈9 logical) — the same room inside, so a card does not jump when picked.
         theme.SetStylebox(
-            "card_selected", t, PaintedPatch.Make(Tex("chrome/sheet-selected.png"), 0.5f, new Vector4(56, 40, 40, 44), new Vector4(28, 12, 20, 14)));
+            "card_selected", t, PaintedPatch.Make(Tex("chrome/sheet-selected.png"), 0.5f, new Vector4(56, 40, 40, 44), new Vector4(28, 15, 20, 18)));
 
         // The control bar: a long torn sheet across the screen — no rolls at its ends (A114).
         theme.SetStylebox("strip", t, PaintedPatch.Make(Tex("chrome/band.png"), 0.5f, new Vector4(40, 20, 40, 20), new Vector4(15, 12, 20, 20)));
 
-        // The top bar's boxes: a torn slip, no rolls — slate's own 6 px inside, because that bar is full (A111).
-        theme.SetStylebox("top_box", t, PaintedPatch.Make(Tex("chrome/slip.png"), 0.5f, new Vector4(20, 16, 20, 16), new Vector4(6, 6, 6, 6)));
+        // The top bar's boxes: a torn slip — slate's own 6 px inside, because that bar is full (A111); the paper reaches a few
+        // px past the box instead (A116), so the outermost words never sit on the ink line, and the bar does not move.
+        PaintedPatch topBox = PaintedPatch.Make(Tex("chrome/slip.png"), 0.5f, new Vector4(20, 16, 20, 16), new Vector4(6, 6, 6, 6));
+        topBox.Outset = new Vector4(4, 4, 7, 7);
+        theme.SetStylebox("top_box", t, topBox);
 
         theme.SetStylebox("pill_met", t, PaintedPatch.Make(Tex("controls/pill.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
         theme.SetStylebox("pill_unmet", t, PaintedPatch.Make(Tex("controls/pill-unmet.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
@@ -135,8 +142,8 @@ internal static class ParchmentLook
             theme.SetStylebox("focus", type, new StyleBoxEmpty());
             theme.SetColor("font_color", type, Ink);
             theme.SetColor("font_hover_color", type, Ink);
-            theme.SetColor("font_pressed_color", type, Rubric);
-            theme.SetColor("font_hover_pressed_color", type, Rubric);
+            theme.SetColor("font_pressed_color", type, RubricInk);
+            theme.SetColor("font_hover_pressed_color", type, RubricInk);
             theme.SetColor("font_focus_color", type, Ink);
             theme.SetColor("font_disabled_color", type, InkMuted with { A = 0.6f });
             theme.SetColor("icon_normal_color", type, Colors.White);
