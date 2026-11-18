@@ -26,18 +26,18 @@ internal static class ParchmentLook
     // ---- the palette (ui-assets.md §1.4), and the darkened inks the words need ----
     internal static readonly Color Parchment = new("#ead3a9");
     internal static readonly Color Ink = new("#2a2018");
-    internal static readonly Color InkMuted = new("#5c4833");
+    internal static readonly Color InkMuted = new("#503f2c"); // #5c4833 read 4.06 on A117's weathered paper
     internal static readonly Color InkSoft = new("#4a3a2a");
     // ⚠️ The text inks are measured on the paper as painted, its darkest mottle and every frame's inner edge, at 5 : 1 or
     // more (ui contrast:, A116): on the flat colour alone they passed at 4.5 and read 3.2 under A116's first inked edges.
-    internal static readonly Color InkDim = new("#5c4837"); // #6b5640 4.30 (A113), #644f3c 4.65 on the painted paper (A116)
+    internal static readonly Color InkDim = new("#503f30"); // #6b5640 4.30 (A113), #644f3c 4.65 (A116), #5c4837 4.05 on the weathered paper (A117)
     internal static readonly Color Rubric = new("#9b2d1f");
     internal static readonly Color Verdigris = new("#2f5a28");
-    internal static readonly Color RubricInk = new("#8b281b"); // the rubric as words: #9b2d1f read 4.55 on the painted paper
-    internal static readonly Color VerdigrisInk = new("#2c5526"); // the verdigris as words: #2f5a28 read 4.85
-    internal static readonly Color Lapis = new("#30488c");
-    internal static readonly Color GoldInk = new("#61470e"); // #6e5010 read 4.50 on the painted paper
-    internal static readonly Color OchreInk = new("#703f0e"); // #7a4510 read 4.72
+    internal static readonly Color RubricInk = new("#7b2318"); // the rubric as words: #9b2d1f 4.55 (A116), #8b281b 4.08 on the weathered paper (A117)
+    internal static readonly Color VerdigrisInk = new("#264a21"); // the verdigris as words: #2f5a28 4.85 (A116), #2c5526 4.05 (A117)
+    internal static readonly Color Lapis = new("#2a3f7b"); // the lapis as words (the log's buildings): #30488c read 4.06 on the weathered paper (A117)
+    internal static readonly Color GoldInk = new("#553e0c"); // #6e5010 4.50 (A116), #61470e 4.09 on the weathered paper (A117)
+    internal static readonly Color OchreInk = new("#62370c"); // #7a4510 4.72 (A116), #703f0e 4.10 (A117)
 
     /// <summary>The text roles and their colours, for the contrast probe — every one a word read on parchment.</summary>
     internal static readonly (string Role, Color Colour)[] Words =

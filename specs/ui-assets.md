@@ -72,6 +72,8 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 
 *Joe, 2026-11-17, shown his own reference beside the game: *"yes, repaint them like the first one"*. **Every sheet's edge is inked, not scorched** (`p2_chrome.jsx`'s `inked` sheets): a crisp dark ink line (`#1e140c` at 92 %), fine tears (a nick every 4 master px, ±1), the paper greying softly in the last few px before the line, and **no** orange wash rim and **no** burnt stroke. The sheets, the band and the slip all wear it.*
 
+*Joe, the same day: *"i want that too"* — **the paper weathered like his reference** (A117): a cooler base (`#f2e6d0`) and fewer, bolder grey-brown stains (`#7e705c` at 24 %), measured against his image. The middle tone is 217–221 against his 224, the spread 10–11 against 11–14, and the darkest tenth about (209, 187, 153) against his (209, 180, 138). ⚠️ **His heavy darkening under the words was not copied:** on it the coloured inks fail 4.5 : 1 unless they turn near-black. The paper's weathering darkens where words never sit, and the text inks were darkened once more for the stains (`ui-art.md §9.8`).*
+
 *Joe, 2026-11-17: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."* The hung scroll's roll, the strip's rolled ends, the modal's roll, the scroll-shaped title label, the roll alone (for the roll-up) and the title screen's hanging scroll are **retired** — their files removed from `textures/ui/`, their Photoshop masters kept in `D:\Projects\brushes\ui\psd\p2\chrome\`. The same sheets were repainted without rolls by the same script (`p2_chrome.jsx`: `sheet`, `sheet-selected`, `band`, `sheet-large`).*
 
 | File | Master size | Margins L/T/R/B (master px) | What it is | States |

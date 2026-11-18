@@ -474,4 +474,9 @@ first in-game render. The four as they were asked:*
   - **1.70:1, the top bar's boxes.** Their 6 px room put the outermost words on the slip's ink line, and had since A113. Fixed with a `PaintedPatch.Outset`: the paper reaches 4–7 px past the box, so the bar does not move.
   - **3.68 and 4.46:1, the windows' foot and top.** Their room is now 15 / 15 / 20 / 18 (cards 28 / 15 / 20 / 18).
   - **Every text ink is darkened to 5 : 1 on the painted paper's darkest mottle.** On the flat colour they had passed at 4.5, and that flat colour does not exist anywhere on the painted sheets. New inks: rubric `#8b281b`, verdigris `#2c5526`, gold `#61470e`, ochre `#703f0e`, dim `#5c4837`. Lapis and the muted inks already passed.
+- **A117 — the paper weathered** (Joe: *"i want that too"*): greyer, with fewer and bolder stains, measured against his reference. `ui contrast:` went red at 4.24 (dim ink on the bar's darker stains). The inks were darkened about 12 % against the darkest paper words can sit on, (196, 175, 142):
+  - muted `#503f2c`, dim `#503f30`;
+  - rubric `#7b2318`, verdigris `#264a21`, gold `#553e0c`, ochre `#703f0e` → `#62370c`;
+  - lapis as words `#2a3f7b`.
+  - Each still reads as its colour. The faintest word at any inner edge is now 4.93 : 1.
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
