@@ -159,7 +159,7 @@ public sealed class ModdedBuildingTests
     }
     """;
 
-    private static SimConfig ConfigWithABoathouse() =>
+    internal static SimConfig ConfigWithABoathouse() =>
         SimConfigLoader.Parse(JsonWithABoathouse, "<modded>");
 
     private static SimWorld World(SimConfig config, out InMemoryLogSink sink)
@@ -180,7 +180,7 @@ public sealed class ModdedBuildingTests
     }
 
     /// <summary>A tile the village may build on, found rather than assumed.</summary>
-    private static GridPos SomewhereBuildable(SimWorld world)
+    internal static GridPos SomewhereBuildable(SimWorld world)
     {
         for (int y = 0; y < world.Map.Height; y++)
         {
@@ -526,7 +526,7 @@ public sealed class ModdedBuildingTests
     }
 
     /// <summary>Build the site standing at a tile, the way a builder's crew would.</summary>
-    private static Workplace FinishTheSiteAt(SimWorld world, GridPos site)
+    internal static Workplace FinishTheSiteAt(SimWorld world, GridPos site)
     {
         Workplace? found = null;
         for (int i = 0; i < world.Workplaces.Count; i++)

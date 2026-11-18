@@ -1,9 +1,10 @@
 # Spec: The batch trade as a row — W1
 
-> Status: **🔨 BUILDING on `slice/batch-trade`. 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
+> Status: **✅ BUILT on `slice/batch-trade` (D792–D795, 2026-11-18): steps 1–6, the four checks green, no golden moved.
+> ⏸️ The merge at Joe's word, and his play of any village with a mill, a bakery, a tailor and a workshop (§9).** History: 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
 > recommended"*) — one shared pair of states, the trade a field beside it (§7). ✅ Step 1, today pinned (D792): 28 tests,
 > 11 mutants, 11 red. ✅ Steps 2 and 4 — the row, and hands and stops by it (D793, one commit). ✅ Step 5 — one shared
-> pair of states and `Villager.BatchTrade` (D794); **no golden moved**. ▶️ Step 6.**
+> pair of states and `Villager.BatchTrade` (D794); **no golden moved**. ✅ Step 6, a fifth trade from its row (D795).**
 > Phase 6, W1 of the workplan (`systems-complete.md §5.1`, D788–D789): the enabler before beer (W3), health's herbs (W6)
 > and the wool coat (W10), each of which would otherwise be a fifth, sixth and seventh hand-written copy.
 >
@@ -152,7 +153,17 @@ Traced (the order-sensitive details, each with its guard in §6):
    it; twenty posed years with a mill and an oven ran identically. The proof §7 promised (old numbers restored) had
    nothing to restore; `WhoseBatchIsInTheFingerprintOnlyAtABatch` reads the new hash directly instead. **Red-check: 8
    mutants, 8 red** (two re-run after the runner failed to restore them — HANDOFF trap).
-6. **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
+6. ✅ **(D795 — `FifthBatchTradeTests`.)** The modded boathouse's boatman (`ModdedBuildingTests`, job 18, building 10)
+   given a batch row — stone into tools — and a skill row, through config alone: the recipe from the row, wanted by the
+   quota from the row, walked to, worked, delivered, described in the row's words (*"shaping stone tools, the 2nd tool of
+   the day"*) and its skill grown. Red: the catalogue limited to the built-in ids fails it, and only it. **⚠️ What the
+   enums do stop: hiring.** `LabourAllocator.KindsInOrder` is a list of the shipped `JobKind`s, so **the village never
+   seats a modded trade, batch or not** (the boatman never was) — the test seats its hand, with the share-out switched
+   off. And the quota does count a modded batch row's hands in its band, so in a modded game those hands are held for a
+   trade nobody is seated at. **So W3's brewer, a shipped trade, needs in the batch path: a `JobKind` and a
+   `BuildingKind` value, its rows (job, building, skill, batch), and its place in `KindsInOrder`** — nothing else. Making
+   the allocator's order data is Phase 7's (with the rows moving into the data file), and every modded trade's.
+   *(As specced:)* **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
    config alone — no sim code — and watches a villager hired, walk, work, deliver, be described and grow its skill.
    ⚠️ **If the job or building catalogue cannot take a row past the built-ins** (they are C# enums underneath — Phase 7's
    work), that is written down here and W3's brewer becomes the proof, needing a `JobKind` and `BuildingKind` value

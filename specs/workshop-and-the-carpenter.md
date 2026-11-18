@@ -338,6 +338,10 @@ trades' `WorkTicksFor` arm at ~2445, the standing-shop list at ~3989), `Behavior
 `LabourAllocator.cs` (`KindsInOrder`), `LabourQuota.cs` (`Asked`, `AtLeastPinned`, the stood-down-by-limit switch at
 ~963). Each gains Carpenter; a guard holds the list (§9).
 
+> **Since W1 (D791–D795, `batch-trade.md`) this list is a row.** A batch trade is a `BatchRow`; the grep above now finds
+> only `LabourAllocator.KindsInOrder` (the allocator's order, still the shipped enum's), the quota's named readers, and the
+> old-save names. `TheCarpenterJoinsEveryBatchTradeSwitch` still holds.
+
 ### 4.6 The survival floor does not move
 
 `VillageEconomy.StockFloor(Goods.Handcart)` is **0** with the tools' reason: a cart is upside above the floor (its
