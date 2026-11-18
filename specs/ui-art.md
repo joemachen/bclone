@@ -479,4 +479,5 @@ first in-game render. The four as they were asked:*
   - rubric `#7b2318`, verdigris `#264a21`, gold `#553e0c`, ochre `#703f0e` → `#62370c`;
   - lapis as words `#2a3f7b`.
   - Each still reads as its colour. The faintest word at any inner edge is now 4.93 : 1.
+- **A118 — no grey margin, a dark muddled ink line** (Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"*). The grey band he saw was a bug as much as a look: A116's script edit appended a comment to a line, and that comment swallowed the vignette's blend mode and opacity. Since A116 the "soft 26 % multiply" was painted as a full grey band. It is removed outright. The ink is now near-black in the dry-brush tip, with a second drifting stroke over it, and the shadow is tight. The faintest word at an inner edge rose to 5.15 : 1.
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
