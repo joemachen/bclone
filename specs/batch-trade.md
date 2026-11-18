@@ -1,0 +1,168 @@
+# Spec: The batch trade as a row — W1
+
+> Status: **📝 SPECCED (D791, 2026-11-17) on `slice/batch-trade` — nothing built. ⏸️ One call Joe's (§7): how a
+> villager at a batch hut is stored. Then steps 1–6 (§6), each its own commit with the goldens checked.**
+> Phase 6, W1 of the workplan (`systems-complete.md §5.1`, D788–D789): the enabler before beer (W3), health's herbs (W6)
+> and the wool coat (W10), each of which would otherwise be a fifth, sixth and seventh hand-written copy.
+>
+> Neighbours: `food-chain.md §4` (the `Batch` shape, D522), `clothing.md §8` (*"every Miller/Baker switch gains Tailor"*),
+> `workshop-and-the-carpenter.md §4.3–§4.5` (the carpenter joined every switch; `made_from`), `tools-and-the-smith.md`
+> (the smith, which keeps its own path), D281 (a reused state is a reused classification), D218 (the quota indexed by job
+> id so a trade can be added), D510 (a save is read whole or refused).
+
+---
+
+## 1. Why
+
+The review (D788) said each batch trade was *"hand-written: its own VillagerState pair plus ErrandKind arms"*. **Traced
+on the code (2026-11-17), half of that is already fixed:** the decide, the walk, the work, the put-away and every reason
+to stand still are written once — `SimWorld.BatchFor`, `WhyTheBatchWaits`, `StoreForTheBatch`, `StoreForTheOutput`,
+`BehaviorSystem.BeginBatches` and `FinishABatch` (D522, built so the bakery would not be a second mill).
+
+What is still per trade is **every switch that turns a trade into its states, its words and its hands** — and each
+new batch trade has had to find them all by grep (`workshop-and-the-carpenter.md §4.5` lists the grep). Counted:
+
+| Piece | Where | Per trade today |
+|---|---|---|
+| The recipe | `SimWorld.BatchFor` (:4382) | a `switch` arm; the miller and baker read config keys, the tailor a literal output of 1, the carpenter the goods row's `made_from` |
+| The two states | `World/Season.cs` (:298–349) | `TravelingToMill`/`Grinding`, `TravelingToBakery`/`Baking`, `TravelingToTailor`/`Sewing`, `TravelingToWorkshop`/`Making` |
+| State ⇄ trade | `BehaviorSystem` `BatchState` (:702), `BatchStatesOf` (:711), `BeginBatches` (:5976) | three switches, **each with the baker as the silent default** — a fifth trade forgotten there would bake |
+| Predicates | `BehaviorSystem` `IsMilling`/`IsBaking`/`IsSewing`/`IsMaking` (:689), `IsOnAWorkErrand` (:740), four `ErrandKind` arms (:800–820), the walk case in `ActOne` (:520), `CompleteAction` (:7621) | an arm each |
+| Words | `BehaviorSystem.Describe` (:131), `Villager.DescribeState` (:905) | *"grind of the day"*, *"batch of the day"*, *"of the day"*; `Making` says *"handcarts"* whatever the workshop makes |
+| Skill | `SkillSystem.OutOnTheWork` (:277) | an arm each; the default throws |
+| Hands | `LabourQuota` constructor (:50, :78), readers (:175), wants (:321, :338), takes (:643–662), `Asked` (:843), `AtLeastPinned` (:873); `LabourAllocator.KindsInOrder` (:1160) | ~14 lines each |
+| How much is wanted | `LabourQuota` `MillersWanted`/`BakersWanted` (every seat with work), `TailorsWanted`/`CarpentersWanted` (shortfall over a year's work, capped by seats); `VillageEconomy` (:445–484) the tailor's and carpenter's per-year sums | a function each |
+| Stops | `WhyTheBatchWaits` (:4447) | the miller waits while the village is hungry and while the ovens have flour enough; the tailor at `ClothingWanted`; the carpenter at `HandcartsWanted` + the spare; the baker for firewood |
+| Who knows of it | `SimWorld.KnowsOf` (:4179), `AStandingShopIsShortOf` (:3761) | a list |
+| The view | `VillageMap.People.cs` `AtWork` (:74), `GoingToWork` (:84) | a name each |
+
+**Nine sim files and one view file, about sixty lines a trade, none of which says anything a row could not.** The
+brewer (W3), the herbalist (W6) and the wool coat (W10) would each copy them again.
+
+## 2. Pillars
+
+- **Traceable over clever (§1):** one table of batch trades, read by every switch, is easier to follow than ten switches
+  that must agree; the baker-as-default is exactly the silent wrong answer the pillar forbids.
+- **Data-driven from day one (CLAUDE.md):** a batch trade becomes a row in the catalogue. ⚠️ **In the catalogue's
+  sense, not yet the data file's** — like every content row today it is a `SimConfig` C# default with its numbers in
+  `data/sim.config.json`; Phase 7's first step moves the rows themselves (D789). This spec does not pretend otherwise.
+
+## 3. The row
+
+`SimConfig.BatchRows` — one `BatchRow` per batch trade, in hiring order, built from today's config keys (no new key,
+no number changes):
+
+| Column | Miller | Baker | Tailor | Carpenter |
+|---|---|---|---|---|
+| `trade` | Miller | Baker | Tailor | Carpenter |
+| `input`, `input_per_batch` | wheat, `wheat_per_grind` | flour, `flour_per_bake` | leather, `leather_per_coat` | **from the product's `made_from`** |
+| `output`, `output_per_batch` | flour, `flour_per_grind` | bread, `bread_per_bake` | clothing, 1 | **the workshop's `MakeGood`**, 1 |
+| `firing` (firewood a stint) | 0 | `firewood_per_firing` | 0 | 0 |
+| `ticks`, `per_stint` | `grind_ticks`, `grinds_per_stint` | `bake_ticks`, `bakes_per_stint` | `sew_ticks`, `sews_per_stint` | `make_ticks`, `makes_per_stint` |
+| `verb`, `doing`, `noun` | grind, grinding, a grind | bake, baking, a bake | sew, sewing, a coat | make, making, *a {product}* |
+| `stint_word` | grind | batch | — | — |
+| `idle` (the card's work line) | at the stones | lighting the oven | cutting a hide for a coat | truing a wheel for *a {product}* |
+| `stop` | **`FedFirst` + `OvensSupplied`** | none | **`EveryoneClothed`** | **`EveryHouseholdCarted`** |
+| `hands` | `EverySeatWithWork` | `EverySeatWithWork` | `ShortfallOverAYear` | `ShortfallOverAYear` |
+| `quota_band` | after stone | after stone | after tools | after tools |
+| `stands_down_in_famine` | no | no | **yes** | no |
+
+- **`stop` and `hands` name a rule, not a formula.** The four demand rules are genuinely different mechanics —
+  bread feeds, flour feeds the ovens, a coat keeps a body warm, a cart serves a household — and each stays one named
+  method in code (`ClothingWanted`, `HandcartsWanted`, `FlourWantedForTheOvens`, the hunger stop). A new trade picks an
+  existing rule, or brings one new method and its name. **That is the honest line: content is a row, a new kind of
+  demand is a mechanic** (the review's §3 cut, applied inside one system).
+- **The carpenter's recipe stays on the product's row** (`made_from`, D446's shape, Joe's D675 call 3). The `BatchRow`
+  says *"read the recipe from the product"*; the four other columns come from it as today, through
+  `CarpentersBatch`'s first-standing-workshop rule unchanged.
+- **The smith stays out.** His recipe is the tool's row and his card picks the tool; he was never a `Batch` (D446).
+- **Validation at load:** every `BatchRow`'s trade has a `JobRow` and a building whose `Kind` it is; its goods exist;
+  `ticks` and `per_stint` above nought; no two rows for one trade. The checks already at `SimConfig` :6355–6371 move
+  onto the row.
+
+## 4. What reads the row
+
+Every switch in §1's table becomes a lookup: `BatchFor(trade)` finds the row and builds the `Batch` as today;
+`BatchStatesOf`, `BatchState`, `BeginBatches`, the predicates, the `ErrandKind` arms, `Describe`, `DescribeState`,
+`OutOnTheWork`, `KnowsOf` and `AStandingShopIsShortOf` iterate or index the rows. **An unknown trade throws** — the
+baker-as-default goes (§1). The quota's four named takes become two loops over the rows of a band, **in row order,
+at exactly the places the named lines stand today** (smith → *after tools* → quarrier, miner → *after stone* →
+herdsman), so `Take(ref free)` is called in the same order with the same numbers. `KindsInOrder` is untouched — it
+already lists the four where the bands put them, and a guard holds the two orders equal. `VillageEconomy`'s two
+per-year sums become one, `BatchesPerYearAtWorst(row)`, after a test shows it returns the same integer for both.
+
+**Nothing a player sees changes,** with one invisible exception: `Making` says the workshop's product from the row
+rather than the word *"handcarts"* — the same word while handcarts are the only product.
+
+## 5. Determinism — what must not move
+
+Traced (the order-sensitive details, each with its guard in §6):
+
+1. **The quota's take order** — §4's bands keep it; a test compares the old order with the new on every shipped golden
+   valley at Year 30, and every golden is the final proof.
+2. **First match wins** in `AStandingShopIsShortOf` and `CarpentersBatch` — both still walk `Workplaces` in list order.
+3. **`FinishABatch`'s order of takes** (firing check, input, firewood, output store, set-down) — not touched.
+4. **No RNG** on any batch path (traced); `BeginWork` unchanged.
+5. **The state byte** — `StateHash` hashes `(byte)villager.State`; the four pairs are 41–44 and 53–56. **This is
+   §7's call.**
+
+## 6. Steps — each its own commit, the goldens grepped before and after
+
+1. **Pin today first** (tests only, written before any change, each red-checked by a mutant): every trade's `Batch`
+   field by field; its two states and their words (`Describe`, `DescribeState`, idle line); its `OutOnTheWork` skill;
+   its stop sentences; its quota want on a posed village; the quota's take order. Many exist
+   (`TheCarpenterJoinsEveryBatchTradeSwitch`, `FoodChainTests`, `TailorTests`, `WorkshopTests`) — the new ones fill
+   the gaps, and **a guard that cannot fail is counted as zero and written down** (D326).
+2. **The row** — `BatchRow`, `SimConfig.BatchRows` and its validation; `BatchFor` reads it. Goldens unchanged.
+3. **The switches** — states, predicates, errand arms, words, skill, `KnowsOf`, `AStandingShopIsShortOf` read the
+   rows; the baker default throws. Goldens unchanged.
+4. **Hands and stops** — the quota's bands, `BatchSeatsWanted` / the shortfall rule by the row's `hands`,
+   `WhyTheBatchWaits` by the row's `stop`, `VillageEconomy`'s one sum. Goldens unchanged.
+5. **The states** — per Joe's call (§7). The view's `AtWork` / `GoingToWork` read a sim helper rather than eight names.
+6. **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
+   config alone — no sim code — and watches a villager hired, walk, work, deliver, be described and grow its skill.
+   ⚠️ **If the job or building catalogue cannot take a row past the built-ins** (they are C# enums underneath — Phase 7's
+   work), that is written down here and W3's brewer becomes the proof, needing a `JobKind` and `BuildingKind` value
+   and nothing else in the batch path.
+
+**The four checks at the end** (CLAUDE.md), the suite's clock compared with D788's 14m48.
+
+## 7. ⏸️ Joe's call — how a villager at a batch hut is stored
+
+Today a miller at the mill is stored as *"Grinding"*, a baker as *"Baking"*, and so on — a pair of names per trade.
+For a new trade to be only a row, it can't need two new names in the code.
+
+- **A — one shared pair for every batch trade** (*walking to the hut* / *working at the hut*), with the trade's row
+  supplying the words you read (*"grinding"*, *"baking"*). **What you'd notice: nothing.** Your existing saves still
+  load — the four old names are read as the shared pair. The cost: the two Phase 5 golden numbers (the run that builds a
+  mill and a bakery) change **once**, only because the stored state's number changes; I prove it by putting the old
+  numbers back in a scratch build and getting the old goldens exactly, then re-pin.
+- **B — the four keep their own names; new trades use the shared pair.** Nothing moves and saves load, but there are two
+  ways of doing the same thing forever, and the next person has to know which trades are which.
+
+**Recommended: A.** It is the version a modder can use, and the one golden move is proved, not waved through.
+
+### Found while tracing — not changed by W1
+
+- **The tailor stands down in a famine, the carpenter doesn't** (`LabourQuota` :401 zeroes only `tailorsWanted`). W1
+  keeps both as they are (`stands_down_in_famine` per row) because W1 changes nothing you see. Worth deciding with
+  morale or health; not now.
+- `Main.Cards.cs` :3413 repeats the carpenter's waiting sentence using `LogsPerHandcart` directly. Left alone — the art
+  lane is editing that file. Raised for after its hook-in.
+- **Each batch building's unlock** (`mill_unlock_wheat`, `tailor_unlock_leather`, `workshop_unlock_logs`) is still a
+  `WhyNotYet` arm and a tech node per building. Out of W1: the brewery's unlock is W3's, and the tech nodes are already
+  rows.
+
+## 8. Art (D774's rule)
+
+Nothing new to draw. W1 changes no building, good or state anybody sees.
+
+## 9. Acceptance
+
+- §6's steps 1–6 built, each commit with the goldens grepped before and after; **no golden moves, except — under §7's
+  A — the two Phase 5 goldens, once, proved by restoring the old state numbers.**
+- A new batch trade needs, in the batch path: **a row**, plus a demand rule only if its demand is new. The grep in
+  `workshop-and-the-carpenter.md §4.5` returns nothing to edit.
+- The four checks green; the suite's clock within reach of D788's.
+- Joe plays a village with a mill, a bakery, a tailor and a workshop working (any of his saves) and sees nothing
+  different.
