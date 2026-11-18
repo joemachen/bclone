@@ -7,7 +7,7 @@
 > NOUGHT AND MEASURED (D761, §12.5); ✅ SHIPPED AT D762's MIX (D763, Joe: *"Yes, ship it"*) — TWO YEARS 11–13, LOADS
 > 25 %, OLD AGE +20, B 80; ✅ WARM IN WINTER, BURNING FIREWOOD (D764, Joe: *"Warm, burns firewood"*, §12.6); ✅ STEP 4, THE
 > VIEW (D765, §12.7); ✅ STEP 5, SAVES AND THE HASH (D766, §12.8) — NO GOLDEN MOVED; ✅ SEVEN YEARS, 5–12, AND COATS FROM
-> FIVE (D767, §12.9); ✅ MERGED INTO `main` AT JOE'S WORD (D769); ✅ PLAYED AND APPROVED (D773, Joe: *"it looks good. and children get coats now"*).** *(Read "UNPLAYED (D769). ⏳ JOE PLAYS IT." until D773.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
+> FIVE (D767, §12.9); ✅ MERGED INTO `main` AT JOE'S WORD (D769); ✅ PLAYED AND APPROVED (D773, Joe: *"it looks good. and children get coats now"*); ✅ THE TWO WORDINGS HIS LOG SHOWED, FIXED (D786, §12.10, *"yes fix the school wording"*) AND MERGED AND PUSHED AT HIS WORD (D787).** *(Read "UNPLAYED (D769). ⏳ JOE PLAYS IT." until D773.)* Owner: Joe + Claude Code · Pillar: `DESIGN.md §2.1`, §2.7
 > Format per `METHODOLOGY.md §2`.
 >
 > Neighbours: `skills-catalog.md` (**§6.6 is amended by this spec — see §5**), `tech-tree.md §7d`
@@ -628,6 +628,10 @@ the gifts reach fewer people. **⛔ A second teacher makes it worse in a harness
 are not enough children to fill twelve places, so the second teacher is a working adult lost for nothing. Froze 12.8 →
 13.3 — children walking to school in winter, inside the noise; the harness makes no coats (no tailor), so coats from five
 are not in these numbers. ⚠️ D447: a played village of fifty has more children, where a second teacher may pay.
+
+### 12.10 ✅ The two wordings his Ashbourne log showed (D786, Joe: *"yes fix the school wording"*)
+
+D773 read his log: *"5 children of school age have no place at school — another teacher … would bring 6 more"* said before the teacher had started (five children, six places, nobody in them), and a child who turned twelve inside the first year *"leaves school 1 after 0 years"*. (a) The ask for another school is counted only while a school **is taught** — a standing school with a teacher at work — not from the day it stands: untaught, nobody can have a place, so nobody is left without one, and the school's own card already says *"Nobody teaches here"*. (b) A pupil's time at school is said in years once there is one, seasons under a year, *"less than a season"* under that (`SchoolRoll.HowLong`): never *"after 0 years"*. Guards `AnUntaughtSchoolAsksForNothing`, `ALeaverIsSaidToHaveBeenThereSomeTime`; two mutants, both red where aimed: the ask counted from a standing school again **1**, *"0 years"* again **3** (the three under-a-year cases); restored by bytes, 0 markers.
 
 ## 10. Definition of Done
 

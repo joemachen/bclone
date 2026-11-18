@@ -183,15 +183,19 @@ internal static class SchoolRoll
             free[slot] = (free[slot].School, free[slot].Free - 1);
         }
 
-        // 3. ⭐ Who is still waiting, while a school stands — the village asks for another by name (D765, §6).
-        bool aSchoolStands = false;
-        for (int w = 0; w < world.Workplaces.Count && !aSchoolStands; w++)
+        // 3. ⭐ Who is still waiting, while a school is taught — the village asks for another by name (D765, §6).
+        // ⛔ TAUGHT, NOT STANDING (D786, Joe's Ashbourne log, D773): counted from the day a school stood, the ask fired before
+        // its teacher had started — "5 children of school age have no place at school — another teacher … would bring 6 more"
+        // with six places and nobody in them. Untaught, the school's own card says "Nobody teaches here"; nobody can have a
+        // place yet, so nobody is left without one.
+        bool aSchoolIsTaught = false;
+        for (int w = 0; w < world.Workplaces.Count && !aSchoolIsTaught; w++)
         {
-            aSchoolStands = world.Workplaces[w] is { Kind: JobKind.Teacher, IsSite: false };
+            aSchoolIsTaught = world.Workplaces[w] is { Kind: JobKind.Teacher, IsSite: false } standing && PlacesAt(world, standing) > 0;
         }
 
         int waiting = 0;
-        for (int v = 0; v < world.Villagers.Count && aSchoolStands; v++)
+        for (int v = 0; v < world.Villagers.Count && aSchoolIsTaught; v++)
         {
             Villager child = world.Villagers[v];
             if (MayTakeAPlace(config, child))
@@ -201,6 +205,28 @@ internal static class SchoolRoll
         }
 
         world.AskForAnotherSchoolIfFull(waiting);
+    }
+
+    /// <summary>
+    /// ⭐ How long a pupil was at school, as the leaving sentence says it (D786, Joe's Ashbourne log, D773: a child who turned
+    /// twelve inside their first year <i>"leaves school 1 after 0 years"</i>): years once there is one, seasons under a year,
+    /// and <i>"less than a season"</i> under that — never nought.
+    /// </summary>
+    internal static string HowLong(int ticks, SimConfig config)
+    {
+        int years = ticks / config.TicksPerYear;
+        if (years > 0)
+        {
+            return years == 1 ? "a year" : $"{years} years";
+        }
+
+        int seasons = ticks / config.TicksPerSeason;
+        return seasons switch
+        {
+            0 => "less than a season",
+            1 => "a season",
+            _ => $"{seasons} seasons",
+        };
     }
 
     /// <summary>Who may take a place: of school age, within the term, not at school already, and not kept on a trade.</summary>
@@ -253,8 +279,7 @@ internal static class SchoolRoll
             return;
         }
 
-        int years = pupil.SchoolTicks / world.Config.TicksPerYear;
-        string served = years == 1 ? "a year" : $"{years} years";
+        string served = HowLong(pupil.SchoolTicks, world.Config);
         world.Narrate(
             finished
                 ? $"{pupil.Name} leaves {where} after {served}, for work. {world.Clock.SeasonAndYear()}."
