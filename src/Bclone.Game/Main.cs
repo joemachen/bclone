@@ -5375,8 +5375,12 @@ public partial class Main : Control
         table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
-        table.AddChild(Muted("TYPE"));
-        table.AddChild(Muted("ASSIGNED / MAX"));
+        Label typeHead = Muted("TYPE");
+        Label assignedHead = Muted("ASSIGNED / MAX");
+        UiLook.Header(typeHead); // column heads are headers (A121, Joe: "Yes, headers")
+        UiLook.Header(assignedHead);
+        table.AddChild(typeHead);
+        table.AddChild(assignedHead);
 
         foreach (JobKind kind in JobLimits.Kinds)
         {

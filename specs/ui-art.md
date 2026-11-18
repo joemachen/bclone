@@ -479,6 +479,7 @@ first in-game render. The four as they were asked:*
   - rubric `#7b2318`, verdigris `#264a21`, gold `#553e0c`, ochre `#703f0e` → `#62370c`;
   - lapis as words `#2a3f7b`.
   - Each still reads as its colour. The faintest word at any inner edge is now 4.93 : 1.
+- **A121 — the column heads are headers** (Joe: *"Yes, headers"*): the roster's Name / Age / Trade (the Tree's `title_button_font`), Professions' TYPE and ASSIGNED / MAX, and the build queue's # / Site / Materials / Work are set in Metamorphous. Capitals starting ordinary words stay Grenze Gotisch's.
 - **A120 — his font pair.** Joe: *"Use this as header font: ... Metamorphous ... Use this as non-header font: ... Grenze Gotisch"*, then *"BUILD is considered a header - everything in that main row is"*.
   - **Headers in Metamorphous:** window titles, card titles, a card's section heads, and every button and label in the control bar's main row (Pause through Cancel). `UiLook.Header` and `HeadersIn` mark them with the theme type variations `HeaderLabel` and `HeaderButton`; on slate the marks name nothing.
   - **Everything else in Grenze Gotisch** (its variable font, default weight). Both are SIL OFL; their licences sit beside them in `src/Bclone.Game/fonts/`. Archivo Narrow (A119) stays there, unused.

@@ -87,7 +87,9 @@ public partial class Main
         // The header: the same grid, so the titles sit over their columns.
         foreach (string title in new[] { "#", "Site", "Materials", "Work", string.Empty, string.Empty })
         {
-            _buildQueueGrid.AddChild(Muted(title));
+            Label head = Muted(title);
+            UiLook.Header(head); // column heads are headers (A121)
+            _buildQueueGrid.AddChild(head);
         }
     }
 

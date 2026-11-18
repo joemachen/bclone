@@ -116,6 +116,9 @@ internal static class ParchmentLook
             theme.SetFont("font", variation, header);
         }
 
+        // The roster's column titles (Name, Age, Trade) are headers too (A121, Joe: "Yes, headers").
+        theme.SetFont("title_button_font", "Tree", header);
+
         DefaultTypes(theme);
         return theme;
     }
