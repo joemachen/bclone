@@ -2,8 +2,8 @@
 
 > Status: **🔨 BUILDING on `slice/batch-trade`. 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
 > recommended"*) — one shared pair of states, the trade a field beside it (§7). ✅ Step 1, today pinned (D792): 28 tests,
-> 11 mutants, 11 red. ✅ Steps 2 and 4 — the row, and hands and stops by it (D793, one commit). ▶️ Step 5 (with what is
-> left of 3), then 6.**
+> 11 mutants, 11 red. ✅ Steps 2 and 4 — the row, and hands and stops by it (D793, one commit). ✅ Step 5 — one shared
+> pair of states and `Villager.BatchTrade` (D794); **no golden moved**. ▶️ Step 6.**
 > Phase 6, W1 of the workplan (`systems-complete.md §5.1`, D788–D789): the enabler before beer (W3), health's herbs (W6)
 > and the wool coat (W10), each of which would otherwise be a fifth, sixth and seventh hand-written copy.
 >
@@ -141,7 +141,17 @@ Traced (the order-sensitive details, each with its guard in §6):
    show while one tailor is wanted either way. Three tests added (`TheShippedBatchRowsRulesAreAsSpecced`,
    `EachBatchTradesOwnStopReadsAsShipped`, `AShortfallTradeIsHiredByTheYearsWorkUpToTheSeats`); **all 8 valid mutants
    red.**
-5. **The states** — per Joe's call (§7). The view's `AtWork` / `GoingToWork` read a sim helper rather than eight names.
+5. ✅ **(D794.)** **The states** — per Joe's call (§7). The view's `AtWork` / `GoingToWork` read a sim helper rather than
+   eight names. **As built:** `TravelingToABatch` (41) / `WorkingABatch` (42) — the miller's old numbers; 43–44 and 53–56
+   retired, `CuttingHay = 45` and `FetchingAHandcart = 57` explicit so every later state keeps its number. The view names
+   the two (no helper needed for two names). `Villager.BatchTrade` set by `SimWorld.SetBatchOf` with `BatchWords` (the row's
+   words, product put in — derived, put back after the workplaces load); the recall reads it (`HoldsTheJobFor`); hashed
+   sparse under tag 13 only while at a batch; saved as `batch_trade`, the eight old names read as the pair and the trade.
+   `BeginBatches` throws on no trade or no batch — **the baker default is gone**. **⭐ No golden moved** — not the two
+   §7 expected: the Phase 5 village is hashed once, at year 20, with nobody at a batch, so the new numbers never reach
+   it; twenty posed years with a mill and an oven ran identically. The proof §7 promised (old numbers restored) had
+   nothing to restore; `WhoseBatchIsInTheFingerprintOnlyAtABatch` reads the new hash directly instead. **Red-check: 8
+   mutants, 8 red** (two re-run after the runner failed to restore them — HANDOFF trap).
 6. **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
    config alone — no sim code — and watches a villager hired, walk, work, deliver, be described and grow its skill.
    ⚠️ **If the job or building catalogue cannot take a row past the built-ins** (they are C# enums underneath — Phase 7's
@@ -165,7 +175,8 @@ For a new trade to be only a row, it can't need two new names in the code.
 
 **Recommended: A.** It is the version a modder can use, and the one golden move is proved, not waved through.
 
-> **✅ ANSWERED: A (D792, 2026-11-17, Joe: *"A, as recommended"*).** ⚠️ **One thing A needs that §7 did not say, found
+> **✅ ANSWERED: A (D792, 2026-11-17, Joe: *"A, as recommended"*). ✅ Built (D794) — and no golden moved after all
+> (§6 step 5).** ⚠️ **One thing A needs that §7 did not say, found
 > pinning step 1:** the shared state cannot say *whose* batch it is, and the D281 recall reads exactly that — the yearly
 > share-out moves a miller to the bakery mid-stint, and today `ErrandKind` sends them home because *Grinding* is not a
 > baker's errand. Read the trade off the seat instead and the miller walks on, and bakes standing at the mill

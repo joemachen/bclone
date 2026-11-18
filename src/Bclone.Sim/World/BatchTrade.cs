@@ -108,6 +108,17 @@ public sealed record BatchRow
     public bool StandsDownInFamine { get; init; }
 }
 
+/// <summary>
+/// A batch trade's words with its product put in — what a villager at its hut is called on the card and in the log (W1).
+/// Built by <c>SimWorld.WordsFor</c> from the row; held on the villager beside <see cref="Villager.BatchTrade"/>, derived,
+/// never hashed or saved.
+/// </summary>
+/// <param name="WalkTo">Where the walk goes: <em>"the mill"</em>.</param>
+/// <param name="Working">The work: <em>"grinding wheat"</em>, <em>"making handcarts"</em>.</param>
+/// <param name="StintWord">What a stint's batches are called, or empty.</param>
+/// <param name="FirstBatch">The card's line before the first batch is done.</param>
+public sealed record BatchWords(string WalkTo, string Working, string StintWord, string FirstBatch);
+
 /// <summary>A batch trade's own reason to stop, besides the player's limit and an empty store (`batch-trade.md §3`).</summary>
 [Flags]
 public enum BatchStop

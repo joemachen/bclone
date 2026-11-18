@@ -664,6 +664,29 @@ public sealed class Villager
     public int BatchesThisStint { get; set; }
 
     /// <summary>
+    /// ⭐ Whose batch it is — the trade beside <see cref="VillagerState.TravelingToABatch"/> and
+    /// <see cref="VillagerState.WorkingABatch"/> (W1, Joe's call A, D792; `batch-trade.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The shared state cannot say it, and the D281 recall reads exactly that.</b> The yearly share-out moves a miller
+    /// to the bakery mid-stint; the recall sends them home because the errand was a miller's. Read the trade off the seat
+    /// instead and they walk on and bake standing at the mill. Set with <see cref="BatchWords"/> by
+    /// <see cref="SetBatch"/> when the walk begins; meaningful only while at a batch, and hashed only then.
+    /// </remarks>
+    public JobKind? BatchTrade { get; private set; }
+
+    /// <summary>The trade's words, its product put in (W1) — derived from the row, never hashed or saved; put back on load.</summary>
+    internal BatchWords? BatchWords { get; private set; }
+
+    /// <summary>Whose batch it is and what it is called — set together, so the card cannot name another trade's work.</summary>
+    internal void SetBatch(JobKind trade, BatchWords words)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        BatchTrade = trade;
+        BatchWords = words;
+    }
+
+    /// <summary>
     /// ⭐ Ticks this villager's last meal still holds hunger off — what it was worth beyond a plain meal
     /// (`food-chain.md §3.2`, D522). While above nought, hunger does not rise; it counts down instead.
     /// </summary>
@@ -902,25 +925,16 @@ public sealed class Villager
             VillagerState.Forging => ForgesThisStint > 0
                 ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
                 : "forging tools at the anvil",
-            VillagerState.TravelingToMill => $"walking to {where}",
-            VillagerState.Grinding => BatchesThisStint > 0
-                ? $"grinding wheat, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} grind of the day"
-                : "grinding wheat at the stones",
-            VillagerState.TravelingToBakery => $"walking to {where}",
-            VillagerState.TravelingToTailor => $"walking to {where}",
-            VillagerState.Sewing => BatchesThisStint > 0
-                ? $"sewing coats, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
-                : "cutting a hide for a coat",
-            VillagerState.TravelingToWorkshop => $"walking to {where}",
-            VillagerState.Making => BatchesThisStint > 0
-                ? $"making handcarts, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
-                : "truing a wheel for a handcart",
+            // ⭐ Every batch trade, in its row's words (W1): "grinding wheat, the 2nd grind of the day", "lighting the oven".
+            VillagerState.TravelingToABatch => $"walking to {where}",
+            VillagerState.WorkingABatch => BatchWords is not BatchWords words ? "at work"
+                : BatchesThisStint > 0
+                    ? $"{words.Working}, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }}"
+                        + $"{(words.StintWord.Length > 0 ? " " + words.StintWord : string.Empty)} of the day"
+                    : words.FirstBatch,
             VillagerState.FetchingAHandcart => "fetching a handcart from a store",
             // The works' cart (`handcart.md §13.5`): a new cart goes to the market or the post, not home.
             VillagerState.PushingAHandcart => CartForTheWorks ? "pushing the new handcart to work" : "pushing the new handcart home",
-            VillagerState.Baking => BatchesThisStint > 0
-                ? $"baking bread, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} batch of the day"
-                : "lighting the oven",
             VillagerState.TravelingToQuarry => $"walking to the face at {where}",
             VillagerState.Quarrying => DigsThisStint > 0
                 ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
@@ -1018,6 +1032,7 @@ public sealed class Villager
             ["forges_this_stint"] = ForgesThisStint,
             ["digs_this_stint"] = DigsThisStint,
             ["batches_this_stint"] = BatchesThisStint,
+            ["batch_trade"] = SaveWriter.Enum(BatchTrade),
             ["full_for"] = FullFor,
             ["full_from"] = SaveWriter.Good(FullFrom),
             ["rhythm"] = Rhythm,
@@ -1053,7 +1068,6 @@ public sealed class Villager
             Hunger = save.Int("hunger"),
             TicksAtMaxHunger = save.Int("ticks_at_max_hunger"),
             Cold = save.Int("cold"),
-            State = save.Enum<VillagerState>("state"),
             LegFrom = save.Point("leg_from"),
             LegTo = save.Point("leg_to"),
             LegTarget = save.GridPos("leg_target"),
@@ -1087,6 +1101,22 @@ public sealed class Villager
             FullFrom = save.Good("full_from"),
             Rhythm = save.Int("rhythm"),
         };
+
+        // ⭐ THE STATE, WITH THE FOUR OLD BATCH PAIRS READ AS THE SHARED ONE AND THEIR TRADE (W1, D792): a save from before
+        // W1 loads, no format bump. A save since names the trade itself, read tolerantly (absent before W1).
+        (villager.State, JobKind? oldTrade) = save.String("state") switch
+        {
+            "TravelingToMill" => (VillagerState.TravelingToABatch, JobKind.Miller),
+            "Grinding" => (VillagerState.WorkingABatch, JobKind.Miller),
+            "TravelingToBakery" => (VillagerState.TravelingToABatch, JobKind.Baker),
+            "Baking" => (VillagerState.WorkingABatch, JobKind.Baker),
+            "TravelingToTailor" => (VillagerState.TravelingToABatch, JobKind.Tailor),
+            "Sewing" => (VillagerState.WorkingABatch, JobKind.Tailor),
+            "TravelingToWorkshop" => (VillagerState.TravelingToABatch, JobKind.Carpenter),
+            "Making" => (VillagerState.WorkingABatch, JobKind.Carpenter),
+            _ => (save.Enum<VillagerState>("state"), (JobKind?)null),
+        };
+        villager.BatchTrade = oldTrade ?? save.NullableEnum<JobKind>("batch_trade");
 
         // ⚠️ Through the field, never `Position`'s setter — that drops the leg (D356), and a villager
         // saved half way along one must load half way along it.

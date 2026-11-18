@@ -373,9 +373,13 @@ public sealed class SaveLoadTests : IDisposable
             "Alive", "CauseOfDeath", "DiedAtTick", "WintersSurvived", "TotalGathers", "GathersThisSeason",
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
-            "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks",
+            "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks", "BatchTrade",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
+
+        // A batch hand's words (W1, D792): derived from their trade's row, put back after the workplaces load.
+        (typeof(Villager), Kept.Rebuilt, new[] { "BatchWords" }),
+        (typeof(BatchWords), Kept.Rebuilt, new[] { "WalkTo", "Working", "StintWord", "FirstBatch" }),
         (typeof(Household), Kept.Saved, new[]
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",

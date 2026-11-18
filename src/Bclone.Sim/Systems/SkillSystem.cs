@@ -273,19 +273,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.TravelingToSmithy => true,
         VillagerState.Forging => true,
 
-        // The mill and the oven, and the walk to each, are a miller or a baker out on their trade (D522).
-        VillagerState.TravelingToMill => true,
-        VillagerState.Grinding => true,
-        VillagerState.TravelingToBakery => true,
-        VillagerState.Baking => true,
-
-        // The tailor's shop, and the walk to it (D659).
-        VillagerState.TravelingToTailor => true,
-        VillagerState.Sewing => true,
-
-        // The workshop, and the walk to it (D678).
-        VillagerState.TravelingToWorkshop => true,
-        VillagerState.Making => true,
+        // Every batch trade's hut, and the walk to it — the mill and the oven (D522), the tailor's shop (D659), the workshop
+        // (D678), a modder's: a hand out on their trade (W1, D792).
+        VillagerState.TravelingToABatch => true,
+        VillagerState.WorkingABatch => true,
 
         // The walk to the face and the stint at it are a quarrier out on their trade (D434).
         VillagerState.TravelingToQuarry => true,

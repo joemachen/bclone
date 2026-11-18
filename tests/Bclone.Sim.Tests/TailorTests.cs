@@ -50,7 +50,7 @@ public sealed class TailorTests
         for (int tick = 0; tick < config.TicksPerSeason && world.CoatsEverSewn < 4; tick++)
         {
             loop.StepOnce();
-            sewingTicks += world.Villagers.Count(v => v.State == VillagerState.Sewing && v.Tile == shop.Tile);
+            sewingTicks += world.Villagers.Count(v => v.State == VillagerState.WorkingABatch && v.BatchTrade == JobKind.Tailor && v.Tile == shop.Tile);
         }
 
         int leatherSpent = leatherBefore - world.InStores(Goods.Leather);

@@ -1,7 +1,10 @@
 using System.Reflection;
+using System.Text.Json.Nodes;
 using Bclone.Sim.Config;
 using Bclone.Sim.Core;
+using Bclone.Sim.Determinism;
 using Bclone.Sim.Logging;
+using Bclone.Sim.Persistence;
 using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 using Xunit;
@@ -49,31 +52,21 @@ public sealed class BatchTradeTests
     };
 
     /// <summary>
-    /// Put a villager on a batch trade's walk or at its work — ⭐ the only line in this file that names a batch state.
+    /// Put a villager on a batch trade's walk or at its work — ⭐ the only place in this file that names a batch state.
+    /// Step 1 (D792) named the eight states of the four trades here; step 5 (Joe's call A) made it the shared pair and the
+    /// trade beside it, and nothing else in the file changed but <see cref="BehaviorSystem.Describe(VillagerState, Villager)"/>
+    /// taking the villager.
     /// </summary>
-    private static void PutAt(Villager villager, JobKind trade, bool working) =>
-        villager.State = (trade, working) switch
-        {
-            (JobKind.Miller, false) => VillagerState.TravelingToMill,
-            (JobKind.Miller, true) => VillagerState.Grinding,
-            (JobKind.Baker, false) => VillagerState.TravelingToBakery,
-            (JobKind.Baker, true) => VillagerState.Baking,
-            (JobKind.Tailor, false) => VillagerState.TravelingToTailor,
-            (JobKind.Tailor, true) => VillagerState.Sewing,
-            (JobKind.Carpenter, false) => VillagerState.TravelingToWorkshop,
-            (JobKind.Carpenter, true) => VillagerState.Making,
-            _ => throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade"),
-        };
+    private static void PutAt(SimWorld world, Villager villager, JobKind trade, bool working)
+    {
+        world.SetBatchOf(villager, trade);
+        villager.State = working ? VillagerState.WorkingABatch : VillagerState.TravelingToABatch;
+    }
 
     /// <summary>Whether a villager is on this trade's walk or at its work.</summary>
-    private static bool IsAt(Villager villager, JobKind trade, bool working)
-    {
-        VillagerState now = villager.State;
-        PutAt(villager, trade, working);
-        bool at = villager.State == now;
-        villager.State = now;
-        return at;
-    }
+    private static bool IsAt(Villager villager, JobKind trade, bool working) =>
+        villager.State == (working ? VillagerState.WorkingABatch : VillagerState.TravelingToABatch)
+        && villager.BatchTrade == trade;
 
     // ---------------------------------------------------------------
     //  The recipe — `SimWorld.BatchFor`
@@ -194,12 +187,12 @@ public sealed class BatchTradeTests
                 "making handcarts, the 2nd of the day", "making handcarts, the 3rd of the day"),
         };
 
-        PutAt(hand, trade, working: false);
-        Assert.Equal(logWalk, BehaviorSystem.Describe(hand.State));
+        PutAt(world, hand, trade, working: false);
+        Assert.Equal(logWalk, BehaviorSystem.Describe(hand.State, hand));
         Assert.Equal("walking to Somewhere", hand.DescribeState("Somewhere"));
 
-        PutAt(hand, trade, working: true);
-        Assert.Equal(logWork, BehaviorSystem.Describe(hand.State));
+        PutAt(world, hand, trade, working: true);
+        Assert.Equal(logWork, BehaviorSystem.Describe(hand.State, hand));
         hand.BatchesThisStint = 0;
         Assert.Equal(idle, hand.DescribeState("Somewhere"));
         hand.BatchesThisStint = 1;
@@ -216,13 +209,138 @@ public sealed class BatchTradeTests
         SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
         Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
 
-        PutAt(hand, trade, working: false);
+        PutAt(world, hand, trade, working: false);
         Assert.True(SkillSystem.OutOnTheWork(hand.State), $"{trade}'s walk is not out on the trade.");
-        PutAt(hand, trade, working: true);
+        PutAt(world, hand, trade, working: true);
         Assert.True(SkillSystem.OutOnTheWork(hand.State), $"{trade}'s work is not out on the trade.");
 
         // And the skill it grows is the trade's row (one row a trade).
         Assert.Single(Config.Skills, s => s.GrownBy == trade);
+    }
+
+    // ---------------------------------------------------------------
+    //  Step 5 — the shared pair, Joe's call A (D792)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// §6 step 5: whose batch it is is in the fingerprint while at a batch, and only then — so a village with no batch hut
+    /// hashes as it did, and two villages differing only in whose batch a hand is at are two villages. ⚠️ No shipped golden
+    /// reads this: the one village that raises a mill and an oven is hashed once, at year 20, with nobody at a batch.
+    /// </summary>
+    [Fact]
+    public void WhoseBatchIsInTheFingerprintOnlyAtABatch()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
+
+        PutAt(world, hand, JobKind.Miller, working: true);
+        ulong miller = StateHash.Compute(world);
+        PutAt(world, hand, JobKind.Baker, working: true);
+        ulong baker = StateHash.Compute(world);
+        Assert.NotEqual(miller, baker);
+
+        // Off the batch, the trade left behind is not a fact about the village.
+        hand.State = VillagerState.Idle;
+        ulong idleAfterBaking = StateHash.Compute(world);
+        world.SetBatchOf(hand, JobKind.Tailor);
+        Assert.Equal(idleAfterBaking, StateHash.Compute(world));
+    }
+
+    /// <summary>
+    /// §6 step 5: the state is hashed as its number, so the retired numbers are never reused and every state after them
+    /// keeps the number it shipped with (43–44 and 53–56 retired; the shared pair took the miller's 41–42).
+    /// </summary>
+    [Fact]
+    public void TheRetiredStateNumbersAreNeverReused()
+    {
+        Assert.Equal(41, (int)VillagerState.TravelingToABatch);
+        Assert.Equal(42, (int)VillagerState.WorkingABatch);
+        Assert.Equal(45, (int)VillagerState.CuttingHay);
+        Assert.Equal(52, (int)VillagerState.FetchingACoat);
+        Assert.Equal(57, (int)VillagerState.FetchingAHandcart);
+        Assert.Equal(64, (int)VillagerState.DrawingAtTheRiver);
+        foreach (int retired in new[] { 43, 44, 53, 54, 55, 56 })
+        {
+            Assert.False(Enum.IsDefined((VillagerState)retired), $"State {retired} is retired and was reused.");
+        }
+    }
+
+    /// <summary>
+    /// §6 step 5, §7: a save from before W1 loads — its four trades' old state names read as the shared pair and the trade —
+    /// with no format bump, and the card's words are put back; a save since round-trips the trade itself.
+    /// </summary>
+    [Theory]
+    [InlineData("TravelingToMill", false, JobKind.Miller)]
+    [InlineData("Grinding", true, JobKind.Miller)]
+    [InlineData("TravelingToBakery", false, JobKind.Baker)]
+    [InlineData("Baking", true, JobKind.Baker)]
+    [InlineData("TravelingToTailor", false, JobKind.Tailor)]
+    [InlineData("Sewing", true, JobKind.Tailor)]
+    [InlineData("TravelingToWorkshop", false, JobKind.Carpenter)]
+    [InlineData("Making", true, JobKind.Carpenter)]
+    public void AnOldSavesBatchStatesLoadAsTheSharedPair(string oldName, bool working, JobKind trade)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        Villager hand = loop.World.Villagers.First(v => v.Alive && v.CanWork);
+        PutAt(loop.World, hand, trade, working);
+        JsonObject document = SaveGame.Capture(loop, "test", "then", "code");
+
+        // A save since W1 round-trips the trade.
+        SimWorld since = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), Config, new InMemoryLogSink()).World;
+        Assert.True(IsAt(since.Villagers.Single(v => v.Id == hand.Id), trade, working));
+
+        // A save from before: the old name, and no `batch_trade`.
+        JsonObject saved = VillagerIn(document, hand.Id);
+        saved["state"] = oldName;
+        saved.Remove("batch_trade");
+        SimWorld before = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), Config, new InMemoryLogSink()).World;
+        Villager loaded = before.Villagers.Single(v => v.Id == hand.Id);
+        Assert.True(IsAt(loaded, trade, working), $"\"{oldName}\" loaded as {loaded.State} for {loaded.BatchTrade}.");
+        Assert.Equal(hand.DescribeState("Somewhere"), loaded.DescribeState("Somewhere"));
+    }
+
+    /// <summary>The saved object of one villager, wherever the document keeps them.</summary>
+    private static JsonObject VillagerIn(JsonNode node, int id)
+    {
+        if (node is JsonObject obj)
+        {
+            if (obj.ContainsKey("batches_this_stint") && obj["id"]?.GetValue<int>() == id)
+            {
+                return obj;
+            }
+
+            foreach (KeyValuePair<string, JsonNode?> child in obj)
+            {
+                if (child.Value is not null && TryVillagerIn(child.Value, id) is JsonObject found)
+                {
+                    return found;
+                }
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (JsonNode? child in array)
+            {
+                if (child is not null && TryVillagerIn(child, id) is JsonObject found)
+                {
+                    return found;
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"Villager {id} is not in the save.");
+    }
+
+    private static JsonObject? TryVillagerIn(JsonNode node, int id)
+    {
+        try
+        {
+            return VillagerIn(node, id);
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     // ---------------------------------------------------------------
@@ -255,7 +373,7 @@ public sealed class BatchTradeTests
                 hand.WorkplaceId = seat.Id;
                 hand.Hunger = 0;
                 hand.Rhythm = 0;
-                PutAt(hand, trade, working);
+                PutAt(world, hand, trade, working);
                 hand.ActionTicksRemaining = working ? 3 : 0;
 
                 // The behaviour alone, one tick: the loop's first tick shares out the work and would re-seat them.

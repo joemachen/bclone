@@ -4425,6 +4425,20 @@ public sealed partial class SimWorld : IObstacles
     }
 
     /// <summary>
+    /// A batch trade's words for the card and the log, its product put in (W1) — what <see cref="Villager.BatchWords"/>
+    /// holds. The product is the trade's batch's output: the first standing workshop's, or the row's.
+    /// </summary>
+    internal BatchWords WordsFor(JobKind trade)
+    {
+        BatchRow row = Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade");
+        Goods made = BatchFor(trade)?.Output ?? row.Output;
+        return new BatchWords(Worded(row.WalkTo, made), Worded(row.Working, made), row.StintWord, Worded(row.FirstBatch, made));
+    }
+
+    /// <summary>Put a villager on a batch trade — whose batch it is and its words, together (W1, D792).</summary>
+    internal void SetBatchOf(Villager villager, JobKind trade) => villager.SetBatch(trade, WordsFor(trade));
+
+    /// <summary>
     /// A batch row's words with its good put in: <c>{products}</c> the good's name, <c>{product}</c> one of it — so the
     /// workshop says what it makes rather than the word <em>"handcarts"</em> (`batch-trade.md §4`).
     /// </summary>
@@ -15267,6 +15281,16 @@ public sealed partial class SimWorld : IObstacles
         foreach (SaveReader workplace in save.Objects("workplaces"))
         {
             Workplaces.Add(Workplace.FromSave(workplace));
+        }
+
+        // ⭐ A batch hand's words are derived from their trade's row (W1, D792) and put back here, after the workplaces —
+        // the workshop's product names them. Never saved.
+        foreach (Villager villager in Villagers)
+        {
+            if (villager.BatchTrade is JobKind trade && Batches.For(trade) is not null)
+            {
+                SetBatchOf(villager, trade);
+            }
         }
 
         foreach (SaveReader store in save.Objects("stores"))

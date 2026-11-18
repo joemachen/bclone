@@ -1342,6 +1342,14 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)villager.BatchesThisStint);
         }
 
+        // ⭐ WHOSE BATCH (W1, D792): the trade beside the shared state, which cannot say it — and decides the recall. Sparse,
+        // only while at a batch, so a village with no batch hut hashes as it did before W1; tagged like the stints.
+        if (villager.State is VillagerState.TravelingToABatch or VillagerState.WorkingABatch)
+        {
+            hash = MixUInt32(hash, 13u);
+            hash = MixUInt32(hash, villager.BatchTrade is JobKind trade ? (uint)trade : uint.MaxValue);
+        }
+
         // The site a builder serves (D602) — it decides where the next builder goes. Sparse and tagged like the stints.
         if (villager.ServingSiteId != 0)
         {
