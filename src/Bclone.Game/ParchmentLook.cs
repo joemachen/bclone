@@ -75,16 +75,16 @@ internal static class ParchmentLook
         theme.SetColor("fade", t, new Color(1f, 1f, 1f, 0.5f));
 
         // A torn, lightly scorched sheet — no roll (A114, Joe: "keep the parchment and remove the scrolls"). Text clears the scorch.
-        PaintedPatch window = PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(15, 15, 20, 18));
+        PaintedPatch window = PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(28, 28, 32, 30), new Vector4(15, 15, 20, 18));
         theme.SetStylebox("panel", t, window);
-        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(40, 40, 40, 44), new Vector4(28, 15, 20, 18)));
+        theme.SetStylebox("card", t, PaintedPatch.Make(Tex("chrome/sheet.png"), 0.5f, new Vector4(28, 28, 32, 30), new Vector4(28, 15, 20, 18)));
 
         // Selected: the illuminated bar down the left (≈9 logical) — the same room inside, so a card does not jump when picked.
         theme.SetStylebox(
-            "card_selected", t, PaintedPatch.Make(Tex("chrome/sheet-selected.png"), 0.5f, new Vector4(56, 40, 40, 44), new Vector4(28, 15, 20, 18)));
+            "card_selected", t, PaintedPatch.Make(Tex("chrome/sheet-selected.png"), 0.5f, new Vector4(56, 28, 32, 30), new Vector4(28, 15, 20, 18)));
 
         // The control bar: a long torn sheet across the screen — no rolls at its ends (A114).
-        theme.SetStylebox("strip", t, PaintedPatch.Make(Tex("chrome/band.png"), 0.5f, new Vector4(40, 20, 40, 20), new Vector4(15, 12, 20, 20)));
+        theme.SetStylebox("strip", t, PaintedPatch.Make(Tex("chrome/band.png"), 0.5f, new Vector4(32, 20, 34, 26), new Vector4(15, 12, 20, 20)));
 
         // The top bar's boxes: a torn slip — slate's own 6 px inside, because that bar is full (A111); the paper reaches a few
         // px past the box instead (A116), so the outermost words never sit on the ink line, and the bar does not move.
@@ -103,6 +103,10 @@ internal static class ParchmentLook
         {
             theme.SetStylebox("tech_" + state, t, PaintedPatch.Make(Tex("screens/tech-card-" + file + ".png"), 0.5f, new Vector4(24, 24, 24, 24), new Vector4(8, 3, 8, 3)));
         }
+
+        // Joe's font (A119): Archivo Narrow, a condensed sans like his reference panel's, SemiBold for its weight. SIL OFL,
+        // the licence beside it in fonts/ArchivoNarrow/.
+        theme.DefaultFont = GD.Load<FontFile>("res://fonts/ArchivoNarrow/ArchivoNarrow-SemiBold.ttf");
 
         DefaultTypes(theme);
         return theme;

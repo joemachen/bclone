@@ -80,12 +80,30 @@ public partial class PaintedPatch : StyleBox
 
         rect = rect.GrowIndividual(Outset.X, Outset.Y, Outset.Z, Outset.W);
 
-        RenderingServer.CanvasItemSetDefaultTextureFilter(toCanvasItem, RenderingServer.CanvasItemTextureFilter.LinearWithMipmaps);
-        RenderingServer.CanvasItemAddSetTransform(toCanvasItem, new Transform2D(0f, new Vector2(Scale, Scale), 0f, rect.Position));
+        // A box smaller than its fixed corners draws the painting smaller, so the corners just fit and never overlap.
+        float scale = Mathf.Min(
+            Scale,
+            Mathf.Min(rect.Size.Y / Mathf.Max(1f, Margins.Y + Margins.W), rect.Size.X / Mathf.Max(1f, Margins.X + Margins.Z)));
+
+        // ⚠️ A SQUASHED MIDDLE READS NO MIPMAPS (A119, Joe: "what are these blurry looking things?"). A folded window is one
+        // title row: its middle squashed the sheet's 782 px into 28, the GPU picked a mipmap that small — blurred every way,
+        // not just the squashed one — and the sheet's side columns smeared into a band past both ends. Squashed past 2 : 1,
+        // the painting is read at full size, so the squashed axis is sampled sparsely and the other stays sharp. (Tile mode,
+        // tried first, crops instead of squashing but leaves 1 px seams where the tiles meet the corners.)
+        Vector2 size = rect.Size / scale;
+        Vector2 source = Texture.GetSize();
+        float squash = Mathf.Max(
+            (source.X - Margins.X - Margins.Z) / Mathf.Max(1f, size.X - Margins.X - Margins.Z),
+            (source.Y - Margins.Y - Margins.W) / Mathf.Max(1f, size.Y - Margins.Y - Margins.W));
+
+        RenderingServer.CanvasItemSetDefaultTextureFilter(
+            toCanvasItem,
+            squash > 2f ? RenderingServer.CanvasItemTextureFilter.Linear : RenderingServer.CanvasItemTextureFilter.LinearWithMipmaps);
+        RenderingServer.CanvasItemAddSetTransform(toCanvasItem, new Transform2D(0f, new Vector2(scale, scale), 0f, rect.Position));
         RenderingServer.CanvasItemAddNinePatch(
             toCanvasItem,
-            new Rect2(Vector2.Zero, rect.Size / Scale),
-            new Rect2(Vector2.Zero, Texture.GetSize()),
+            new Rect2(Vector2.Zero, size),
+            new Rect2(Vector2.Zero, source),
             Texture.GetRid(),
             new Vector2(Margins.X, Margins.Y),
             new Vector2(Margins.Z, Margins.W),
