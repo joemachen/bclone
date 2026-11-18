@@ -88,7 +88,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/checkbox.png` | 14 × 14 | 56 × 56 | An inked ring, slightly uneven — a seal's empty socket. **Ticked:** a red wax seal pressed into it, lit upper left, a pressed ring (A102). | empty, ticked, disabled (both at 45 %) |
 | `controls/dropdown-arrow.png` | 10 × 6 | 40 × 24 | A small inked triangle, pointing down. | — |
 | `controls/scroll-track.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A faint inked groove. | — |
-| `controls/scroll-grabber.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | A short wound roll, seen end-on at both ends. | normal, hover, held |
+| `controls/scroll-grabber.png` | 6 × any | 24 × 96, 9-patch 0/12/0/12 | **A slim inked bar** with a tea wash — plain, no roll (A115, Joe: *"Yes, plain grabber"*). | normal, hover (rubric edge), held (a deeper wash) |
 | `controls/bar-track.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | A faint ruled line. | — |
 | `controls/bar-fill.png` | any × 4 | 128 × 16, 9-patch 8/0/8/0 | **A single wash stroke**, dry-brushed at its end. Tinted in code: verdigris working, rubric warning. | working, warning |
 | `controls/pill.png` | any × 16 | 96 × 64, 9-patch 28/0/28/0 | **A ribbon** with an ink edge: *Fed*, *Warm*, *Housed*. Met: verdigris, swallowtail ends; unmet: rubric, frayed square ends — a change of form as well as colour (A102). | met (verdigris), unmet (rubric) |
@@ -99,7 +99,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
 | `controls/close.png` | 14 × 14 | 56 × 56 | A pen cross (today's `✕`). | normal, hover (rubric) |
 | `controls/find.png` | 14 × 14 | 56 × 56 | A ringed eye, or a magnifying lens. | normal, hover |
-| `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | A tiny roll with an arrow: winding up / unwinding. | normal, hover |
+| `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | **An arrow to or from a pen line** (the sheet's edge): folding up / unfolding — no roll (A115). | normal, hover |
 | `controls/plus.png` / `minus.png` | 12 × 12 | 48 × 48 | Pen plus and minus (the Professions steppers). | normal, hover, disabled |
 
 ## 4. Icons
