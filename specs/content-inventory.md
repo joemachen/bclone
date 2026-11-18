@@ -1,6 +1,8 @@
 # Inventory: what the village has, what the documents promise, and where they disagree
 
-> Status: **an audit. ✅ PARTS A AND B REFRESHED 2026-11-14 (D744, Phase 5's exit gate item 4)** — read off the code
+> Status: **an audit. ✅ PART A CORRECTED 2026-11-16 (D788, `systems-complete.md §2.1`) for the school, the teacher and
+> water (D752–D783); ⚠️ Parts B and C NOT re-read since D744 — `systems-complete.md §4` is the current list of what is
+> owed.** *(Before:)* **✅ PARTS A AND B REFRESHED 2026-11-14 (D744, Phase 5's exit gate item 4)** — read off the code
 > on `main` at D743 (`BuildingKind`, `JobKind`, `Goods`, `Terrain`, `SimConfig.Skills`, `SimConfig.Techniques`,
 > `TechTree.DefaultNodes`). Part C (the disagreements) is the August audit, kept as history through D223.
 > *(Before: Parts A and B were `main` at D526, 2026-10-07, and D640 marked them dated with what they were missing —
@@ -52,9 +54,9 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | | Count on `main` | Members |
 |---|---|---|
 | Goods | **16** | forage, logs, firewood, stone, stone tools, iron, fish, meat, leather, wheat, iron tools, flour, bread, hay, clothing (the coat), the handcart |
-| Buildings | **29** | granary, warehouse, market, woodcutter's hut, stockpile, house (the wooden cabin), builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, ~~longhouse~~ (retired D571 — id 14 ships no row), smithy, well, quarry, iron mine, mill, bakery, wooden bridge, stone bridge, barn, trading post, pasture fence, tailor's shop, workshop, stone cottage, insulated manor — and the founders' cart, a store that is not built |
-| Trades | **17**, plus laborers | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker, herdsman, merchant, tailor, carpenter. **Laborers** are everyone without a job: they clear painted ground and carry heaps |
-| Skills | **10** | foraging, forestry, woodcutting, farming, building, trading, milling, baking, tailoring, carpentry. ⚠️ The fisher, hunter, smith, quarrier, miner, herdsman and merchant have **no skill row** (D391) |
+| Buildings | **30** *(29 until the school, D755)* | the school (30), granary, warehouse, market, woodcutter's hut, stockpile, house (the wooden cabin), builder's hut, forager's hut, forester's hut, farmhouse, library, town hall, fishing hut, hunter's lodge, ~~longhouse~~ (retired D571 — id 14 ships no row), smithy, well, quarry, iron mine, mill, bakery, wooden bridge, stone bridge, barn, trading post, pasture fence, tailor's shop, workshop, stone cottage, insulated manor — and the founders' cart, a store that is not built |
+| Trades | **18**, plus laborers *(17 until the teacher, D755)* | forager, forester, woodcutter, marketer, builder, farmer, fisher, hunter, smith, quarrier, miner, miller, baker, herdsman, merchant, tailor, carpenter, teacher (the player's count only, D754). **Laborers** are everyone without a job: they clear painted ground and carry heaps |
+| Skills | **10** | foraging, forestry, woodcutting, farming, building, trading, milling, baking, tailoring, carpentry. ⚠️ The fisher, hunter, smith, quarrier, miner, herdsman and merchant have **no skill row** (D391), nor the teacher (D754) |
 | Techniques | **4** | splitting lumber, coppicing, crop rotation, tended patches — see the knowledge table below |
 | Crops | **1** | wheat (`CropRow` — a second crop is a row plus a *"grow…"* control) |
 | Terrain | **9** | grass, water, forest, rock, iron seam, sapling, field, sown, ripe |
@@ -85,7 +87,7 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | Animal products | leather (from hunting), hay (the herd's winter feed) | leather → **coats** at the tailor's shop (D659–D667); hay feeds the herd |
 | Clothing | the coat | a coated villager chills outdoors at a fireless roof's rate — *"a roof you wear"* (D659) |
 | Buildings' upkeep | — | every building wears and is mended by the builders (building condition, D554–D560) |
-| Water | the well — households walk to it | no water good yet (Phase 6) |
+| Water | a household need, not a good (D775–D783) — a jar of 120 at home, 1 a head a day, filled at the nearer of a well or the river bank once it is down to 5 days | drunk; running dry is said, never a death (D776 call 3) |
 
 ### Knowledge — what the village can know, and how
 
@@ -105,10 +107,11 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | **The mill and the bakery** | ✅ | Learned together at **5,000 wheat reaped** (D523, D524) — paid for |
 | **The tailor's shop** | ✅ | Learned at **50 leather handled** (`tailor_unlock_leather`, D659) — paid for |
 | **The workshop** | ✅ | Learned at **1,500 logs felled**, counted at the stump (`workshop_unlock_logs`, D675, D682) — paid for |
+| **The school** | ✅ | Learned once a **library stands** (D754); the player staffs teachers, each bringing 6 places filled youngest first, ages 5–12; a graduate carries fuller loads, ages more gently and reads the year (D752–D769) |
 | **The wooden bridge, the stone bridge** | ✅ | Wooden once the village has held **10 people**; stone after **1,000 crossings** (D547, D702) |
 | **The stone cottage, the insulated manor** | ✅ | The family tree: the cottage at the **3rd generation and 20 people**, the manor at the **5th and 45** (D716–D722); older homes rebuilt one at a time, and Joe's two switches over it (D723) |
 | **The barn and the trading post** | ✅ | Wait on the **town hall** — its gift is trade's permission (D586) |
-| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). **15 nodes:** quarry, smithy, library, town hall, iron mine, mill, bakery, tailor's shop, workshop, wooden bridge, stone bridge, stone cottage, insulated manor, and the fogged **mason's yard** and **school** |
+| **The tech-tree map** | ✅ | Introduced by the first thing learned by doing (D440). **15 nodes:** quarry, smithy, library, town hall, iron mine, mill, bakery, tailor's shop, workshop, wooden bridge, stone bridge, stone cottage, insulated manor, the **school** (live since D755, on a standing library), and the **mason's yard**, fogged for ever (`TechCondition.NotYet`) |
 
 ---
 
