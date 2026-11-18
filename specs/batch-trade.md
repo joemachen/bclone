@@ -1,7 +1,8 @@
 # Spec: The batch trade as a row — W1
 
-> Status: **📝 SPECCED (D791, 2026-11-17) on `slice/batch-trade` — nothing built. ⏸️ One call Joe's (§7): how a
-> villager at a batch hut is stored. Then steps 1–6 (§6), each its own commit with the goldens checked.**
+> Status: **🔨 BUILDING on `slice/batch-trade`. 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
+> recommended"*) — one shared pair of states, the trade a field beside it (§7). ✅ Step 1, today pinned (D792): 28 tests,
+> 11 mutants, 11 red. Steps 2–6 next (§6), each its own commit with the goldens checked.**
 > Phase 6, W1 of the workplan (`systems-complete.md §5.1`, D788–D789): the enabler before beer (W3), health's herbs (W6)
 > and the wool coat (W10), each of which would otherwise be a fifth, sixth and seventh hand-written copy.
 >
@@ -108,7 +109,8 @@ Traced (the order-sensitive details, each with its guard in §6):
 
 ## 6. Steps — each its own commit, the goldens grepped before and after
 
-1. **Pin today first** (tests only, written before any change, each red-checked by a mutant): every trade's `Batch`
+1. ✅ **(D792 — `BatchTradeTests`, 28 tests over 10 methods; 11 mutants, each red on the test aimed at it, none scoring
+   zero.)** **Pin today first** (tests only, written before any change, each red-checked by a mutant): every trade's `Batch`
    field by field; its two states and their words (`Describe`, `DescribeState`, idle line); its `OutOnTheWork` skill;
    its stop sentences; its quota want on a posed village; the quota's take order. Many exist
    (`TheCarpenterJoinsEveryBatchTradeSwitch`, `FoodChainTests`, `TailorTests`, `WorkshopTests`) — the new ones fill
@@ -141,6 +143,16 @@ For a new trade to be only a row, it can't need two new names in the code.
   ways of doing the same thing forever, and the next person has to know which trades are which.
 
 **Recommended: A.** It is the version a modder can use, and the one golden move is proved, not waved through.
+
+> **✅ ANSWERED: A (D792, 2026-11-17, Joe: *"A, as recommended"*).** ⚠️ **One thing A needs that §7 did not say, found
+> pinning step 1:** the shared state cannot say *whose* batch it is, and the D281 recall reads exactly that — the yearly
+> share-out moves a miller to the bakery mid-stint, and today `ErrandKind` sends them home because *Grinding* is not a
+> baker's errand. Read the trade off the seat instead and the miller walks on, and bakes standing at the mill
+> (`ABatchErrandIsRecalledWhenTheSeatIsAnotherTrades` pins it). **So the trade is a field beside the state,
+> `Villager.BatchTrade`, set when the walk begins** — saved by name and read tolerantly (an old save's *Grinding* reads as
+> the shared state and the miller), and hashed **sparse, only while at a batch**, so a run with no batch hut hashes as
+> before. Still the same two goldens, still once, still proved by restoring the old numbers.
+
 
 ### Found while tracing — not changed by W1
 
