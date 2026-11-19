@@ -72,6 +72,8 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 
 *Joe, 2026-11-17, shown his own reference beside the game: *"yes, repaint them like the first one"*. **Every sheet's edge is inked, not scorched** (`p2_chrome.jsx`'s `inked` sheets): a crisp dark ink line (`#1e140c` at 92 %), fine tears (a nick every 4 master px, ±1), the paper greying softly in the last few px before the line, and **no** orange wash rim and **no** burnt stroke. The sheets, the band and the slip all wear it.*
 
+*A124 — Joe: *"the texture is so big and blobby. looks very amateur ... the concept style attached ... is literally perfect"*. **The paper is his concept's** (`ui-art.md §9.9`): A117's grey stains are gone; a fine fibre grain and a faint shapeless tone, and a warm darkening toward the torn edge (`#8e5a2a` multiply), held to ~77 L* where the words begin. Measured against his concept at the screen's scale (`D:\Projects\brushes\ui\grain\measure_grain.py`). The paragraphs below are the record.*
+
 *Then, A118 — Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"* **No grey inside the edge at all.** The ink line is near-black (`#140c06` at 100 %) in the dry-brush tip, so its darkness breaks along its length, with a second dry-brush stroke (`#2a1a0e` at 70 %) that drifts up to 2 master px on and off it: the paths' wobbled, mottled rim, in ink. The shadow is a tight dark line under the sheet (2/3 px, blur 2), not a soft grey halo.*
 
 *Joe, the same day: *"i want that too"* — **the paper weathered like his reference** (A117): a cooler base (`#f2e6d0`) and fewer, bolder grey-brown stains (`#7e705c` at 24 %), measured against his image. The middle tone is 217–221 against his 224, the spread 10–11 against 11–14, and the darkest tenth about (209, 187, 153) against his (209, 180, 138). ⚠️ **His heavy darkening under the words was not copied:** on it the coloured inks fail 4.5 : 1 unless they turn near-black. The paper's weathering darkens where words never sit, and the text inks were darkened once more for the stains (`ui-art.md §9.8`).*
@@ -82,9 +84,10 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 |---|---|---|---|---|
 | `chrome/sheet.png` | 720 × 840 | 40 / 40 / 40 / 44 | **A torn, lightly scorched parchment sheet**, torn on all four sides, washes in the centre — no roll (A114). Every window and card. | — |
 | `chrome/sheet-selected.png` | 720 × 840 | 56 / 40 / 40 / 44 | The same, with an **illuminated bar** down the left: gold leaf, lapis, a rubric pinstripe, about 18 px wide in all; a vine sprout at its foot only. The card being worked with. | — |
-| `chrome/band.png` | 1800 × 240 | 40 / 20 / 40 / 20 | **A long torn sheet** across the screen — no rolls at its ends (A114). The control bar. | — |
+| `chrome/band.png` | 4096 × 240 (1800 until A124) | 40 / 20 / 40 / 20 | **A long torn sheet** across the screen — no rolls at its ends (A114). The control bar. Painted near the width it is drawn at 1920 and 75 % (A124), so its grain is not stretched. | — |
 | `chrome/sheet-large.png` | 1200 × 900 | 60 / 60 / 60 / 60 | **A large sheet**, the window's form, heavier rim: the moment pop-up, the passing banner, pause and settings, the new-game screen — no roll (A114). | — |
 | `chrome/slip.png` | 240 × 120 | 20 / 16 / 20 / 16 | **A torn slip**, no rolls: tooltips and drop-down menus. | — |
+| `chrome/slip-long.png` | 1600 × 240 | 20 / 16 / 20 / 16 | **The slip, long** (A124): the top bar's boxes, which drew the small slip ~9 × stretched. | — |
 | `chrome/wash-1.png` … `wash-4.png` | 512 × 512 | — | **Washes on their own**, optional: tea, ochre, green and umber blots with pooled rims on transparent, so each window can carry a different stain (placed by a hash of the window's name, never by chance). | — |
 
 ## 3. Controls

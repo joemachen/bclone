@@ -8,7 +8,7 @@
 > **⛔ THE SCROLLS ARE GONE (A114, 2026-11-17) — Joe: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."*** Every roll is out of the look: the windows, cards and bar are the same parchment sheets repainted without them, and the roll-up (§8.4, §9.3 step 6) is dropped. What reads below about rolls is the record.
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8); Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8), and its paper repainted to his concept's fine grain (A124, §9.9, built, the merge at his word); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -492,3 +492,26 @@ first in-game render. The four as they were asked:*
   - The sheets' fixed corners are smaller too (28 / 28 / 32 / 30 master px; the band 32 / 20 / 34 / 26), and a box smaller than its corners draws the painting smaller rather than overlapping them.
 - **A118 — no grey margin, a dark muddled ink line** (Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"*). The grey band he saw was a bug as much as a look: A116's script edit appended a comment to a line, and that comment swallowed the vignette's blend mode and opacity. Since A116 the "soft 26 % multiply" was painted as a full grey band. It is removed outright. The ink is now near-black in the dry-brush tip, with a second drifting stroke over it, and the shadow is tight. The faintest word at an inner edge rose to 5.15 : 1.
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
+
+
+### 9.9 ✅ A124 — the paper repainted to his concept's grain (2026-11-18; Joe: *"Yes, build it"*)
+- **His words:** *"i like the edges of the menu panels, but the texture is so big and blobby. looks very amateur. again i will refer you back to the concept style attached. it is literally perfect and you're almost there."* The concept: `D:\Projects\brushes\ui\joe-2026-11-18\concept-bar-target.png` (his control bar), beside his screenshot of the game.
+- **What made it blobby, found by measuring:** the three Adobe papers under the sheet are fine and blotch-free (blotch 0.2–0.4). The blobs were A117's grey mottle stamps, 520 master px at 24 % multiply. The stretch made them bigger: the band (1800 wide) was drawn ~2.8 × across his 1920 at 75 %, the top bar's boxes (the 240 × 120 slip) ~9 ×.
+- **The new paper** (`p2_chrome.jsx`, `FINE`):
+  - no stamps (their random draws still taken, so the tears, specks and ink drift land exactly where A118 put them: 2652 of the window sheet's 2657 ink-line pixels in the same place, alpha within 4 / 255);
+  - a fibre grain (noise, blurred 2.5, drawn along 9, soft light 85 %) and a shapeless soft tone (noise blurred 20, auto contrast, soft light 60 %), for the concept's faint small variation;
+  - a warm edge (`#8e5a2a` multiply: a 70 px wash blurred 20 at 18 %, a 14 px line blurred 4 at 30 %): L* ~66 under the ink, ~77 where the words begin, ~84 inside. The build bar's at 0.8 of that (its top row starts 12 master px inside its paper);
+  - the paper base `#e8dbc3`.
+- **Painted near the size they are drawn:** `band.png` 1800 → 4096 wide (its tears spaced 10 along it, 4 down its ends — `deckleRect` takes a second step now); a new `slip-long.png` (1600 × 240) for the top bar's boxes (`ParchmentLook`'s `top_box`). The small slip stays for popups, menus and tooltips. Windows and cards keep their 720 × 840 sheet (~1.2–1.4 ×).
+  - ⚠️ The top bar's boxes' edges look like the windows' now; the 9 × stretch had smeared their tears sideways.
+- **Measured in the game** (1920 × 1080, 75 %, his Hollowmere save; `measure_grain.py` at the concept's scale, the bar's middle):
+
+  | | L* | blotch | biggest dark patch | edge vs 20 px in |
+  |---|---|---|---|---|
+  | his concept | 83.0 | 0.71 | 16 px | −10.9 |
+  | today (A123) | 82.2 | 4.23 | 134 px, a third of the box | +0.2 |
+  | A124 | 82.7 | 0.69 | 6 px | −5 to −8 |
+
+  The windows, the card and the top slips the same way: today's biggest dark patch 82–174 px (18–43 % of the box), A124's 7–22 px (under 1 %).
+- **The words:** `ui contrast:`'s faintest word at a frame's inner edge read 4.89 : 1 with the full wash on the band (5.15 before), so the band's wash went to 0.8: now 5.11 there, the other frames 5.24–5.35. Walking the whole content edge (`check_sheet.py`), a few points dip under 4.5 where the edge's own ink ticks (the specks) reach ~15 px in — today's sheet has the same, worst 3.13. Left as the edge he likes; the probe reads ten points and does not see them.
+- **Sources** (outside git): `D:\Projects\brushes\ui\ps\p2_chrome.jsx` and `lib.jsx` (A123's kept as `.a123`), `a124_try.ps1` (tuning runs into a scratch folder); PSDs in `psd\p2\chrome\` (A123's in `chrome-a123\`); the measures and the comparisons in `grain\`.
