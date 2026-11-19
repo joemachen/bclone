@@ -8,7 +8,7 @@
 > **⛔ THE SCROLLS ARE GONE (A114, 2026-11-17) — Joe: *"For the UI: i hate the scrolls. keep the parchment and remove the scrolls."*** Every roll is out of the look: the windows, cards and bar are the same parchment sheets repainted without them, and the roll-up (§8.4, §9.3 step 6) is dropped. What reads below about rolls is the record.
 >
 > **⭐ NOW (A108, 2026-11-16): the art is painted (A101–A106, `ui-assets.md`) and in `main` (A107); nothing loads it yet.
-> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8), and its paper repainted to his concept's fine grain (A124, §9.9, built, the merge at his word); Joe's four calls are answered,
+> The hook-in is being built on `art` (§9): step 1, the seam, is done (A110, §9.5); step 2, the icons, is done (A111, §9.6), his two calls answered (A112, §9.7); step 3, the parchment look, is done (A113, §9.8), and its paper repainted to his concept's fine grain (A124, §9.9; merged into `main` and pushed at his word, A125); Joe's four calls are answered,
 > all as recommended (§9.4, A109). The
 > status below is A97's, kept as the record.**
 >
@@ -494,7 +494,7 @@ first in-game render. The four as they were asked:*
 - **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
 
 
-### 9.9 ✅ A124 — the paper repainted to his concept's grain (2026-11-18; Joe: *"Yes, build it"*)
+### 9.9 ✅ A124 — the paper repainted to his concept's grain (2026-11-18; Joe: *"Yes, build it"*; merged and pushed at his word, A125)
 - **His words:** *"i like the edges of the menu panels, but the texture is so big and blobby. looks very amateur. again i will refer you back to the concept style attached. it is literally perfect and you're almost there."* The concept: `D:\Projects\brushes\ui\joe-2026-11-18\concept-bar-target.png` (his control bar), beside his screenshot of the game.
 - **What made it blobby, found by measuring:** the three Adobe papers under the sheet are fine and blotch-free (blotch 0.2–0.4). The blobs were A117's grey mottle stamps, 520 master px at 24 % multiply. The stretch made them bigger: the band (1800 wide) was drawn ~2.8 × across his 1920 at 75 %, the top bar's boxes (the 240 × 120 slip) ~9 ×.
 - **The new paper** (`p2_chrome.jsx`, `FINE`):
