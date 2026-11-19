@@ -2,7 +2,7 @@
 
 > Status: **📝 WRITTEN (D788, 2026-11-16) on `slice/systems-complete` — the review and its workplan, docs only; nothing built.
 > ✅ JOE'S TEN CALLS ANSWERED, ALL AS RECOMMENDED (D789, 2026-11-17, *"All as recommended"*) — the cut line in §3 holds, and
-> §5.1's W1–W13 is Phase 6's list (DESIGN §4). ✅ Merged into `main` and pushed at his word (D790, 2026-11-17). ▶️ Next for systems: W1, the batch trade as a row.**
+> §5.1's W1–W13 is Phase 6's list (DESIGN §4). ✅ Merged into `main` and pushed at his word (D790, 2026-11-17). ✅ W1, the batch trade as a row (D791–D795, `batch-trade.md`), no golden moved — merged into `main` and pushed at his word (D796). ▶️ Next for systems: W2, morale.**
 > *(Read "⏸️ Joe's calls in §6, each with a recommendation; the workplan (§5) is a proposal until he says so" until D789.)*
 > Phase 6, between water (D783) and morale (D750's order, D776). Format per `METHODOLOGY.md §2`, loosely: this is a review,
 > not a mechanic, so its "tests" are the exit gate's item 7 and the checks in §8.

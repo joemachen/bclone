@@ -50,7 +50,7 @@ public sealed class TailorTests
         for (int tick = 0; tick < config.TicksPerSeason && world.CoatsEverSewn < 4; tick++)
         {
             loop.StepOnce();
-            sewingTicks += world.Villagers.Count(v => v.State == VillagerState.Sewing && v.Tile == shop.Tile);
+            sewingTicks += world.Villagers.Count(v => v.State == VillagerState.WorkingABatch && v.BatchTrade == JobKind.Tailor && v.Tile == shop.Tile);
         }
 
         int leatherSpent = leatherBefore - world.InStores(Goods.Leather);
@@ -202,7 +202,7 @@ public sealed class TailorTests
 
         TheWarehouse(world).Store.Add(Goods.Leather, 100);
         int wanted = LabourQuota.TailorsWanted(world);
-        _output.WriteLine($"shortfall {LabourQuota.ClothingShortfall(world)}, a tailor sews {VillageEconomy.CoatsSewnPerYearAtWorst(world.Config)} a year: {wanted} wanted of {shop.Capacity} seats.");
+        _output.WriteLine($"shortfall {LabourQuota.ClothingShortfall(world)}, a tailor sews {VillageEconomy.BatchesPerYearAtWorst(world.Config, world.Batches.For(JobKind.Tailor)!)} a year: {wanted} wanted of {shop.Capacity} seats.");
         Assert.True(wanted > 0, "Adults without coats, leather on the shelf, and no tailor wanted.");
         Assert.True(wanted <= shop.Capacity);
 

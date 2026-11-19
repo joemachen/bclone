@@ -47,15 +47,12 @@ public readonly record struct LabourQuota
         int fishers = 0,
         int hunters = 0,
         int smiths = 0,
-        int tailors = 0,
         int quarriers = 0,
         int miners = 0,
-        int millers = 0,
-        int bakers = 0,
         int herdsmen = 0,
         int merchants = 0,
-        int carpenters = 0,
-        int teachers = 0)
+        int teachers = 0,
+        int[]? batch = null)
     {
         Hands = hands;
         Mouths = mouths;
@@ -65,7 +62,8 @@ public readonly record struct LabourQuota
         // `Stockpile` settled on: readers read as English at the call site and cannot go stale,
         // because there is one array underneath them. A seventh trade has a slot here the day a
         // modder adds one, where six named fields could never grow.
-        _byJob = new int[slots < BuiltIn ? BuiltIn : slots];
+        int size = slots < BuiltIn ? BuiltIn : slots;
+        _byJob = new int[batch is not null && batch.Length > size ? batch.Length : size];
         _byJob[(int)JobKind.Forager] = foragers;
         _byJob[(int)JobKind.Forester] = foresters;
         _byJob[(int)JobKind.Woodcutter] = woodcutters;
@@ -75,15 +73,24 @@ public readonly record struct LabourQuota
         _byJob[(int)JobKind.Fisher] = fishers;
         _byJob[(int)JobKind.Hunter] = hunters;
         _byJob[(int)JobKind.Smith] = smiths;
-        _byJob[(int)JobKind.Tailor] = tailors;
-        _byJob[(int)JobKind.Carpenter] = carpenters;
         _byJob[(int)JobKind.Quarrier] = quarriers;
         _byJob[(int)JobKind.Miner] = miners;
-        _byJob[(int)JobKind.Miller] = millers;
-        _byJob[(int)JobKind.Baker] = bakers;
         _byJob[(int)JobKind.Herdsman] = herdsmen;
         _byJob[(int)JobKind.Merchant] = merchants;
         _byJob[(int)JobKind.Teacher] = teachers;
+
+        // ⭐ THE BATCH TRADES BY THEIR ROWS (`batch-trade.md §4`, W1) — the mill, the oven, the tailor's shop, the workshop
+        // and whatever a modder adds, a slot each by job id rather than a named parameter each.
+        if (batch is not null)
+        {
+            for (int j = 0; j < batch.Length; j++)
+            {
+                if (batch[j] != 0)
+                {
+                    _byJob[j] = batch[j];
+                }
+            }
+        }
 
         // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
         // a quota posed by a test without one reads as "it got what it needed" rather than as a
@@ -318,29 +325,34 @@ public readonly record struct LabourQuota
         int marketersWanted = MarketersWanted(world);
         int buildersWanted = BuildersWanted(world);
         int smithsWanted = SmithsWanted(world);
-        int tailorsWanted = TailorsWanted(world);
-        int carpentersWanted = CarpentersWanted(world);
         int quarriersWanted = QuarriersWanted(world);
         int minersWanted = MinersWanted(world);
-        int millersWanted = MillersWanted(world);
-        int bakersWanted = BakersWanted(world);
+
+        // ⭐ THE BATCH TRADES, EACH BY ITS ROW'S HANDS RULE (`batch-trade.md §3–§4`, W1) — so a new batch trade is a row.
+        int slots = world.JobsCatalog.Count > BuiltIn ? world.JobsCatalog.Count : BuiltIn;
+        var batchWanted = new int[slots];
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchWanted[(int)row.Trade] = BatchHandsWanted(world, row);
+        }
 
         // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
         // here is the last moment it is unqualified — before the food floor zeroes four trades
         // and before every one of them is capped by the seats that exist. See `_neededByJob`:
         // it is what lets a panel say *"you need another woodcutter's hut"* instead of quietly
         // reporting the two seats as if two were the answer.
-        var needed = new int[BuiltIn];
+        var needed = new int[slots];
         needed[(int)JobKind.Woodcutter] = woodcutters;
         needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
         needed[(int)JobKind.Marketer] = marketersWanted;
         needed[(int)JobKind.Smith] = smithsWanted;
-        needed[(int)JobKind.Tailor] = tailorsWanted;
-        needed[(int)JobKind.Carpenter] = carpentersWanted;
         needed[(int)JobKind.Quarrier] = quarriersWanted;
         needed[(int)JobKind.Miner] = minersWanted;
-        needed[(int)JobKind.Miller] = millersWanted;
-        needed[(int)JobKind.Baker] = bakersWanted;
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            needed[(int)row.Trade] = batchWanted[(int)row.Trade];
+        }
+
         needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
         needed[(int)JobKind.Merchant] = MerchantsWanted(world);
 
@@ -398,9 +410,18 @@ public readonly record struct LabourQuota
             marketersWanted = 0;
             buildersWanted = 0;
             smithsWanted = 0;
-            tailorsWanted = 0;
             quarriersWanted = 0;
             minersWanted = 0;
+
+            // A batch trade by its row (W1): the tailor stands down, the carpenter, the miller and the baker do not —
+            // as shipped (`batch-trade.md §7`, found and kept).
+            foreach (BatchRow row in world.Batches.Rows)
+            {
+                if (row.StandsDownInFamine)
+                {
+                    batchWanted[(int)row.Trade] = 0;
+                }
+            }
         }
 
         // The herd (D593): its hay is cut from what the food floor leaves spare (`livestock.md §10`), so while food
@@ -638,14 +659,13 @@ public readonly record struct LabourQuota
         // above, which is why it is asked before the builders and the stall.
         int smiths = Take(ref free, Cap(smithsWanted, TotalCapacityFor(world, JobKind.Smith)));
 
-        // Coats, after tools (D659, `clothing.md §3.5`): discretionary like the smith's, and the adults it dresses are
-        // every hand above — a coat is upside on every winter errand, as a tool is on every action.
-        int tailors = Take(ref free, Cap(tailorsWanted, TotalCapacityFor(world, JobKind.Tailor)));
-
-        // Handcarts, after coats and before stone (Joe, D675 call 4; `workshop-and-the-carpenter.md §4.4`): a convenience
-        // of the coat's kind, and a finite one — one a household and a spare — so he is wanted in a burst when a
-        // workshop first stands and rarely after.
-        int carpenters = Take(ref free, Cap(carpentersWanted, TotalCapacityFor(world, JobKind.Carpenter)));
+        // ⭐ THE TOOLS BAND OF BATCH TRADES, IN THEIR ROWS' ORDER (`batch-trade.md §4`, W1). Coats, after tools (D659,
+        // `clothing.md §3.5`): discretionary like the smith's, and the adults it dresses are every hand above — a coat is
+        // upside on every winter errand, as a tool is on every action. Then handcarts, before stone (Joe, D675 call 4;
+        // `workshop-and-the-carpenter.md §4.4`): a convenience of the coat's kind, and a finite one — one a household and a
+        // spare — so he is wanted in a burst when a workshop first stands and rarely after.
+        var batchTaken = new int[slots];
+        TakeTheBand(world, QuotaBand.AfterTools, batchWanted, batchTaken, ref free);
 
         // Stone, after tools and before building (D434): discretionary like the smith's, and the
         // builders it feeds come next — a quarry the village cannot spare hands for is a quarry
@@ -655,11 +675,10 @@ public readonly record struct LabourQuota
         // Iron, after stone (D449): the mine's twin of the quarry's reasoning, one rung on.
         int miners = Take(ref free, Cap(minersWanted, TotalCapacityFor(world, JobKind.Miner)));
 
-        // The mill and the oven, after the face trades and before the market (D522): bread is upside
-        // above the floor (`food-chain.md §6`), discretionary like the smith's — and the mill only
-        // ever wants hands while the village is fed (`SimWorld.WhyTheBatchWaits`).
-        int millers = Take(ref free, Cap(millersWanted, TotalCapacityFor(world, JobKind.Miller)));
-        int bakers = Take(ref free, Cap(bakersWanted, TotalCapacityFor(world, JobKind.Baker)));
+        // ⭐ THE STONE BAND OF BATCH TRADES, IN THEIR ROWS' ORDER (W1). The mill and the oven, after the face trades and
+        // before the market (D522): bread is upside above the floor (`food-chain.md §6`), discretionary like the smith's —
+        // and the mill only ever wants hands while the village is fed (`SimWorld.WhyTheBatchWaits`).
+        TakeTheBand(world, QuotaBand.AfterStone, batchWanted, batchTaken, ref free);
         int herdsmen = Take(ref free, Cap(herdsmenWanted, TotalCapacityFor(world, JobKind.Herdsman)));
         int merchants = Take(ref free, Cap(merchantsWanted, TotalCapacityFor(world, JobKind.Merchant)));
         int teachers = 0;
@@ -840,15 +859,15 @@ public readonly record struct LabourQuota
         fishers = Asked(world, JobKind.Fisher, fishers, hands);
         hunters = Asked(world, JobKind.Hunter, hunters, hands);
         smiths = Asked(world, JobKind.Smith, smiths, hands);
-        tailors = Asked(world, JobKind.Tailor, tailors, hands);
-        carpenters = Asked(world, JobKind.Carpenter, carpenters, hands);
         quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
         miners = Asked(world, JobKind.Miner, miners, hands);
-        millers = Asked(world, JobKind.Miller, millers, hands);
-        bakers = Asked(world, JobKind.Baker, bakers, hands);
         herdsmen = Asked(world, JobKind.Herdsman, herdsmen, hands);
         merchants = Asked(world, JobKind.Merchant, merchants, hands);
         teachers = Asked(world, JobKind.Teacher, teachers, hands);
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchTaken[(int)row.Trade] = Asked(world, row.Trade, batchTaken[(int)row.Trade], hands);
+        }
 
         // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
         //
@@ -870,21 +889,21 @@ public readonly record struct LabourQuota
         fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
         hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
         smiths = AtLeastPinned(world, JobKind.Smith, smiths);
-        tailors = AtLeastPinned(world, JobKind.Tailor, tailors);
-        carpenters = AtLeastPinned(world, JobKind.Carpenter, carpenters);
         quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
         miners = AtLeastPinned(world, JobKind.Miner, miners);
-        millers = AtLeastPinned(world, JobKind.Miller, millers);
-        bakers = AtLeastPinned(world, JobKind.Baker, bakers);
         herdsmen = AtLeastPinned(world, JobKind.Herdsman, herdsmen);
         merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
         teachers = AtLeastPinned(world, JobKind.Teacher, teachers);
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchTaken[(int)row.Trade] = AtLeastPinned(world, row.Trade, batchTaken[(int)row.Trade]);
+        }
 
         return new LabourQuota(
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
-            farmers, slots: 0, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths, tailors: tailors,
-            quarriers: quarriers, miners: miners, millers: millers, bakers: bakers, herdsmen: herdsmen, merchants: merchants,
-            carpenters: carpenters, teachers: teachers);
+            farmers, slots: slots, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
+            quarriers: quarriers, miners: miners, herdsmen: herdsmen, merchants: merchants, teachers: teachers,
+            batch: batchTaken);
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>
@@ -1196,6 +1215,21 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
+    /// <summary>
+    /// One band's batch trades, in their rows' order — ⛔ at exactly the place the named takes stood before W1, so
+    /// <see cref="Take"/> is called in the same order with the same numbers (`batch-trade.md §4–§5`).
+    /// </summary>
+    private static void TakeTheBand(SimWorld world, QuotaBand band, int[] wanted, int[] taken, ref int free)
+    {
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            if (row.QuotaBand == band)
+            {
+                taken[(int)row.Trade] = Take(ref free, Cap(wanted[(int)row.Trade], TotalCapacityFor(world, row.Trade)));
+            }
+        }
+    }
+
     private static int Take(ref int free, int wanted)
     {
         int taken = wanted > free ? free : wanted;
@@ -1704,13 +1738,46 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>
-    /// Millers the village wants — every seat of every standing mill with work to do (D522), the face
-    /// trades' shape. "Work to do" is <c>SimWorld.WhyTheBatchWaits</c>, the one copy of the reasons.
+    /// The hands a batch trade is wanted for, by its row's rule (`batch-trade.md §3`, W1): <b>every seat with work</b> —
+    /// every seat of every standing hut with work to do, the face trades' shape (the mill and the oven, D522) — or <b>the
+    /// shortfall over a year</b>: what the row's stop says the village is short of over what one hand makes in a year,
+    /// the smith's shape, and never more than the seats with work, so nobody is hired into a hut that
+    /// <see cref="SimWorld.WhyTheBatchWaits"/> says must wait (the tailor and the carpenter, D659, D678). "Work to do" is
+    /// <c>WhyTheBatchWaits</c>, the one copy of the reasons.
     /// </summary>
-    public static int MillersWanted(SimWorld world) => BatchSeatsWanted(world, JobKind.Miller);
+    public static int BatchHandsWanted(SimWorld world, BatchRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
 
-    /// <summary>Bakers the village wants — every seat of every standing bakery with work to do (D522).</summary>
-    public static int BakersWanted(SimWorld world) => BatchSeatsWanted(world, JobKind.Baker);
+        // No hut, or a hut with nothing to do, is no seats — and so nobody (one branch, not two: D661's red-check found an
+        // early return the cap below already did the work of).
+        int seats = BatchSeatsWanted(world, row.Trade);
+        if (row.Hands == BatchHands.EverySeatWithWork)
+        {
+            return seats;
+        }
+
+        int aYear = VillageEconomy.BatchesPerYearAtWorst(world.Config, row) * row.OutputPerBatch;
+        int wanted = CeilingDivide(BatchShortfall(world, row), aYear);
+        return wanted < seats ? wanted : seats;
+    }
+
+    /// <summary>What a shortfall-hired batch trade's stop says the village is short of — its demand rule's own method.</summary>
+    private static int BatchShortfall(SimWorld world, BatchRow row) =>
+        (row.Stop & BatchStop.EveryoneClothed) != 0 ? ClothingShortfall(world)
+        : (row.Stop & BatchStop.EveryHouseholdCarted) != 0 ? HandcartsShortfall(world)
+        : throw new InvalidOperationException(
+            $"The {row.Trade} row is hired by its shortfall and its stop names none — `SimConfig` refuses this at load.");
+
+    /// <summary>The hands one batch trade is wanted for, by its trade — the named readers' way in (D218).</summary>
+    private static int BatchHandsWanted(SimWorld world, JobKind trade) =>
+        BatchHandsWanted(world, world.Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade"));
+
+    /// <summary>Millers the village wants — every seat of every standing mill with work to do (D522), by the row.</summary>
+    public static int MillersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Miller);
+
+    /// <summary>Bakers the village wants — every seat of every standing bakery with work to do (D522), by the row.</summary>
+    public static int BakersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Baker);
 
     /// <summary>
     /// ⭐ Merchants the posts want (D594, `trade.md §4.5`): one a standing post while there is something to carry — a good
@@ -1819,31 +1886,11 @@ public readonly record struct LabourQuota
     public static int SmithsWanted(SimWorld world) =>
         CeilingDivide(ToolShortfall(world), VillageEconomy.ToolsForgedPerYearAtWorst(world.Config));
 
-    /// <summary>
-    /// Tailors wanted (`clothing.md §3.5`, D659): the coats the village is short of over what one tailor sews a year —
-    /// the smith's shape — and never more than the seats a shop with leather to sew can fill, so nobody is hired into
-    /// a shop that <see cref="SimWorld.WhyTheBatchWaits"/> says must wait.
-    /// </summary>
-    public static int TailorsWanted(SimWorld world)
-    {
-        // No shop, or a shop with nothing to sew, is no seats — and so nobody (one branch, not two: D661's red-check
-        // found an early return the cap below already did the work of).
-        int seats = BatchSeatsWanted(world, JobKind.Tailor);
-        int wanted = CeilingDivide(ClothingShortfall(world), VillageEconomy.CoatsSewnPerYearAtWorst(world.Config));
-        return wanted < seats ? wanted : seats;
-    }
+    /// <summary>Tailors wanted (`clothing.md §3.5`, D659): the coats the village is short of over a tailor's year, by the row.</summary>
+    public static int TailorsWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Tailor);
 
-    /// <summary>
-    /// Carpenters wanted (`workshop-and-the-carpenter.md §4.4`, D678): the handcarts the village is short of over what one
-    /// carpenter makes a year — <see cref="TailorsWanted"/>'s shape — and never more than the seats a workshop with logs
-    /// to work can fill, so nobody is hired into a workshop that <see cref="SimWorld.WhyTheBatchWaits"/> says must wait.
-    /// </summary>
-    public static int CarpentersWanted(SimWorld world)
-    {
-        int seats = BatchSeatsWanted(world, JobKind.Carpenter);
-        int wanted = CeilingDivide(HandcartsShortfall(world), VillageEconomy.HandcartsMadePerYearAtWorst(world.Config));
-        return wanted < seats ? wanted : seats;
-    }
+    /// <summary>Carpenters wanted (`workshop-and-the-carpenter.md §4.4`, D678): the handcarts short over a carpenter's year, by the row.</summary>
+    public static int CarpentersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Carpenter);
 
     /// <summary>
     /// Extra foresters needed to keep the huts in logs.

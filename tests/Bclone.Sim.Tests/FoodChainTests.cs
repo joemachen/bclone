@@ -42,7 +42,7 @@ public sealed class FoodChainTests
         for (int tick = 0; tick < config.TicksPerSeason && world.FlourEverGround < config.FlourPerGrind * 4; tick++)
         {
             loop.StepOnce();
-            grindingTicks += world.Villagers.Count(v => v.State == VillagerState.Grinding && v.Tile == mill.Tile);
+            grindingTicks += world.Villagers.Count(v => v.State == VillagerState.WorkingABatch && v.BatchTrade == JobKind.Miller && v.Tile == mill.Tile);
         }
 
         int wheatSpent = wheatBefore - WheatInStores(world);

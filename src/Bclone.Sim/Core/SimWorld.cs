@@ -60,6 +60,9 @@ public sealed partial class SimWorld : IObstacles
     /// <summary>What the trades are — the one place the sim asks (`jobs-catalog.md`, D218).</summary>
     public JobsCatalog JobsCatalog { get; }
 
+    /// <summary>The batch trades — the mill, the oven, the tailor's shop, the workshop — as rows (`batch-trade.md §3`, W1).</summary>
+    public BatchCatalog Batches { get; }
+
     /// <summary>What the techniques are — the one place the sim asks (`tech-tree.md`).</summary>
     public TechniquesCatalog TechniquesCatalog { get; }
 
@@ -2598,13 +2601,17 @@ public sealed partial class SimWorld : IObstacles
                 : null;
         }
 
+        // Every batch trade by its row (W1): the one copy of its reasons.
+        if (Batches.For(workplace.Kind) is not null)
+        {
+            return WhyTheBatchWaits(workplace) is string waits ? $"{workplace.Name}: {waits}" : null;
+        }
+
         return workplace.Kind switch
         {
             JobKind.Forester => ForesterIdleNote(workplace),
             JobKind.Woodcutter => WoodcutterIdleNote(workplace),
             JobKind.Smith => SmithyIdleNote(workplace),
-            JobKind.Miller or JobKind.Baker or JobKind.Tailor or JobKind.Carpenter =>
-                WhyTheBatchWaits(workplace) is string waits ? $"{workplace.Name}: {waits}" : null,
             JobKind.Quarrier or JobKind.Miner =>
                 WhyTheFaceIsIdle(workplace) is string idle ? $"{workplace.Name}: {idle}" : null,
             JobKind.Forager => ForagerIdleNote(workplace),
@@ -4175,11 +4182,12 @@ public sealed partial class SimWorld : IObstacles
             return known(BuildingKind.Smithy) || (goods == Goods.Tools && Config.CartTools > 0);
         }
 
-        // The mill's, the oven's, the tailor's and the carpenter's goods wait on the building that makes them.
-        foreach (JobKind trade in new[] { JobKind.Miller, JobKind.Baker, JobKind.Tailor, JobKind.Carpenter })
+        // A batch trade's good waits on the building that makes it — every batch row (W1), the mill's, the oven's, the
+        // tailor's, the carpenter's and a modder's.
+        foreach (BatchRow row in Batches.Rows)
         {
-            if (BatchFor(trade) is Batch batch && batch.Output == goods
-                && JobsCatalog.WorksAt(trade) is BuildingKind maker)
+            if (BatchFor(row.Trade) is Batch batch && batch.Output == goods
+                && JobsCatalog.WorksAt(row.Trade) is BuildingKind maker)
             {
                 return known(maker);
             }
@@ -4371,46 +4379,37 @@ public sealed partial class SimWorld : IObstacles
     // ---------------------------------------------------------------
 
     /// <summary>
-    /// One stint's recipe at a mill or an oven — what goes in, what comes out, how long, how many, and
-    /// what the oven burns when it is lit. Null for any other trade.
+    /// One stint's recipe at a batch trade's hut — what goes in, what comes out, how long, how many, and what the hut
+    /// burns when it is lit. Null for any trade that is not a batch trade.
     /// </summary>
     /// <remarks>
-    /// ⭐ <b>One shape for both</b>, so the walk, the batch, the put-away and every reason it stands
-    /// still are written once (`food-chain.md §4`). The smith keeps its own path: a forge's recipe is
-    /// its tool's row and its card chooses the tool.
+    /// ⭐ <b>One shape for every batch trade</b>, so the walk, the batch, the put-away and every reason it stands still are
+    /// written once (`food-chain.md §4`) — <b>and since W1 read off the trade's row</b> (`batch-trade.md §3`), so a new
+    /// batch trade is a row. The smith keeps its own path: a forge's recipe is its tool's row and its card chooses the tool.
     /// </remarks>
-    public Batch? BatchFor(JobKind trade) => trade switch
-    {
-        JobKind.Miller => new Batch(
-            JobKind.Miller, Goods.Wheat, Config.WheatPerGrind, Goods.Flour, Config.FlourPerGrind,
-            Firing: 0, Config.GrindTicks, Config.GrindsPerStint, "grind", "a grind"),
-        JobKind.Baker => new Batch(
-            JobKind.Baker, Goods.Flour, Config.FlourPerBake, Goods.Bread, Config.BreadPerBake,
-            Config.FirewoodPerFiring, Config.BakeTicks, Config.BakesPerStint, "bake", "a bake"),
-        JobKind.Tailor => new Batch(
-            JobKind.Tailor, Goods.Leather, Config.LeatherPerCoat, Goods.Clothing, 1,
-            Firing: 0, Config.SewTicks, Config.SewsPerStint, "sew", "a coat"),
-
-        // ⭐ THE CARPENTER (D678, `workshop-and-the-carpenter.md §4.3`): what the workshop is set to make, from its row's
-        // `made_from` — one line today (the `Batch` has one input). ⛔ Never a firing: a saw-pit has no fire, so the
-        // oven's winter-firewood guard is never asked.
-        JobKind.Carpenter => CarpentersBatch(),
-        _ => null,
-    };
+    public Batch? BatchFor(JobKind trade) => Batches.For(trade) is BatchRow row ? BatchFrom(row) : null;
 
     /// <summary>
-    /// The carpenter's batch, read off the handcart's (or a modded product's) <c>made_from</c> row — the smith reads its
-    /// tool's <c>forged_from</c> the same way (D446). The workshop's product is <see cref="Workplace.MakeGood"/>; with
-    /// one product in the game every workshop's is the handcart, and the batch is asked of the trade, not the building.
+    /// A row's batch. ⭐ A row whose recipe is the product's (the carpenter, D678, `workshop-and-the-carpenter.md §4.3`)
+    /// reads what the trade's first standing hut is set to make, and that good's <c>made_from</c> — one line today (the
+    /// <see cref="Batch"/> has one input) — as the smith reads its tool's <c>forged_from</c> (D446). With one product in
+    /// the game every workshop's is the handcart, and the batch is asked of the trade, not the building.
     /// </summary>
-    private Batch? CarpentersBatch()
+    private Batch? BatchFrom(BatchRow row)
     {
+        if (!row.FromTheProduct)
+        {
+            return new Batch(
+                row.Trade, row.Input, row.InputPerBatch, row.Output, row.OutputPerBatch,
+                row.Firing, row.Ticks, row.PerStint, row.Verb, Worded(row.OneOf, row.Output));
+        }
+
         Goods made = Workplace.DefaultMakeGood;
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (Workplaces[i] is { Kind: JobKind.Carpenter, IsSite: false } workshop)
+            if (Workplaces[i] is { IsSite: false } hut && hut.Kind == row.Trade)
             {
-                made = workshop.MakeGood;
+                made = hut.MakeGood;
                 break;
             }
         }
@@ -4421,9 +4420,33 @@ public sealed partial class SimWorld : IObstacles
         }
 
         return new Batch(
-            JobKind.Carpenter, recipe[0].Goods, recipe[0].Amount, made, 1,
-            Firing: 0, Config.MakeTicks, Config.MakesPerStint, "make", $"a {Singular(GoodsCatalog.NameOf(made))}");
+            row.Trade, recipe[0].Goods, recipe[0].Amount, made, row.OutputPerBatch,
+            row.Firing, row.Ticks, row.PerStint, row.Verb, Worded(row.OneOf, made));
     }
+
+    /// <summary>
+    /// A batch trade's words for the card and the log, its product put in (W1) — what <see cref="Villager.BatchWords"/>
+    /// holds. The product is the trade's batch's output: the first standing workshop's, or the row's.
+    /// </summary>
+    internal BatchWords WordsFor(JobKind trade)
+    {
+        BatchRow row = Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade");
+        Goods made = BatchFor(trade)?.Output ?? row.Output;
+        return new BatchWords(Worded(row.WalkTo, made), Worded(row.Working, made), row.StintWord, Worded(row.FirstBatch, made));
+    }
+
+    /// <summary>Put a villager on a batch trade — whose batch it is and its words, together (W1, D792).</summary>
+    internal void SetBatchOf(Villager villager, JobKind trade) => villager.SetBatch(trade, WordsFor(trade));
+
+    /// <summary>
+    /// A batch row's words with its good put in: <c>{products}</c> the good's name, <c>{product}</c> one of it — so the
+    /// workshop says what it makes rather than the word <em>"handcarts"</em> (`batch-trade.md §4`).
+    /// </summary>
+    internal string Worded(string text, Goods made) =>
+        text.Contains('{', StringComparison.Ordinal)
+            ? text.Replace("{products}", GoodsCatalog.NameOf(made), StringComparison.Ordinal)
+                .Replace("{product}", Singular(GoodsCatalog.NameOf(made)), StringComparison.Ordinal)
+            : text;
 
     /// <summary>"handcarts" → "handcart", "planks" → "plank" — a good's row names the plural, the batch speaks of one.</summary>
     private static string Singular(string plural) =>
@@ -4459,28 +4482,28 @@ public sealed partial class SimWorld : IObstacles
                 + $"{GoodsCatalog.NameOf(batch.Output)} and it has {HeldAgainstItsLimit(batch.Output)} stored.";
         }
 
-        if (batch.Trade == JobKind.Miller)
-        {
-            // ⛔ FLOUR IS NOT FOOD (§5 rule 1). Grinding the last of the wheat in a hungry spring turns a
-            // meal into a sack nobody can eat until a baker gets to it.
-            if (LabourQuota.VillageIsShortOfFood(this))
-            {
-                return $"{nothing} — the village needs its grain to eat.";
-            }
+        // ⭐ THE ROW'S OWN STOP (`batch-trade.md §3`, W1) — each a named demand rule, read in the order they always were.
+        BatchStop stop = Batches.For(at.Kind)!.Stop;
 
-            // With no limit of the player's, the stones turn for what the ovens will bake, and no more:
-            // flour that sits is wheat nobody can eat.
-            if (StockLimits.For(Goods.Flour) is null
-                && HeldAgainstItsLimit(Goods.Flour) >= LabourQuota.FlourWantedForTheOvens(this))
-            {
-                return $"{nothing} — the ovens have flour enough ({HeldAgainstItsLimit(Goods.Flour)} stored).";
-            }
+        // ⛔ FLOUR IS NOT FOOD (§5 rule 1). Grinding the last of the wheat in a hungry spring turns a meal into a sack nobody
+        // can eat until a baker gets to it.
+        if ((stop & BatchStop.FedFirst) != 0 && LabourQuota.VillageIsShortOfFood(this))
+        {
+            return $"{nothing} — the village needs its grain to eat.";
+        }
+
+        // With no limit of the player's, the stones turn for what the ovens will bake, and no more: flour that sits is wheat
+        // nobody can eat.
+        if ((stop & BatchStop.OvensSupplied) != 0 && StockLimits.For(batch.Output) is null
+            && HeldAgainstItsLimit(batch.Output) >= LabourQuota.FlourWantedForTheOvens(this))
+        {
+            return $"{nothing} — the ovens have flour enough ({HeldAgainstItsLimit(batch.Output)} stored).";
         }
 
         // ⭐ THE TAILOR, WITH NO LIMIT OF THE PLAYER'S, SEWS TOWARD WHAT THE SHELVES SHOULD HOLD (`clothing.md §3.5`, D659):
         // a coat for every adult without one and a year's wear beside them — the derived default under the ceiling
         // (D62), the mill's rule for flour one good over. A set limit is the ceiling, read above.
-        if (batch.Trade == JobKind.Tailor && StockLimits.For(batch.Output) is null
+        if ((stop & BatchStop.EveryoneClothed) != 0 && StockLimits.For(batch.Output) is null
             && HeldAgainstItsLimit(batch.Output) >= LabourQuota.ClothingWanted(this))
         {
             return $"{nothing} — every adult has a coat, and the shelves hold a year's wear "
@@ -4490,7 +4513,7 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ THE CARPENTER, WITH NO LIMIT OF THE PLAYER'S, MAKES ONE A HOUSEHOLD AND A SPARE (`workshop-and-the-carpenter.md
         // §4.4`, D678): the tailor's rule one good over. ⚠️ Read where the work is decided, never per tick: a count over the
         // households list. The spare is `LabourQuota.HandcartSpare`, so the stop and the hiring cannot disagree.
-        if (batch.Trade == JobKind.Carpenter && StockLimits.For(batch.Output) is null
+        if ((stop & BatchStop.EveryHouseholdCarted) != 0 && StockLimits.For(batch.Output) is null
             && HeldAgainstItsLimit(batch.Output) >= LabourQuota.HandcartsWanted(this) + LabourQuota.HandcartSpare)
         {
             return $"{nothing} — every household has a handcart, and the shelves hold one for the next "
@@ -4812,7 +4835,8 @@ public sealed partial class SimWorld : IObstacles
     {
         ArgumentNullException.ThrowIfNull(workshop);
 
-        if (workshop.Kind != JobKind.Carpenter)
+        // A hut whose recipe is the product's (the workshop, by its batch row — W1).
+        if (Batches.For(workshop.Kind) is not { FromTheProduct: true })
         {
             return PlacementVerdict.No($"{workshop.Name} is not a workshop; nothing is made there.");
         }
@@ -12122,6 +12146,7 @@ public sealed partial class SimWorld : IObstacles
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         Crops = new CropsCatalog(config.Crops);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
+        Batches = new BatchCatalog(config.BatchRows);
 
         // ⚠️ AFTER THE JOBS, AND IT MUST BE: the buildings catalogue indexes `JobRow.WorksAt`
         // backwards to answer "who works here?", because that relation is stated once
@@ -15256,6 +15281,16 @@ public sealed partial class SimWorld : IObstacles
         foreach (SaveReader workplace in save.Objects("workplaces"))
         {
             Workplaces.Add(Workplace.FromSave(workplace));
+        }
+
+        // ⭐ A batch hand's words are derived from their trade's row (W1, D792) and put back here, after the workplaces —
+        // the workshop's product names them. Never saved.
+        foreach (Villager villager in Villagers)
+        {
+            if (villager.BatchTrade is JobKind trade && Batches.For(trade) is not null)
+            {
+                SetBatchOf(villager, trade);
+            }
         }
 
         foreach (SaveReader store in save.Objects("stores"))
