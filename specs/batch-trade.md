@@ -1,7 +1,9 @@
 # Spec: The batch trade as a row — W1
 
-> Status: **✅ BUILT on `slice/batch-trade` (D792–D795, 2026-11-18): steps 1–6, the four checks green, no golden moved.
-> ⏸️ The merge at Joe's word, and his play of any village with a mill, a bakery, a tailor and a workshop (§9).** History: 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
+> Status: **✅ BUILT (D792–D795, 2026-11-18) and ✅ MERGED INTO `main` AND PUSHED AT JOE'S WORD (D796, *"Merge and
+> push"*): steps 1–6, the four checks green on the merged tree, no golden moved. ⏸️ His play of any village with a mill,
+> a bakery, a tailor and a workshop (§9).** *(Read "✅ BUILT on `slice/batch-trade` … ⏸️ The merge at Joe's word" at
+> D795.)* History: 📝 Specced (D791, 2026-11-17); ✅ Joe's call A (D792, *"A, as
 > recommended"*) — one shared pair of states, the trade a field beside it (§7). ✅ Step 1, today pinned (D792): 28 tests,
 > 11 mutants, 11 red. ✅ Steps 2 and 4 — the row, and hands and stops by it (D793, one commit). ✅ Step 5 — one shared
 > pair of states and `Villager.BatchTrade` (D794); **no golden moved**. ✅ Step 6, a fifth trade from its row (D795).**
