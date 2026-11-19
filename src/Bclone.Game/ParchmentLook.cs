@@ -88,7 +88,9 @@ internal static class ParchmentLook
 
         // The top bar's boxes: a torn slip — slate's own 6 px inside, because that bar is full (A111); the paper reaches a few
         // px past the box instead (A116), so the outermost words never sit on the ink line, and the bar does not move.
-        PaintedPatch topBox = PaintedPatch.Make(Tex("chrome/slip.png"), 0.5f, new Vector4(20, 16, 20, 16), new Vector4(6, 6, 6, 6));
+        // A124: its own long slip, painted near the size it is drawn — the 240 × 120 slip was stretched ~9 × across Joe's
+        // 1920 at 75 %, and every grain and stain in it with it. The small slip stays for popups, menus and tooltips.
+        PaintedPatch topBox = PaintedPatch.Make(Tex("chrome/slip-long.png"), 0.5f, new Vector4(20, 16, 20, 16), new Vector4(6, 6, 6, 6));
         topBox.Outset = new Vector4(4, 4, 7, 7);
         theme.SetStylebox("top_box", t, topBox);
 
