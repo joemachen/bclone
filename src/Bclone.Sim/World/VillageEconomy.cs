@@ -438,50 +438,35 @@ public static class VillageEconomy
         return tools < 1 ? 1 : tools;
     }
 
-    /// <summary>A tailor's stint: the worst walk there and back, and the sews (D659) — the forge's shape.</summary>
-    public static int SewStintTicks(SimConfig config)
+    /// <summary>
+    /// A batch trade's stint: the worst walk there and back, and the batches (D659, D678 — the forge's shape), off the
+    /// trade's row (`batch-trade.md §4`, W1). The tailor's and the carpenter's were two copies of this.
+    /// </summary>
+    public static int BatchStintTicks(SimConfig config, BatchRow row)
     {
         ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(row);
 
         int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
-        int sews = config.SewsPerStint < 1 ? 1 : config.SewsPerStint;
+        int batches = row.PerStint < 1 ? 1 : row.PerStint;
 
-        return (worst * config.TravelTicksPerUnit * 2) + (sews * config.SewTicks);
+        return (worst * config.TravelTicksPerUnit * 2) + (batches * row.Ticks);
     }
 
-    /// <summary>Coats one tailor sews in a year, working every stint the year allows (D659) — <see cref="ToolsForgedPerYearAtWorst"/>'s shape.</summary>
-    public static int CoatsSewnPerYearAtWorst(SimConfig config)
+    /// <summary>
+    /// Batches one hand of a batch trade does in a year, working every stint the year allows — <see cref="ToolsForgedPerYearAtWorst"/>'s
+    /// shape (W1: the tailor's coats and the carpenter's handcarts, one sum).
+    /// </summary>
+    public static int BatchesPerYearAtWorst(SimConfig config, BatchRow row)
     {
         ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(row);
 
         int available = config.TicksPerYear - MealsPerYear(config);
-        int stint = SewStintTicks(config);
+        int stint = BatchStintTicks(config, row);
         int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
-        int coats = stints * (config.SewsPerStint < 1 ? 1 : config.SewsPerStint);
-        return coats < 1 ? 1 : coats;
-    }
-
-    /// <summary>A carpenter's stint: the worst walk there and back, and the makes (D678) — the tailor's shape.</summary>
-    public static int MakeStintTicks(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        int worst = MaxHomeToVillageTiles(config) + ObstacleDetourTiles + PlotLaneTiles + DoorTiles;
-        int makes = config.MakesPerStint < 1 ? 1 : config.MakesPerStint;
-
-        return (worst * config.TravelTicksPerUnit * 2) + (makes * config.MakeTicks);
-    }
-
-    /// <summary>Handcarts one carpenter makes in a year, working every stint the year allows (D678) — <see cref="CoatsSewnPerYearAtWorst"/>'s shape.</summary>
-    public static int HandcartsMadePerYearAtWorst(SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-
-        int available = config.TicksPerYear - MealsPerYear(config);
-        int stint = MakeStintTicks(config);
-        int stints = available <= 0 || stint <= 0 ? 0 : available / stint;
-        int carts = stints * (config.MakesPerStint < 1 ? 1 : config.MakesPerStint);
-        return carts < 1 ? 1 : carts;
+        int batches = stints * (row.PerStint < 1 ? 1 : row.PerStint);
+        return batches < 1 ? 1 : batches;
     }
 
     /// <summary>Firewood one woodcutter makes in a year, at their weakest.</summary>

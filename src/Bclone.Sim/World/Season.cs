@@ -293,24 +293,32 @@ public enum VillagerState
     /// </remarks>
     WalkingBackToTheSteading,
 
-    /// <summary>Walking to the mill for a stint of grinding (D522, `food-chain.md §4.3`).</summary>
-    /// <remarks>⛔ Its own state — D281's lesson: <c>ErrandKind</c> reads it as the miller's.</remarks>
-    TravelingToMill,
+    /// <summary>
+    /// ⭐ Walking to the hut of a batch trade they hold a seat at — the mill, the oven, the tailor's shop, the workshop, or a
+    /// modder's (W1, Joe's call A, D792; `batch-trade.md §7`). <b>Whose batch it is is <see cref="Villager.BatchTrade"/></b>,
+    /// beside the state: the state cannot say it, and the D281 recall reads it.
+    /// </summary>
+    /// <remarks>
+    /// Was four states, one a trade (<c>TravelingToMill</c>, <c>TravelingToBakery</c>, <c>TravelingToTailor</c>,
+    /// <c>TravelingToWorkshop</c>); an old save's names are read as this and the trade (<c>Villager.FromSave</c>). Number 41,
+    /// the miller's old walk.
+    /// </remarks>
+    TravelingToABatch,
 
-    /// <summary>At the mill, grinding wheat into flour — the stint (D522).</summary>
-    Grinding,
+    /// <summary>
+    /// ⭐ At a batch trade's hut, turning one good into another a batch at a time — the stint (W1, D792). Was
+    /// <c>Grinding</c>, <c>Baking</c>, <c>Sewing</c> and <c>Making</c>. Number 42.
+    /// </summary>
+    WorkingABatch,
 
-    /// <summary>Walking to the bakery for a stint of baking (D522, `food-chain.md §4.4`).</summary>
-    /// <remarks>⛔ Its own state — D281's lesson: <c>ErrandKind</c> reads it as the baker's.</remarks>
-    TravelingToBakery,
-
-    /// <summary>At the oven, baking flour into bread — the stint (D522).</summary>
-    Baking,
+    // ⛔ 43 AND 44 ARE RETIRED (W1, D792) — the baker's old walk and work — AND NEVER REUSED. The state is hashed as its
+    // number (`StateHash`), so every state after them keeps the number it shipped with, and only a village with a batch hut
+    // in it hashes differently. 53–56 likewise, below.
 
     /// <summary>
     /// Out to a pasture tile and cutting it for hay — the herdsman's growing seasons (D593, `livestock.md §0.1`).
     /// </summary>
-    CuttingHay,
+    CuttingHay = 45,
 
     /// <summary>To the barn for an armful of hay to feed out (D593).</summary>
     FetchingHay,
@@ -336,23 +344,13 @@ public enum VillagerState
     /// </summary>
     FetchingACoat,
 
-    /// <summary>To the tailor's shop they hold a seat at (D659) — the miller's walk.</summary>
-    TravelingToTailor,
-
-    /// <summary>At the shop, sewing leather into a coat — a batch (D659, `clothing.md §3.5`).</summary>
-    Sewing,
-
-    /// <summary>To the workshop they hold a seat at (D678, `workshop-and-the-carpenter.md §4.2`) — the tailor's walk.</summary>
-    TravelingToWorkshop,
-
-    /// <summary>At the workshop, making logs into a handcart — a batch (D678, §4.3).</summary>
-    Making,
+    // ⛔ 53–56 ARE RETIRED (W1, D792) — the tailor's and the carpenter's old walks and work — AND NEVER REUSED (see 43).
 
     /// <summary>
     /// To the store that holds a handcart, for the household's own (`handcart.md §3`, Slice H) — the coat's errand one
     /// good over, and the household's rather than the person's: one fetcher a household, none once it has one.
     /// </summary>
-    FetchingAHandcart,
+    FetchingAHandcart = 57,
 
     /// <summary>Pushing the household's new handcart home from the store, to park it at the door (`handcart.md §3`).</summary>
     PushingAHandcart,

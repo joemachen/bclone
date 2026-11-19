@@ -70,7 +70,7 @@ public sealed class WorkshopTests
         for (int tick = 0; tick < config.TicksPerSeason && world.HandcartsEverMade < 2; tick++)
         {
             loop.StepOnce();
-            makingTicks += world.Villagers.Count(v => v.State == VillagerState.Making && v.Tile == workshop.Tile);
+            makingTicks += world.Villagers.Count(v => v.State == VillagerState.WorkingABatch && v.BatchTrade == JobKind.Carpenter && v.Tile == workshop.Tile);
         }
 
         int logsSpent = logsBefore - world.InStores(Goods.Logs);
@@ -291,7 +291,7 @@ public sealed class WorkshopTests
 
         TheWarehouse(world).Store.Add(Goods.Logs, 100);
         int wanted = LabourQuota.CarpentersWanted(world);
-        _output.WriteLine($"shortfall {LabourQuota.HandcartsShortfall(world)}, a carpenter makes {VillageEconomy.HandcartsMadePerYearAtWorst(world.Config)} a year: {wanted} wanted of {workshop.Capacity} seats.");
+        _output.WriteLine($"shortfall {LabourQuota.HandcartsShortfall(world)}, a carpenter makes {VillageEconomy.BatchesPerYearAtWorst(world.Config, world.Batches.For(JobKind.Carpenter)!)} a year: {wanted} wanted of {workshop.Capacity} seats.");
         Assert.True(wanted > 0, "Households without carts, logs on the shelf, and no carpenter wanted.");
         Assert.True(wanted <= workshop.Capacity);
         Assert.Equal(wanted, LabourQuota.For(world).Needed(JobKind.Carpenter));
@@ -379,9 +379,10 @@ public sealed class WorkshopTests
 
         // The villager's words (`DescribeState`), and the skill the stint grows (`SkillSystem`).
         Villager hand = world.Villagers.First(v => v.Alive && v.CanWork);
-        hand.State = VillagerState.TravelingToWorkshop;
+        world.SetBatchOf(hand, JobKind.Carpenter);
+        hand.State = VillagerState.TravelingToABatch;
         Assert.Equal($"walking to {workshop.Name}", hand.DescribeState(workshop.Name));
-        hand.State = VillagerState.Making;
+        hand.State = VillagerState.WorkingABatch;
         hand.BatchesThisStint = 1;
         Assert.Equal("making handcarts, the 2nd of the day", hand.DescribeState(workshop.Name));
         hand.BatchesThisStint = 0;
@@ -396,8 +397,8 @@ public sealed class WorkshopTests
         for (int tick = 0; tick < config.TicksPerSeason && world.HandcartsEverMade < 2; tick++)
         {
             loop.StepOnce();
-            atTheBench += world.Villagers.Count(v => v.Alive && v.State == VillagerState.Making);
-            onTheTrade += world.Villagers.Count(v => v.Alive && v.State is VillagerState.Making or VillagerState.TravelingToWorkshop);
+            atTheBench += world.Villagers.Count(v => v.Alive && v.State == VillagerState.WorkingABatch && v.BatchTrade == JobKind.Carpenter);
+            onTheTrade += world.Villagers.Count(v => v.Alive && v.State is VillagerState.WorkingABatch or VillagerState.TravelingToABatch && v.BatchTrade == JobKind.Carpenter);
         }
 
         // Every tick on the trade grows the skill (the calendar fact, `SkillProgress.Ticks`) — and the ruling that a tick at
@@ -407,8 +408,8 @@ public sealed class WorkshopTests
         Assert.True(atTheBench > 0, "Nobody was seen making at the bench, so the skill's growth proves nothing.");
         int grown = world.Villagers.Where(v => v.Alive).Sum(v => v.TicksIn(carpentry.Id));
         Assert.True(grown >= onTheTrade, $"{onTheTrade} ticks on the trade ({atTheBench} at the bench) grew only {grown} ticks of carpentry.");
-        Assert.True(SkillSystem.OutOnTheWork(VillagerState.Making), "A tick at the bench is a tick out on the work.");
-        Assert.True(SkillSystem.OutOnTheWork(VillagerState.TravelingToWorkshop), "The walk to the workshop is a tick out on the work.");
+        Assert.True(SkillSystem.OutOnTheWork(VillagerState.WorkingABatch), "A tick at the bench is a tick out on the work.");
+        Assert.True(SkillSystem.OutOnTheWork(VillagerState.TravelingToABatch), "The walk to the workshop is a tick out on the work.");
     }
 
     // ---------------------------------------------------------------

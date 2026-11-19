@@ -71,8 +71,8 @@ public partial class VillageMap
         or VillagerState.MakingFirewood or VillagerState.Building or VillagerState.Clearing or VillagerState.TidyingGround
         or VillagerState.Sowing or VillagerState.Reaping or VillagerState.Fishing or VillagerState.Hunting
         or VillagerState.Forging or VillagerState.DrawingWater or VillagerState.Quarrying or VillagerState.Mining
-        or VillagerState.Tending or VillagerState.Grinding or VillagerState.Baking or VillagerState.CuttingHay
-        or VillagerState.FeedingTheHerd or VillagerState.Culling or VillagerState.Sewing or VillagerState.Making
+        or VillagerState.Tending or VillagerState.WorkingABatch or VillagerState.CuttingHay
+        or VillagerState.FeedingTheHerd or VillagerState.Culling
         or VillagerState.StockingTheMarket or VillagerState.StockingThePost or VillagerState.ClearingAStore
         or VillagerState.ClearingABuffer;
 
@@ -81,8 +81,7 @@ public partial class VillageMap
         or VillagerState.TravelingToTrees or VillagerState.TravelingToHut or VillagerState.TravelingToField
         or VillagerState.TravelingToWater or VillagerState.TravelingToGame or VillagerState.TravelingToSmithy
         or VillagerState.TravelingToQuarry or VillagerState.TravelingToMine or VillagerState.WalkingOutToTend
-        or VillagerState.TravelingToMill or VillagerState.TravelingToBakery or VillagerState.TravelingToTailor
-        or VillagerState.TravelingToWorkshop;
+        or VillagerState.TravelingToABatch;
 
     /// <summary>
     /// What a villager's picture depends on this frame. Pure: it reads the villager and their heading and changes nothing.

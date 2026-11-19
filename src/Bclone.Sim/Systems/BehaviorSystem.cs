@@ -71,12 +71,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             if (villager.State != before)
             {
                 world.LogVillager(LogLevel.Debug, villager, "behavior",
-                    $"{Describe(before)} -> {Describe(villager.State)} at {villager.Tile}");
+                    $"{Describe(before, villager)} -> {Describe(villager.State, villager)} at {villager.Tile}");
             }
             else if (villager.Tile != wasAt)
             {
                 world.LogVillager(LogLevel.Trace, villager, "behavior",
-                    $"{Describe(villager.State)}, {wasAt} -> {villager.Tile}");
+                    $"{Describe(villager.State, villager)}, {wasAt} -> {villager.Tile}");
             }
 
             // Goods changing hands is the other half of an audit: "why is the granary
@@ -94,6 +94,12 @@ public sealed partial class BehaviorSystem : ISimSystem
     /// through it</b> — the panel's copy of this fell seven states behind before anybody
     /// noticed, and the only reason to keep two is that neither is allowed to rot.
     /// </remarks>
+    internal static string Describe(VillagerState state, Villager villager) =>
+        villager.BatchWords is BatchWords words && state is VillagerState.TravelingToABatch or VillagerState.WorkingABatch
+            ? state == VillagerState.TravelingToABatch ? $"walking to {words.WalkTo}" : words.Working
+            : Describe(state);
+
+    /// <summary>A state in words with nobody in it — a batch trade's hut unnamed (see the overload above).</summary>
     internal static string Describe(VillagerState state) => state switch
     {
         VillagerState.Idle => "idle",
@@ -128,14 +134,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.FetchingACoat => "fetching a coat from a store",
         VillagerState.TravelingToSmithy => "walking to the smithy",
         VillagerState.Forging => "forging tools",
-        VillagerState.TravelingToMill => "walking to the mill",
-        VillagerState.Grinding => "grinding wheat",
-        VillagerState.TravelingToBakery => "walking to the bakery",
-        VillagerState.Baking => "baking bread",
-        VillagerState.TravelingToTailor => "walking to the tailor's shop",
-        VillagerState.Sewing => "sewing coats",
-        VillagerState.TravelingToWorkshop => "walking to the workshop",
-        VillagerState.Making => "making handcarts",
+        VillagerState.TravelingToABatch => "walking to a batch trade's hut",
+        VillagerState.WorkingABatch => "working a batch",
         VillagerState.FetchingAHandcart => "fetching a handcart from a store",
         VillagerState.PushingAHandcart => "pushing a handcart home",
         VillagerState.TravelingToQuarry => "walking to the quarry face",
@@ -517,18 +517,16 @@ public sealed partial class BehaviorSystem : ISimSystem
                 Travel(world, villager, forge.Position, VillagerState.Forging);
                 return;
 
-            case VillagerState.TravelingToMill:
-            case VillagerState.TravelingToBakery:
-            case VillagerState.TravelingToTailor:
-            case VillagerState.TravelingToWorkshop:
-                // To the mill, the oven, the tailor's shop or the workshop they hold a seat at (D522, D659, D678), the smith's walk.
+            case VillagerState.TravelingToABatch:
+                // To the batch trade's hut they hold a seat at — the mill, the oven, the tailor's shop, the workshop (D522,
+                // D659, D678; one state since W1) — the smith's walk.
                 if (WorkplaceOf(world, villager) is not Workplace hut)
                 {
                     GoHome(world, villager);
                     return;
                 }
 
-                Travel(world, villager, hut.Position, BatchState(villager.State));
+                Travel(world, villager, hut.Position, VillagerState.WorkingABatch);
                 return;
 
             case VillagerState.FetchingMaterials:
@@ -686,35 +684,9 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static bool IsForging(VillagerState state) =>
         state is VillagerState.TravelingToSmithy or VillagerState.Forging;
 
-    private static bool IsMilling(VillagerState state) =>
-        state is VillagerState.TravelingToMill or VillagerState.Grinding;
-
-    private static bool IsBaking(VillagerState state) =>
-        state is VillagerState.TravelingToBakery or VillagerState.Baking;
-
-    private static bool IsSewing(VillagerState state) =>
-        state is VillagerState.TravelingToTailor or VillagerState.Sewing;
-
-    private static bool IsMaking(VillagerState state) =>
-        state is VillagerState.TravelingToWorkshop or VillagerState.Making;
-
-    /// <summary>The work a walk to the mill or the oven arrives as (D522).</summary>
-    private static VillagerState BatchState(VillagerState travelling) => travelling switch
-    {
-        VillagerState.TravelingToMill => VillagerState.Grinding,
-        VillagerState.TravelingToTailor => VillagerState.Sewing,
-        VillagerState.TravelingToWorkshop => VillagerState.Making,
-        _ => VillagerState.Baking,
-    };
-
-    /// <summary>The work a batch trade does at its hut, and the walk there (D522, D659, D678).</summary>
-    private static (VillagerState Walk, VillagerState Work) BatchStatesOf(JobKind trade) => trade switch
-    {
-        JobKind.Miller => (VillagerState.TravelingToMill, VillagerState.Grinding),
-        JobKind.Tailor => (VillagerState.TravelingToTailor, VillagerState.Sewing),
-        JobKind.Carpenter => (VillagerState.TravelingToWorkshop, VillagerState.Making),
-        _ => (VillagerState.TravelingToBakery, VillagerState.Baking),
-    };
+    /// <summary>On a batch trade's walk or at its work — every batch trade's, one pair since W1 (D792).</summary>
+    private static bool IsAtABatch(VillagerState state) =>
+        state is VillagerState.TravelingToABatch or VillagerState.WorkingABatch;
 
     private static bool IsQuarrying(VillagerState state) =>
         state is VillagerState.TravelingToQuarry or VillagerState.Quarrying;
@@ -737,8 +709,8 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static bool IsOnAWorkErrand(VillagerState state) =>
         IsForaging(state) || IsFishing(state) || IsHunting(state) || IsCutting(state)
         || IsSplitting(state) || IsTrading(state) || IsBuilding(state) || IsFarming(state)
-        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsMilling(state) || IsBaking(state) || IsSewing(state)
-        || IsMaking(state) || IsHerding(state) || IsTradingAtThePost(state);
+        || IsForging(state) || IsQuarrying(state) || IsMining(state) || IsAtABatch(state)
+        || IsHerding(state) || IsTradingAtThePost(state);
 
     /// <summary>The workplace this villager holds a job at, or null.</summary>
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
@@ -795,29 +767,8 @@ public sealed partial class BehaviorSystem : ISimSystem
             return JobKind.Smith;
         }
 
-        // ⛔ D281, a sixth and seventh time (D522): without these arms the miller and the baker are
-        // recalled home every tick.
-        if (IsMilling(state))
-        {
-            return JobKind.Miller;
-        }
-
-        if (IsBaking(state))
-        {
-            return JobKind.Baker;
-        }
-
-        // And the tailor (D659), the same lesson an eighth time.
-        if (IsSewing(state))
-        {
-            return JobKind.Tailor;
-        }
-
-        // And the carpenter (D678), a ninth.
-        if (IsMaking(state))
-        {
-            return JobKind.Carpenter;
-        }
+        // ⛔ The batch trades are not here (W1, D792): their state is shared, and whose batch it is is the villager's
+        // `BatchTrade` — `HoldsTheJobFor` reads it. D281's lesson was paid four times here (D522, D659, D678) before that.
 
         // ⛔ D281's lesson, the fifth time: without this arm a herdsman is recalled home every tick.
         if (IsHerding(state))
@@ -863,6 +814,14 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (villager.State == VillagerState.HaulingToFarm)
         {
             return held is JobKind.Farmer or JobKind.Hunter;
+        }
+
+        // ⛔ A BATCH ERRAND IS THE TRADE IT WAS SET OFF FOR, NOT THE SEAT HELD NOW (W1, D792). The shared state cannot say
+        // whose batch it is; the yearly share-out moves a miller to the bakery mid-stint, and reading the seat would walk
+        // them on to bake standing at the mill. `BatchTradeTests.ABatchErrandIsRecalledWhenTheSeatIsAnotherTrades`.
+        if (IsAtABatch(villager.State))
+        {
+            return held is JobKind seat && seat == villager.BatchTrade;
         }
 
         return held == ErrandKind(villager.State);
@@ -3267,15 +3226,15 @@ public sealed partial class BehaviorSystem : ISimSystem
             }
 
             villager.WorkNote = string.Empty;
-            (VillagerState walk, VillagerState working) = BatchStatesOf(job.Kind);
+            world.SetBatchOf(villager, job.Kind);
             if (villager.Tile == job.Tile)
             {
-                BeginBatches(world, villager, working);
+                BeginBatches(world, villager);
             }
             else
             {
-                villager.State = walk;
-                Travel(world, villager, job.Position, working);
+                villager.State = VillagerState.TravelingToABatch;
+                Travel(world, villager, job.Position, VillagerState.WorkingABatch);
             }
 
             return;
@@ -5731,9 +5690,9 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
-        if (onArrival is VillagerState.Grinding or VillagerState.Baking or VillagerState.Sewing or VillagerState.Making)
+        if (onArrival == VillagerState.WorkingABatch)
         {
-            BeginBatches(world, villager, onArrival);
+            BeginBatches(world, villager);
             return;
         }
 
@@ -5968,19 +5927,20 @@ public sealed partial class BehaviorSystem : ISimSystem
         return dug < 1 ? 1 : dug;
     }
 
-    /// <summary>The first batch of a stint at the mill or the oven (D522).</summary>
-    private static void BeginBatches(SimWorld world, Villager villager, VillagerState working)
+    /// <summary>The first batch of a stint at a batch trade's hut (D522; every batch trade's since W1).</summary>
+    /// <remarks>
+    /// ⛔ <b>An unknown trade throws</b> (W1, D792). Before W1 the trade was read back off the state with the baker as the
+    /// default arm, so a fifth trade forgotten there would have baked.
+    /// </remarks>
+    private static void BeginBatches(SimWorld world, Villager villager)
     {
+        JobKind trade = villager.BatchTrade
+            ?? throw new InvalidOperationException($"{villager.Name} began a batch with no batch trade set.");
+        Batch batch = world.BatchFor(trade)
+            ?? throw new InvalidOperationException($"{villager.Name} began a batch for {trade}, which has no batch.");
         villager.BatchesThisStint = 0;
-        villager.State = working;
-        JobKind trade = working switch
-        {
-            VillagerState.Grinding => JobKind.Miller,
-            VillagerState.Sewing => JobKind.Tailor,
-            VillagerState.Making => JobKind.Carpenter,
-            _ => JobKind.Baker,
-        };
-        villager.ActionTicksRemaining = world.BeginWork(villager, trade, world.BatchFor(trade)!.Value.Ticks);
+        villager.State = VillagerState.WorkingABatch;
+        villager.ActionTicksRemaining = world.BeginWork(villager, trade, batch.Ticks);
     }
 
     /// <summary>To the school, or straight into a lesson when already there (D754).</summary>
@@ -7618,10 +7578,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 villager.State = VillagerState.TravelingHome;
                 return;
 
-            case VillagerState.Grinding:
-            case VillagerState.Baking:
-            case VillagerState.Sewing:
-            case VillagerState.Making:
+            case VillagerState.WorkingABatch:
                 FinishABatch(world, villager);
                 return;
 
