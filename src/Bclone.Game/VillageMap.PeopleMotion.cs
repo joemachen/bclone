@@ -36,10 +36,22 @@ public partial class VillageMap
     private double _peopleFrameSeconds;
 
     /// <summary>
-    /// How far each person's drawn point has walked, in tiles, and where it was last frame — kept, and advanced where the
-    /// point moves (CLAUDE.md: maintained, not rebuilt). Dropped with the villager.
+    /// A drawn point that has not moved for this many seconds of the running village has stopped: they stand. Long enough
+    /// that a late tick (the glide waiting at its end for a frame or two) does not flick a walker to standing and back.
     /// </summary>
-    private readonly Dictionary<int, (Vector2 Tile, float Walked)> _walked = new();
+    internal const float StandAfterSeconds = 0.25f;
+
+    /// <summary>
+    /// A person's walk as the view keeps it: where their drawn point was last frame, how far it has walked (tiles), which
+    /// way it last went, and how long it has been still (running seconds).
+    /// </summary>
+    private readonly record struct Walk(Vector2 Tile, float Walked, Vector2 Heading, float StillFor);
+
+    /// <summary>
+    /// Each person's <see cref="Walk"/> — kept, and advanced where the point moves (CLAUDE.md: maintained, not rebuilt).
+    /// Dropped with the villager.
+    /// </summary>
+    private readonly Dictionary<int, Walk> _walked = new();
 
     /// <summary>A frame of the people's clock — <see cref="_Process"/>, beside the meal bowl's.</summary>
     private void TickThePeopleClock(double delta)
@@ -70,18 +82,47 @@ public partial class VillageMap
         return walkedBefore + Mathf.Min(movedTiles, StepsASecondAtMost * step * (float)frameSeconds);
     }
 
-    /// <summary>This person's walked distance, advanced to <paramref name="tile"/> (the view's tile space, where they are drawn).</summary>
-    private float WalkedTo(int id, LifeStage stage, Vector2 tile)
+    /// <summary>
+    /// ⭐⭐ WHICH WAY A PERSON IS WALKING IS WHICH WAY THEIR DRAWN POINT MOVES (A132, Joe: <i>"right from the very beginning,
+    /// these people do not move their legs at all"</i>). Not the job's state — a labourer <c>Clearing</c> walks tile to
+    /// tile in a work state and slid across the grass facing us, legs still — and not the sim's leg, which outlives the
+    /// walk (someone home stood mid-stride on a finished leg). Pure: the heading and stillness before, this frame's move
+    /// (view tiles), and this frame's running seconds. Paused (nought seconds), nothing changes; a jump is not a walk.
+    /// </summary>
+    internal static (Vector2 Heading, float StillFor) HeadingOn(Vector2 headingBefore, float stillBefore, Vector2 moved, double frameSeconds)
     {
-        if (!_walked.TryGetValue(id, out (Vector2 Tile, float Walked) was))
+        if (frameSeconds <= 0.0)
         {
-            _walked[id] = (tile, 0f);
-            return 0f;
+            return (headingBefore, stillBefore);
         }
 
-        float walked = WalkedOn(was.Walked, tile.DistanceTo(was.Tile), StepOf(stage), _peopleFrameSeconds);
-        _walked[id] = (tile, walked);
-        return walked;
+        float d = moved.Length();
+        if (d > 1e-5f && d <= SnapTilesInAFrame)
+        {
+            return (moved / d, 0f);
+        }
+
+        float still = stillBefore + (float)frameSeconds;
+        return (still >= StandAfterSeconds ? Vector2.Zero : headingBefore, still);
+    }
+
+    /// <summary>
+    /// This person's walk, advanced to <paramref name="tile"/> (the view's tile space, where they are drawn): how far they
+    /// have walked, and which way they are going (zero when they stand).
+    /// </summary>
+    private (float Walked, Vector2 Heading) WalkedTo(int id, LifeStage stage, Vector2 tile)
+    {
+        if (!_walked.TryGetValue(id, out Walk was))
+        {
+            _walked[id] = new Walk(tile, 0f, Vector2.Zero, StandAfterSeconds);
+            return (0f, Vector2.Zero);
+        }
+
+        Vector2 moved = tile - was.Tile;
+        float walked = WalkedOn(was.Walked, moved.Length(), StepOf(stage), _peopleFrameSeconds);
+        (Vector2 heading, float still) = HeadingOn(was.Heading, was.StillFor, moved, _peopleFrameSeconds);
+        _walked[id] = new Walk(tile, walked, heading, still);
+        return (walked, heading);
     }
 
     /// <summary>

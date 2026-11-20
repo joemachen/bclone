@@ -61,7 +61,11 @@ public partial class VillageMap
             Pose("walking up the screen", K(VillagerState.TravelingHome, 0f, -1f), FigurePose.Back, false, FigureHold.None, false, true);
             Pose("walking right", K(VillagerState.TravelingHome, 1f, 0.2f), FigurePose.Side, false, FigureHold.None, false, true);
             Pose("walking left", K(VillagerState.TravelingHome, -1f, 0.2f), FigurePose.Side, true, FigureHold.None, false, true);
-            Pose("cutting, mid-leg", K(VillagerState.Cutting, 1f, 0f), FigurePose.Front, false, FigureHold.Tool, true, false);
+            Pose("cutting, standing at the tree", K(VillagerState.Cutting, 0f, 0f), FigurePose.Front, false, FigureHold.Tool, true, false);
+
+            // ⭐ A work state that is moving walks (A132, Joe: "these people do not move their legs at all") — the tool in hand.
+            Pose("cutting, walking to the next tree", K(VillagerState.Cutting, 1f, 0f), FigurePose.Side, false, FigureHold.Tool, true, true);
+            Pose("a labourer clearing, walking tile to tile", K(VillagerState.Clearing, 0f, 1f, job: null), FigurePose.Front, false, FigureHold.None, false, true);
             Pose("walking to the trees", K(VillagerState.TravelingToTrees, 1f, 0f), FigurePose.Side, false, FigureHold.Tool, true, true);
             Pose("cold, going in", K(VillagerState.SeekingShelter, 0f, 1f), FigurePose.Front, false, FigureHold.Hug, false, true);
             Pose("carrying stone home", K(VillagerState.TravelingHome, 0f, 1f, good: Goods.Stone), FigurePose.Front, false, FigureHold.Front, false, true);
@@ -161,7 +165,7 @@ public partial class VillageMap
 
             string moving = ThePeopleMoveHold();
             return faults.Count == 0
-                ? $"[widths] painted villagers: ✅ painted only with the tick; resting, at school and teaching indoors and not drawn; toward, away, from the side and mirrored for the left, at work facing us with the tool out, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
+                ? $"[widths] painted villagers: ✅ painted only with the tick; resting, at school and teaching indoors and not drawn; toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
                 : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}\n{moving}";
         }
         catch (System.Exception e)
@@ -225,6 +229,37 @@ public partial class VillageMap
             if (Math.Abs(clocked[0] - 0.5) > 1e-9 || Math.Abs(clocked[1] - 0.75) > 1e-9 || clocked[2] != 0.0)
             {
                 faults.Add($"half a second at 1×, 10× and paused is {clocked[0]:F2}, {clocked[1]:F2}, {clocked[2]:F2} s of the people's clock (want 0.50, 0.75, 0.00)");
+            }
+
+            // ⭐ Which way they walk is which way the drawn point moves (A132): it turns them; a pause keeps them as they were;
+            // a slow frame does not stand them; a quarter second still does; a jump is not a walk.
+            (Vector2 h1, float s1) = HeadingOn(Vector2.Zero, StandAfterSeconds, new Vector2(0.01f, 0f), frame);
+            (Vector2 h2, float s2) = HeadingOn(h1, s1, Vector2.Zero, 0.0);
+            (Vector2 h3, float s3) = HeadingOn(h1, s1, Vector2.Zero, 0.1);
+            (Vector2 h4, _) = HeadingOn(h3, s3, Vector2.Zero, 0.2);
+            (Vector2 h5, _) = HeadingOn(Vector2.Zero, StandAfterSeconds, new Vector2(0f, 3f), frame);
+            if (h1 != Vector2.Right || h2 != h1 || s2 != s1 || h3 != h1 || h4 != Vector2.Zero || h5 != Vector2.Zero)
+            {
+                faults.Add($"the heading: moving right {h1}, paused {h2}, a tenth still {h3}, then a fifth more {h4}, a jump {h5} (want (1, 0), (1, 0), (1, 0), (0, 0), (0, 0))");
+            }
+
+            // ⭐ Joe's case, end to end: a labourer clearing, gliding a tile down the screen at 1× — the legs change.
+            Vector2 gone = Vector2.Zero, way = Vector2.Zero;
+            float walkedOn = 0f, stillOn = StandAfterSeconds;
+            var clearingBeats = new HashSet<int>();
+            for (int k = 0; k < 80; k++)
+            {
+                Vector2 step = new(0f, 0.75f * (float)frame);
+                walkedOn = WalkedOn(walkedOn, step.Length(), StepTiles, frame);
+                (way, stillOn) = HeadingOn(way, stillOn, step, frame);
+                gone += step;
+                FigureKey clearing = PersonKeyOf(11, LifeStage.Adult, null, VillagerState.Clearing, way, null, false, false);
+                clearingBeats.Add(MotionOf(clearing, true, walkedOn, k * frame, true).Beat);
+            }
+
+            if (clearingBeats.Count != 2 || !clearingBeats.Contains(0) || !clearingBeats.Contains(1))
+            {
+                faults.Add($"a labourer clearing, walking {gone.Y:F2} tiles at 1×, shows beats {string.Join(", ", clearingBeats)} (want 0 and 1)");
             }
 
             // Walking: the two steps alternate, toward us and from the side; the body rises 2.2 % of its height, a half more under a load.
@@ -418,7 +453,7 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? $"[widths] people moving: ✅ a step paid by the ground walked ({oneX * 60f:F2} tiles a second at 1×), none paused, none for a jump, at most 2.4 steps a second at 4×; the people's clock 1×, capped at 1.5×, still when paused; two steps alternating toward us and from the side, a tilt foot to foot toward us and none from the side, rising {-highest:F3} of the height, {-highestLoaded:F3} under a load; a woodcutter's axe raised then struck ({(float)strokes / samples:P0} of the beat), a crew out of step; far out one pose, the walk tilting and the swing leaning; a tailor leaning into the work; the cold shaking and nobody else; five poses each a different picture and the feet moved, in a long gown too; the step toward us seen at the closest zoom ({string.Join(", ", seen.Select(s => $"{s.Pixels} px for {s.Who}"))}); the other pose kept through a long pause; the shadow its own painting, out of a person's"
+                ? $"[widths] people moving: ✅ a step paid by the ground walked ({oneX * 60f:F2} tiles a second at 1×), none paused, none for a jump, at most 2.4 steps a second at 4×; the people's clock 1×, capped at 1.5×, still when paused; which way they walk the way the drawn point moves, kept through a pause and a slow frame, a quarter second still and they stand; a labourer clearing at 1× stepping; two steps alternating toward us and from the side, a tilt foot to foot toward us and none from the side, rising {-highest:F3} of the height, {-highestLoaded:F3} under a load; a woodcutter's axe raised then struck ({(float)strokes / samples:P0} of the beat), a crew out of step; far out one pose, the walk tilting and the swing leaning; a tailor leaning into the work; the cold shaking and nobody else; five poses each a different picture and the feet moved, in a long gown too; the step toward us seen at the closest zoom ({string.Join(", ", seen.Select(s => $"{s.Pixels} px for {s.Who}"))}); the other pose kept through a long pause; the shadow its own painting, out of a person's"
                 : $"[widths] people moving: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)

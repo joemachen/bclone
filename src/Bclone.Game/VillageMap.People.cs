@@ -85,15 +85,18 @@ public partial class VillageMap
 
     /// <summary>
     /// What a villager's picture depends on this frame. Pure: it reads the villager and their heading and changes nothing.
+    /// ⭐ <paramref name="heading"/> is the way their drawn point is moving, zero when they stand (A132): someone in a work
+    /// state who is moving — a labourer clearing tile to tile, a builder round the site — walks, tool in hand; standing
+    /// at it, they face us and work.
     /// </summary>
     internal static FigureKey PersonKeyOf(int id, LifeStage stage, JobKind? trade, VillagerState state, Vector2 heading,
         Goods? good, bool coat, bool cart)
     {
-        bool atWork = AtWork(state);
+        bool working = AtWork(state);
         bool moving = heading.LengthSquared() > 1e-6f;
         FigurePose pose = FigurePose.Front;
         bool flip = false;
-        if (!atWork && moving)
+        if (moving)
         {
             if (Mathf.Abs(heading.X) > Mathf.Abs(heading.Y) * 0.8f)
             {
@@ -111,15 +114,14 @@ public partial class VillageMap
         bool hasTool = PersonPainter.HasATool(trade, stage);
         FigureHold hold = cold ? FigureHold.Hug
             : good is Goods g && !PersonPainter.OnTheShoulder(g) ? FigureHold.Front
-            : (atWork || GoingToWork(state)) && hasTool ? FigureHold.Tool
+            : (working || GoingToWork(state)) && hasTool ? FigureHold.Tool
             : talking && pose == FigurePose.Front ? FigureHold.Talk
             : FigureHold.None;
         bool toolOut = (hold == FigureHold.Tool) || (stage == LifeStage.Elder && hold == FigureHold.None);
-        bool walking = moving && !atWork;
-        return new FigureKey(id, stage, trade, pose, flip, hold, walking, toolOut, good, coat, cart, cold);
+        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold);
     }
 
-    private FigureKey PersonKeyOf(Villager villager, SimWorld world)
+    private FigureKey PersonKeyOf(Villager villager, SimWorld world, Vector2 heading)
     {
         JobKind? trade = villager.WorkplaceId != 0 && world.FindWorkplace(villager.WorkplaceId) is Workplace w ? w.Kind : null;
         Goods? most = null;
@@ -134,7 +136,6 @@ public partial class VillageMap
             }
         }
 
-        Vector2 heading = ToScreen(villager.LegTo) - ToScreen(villager.LegFrom);
         bool cart = villager.PushingACart && !world.TheWorksCartSleepsWith(villager);
         return PersonKeyOf(villager.Id, villager.LifeStage, trade, villager.State, heading, most, villager.CoatDays > 0, cart);
     }
@@ -243,8 +244,8 @@ public partial class VillageMap
             // ⭐ The motion (A130): the pose this frame, and how the picture is moved — the step paid for by the distance
             // the drawn point has walked (where it is drawn: the glide, or the road a nomad walks in on).
             Vector2 live = DrawnTile(villager);
-            float walked = WalkedTo(villager.Id, villager.LifeStage, WalkInPlaceOf(villager.Id, live, out _) ?? live);
-            FigureKey still = PersonKeyOf(villager, world);
+            (float walked, Vector2 heading) = WalkedTo(villager.Id, villager.LifeStage, WalkInPlaceOf(villager.Id, live, out _) ?? live);
+            FigureKey still = PersonKeyOf(villager, world, heading);
             PersonMotion motion = MotionOf(still, AtWork(villager.State), walked, _peopleClock, poses);
             FigureKey key = still with { Beat = motion.Beat };
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
@@ -270,7 +271,6 @@ public partial class VillageMap
             }
 
             held.LastSeen = frame;
-
             KeepTheOtherPoses(key, frame);
             PaintedFigure f = held.Figure;
             float tall = f.FeetY / PersonPainter.FeetFromTop * scale;

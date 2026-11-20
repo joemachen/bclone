@@ -1,7 +1,8 @@
 # The villagers move: a walk, the work, a word, the cold (A129)
 
 > **Status: ✍️ specced and mocked (A129, 2026-11-20); ✅ B picked, every call as recommended (A130, *"B, all as
-> recommended"*); 🔨 BUILT on `art` (A130, §8), not merged — ⏸️ his eyes, then his word.** Joe, 2026-11-20: *"Can we
+> recommended"*); 🔨 BUILT on `art` (A130, §8), after-play fixes A131 (§8a) and A132 (§8b), not merged — ⏸️ his
+> eyes, then his word.** Joe, 2026-11-20: *"Can we
 > work on villager animations next?"* The painted people (A93, mock E, `villager-art.md §8`) stand in one painted pose
 > and glide from tick to tick; `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. This is
 > that piece.
@@ -215,3 +216,29 @@ A131's measurement of the bug, reproduced) went red; ⚠️ **two zeros kept and
 still, and the old low step — each alone leaves the step visible through the other parts, which is what the guard asks.
 Before the visibility guard, the first three painter mutants had all scored zero against the feet-pixel check, which is
 HANDOFF art trap 60 in one run.
+
+### 8b. ✅ After play again (A132) — Joe: *"right from the very beginning, these people do not move their legs at all"*
+
+*"there is a hitch for a few seconds after pausing and then the villagers kind of pop in"*, with a screenshot of his
+Elderwood (Y1, four founders). **Read his save, not the code:** his autosave run with every person's key logged frame by
+frame. **Two causes, neither A131's:**
+- **A work state that walks.** A labourer *Clearing* (and a builder round a site, a forager between bushes, a woodcutter
+  between trees) walks tile to tile **in the work state** — and the key took "at work" from the state alone, so they slid
+  across the grass facing us, legs still, the whole way. The two grey-haired founders in his screenshot.
+- **A leg that outlives the walk.** The heading came from the sim's leg (`LegTo − LegFrom`), which stays set after the
+  walk ends: a founder *TravelingHome* to the camp stood there for seconds in a mid-stride walking pose.
+
+**Fixed:** which way a person walks is **which way their drawn point moves** (`HeadingOn`, kept in `_walked`) — the glide,
+or a nomad's road. A person in a work state who is moving walks, the tool still in hand; standing at it, they face us and
+work. A quarter second of the running village without moving and they stand (`StandAfterSeconds`, so a late tick does not
+flick a walker to standing and back); a pause holds them as they were; a jump (a birth, a move of house) is not a walk.
+Seen in a movie-mode render of his save: the clearing labourer's feet now part and close as they cross the field.
+**Guarded:** `painted villagers:` — cutting standing faces us; cutting walking to the next tree walks with the axe; a
+labourer clearing walks; `people moving:` — the heading turns, holds through a pause and a slow frame, stands after a quarter
+second, ignores a jump; ⭐ **Joe's case end to end** (a labourer clearing, gliding at 1×, shows both steps).
+**Red-check: 6 mutants, 5 red** — the old key (no walking in a work state), one still frame standing them, never standing, a jump turning them, and the tool put away between the work (on `painted villagers:`); ⚠️ **one zero kept and written down:** the pause branch removed — with nothing moving in a pause the still branch adds nought seconds and gives the same answer, so the explicit branch documents rather than decides.
+
+**The hitch is not the animation** — his own log (`logs\godot.log`) has two frames of **831 ms and 885 ms**, no tick in
+either, 130-odd collections each, straight after the pause screen (Esc) read the headers of **all 439 saves** on disk to
+fill *Load…*. That is `Main.Pause.cs` / `Main.Saves.cs`, the systems track's (D516); handed on, not touched here. A Space
+pause measured here: no slow frame on pausing or resuming.
