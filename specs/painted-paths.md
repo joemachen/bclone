@@ -6,7 +6,7 @@ the pen lightened at his word (A73, §7); ⭐ **MERGED INTO `main` AT HIS WORD (
 *"Build it"* on a mock after his concept sheet 08; played (*"Looks good"*) and ✅ **merged into `main` at his word (A83, merge
 `2b41cb5`)** and **pushed** (A84, `origin/main` = `a1faeb2`). 🔨 **A track across a crop field (§3.7) BUILT on `art` (A126,
 2026-11-19)** at Joe's *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"*
-(2026-11-16), the three map files at his *"Yes, edit them"*; ⭐ **merged into `main` at his word (A127, *"Looks right, merge"*, merge `a9dded1`), not pushed.** Art lane. View only: where a path runs, how it wears and what it costs are the
+(2026-11-16), the three map files at his *"Yes, edit them"*; ⭐ **merged into `main` at his word (A127, *"Looks right, merge"*, merge `a9dded1`), and pushed (A128, `origin/main` = `5fdc3c7`).** Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
