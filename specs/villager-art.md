@@ -121,7 +121,8 @@ the arms; the coat a moss cloak behind and over the shoulders; a shadow on the g
 
 ## 5. Not in this piece
 
-Animals (cattle, game — `art-inventory.md §7`), portraits (B12 stands: none), walk cycles or swing animations, lit windows
+Animals (cattle, game — `art-inventory.md §7`), portraits (B12 stands: none), walk cycles or swing animations (now their
+own piece: `villager-animation.md`, A129), lit windows
 at night, villagers in the UI (the next piece). New states Phase 6 adds are listed in `art-inventory.md §15` and drawn
 in this look when their systems land.
 
