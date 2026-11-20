@@ -10,7 +10,8 @@
 > - **⛔ TRAP (D797): a list whose comment says *"Delete a row when it ships"* is a list nobody deletes from.** Two slices
 >   shipped (the school, the coat) and left their rows promising *"no school"* to the player. When a system ships,
 >   grep `NotYetInTheValley` as part of its view step.
-> - ⚠️ The untracked `Archivo_Narrow/` in the main checkout was gone by the claim commit — not touched by this slice.
+> - ⚠️ The untracked `Archivo_Narrow/` in the main checkout was missing at the claim commit and back by D797's — something
+>   outside this slice moves it; never stage or delete it.
 >
 > **⭐ W1 MERGED INTO `main` AND PUSHED AT HIS WORD (D796, 2026-11-18, *"Merge and push"*) — `6967479`, no conflict;
 > `slice/batch-trade` deleted. NO BRANCH OPEN BUT `art`. ⏸️ HIS PLAY OF A VILLAGE WITH ALL FOUR HUTS. ▶️ NEXT FOR SYSTEMS:
