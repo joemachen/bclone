@@ -4731,11 +4731,9 @@ public partial class Main : Control
     {
         ("Coal", "no mine to dig it"),
         ("Cloth", "waiting on livestock"),
-        ("Clothes", "waiting on cloth and leather"),
         ("Ale", "no brewer, no barley"),
         ("Medicine", "no physician"),
         ("Health", "illness is not modelled"),
-        ("Students", "no school"),
     };
 
     /// <summary>A small square of colour standing in for an icon.</summary>

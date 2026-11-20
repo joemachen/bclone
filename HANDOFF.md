@@ -28,8 +28,8 @@
 > - **⛔ TRAP (D799): `CommuteNote` is not "a long walk" — it fires past the old forage ring (8 tiles), which 64 % of
 >   Joe's adults are.** Any system that reads it as a hardship reads his ordinary village as miserable. Measure the tiles.
 > - Joe's saves for a harness: `%APPDATA%/Godot/app_userdata/bclone/saves/`, copied first; the format-8 ones are refused.
-> - **Owed on this slice:** the shell's *"Not here yet"* rows (`Main.cs`, `NotYetInTheValley`) — *Students* and *Clothes*
->   are stale (D769, D667), *Happiness* goes when W2 ships; its own commit, with the view build and the probe.
+> - ✅ **Paid on this slice:** the shell's *"Not here yet"* rows (`Main.cs`, `NotYetInTheValley`) — *Happiness* gone with the
+>   card (D802), the stale *Students* and *Clothes* (D769, D667) in their own commit (D803). *(Read "Owed on this slice" until D803.)*
 > - **⛔ TRAP (D797): a list whose comment says *"Delete a row when it ships"* is a list nobody deletes from.** Two slices
 >   shipped (the school, the coat) and left their rows promising *"no school"* to the player. When a system ships,
 >   grep `NotYetInTheValley` as part of its view step.

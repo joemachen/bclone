@@ -174,6 +174,7 @@ nothing**, so the marker and the panel cannot disagree.
 - **The shell's *"Not here yet"* row** *(Happiness — not modelled)* is deleted when this ships (`Main.cs`, *"Delete a row
   when it ships"*). ⚠️ Found on the way: *Students — no school* (the school shipped, D769) and *Clothes — waiting on cloth
   and leather* (the coat shipped, D667) are already stale — fixed on this slice as their own commit.
+  **✅ All three gone:** *Happiness* at D802, *Students* and *Clothes* at D803.
 
 ⚠️ **`Villager.CommuteNote` is the precedent to copy, and the walk's cause reuses it.**
 
@@ -279,7 +280,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; save format bumped. Goldens move once more.
 6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.
 
-*Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797).
+*Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797). ✅ **Deleted (D803).**
 
 ### 13.1 ✅ Step 1, measured (D799) — `ZzContentment.cs` + `contentment.py`
 
