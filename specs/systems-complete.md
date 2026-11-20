@@ -2,7 +2,7 @@
 
 > Status: **📝 WRITTEN (D788, 2026-11-16) on `slice/systems-complete` — the review and its workplan, docs only; nothing built.
 > ✅ JOE'S TEN CALLS ANSWERED, ALL AS RECOMMENDED (D789, 2026-11-17, *"All as recommended"*) — the cut line in §3 holds, and
-> §5.1's W1–W13 is Phase 6's list (DESIGN §4). ✅ Merged into `main` and pushed at his word (D790, 2026-11-17). ✅ W1, the batch trade as a row (D791–D795, `batch-trade.md`), no golden moved — merged into `main` and pushed at his word (D796). ▶️ Next for systems: W2, morale.**
+> §5.1's W1–W13 is Phase 6's list (DESIGN §4). ✅ Merged into `main` and pushed at his word (D790, 2026-11-17). ✅ W1, the batch trade as a row (D791–D795, `batch-trade.md`), no golden moved — merged into `main` and pushed at his word (D796). ▶️ Next for systems: W2, morale.** 🔨 **W2 on `slice/morale` (D797): the player's word is *contentment*; health a separate system with no cause shared; ⏸️ six calls Joe's (`morale.md §10`).**
 > *(Read "⏸️ Joe's calls in §6, each with a recommendation; the workplan (§5) is a proposal until he says so" until D789.)*
 > Phase 6, between water (D783) and morale (D750's order, D776). Format per `METHODOLOGY.md §2`, loosely: this is a review,
 > not a mechanic, so its "tests" are the exit gate's item 7 and the checks in §8.
@@ -176,7 +176,7 @@ one `slice/`, spec first, his calls before code, played before merge — as ever
 | # | Piece | Kind | Size | Why here | New for the art lane (D774) |
 |---|---|---|---|---|---|
 | **W1** | **The batch trade as a row** — one walk-and-work shape for every input→output trade, the mill, bakery, tailor and carpenter moved onto it; **no golden moves**, proven | enabler | M | before beer, wool and herbs, each of which would otherwise be a fifth, sixth and seventh hand-written copy across ~16 files | nothing |
-| **W2** | **Morale** (`morale.md`) — causes the village already has: home tier, a lit hearth, days cold, a dry jar, a varied diet, the walk to work, a death in the family; departures and fewer children | A | L | Joe's order (D750); the nomads it pairs with are built | a *leaving* state and its walk off the map |
+| **W2** | **Morale** (`morale.md`) — causes the village already has: home tier, a lit hearth, days cold, a dry jar, ~~a varied diet~~ *(health's, W6 — one cause, one system, D797)*, the walk to work, the dead with nowhere to lie (with W4, D797), a death in the family; departures and fewer children | A | L | Joe's order (D750); the nomads it pairs with are built | a *leaving* state and its walk off the map |
 | **W3** | **Beer and the tavern** — wheat → beer at a brewery (W1's row), drunk at a tavern; **morale's first building** | B for A | M | D656: beer waits on morale; a morale with no lever to pull is §1.1's invisible weather | brewery, tavern, ale; *brewing*, *at the tavern* |
 | **W4** | **The cemetery and the gravedigger** (D395 as Joe called it) | A | M | a death is the village's commonest story (§1.4); *"every cemetery full"* is a morale cause | cemetery (painted), graves, gravedigger; *digging*, *burying* |
 | **W5** | **Skill for the seven trades, and their techniques** — a row each; a technique each for the trades with a master's craft, **including Joe's crop that stands into winter** | A (finishes §2.1/§2.7) | M | the pillars' own claim is false for seven of eighteen trades; independent of everything else, so it can move | nothing (lines on cards) |
