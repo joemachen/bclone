@@ -191,3 +191,27 @@ Then the four checks, renders of the build on his saves, and his eyes (`.\run.ba
   is real time: `D:\Projects\brushes\villagers\anim\built_1x_close.gif` (1×, enlarged 2×), `built_1x.gif` (the whole
   view), `built_4x_close.gif` (4×). ⚠️ Not seen in the renders: a worker swinging (the summer save's few workers are off
   that view) — the motions are the probe's and the mock catalogue's; Joe's eyes are the check.
+
+### 8a. ✅ After play (A131) — Joe: *"sometimes some villager walking animations dont work. their legs look stationary"*
+
+*"I havent noticed a pattern. it happened right at the beginning of the game, after pausing, and then intermittently to
+seemingly random villagers."* **Measured, not guessed** (each trade's two steps painted, shrunk to the game's sizes and
+composited on grass; screen pixels that visibly change between them): **from the side 50–107 at the closest zoom;
+walking up or down the screen only 19, 6 in an ankle-length gown (the merchant, tailor, teacher) and 4 for an elder.**
+The pattern was the heading: anyone walking more up or down the screen than across it barely moved their legs, and which
+way a person walks looks random. **Fixed:** toward or away the lifted foot rises 0.05 (was 0.03), a long gown's shoes
+alternate too, the hem swings toward the stepping leg (±0.03), the hand opposite the stepping foot comes up (0.045), and
+the body tilts foot to foot (1.3° a step, as far out). **Now 77–162 at the closest zoom** (long gowns 96–102, elders
+70–81) before the tilt. ⚠️ Beat 0 of a walker toward or away is no longer A93's picture.
+**And "after pausing":** a pose not drawn for 600 frames is let go, so in a long pause (one pose shown for minutes) every
+walker's other step went and the village repainted them when it ran again, holding the old pose meanwhile. **Fixed:** a
+person's other poses are kept while any one of them is drawn (`KeepTheOtherPoses`). *(The beginning of a game still
+paints everyone in their first second or two, A93's budget of four a frame; a person holds the pose they have until then.)*
+**Guarded** (`people moving:`): a tilt toward us and none from the side; a long gown's foot moved; the other pose kept
+through 700 unseen frames; ⭐ **the step toward us SEEN at the closest zoom** — shrunk, laid on grass and counted, as the
+bench did (`VisibleChange`): 84 px for a labourer, 85 in a merchant's gown, 70 for an elder; the bar is 40, as from the side.
+**Red-check: 7 mutants, 5 red** — no tilt, the other pose let go, no hem swing, and the whole fix reverted (17, 7 and 4 px:
+A131's measurement of the bug, reproduced) went red; ⚠️ **two zeros kept and written down:** a long gown's right shoe left
+still, and the old low step — each alone leaves the step visible through the other parts, which is what the guard asks.
+Before the visibility guard, the first three painter mutants had all scored zero against the feet-pixel check, which is
+HANDOFF art trap 60 in one run.

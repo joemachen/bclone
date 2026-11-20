@@ -112,7 +112,10 @@ public partial class VillageMap
             {
                 beat = key.Pose == FigurePose.Side ? (within < 0.5f ? 0 : 1) : ((int)Mathf.Floor(s) & 1);
             }
-            else
+
+            // Toward or away (where the legs show least), and too small for a pose at all: the weight goes from foot to
+            // foot, a tilt each step (A130, after Joe's play: *"their legs look stationary"*).
+            if (!poses || key.Pose != FigurePose.Side)
             {
                 turn = FarTilt * Mathf.Sin(Mathf.Pi * s);
             }

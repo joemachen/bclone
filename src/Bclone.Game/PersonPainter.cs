@@ -47,7 +47,8 @@ internal enum FigureHold
 /// <param name="Cold">Going in out of the cold.</param>
 /// <param name="Beat">
 /// Which pose of a motion (A130, <c>villager-animation.md</c>, look B): 0 is the still picture A93 painted (a stride,
-/// the palm raised, the tool held); walking, 1 is the other step; talking, 1 is the palm lowered; at work with a tool
+/// the palm raised, the tool held) — except a walker toward or away, whose feet, hem and hands step both ways since
+/// Joe's play; walking, 1 is the other step; talking, 1 is the palm lowered; at work with a tool
 /// that swings, 1 is the tool raised and 2 the stroke.
 /// </param>
 internal readonly record struct FigureKey(
@@ -549,25 +550,26 @@ internal static class PersonPainter
             return;
         }
 
-        // Toward or away: one foot lifted mid-step, the left (beat 0, A93's) or the right (beat 1, A130); a long gown shows
-        // only the shoes: A93 painted both flat, so the other step lifts the right one a little.
+        // Toward or away: one foot lifted mid-step, the left (beat 0) or the right (beat 1). ⚠️ A93's lift was 0.03 and
+        // the other step changed 19 screen pixels at the closest zoom (6 in a long gown, 4 for an elder) against 50–107 from
+        // the side — Joe saw *"their legs look stationary"* (A130) — so the step is higher and a long gown's shoes alternate.
         if (w.Length == Length.Ankle)
         {
-            float r = walking && beat == 1 ? 0.025f : 0f;
-            c.Ell(-0.055f, -0.015f, 0.05f, 0.026f, Shoe);
+            float l = walking && beat == 0 ? 0.04f : 0f, r = walking && beat == 1 ? 0.04f : 0f;
+            c.Ell(-0.055f, -0.015f - l, 0.05f, 0.026f, Shoe);
             c.Ell(0.055f, -0.015f - r, 0.05f, 0.026f, Shoe);
             return;
         }
 
         const float spread = 0.06f;
-        float lift = walking && beat == 0 ? 0.03f : 0f, rift = walking && beat == 1 ? 0.03f : 0f;
+        float lift = walking && beat == 0 ? 0.05f : 0f, rift = walking && beat == 1 ? 0.05f : 0f;
         c.Limb((-0.05f, hip), (-spread, -0.04f - lift), lw, w.Hose);
         c.Limb((0.05f, hip), (spread, -0.04f - rift), lw, w.Hose.Shade(0.9f));
         c.Poly(new[] { (-spread - 0.045f, -0.05f - lift), (-spread + 0.04f, -0.05f - lift), (-spread + 0.02f, -lift), (-spread - 0.06f, -0.005f - lift) }, Shoe);
         c.Poly(new[] { (spread - 0.04f, -0.05f - rift), (spread + 0.045f, -0.05f - rift), (spread + 0.06f, -0.005f - rift), (spread - 0.02f, -rift) }, Shoe);
     }
 
-    private static float Gown(Canvas c, Who w, FigurePose pose)
+    private static float Gown(Canvas c, Who w, FigurePose pose, float hemSwing = 0f)
     {
         float hem = Hem[w.Length];
         bool side = pose == FigurePose.Side;
@@ -575,7 +577,7 @@ internal static class PersonPainter
         float lean = w.Stoop + w.Sway;
         float sh = side ? 0.10f : 0.15f;
         float flare = (w.Length switch { Length.Ankle => 0.22f, Length.Calf => 0.20f, _ => 0.17f }) * (side ? 0.72f : 1f);
-        float hs = -w.Sway * 0.6f;
+        float hs = (-w.Sway * 0.6f) + hemSwing;
         c.Poly(new[] { (-sh + lean, top), (sh + lean, top), (0.12f + (lean * 0.5f), -0.52f), (flare + hs, hem), (-flare + hs, hem), (-0.12f + (lean * 0.5f), -0.52f) }, w.Gown);
         if (w.Apron is Rgb apron && pose != FigurePose.Back)
         {
@@ -886,8 +888,11 @@ internal static class PersonPainter
             }
         }
 
-        (float, float) right = hold == FigureHold.Tool ? workHand : (0.185f, -0.45f);
-        (float, float) left = (-0.185f, -0.45f);
+        // Walking toward or away, the hand opposite the stepping foot comes up a little (A130, after play).
+        float rightUp = walking && hold == FigureHold.None && beat == 0 ? 0.045f : 0f;
+        float leftUp = walking && hold == FigureHold.None && beat == 1 ? 0.045f : 0f;
+        (float, float) right = hold == FigureHold.Tool ? workHand : (0.185f - (rightUp * 0.4f), -0.45f - rightUp);
+        (float, float) left = (-0.185f + (leftUp * 0.4f), -0.45f - leftUp);
         c.Limb((-sx, top + 0.03f), left, aw, sl);
         c.Limb((sx, top + 0.03f), right, aw, sl);
         if (pose == FigurePose.Front)
@@ -1239,7 +1244,9 @@ internal static class PersonPainter
         }
 
         Legs(c, w, pose, f.Walking, f.Beat);
-        float top = Gown(c, w, pose);
+        // Walking toward or away, the hem swings toward the stepping leg (A130, after play: the legs alone barely moved there).
+        float hemSwing = f.Walking && pose != FigurePose.Side ? (f.Beat == 0 ? -0.03f : 0.03f) : 0f;
+        float top = Gown(c, w, pose, hemSwing);
         (float, float) hand = Arms(c, w, pose, top, f.Hold, f.Walking, f.Beat, workHand);
         CoatFront(c, w, pose, top);
         bool logsUnderHead = w.Good == Goods.Logs && pose != FigurePose.Side;

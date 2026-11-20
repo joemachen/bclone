@@ -270,6 +270,8 @@ public partial class VillageMap
             }
 
             held.LastSeen = frame;
+
+            KeepTheOtherPoses(key, frame);
             PaintedFigure f = held.Figure;
             float tall = f.FeetY / PersonPainter.FeetFromTop * scale;
             Vector2 feet = point + new Vector2(0f, tall * PersonPointUp);
@@ -324,6 +326,21 @@ public partial class VillageMap
         foreach (int id in _walked.Keys.Where(id => !stillAlive.Contains(id)).ToList())
         {
             _walked.Remove(id);
+        }
+    }
+
+    /// <summary>
+    /// A person's other poses are part of their look: kept while any one of them is drawn, so a long pause (one pose shown
+    /// for minutes) does not let the others go and leave the village repainting when it runs again (A130, after play).
+    /// </summary>
+    private void KeepTheOtherPoses(FigureKey key, ulong frame)
+    {
+        for (int b = 0; b <= 2; b++)
+        {
+            if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))
+            {
+                other.LastSeen = frame;
+            }
         }
     }
 

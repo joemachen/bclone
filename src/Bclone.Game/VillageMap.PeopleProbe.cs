@@ -254,6 +254,20 @@ public partial class VillageMap
                 faults.Add($"a step rises {-highest:F3}, under a load {-highestLoaded:F3} of the height (want 0.022, 0.032)");
             }
 
+            // ⭐ Toward or away the legs show least, so the weight goes foot to foot: a tilt each step there, none from the
+            // side (A130, after Joe's play: "their legs look stationary").
+            float tiltToward = 0f, tiltSide = 0f;
+            for (int k = 0; k < 72; k++)
+            {
+                tiltToward = Mathf.Max(tiltToward, Mathf.Abs(MotionOf(walker, false, k * 0.01f, 0, true).Turn));
+                tiltSide = Mathf.Max(tiltSide, Mathf.Abs(MotionOf(sideways, false, k * 0.01f, 0, true).Turn));
+            }
+
+            if (Mathf.Abs(tiltToward - 1.3f) > 0.1f || tiltSide != 0f)
+            {
+                faults.Add($"walking toward us tilts {tiltToward:F2}°, from the side {tiltSide:F2}° (want 1.3°, 0°)");
+            }
+
             // At work with an axe: the tool raised, then the stroke — about 38 % of a 1.6 s beat; the crew out of step (D28).
             FigureKey chopping = PersonKeyOf(7, LifeStage.Adult, JobKind.Woodcutter, VillagerState.Cutting, Vector2.Zero, null, false, false);
             FigureKey crewmate = PersonKeyOf(8, LifeStage.Adult, JobKind.Woodcutter, VillagerState.Cutting, Vector2.Zero, null, false, false);
@@ -348,9 +362,50 @@ public partial class VillageMap
             // scored it zero twice): from the side, the feet's rows differ; toward us, the right foot's (the one beat 1 lifts).
             int sideFeet = FeetPixelsDiffering(PersonPainter.Paint(stepSide with { Beat = 1 }), PersonPainter.Paint(stepSide), rightOnly: false);
             int towardRight = FeetPixelsDiffering(PersonPainter.Paint(stepToward with { Beat = 1 }), PersonPainter.Paint(stepToward), rightOnly: true);
-            if (sideFeet < 10 || towardRight < 10)
+            var gowned = stepToward with { Trade = JobKind.Merchant };
+            int gownedRight = FeetPixelsDiffering(PersonPainter.Paint(gowned with { Beat = 1 }), PersonPainter.Paint(gowned), rightOnly: true);
+            if (sideFeet < 10 || towardRight < 10 || gownedRight < 10)
             {
-                faults.Add($"the other step moves {sideFeet} pixels of the feet from the side, {towardRight} of the right foot toward us (want 10 or more each)");
+                faults.Add($"the other step moves {sideFeet} pixels of the feet from the side, {towardRight} of the right foot toward us, {gownedRight} in an ankle-length gown (want 10 or more each)");
+            }
+
+            // ⭐ …and SEEN at the game's size (A131, Joe: "their legs look stationary"; HANDOFF art trap 60). Shrunk to the
+            // closest zoom (34.6 px tall) on grass, the step toward us changes about as much of the screen as the step from
+            // the side does (measured 48–107 there): at least 40 pixels — for a labourer, an ankle-length gown, an elder.
+            // A131 measured 19, 6 and 4 before the fix.
+            var elderToward = stepToward with { Stage = LifeStage.Elder, Trade = JobKind.Farmer, ToolOut = true };
+            var seen = new List<(string Who, int Pixels)>();
+            foreach ((string what, FigureKey k) in new[] { ("a labourer", stepToward with { Trade = null }), ("a merchant's gown", gowned), ("an elder", elderToward) })
+            {
+                seen.Add((what, VisibleChange(PersonPainter.Paint(k), PersonPainter.Paint(k with { Beat = 1 }), 0.72f * 48f)));
+            }
+
+            if (seen.Any(s => s.Pixels < 40))
+            {
+                faults.Add($"walking toward us at the closest zoom the other step changes {string.Join(", ", seen.Select(s => $"{s.Pixels} px for {s.Who}"))} (want 40 or more each, as from the side)");
+            }
+
+            // A long pause shows one pose for minutes; the other is kept while it is (A130, after play), not let go at 600 frames.
+            ulong at = Engine.GetProcessFrames();
+            var stillOne = new FigureKey(-43, LifeStage.Adult, JobKind.Fisher, FigurePose.Front, false, FigureHold.None, true, false, null, false, false, false);
+            int budgetWas = _bakesThisFrame;
+            ulong sweptWas = _peopleSwept;
+            PersonCache? stepA = CachedPerson(stillOne, at, true), stepB = CachedPerson(stillOne with { Beat = 1 }, at, true);
+            if (stepA is not null)
+            {
+                stepA.LastSeen = at + 700;
+            }
+
+            KeepTheOtherPoses(stillOne, at + 700);
+            _peopleSwept = 0;
+            ForgetUnseenPeople(at + 700);
+            bool otherKept = stepB is not null && _people.ContainsKey(stillOne with { Beat = 1 });
+            _people.Remove(stillOne);
+            _people.Remove(stillOne with { Beat = 1 });
+            (_bakesThisFrame, _peopleSwept) = (budgetWas, sweptWas);
+            if (!otherKept)
+            {
+                faults.Add("the other step of a person shown 700 frames in one pose was let go (want kept while any of their poses is drawn)");
             }
 
             // ⭐ The shadow is its own painting, under the feet to the lower right, and no longer in a person's (A130).
@@ -363,7 +418,7 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? $"[widths] people moving: ✅ a step paid by the ground walked ({oneX * 60f:F2} tiles a second at 1×), none paused, none for a jump, at most 2.4 steps a second at 4×; the people's clock 1×, capped at 1.5×, still when paused; two steps alternating toward us and from the side, rising {-highest:F3} of the height, {-highestLoaded:F3} under a load; a woodcutter's axe raised then struck ({(float)strokes / samples:P0} of the beat), a crew out of step; far out one pose, the walk tilting and the swing leaning; a tailor leaning into the work; the cold shaking and nobody else; five poses each a different picture; the shadow its own painting, out of a person's"
+                ? $"[widths] people moving: ✅ a step paid by the ground walked ({oneX * 60f:F2} tiles a second at 1×), none paused, none for a jump, at most 2.4 steps a second at 4×; the people's clock 1×, capped at 1.5×, still when paused; two steps alternating toward us and from the side, a tilt foot to foot toward us and none from the side, rising {-highest:F3} of the height, {-highestLoaded:F3} under a load; a woodcutter's axe raised then struck ({(float)strokes / samples:P0} of the beat), a crew out of step; far out one pose, the walk tilting and the swing leaning; a tailor leaning into the work; the cold shaking and nobody else; five poses each a different picture and the feet moved, in a long gown too; the step toward us seen at the closest zoom ({string.Join(", ", seen.Select(s => $"{s.Pixels} px for {s.Who}"))}); the other pose kept through a long pause; the shadow its own painting, out of a person's"
                 : $"[widths] people moving: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)
@@ -432,6 +487,55 @@ public partial class VillageMap
         }
 
         return n;
+    }
+
+    /// <summary>
+    /// How many screen pixels visibly differ between two paintings of one person drawn <paramref name="tall"/> pixels tall
+    /// (an adult's painting is 64): each shrunk by averaging its pixels (premultiplied), laid on summer grass, and a pixel
+    /// counted when its brightness differs by more than 24 of 255 — A131's bench, in the probe.
+    /// </summary>
+    private static int VisibleChange(PaintedFigure a, PaintedFigure b, float tall)
+    {
+        float k = 64f / tall;
+        int w = (int)MathF.Ceiling(a.Width / k), h = (int)MathF.Ceiling(a.Height / k);
+        float Shown(PaintedFigure f, int x, int y)
+        {
+            float r = 0f, g = 0f, bl = 0f, al = 0f;
+            int n = 0;
+            for (int sy = (int)(y * k); sy < Math.Min(f.Height, (int)((y + 1) * k)); sy++)
+            {
+                for (int sx = (int)(x * k); sx < Math.Min(f.Width, (int)((x + 1) * k)); sx++)
+                {
+                    int i = ((sy * f.Width) + sx) * 4;
+                    float alpha = f.Rgba[i + 3] / 255f;
+                    r += f.Rgba[i] * alpha;
+                    g += f.Rgba[i + 1] * alpha;
+                    bl += f.Rgba[i + 2] * alpha;
+                    al += alpha;
+                    n++;
+                }
+            }
+
+            if (n == 0)
+            {
+                return 0f;
+            }
+
+            float cover = al / n;
+            float R = (r / n) + (122f * (1f - cover)), G = (g / n) + (140f * (1f - cover)), B = (bl / n) + (72f * (1f - cover));
+            return (0.299f * R) + (0.587f * G) + (0.114f * B);
+        }
+
+        int changed = 0;
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                changed += MathF.Abs(Shown(a, x, y) - Shown(b, x, y)) > 24f ? 1 : 0;
+            }
+        }
+
+        return changed;
     }
 
     /// <summary>The first row with anything solid in it.</summary>
