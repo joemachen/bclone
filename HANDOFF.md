@@ -20,6 +20,13 @@
 > - **⛔ TRAP (D802): a tie-break test whose cases sit in the list's own order cannot see the tie-break.** The grief
 >   sentence names the *latest* death; the test's two deaths died in list order, so "the first found" gave the same
 >   name and the mutant that dropped *latest* came back green. Put the cases AGAINST the list order, then red-check.
+> - **Merged `main` (b65f391, the crop-field paths A126–A128) into `slice/morale` at the coordinator's ask, between steps:
+>   `d0c6060`; DESIGN §7's two appended tails conflicted and both were kept. Re-imported per trap 56; probe clean after.**
+> - **⛔ TRAP (2026-11-20): `--import` in the main checkout exits 139 (segfault) and that alone says nothing.** The first run
+>   died mid-reimport (on a font) and left a `.tmp` in `.godot/imported`; a second run said `[ DONE ]`, then segfaulted on
+>   quit — the usual headless exit. Run it until a run has nothing to reimport. Then tidy BY LIST: 66 untracked `.uid` files
+>   (`git ls-files --others --exclude-standard`), and ~220 tracked `.import` files rewritten LF-for-CRLF only — prove it with
+>   `git diff --ignore-cr-at-eol --stat` (empty), then `git checkout -f --pathspec-from-file=<the list>`.
 > - **⛔ TRAP (D801): a mutant script that reads `dotnet test -v q` sees no test names, and scores every mutant GREEN.**
 >   Fourteen of fourteen came back green with an empty failure list; the guards were fine, the instrument was blind. Pass
 >   `--logger "console;verbosity=normal"`, assert the test count, and red-check the script on ONE mutant first. And a
