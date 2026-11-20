@@ -1,7 +1,7 @@
 # Spec: Contentment — why a villager stays, and why a village grows
 
-> Status: **📝 being re-specced on `slice/morale` (W2, D797, 2026-11-19); nothing built. ⏸️ Six calls Joe's (§10),
-> each with a recommendation.** Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
+> Status: **📝 specced on `slice/morale` (W2, D797, 2026-11-19); ✅ Joe's six calls all as recommended (D798, §10);
+> nothing built — ▶️ step 1 of six (§13), the measurement.** *(Read "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
 >
@@ -121,7 +121,7 @@ has two effects through two systems, and *"why did Otto leave?"* and *"why is Ot
 | **A lit hearth** — the household's firewood through the winter | Contentment | ✅ `HearthSystem`, the household's firewood |
 | **Winters spent cold** — a person who was cold through a winter, counted by winters | Contentment | ⚠️ `Villager.Cold` is a tick-level counter; a per-winter tally is new |
 | **The walk to work** | Contentment | ✅ `Villager.CommuteNote` (D112) — the sentence already exists |
-| **The jar run dry** | Contentment — call 6 | ✅ `Household.Water`, said since D780; harms nobody today |
+| **The jar run dry** | Contentment (call 6, D798) | ✅ `Household.Water`, said since D780; harms nobody today |
 | **A death in the family** | Contentment | ✅ `Alive`, `DiedAtTick`, `HouseholdId` — derived on read |
 | **The dead with nowhere to lie** — people have died and there is no cemetery, once the cemetery can be built (Joe, D797: *"similar to a full cemetery"*) | Contentment — **built with W4**, the cemetery | no (W4) |
 | **Every cemetery full** (D395) | Contentment — **built with W4** | no (W4) |
@@ -211,31 +211,31 @@ nothing**, so the marker and the panel cannot disagree.
 
 ---
 
-## 10. Open — for Joe (D797)
+## 10. Joe's calls (D797) — ✅ ALL SIX AS RECOMMENDED (D798, *"All as recommended"*)
 
 *The four calls written in 2026-08 are answered or moved:* ~~(2) do departures need arrivals first?~~ **answered —
 the nomads are built (D563–D584)**; (1), (3) and (4) are restated below against today's code.
 
-1. **Is it a numbered pillar, `DESIGN.md §2.8`?** It is a per-villager system with two effects and its own failure
+1. ✅ **Is it a numbered pillar, `DESIGN.md §2.8`?** *Yes — written (D798).* It is a per-villager system with two effects and its own failure
    modes, and Phase 6's gate counts it. **Recommended: yes**, a short §2.8 *Contentment* in the pillars' shape (thesis,
    mechanic, failure mode). One line of yours; not mine to mint (D207).
-2. **Who leaves — a person, or the family?** Contentment is held per person, but a family is what owns a house.
+2. ✅ **Who leaves — a person, or the family?** Contentment is held per person, but a family is what owns a house.
    **Recommended:** an adult with no partner leaves alone (a grown child at home, a widow); **a couple leaves only when
    both are unsettled, and takes their children with them**; a child never leaves alone. So nobody is orphaned or
    split by it, and a couple where one is content stays — which is the story (*"she stayed for him"*).
    *Alternative:* anyone unsettled leaves alone, partners included.
-3. **How slow, and how warned?** **Recommended:** read once a season; a person is *Unsettled* while their causes add
+3. ✅ **How slow, and how warned?** **Recommended:** read once a season; a person is *Unsettled* while their causes add
    past a line; **after a full year unsettled the card says *"… is thinking of leaving"*** and the log says it once;
    **after a second year they go**, at the turn of a season. Two years from the first sign to the door — the
    number measured on the probe before it is typed, but the warning year is the shape. *Alternative:* no warning
    stage, the pill alone.
-4. **"Fewer children" — how?** **Recommended:** an unsettled couple **waits twice the interval** (8 years in place of
+4. ✅ **"Fewer children" — how?** **Recommended:** an unsettled couple **waits twice the interval** (8 years in place of
    4), said on the household card (*"The Ashfords are not ready for another child — Otto is unsettled"*). No draw,
    and the gate's other terms untouched. *Alternative:* no child at all while either partner is unsettled.
-5. **Where do they go?** **Recommended: off the map and out of the game** — they walk to the valley's edge (the way
+5. ✅ **Where do they go?** **Recommended: off the map and out of the game** — they walk to the valley's edge (the way
    nomads come in) and are gone, their house left empty for the next family. ⛔ Not to one of trade's three neighbours:
    that is a second system (a neighbour's population), for no story a player sees.
-6. **The jar run dry — contentment's or health's?** Today an empty jar harms nobody (D780, *"Say it, don't rush"*).
+6. ✅ **The jar run dry — contentment's or health's?** Today an empty jar harms nobody (D780, *"Say it, don't rush"*).
    **Recommended: contentment's** — it is a household's daily life, and health's water, if W6 ever wants one, is
    *clean* water, a different cause. *Alternative:* leave water out of both until W6.
 
@@ -262,3 +262,16 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 - **Villager states:** *leaving* — a person (or a family, call 2) walking to the valley's edge with what they carry;
   the nomads' walk-in marker, reversed.
 - **The card:** a *Content / Unsettled* pill in the needs row, in the row's existing style (`UiLook`'s need pill).
+
+---
+
+## 13. Build order (D798) — one step a commit, TDD, measured before typed
+
+1. **Measure** (`tools/harness/ZzContentment.cs`, copied in to run and deleted before a commit, D420). Over 100 valleys × 50 years and Joe's saves: per adult a season, how often each W2 cause is met — no roof, a cabin, a fireless or cold winter, a commute note, a dry jar, a death in the family within N years. ⭐ The question it answers is the shape of the line: **where a well-run village loses nobody and a neglected one does** (§11 item 4, both ways). No sim code.
+2. **The causes as rows, the read once a season** — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.Contentment` (the season's read), `SeasonsUnsettled`, `WintersCold` (the per-winter tally `Cold` cannot give); saved, hashed sparsely. Nothing acts on it yet. ⚠️ Whether the tally alone moves a golden is measured and stated.
+3. **The card** — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*.
+4. **Fewer children** — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated.
+5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; save format bumped. Goldens move once more.
+6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.
+
+*Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797).
