@@ -6924,7 +6924,16 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawWorkedGround(int minX, int maxX, int minY, int maxY)
     {
-        for (int i = 0; i < _fieldFills.Count; i++)
+        // ⭐ With the painted crops the fields are drawn on their own layer behind the map, the worn tracks cut out of the
+        // crop so the valley's painted track shows through (A126, Joe: "the paths on/in crop fields need to be given the
+        // proper styling like the rest of the paths in the game"). Laid when the map draws, from the same cached fills.
+        bool onTheirLayer = FieldsOnTheirLayer;
+        if (onTheirLayer)
+        {
+            _fieldsLayer!.QueueRedraw();
+        }
+
+        for (int i = 0; i < _fieldFills.Count && !onTheirLayer; i++)
         {
             (Terrain stage, byte crop, Vector2[] triangles, Vector2[] uvs, int[] indices) = _fieldFills[i];
             var onScreen = new Vector2[triangles.Length];
@@ -6935,7 +6944,7 @@ public partial class VillageMap : Control
 
             // ⭐ The painted crops with the watercolour on (A61): the stage's painting, world-anchored; a crop or stage
             // with no painting, and the tick off, the flat fill as ever.
-            if (_paintedCrops && LayThePaintedCrop(stage, crop, onScreen, uvs, indices))
+            if (_paintedCrops && LayThePaintedCrop(GetCanvasItem(), stage, crop, onScreen, uvs, indices))
             {
                 continue;
             }
@@ -6943,9 +6952,9 @@ public partial class VillageMap : Control
             DrawTriangles(onScreen, FillColourOf(stage));
         }
 
-        if (_paintedCrops)
+        if (_paintedCrops && !onTheirLayer)
         {
-            DrawTheFieldsEdgesAndSnow();
+            DrawTheFieldsEdgesAndSnow(GetCanvasItem());
         }
 
         // ⭐ A LANE WORN THROUGH THE WHEAT IS SEEN (D512, Joe: "so should villagers walking through
@@ -6961,7 +6970,9 @@ public partial class VillageMap : Control
             BuildTheFieldTrailMesh();
         }
 
-        if (_fieldTrailMesh.GetSurfaceCount() > 0)
+        // ⛔ Not over the fields' layer when the tracks are painted (A126): the crop is cut there and the painted track shows;
+        // this flat lane over it was the pale band Joe saw.
+        if (_fieldTrailMesh.GetSurfaceCount() > 0 && !(onTheirLayer && PathsArePainted))
         {
             RenderingServer.CanvasItemAddMesh(GetCanvasItem(), _fieldTrailMesh.GetRid(), TileToScreen());
         }

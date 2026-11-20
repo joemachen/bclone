@@ -407,6 +407,18 @@ public sealed partial class ValleyWatercolourLook : Resource
     public float PathSnowClear { get; set; }
 
     /// <summary>
+    /// A track across a crop field (A126, Joe: <i>"the paths on/in crop fields need to be given the proper styling like the rest
+    /// of the paths in the game"</i>): how much of the crop it takes — x lightly worn (the wheat trampled, thinned), y packed (1
+    /// clears it, and the valley's painted track shows through).
+    /// </summary>
+    [Export]
+    public Vector2 FieldCut { get; set; }
+
+    /// <summary>The crop's cut edge pooled darker in the fields' edge colour: x how much, y how far onto the crop (tiles).</summary>
+    [Export]
+    public Vector2 FieldCutPool { get; set; }
+
+    /// <summary>
     /// The snowfalls (A76, <c>snowfall.md</c>, Joe: <i>"Snowfalls"</i>): how many a year, the least and the most, each year's
     /// own number drawn from the world's seed and the year.
     /// </summary>
