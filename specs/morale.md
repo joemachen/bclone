@@ -1,7 +1,8 @@
 # Spec: Contentment — why a villager stays, and why a village grows
 
 > Status: **📝 specced on `slice/morale` (W2, D797, 2026-11-19); ✅ Joe's six calls all as recommended (D798, §10);
-> nothing built — ▶️ step 1 of six (§13), the measurement.** *(Read "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
+> nothing built — ✅ step 1 of six measured (D799, §13.1); ⏸️ five calls Joe's (§14).** *(Read "▶️ step 1" at D798,
+> "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
 >
@@ -267,7 +268,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 
 ## 13. Build order (D798) — one step a commit, TDD, measured before typed
 
-1. **Measure** (`tools/harness/ZzContentment.cs`, copied in to run and deleted before a commit, D420). Over 100 valleys × 50 years and Joe's saves: per adult a season, how often each W2 cause is met — no roof, a cabin, a fireless or cold winter, a commute note, a dry jar, a death in the family within N years. ⭐ The question it answers is the shape of the line: **where a well-run village loses nobody and a neglected one does** (§11 item 4, both ways). No sim code.
+1. ✅ **Measure** (D799, §13.1; `tools/harness/ZzContentment.cs`, copied in to run and deleted before a commit, D420). Over 100 valleys × 50 years and Joe's saves: per adult a season, how often each W2 cause is met — no roof, a cabin, a fireless or cold winter, a commute note, a dry jar, a death in the family within N years. ⭐ The question it answers is the shape of the line: **where a well-run village loses nobody and a neglected one does** (§11 item 4, both ways). No sim code.
 2. **The causes as rows, the read once a season** — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.Contentment` (the season's read), `SeasonsUnsettled`, `WintersCold` (the per-winter tally `Cold` cannot give); saved, hashed sparsely. Nothing acts on it yet. ⚠️ Whether the tally alone moves a golden is measured and stated.
 3. **The card** — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*.
 4. **Fewer children** — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated.
@@ -275,3 +276,53 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.
 
 *Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797).
+
+### 13.1 ✅ Step 1, measured (D799) — `ZzContentment.cs` + `contentment.py`
+
+Seven of Joe's saves (Hollowmere Y69, Thornfield-ridge Y39, Ashbourne Y20 and four young villages; 120 adults; Willowdale's
+format-8 save refused) run on ten years, and 100 unattended valleys (seeds 200–299, fifty years, 2,704 adults). Per adult a
+season:
+
+| Cause, as first read | His villages | Valleys | What it says |
+|---|---|---|---|
+| No roof, any day | 0.9 % | 10.2 % | rare where the player builds houses; the harness waits for them |
+| The walk — `CommuteNote` said (from 8 tiles) | **64.4 %** | 1.2 % | ⛔ the note starts at the old forage ring (`MaxHomeToWorkTiles`); **most of his adults are past it.** 8–11 tiles 23 %, 12–15 23 %, 16–23 13 %, **24+ 4.3 %** |
+| A cold winter — days at the get-warm line (`SeekShelterPercent`) | of adult-winters: 0 days 58 %, 1–2 13 %, 3–5 19 %, **6–10 8.5 %, 11+ 1.2 %** | 0 days 73 %, 6+ 1.7 % | `Cold > 0` at the day's turn (the first arm) was 66 % of winters — a chill, not a hardship |
+| The fire out, a winter day | **0.0 %** | **0.0 %** | never, in 184,000 adult-seasons — a row worth keeping for the crisis it names, not a cause that moves anyone today |
+| The jar dry, any day | 15.6 % | 10.6 % | ⛔ the water trip's ordinary rhythm (D780: harmless, refilled at the next rest) |
+| A death in the household, last four seasons | 0.7 % | 1.0 % | rare |
+| *(The cabin — recorded, not a cause)* | 44 % | 91 % | §4's lever rule: the cottage's gate is the family tree |
+
+**The shape a streak of consecutive seasons gives, and why it is not the rule:** a cause that is true every season (the
+walk, no roof) builds a streak; one that comes and goes (a cold winter, a death) is forgotten by spring, so *"cold three
+winters running"* can never add up. A plain rolling year (every cause summed over four seasons) went the other way — the
+standing causes counted four times — and was harsher at every line (21–71 % of his adults gone).
+
+**⭐ The rule measured as recommended** — a cause is **held**: the roof and the walk (from **24 tiles**) while true; **a cold
+winter (6+ days at the get-warm line) and a winter with the fire out held for the year after**; a death for four seasons; the
+jar at **3+ dry days in a season**. *Unsettled* at **two causes held at once**; *thinking of leaving* after a year of it;
+gone after two (D798).
+
+| Line | His villages (120 adults, 10 years) | Valleys (2,704 adults, 50 years) |
+|---|---|---|
+| one cause held | ⛔ 25 leave (21 %), in 6 of 7 | ⛔ 495 (18 %), in 72 of 100 |
+| **two causes held** ✅ | **4 leave (3.3 %), all in Hollowmere (51 adults, Y69–79)** | **4 (0.1 %), in 3 of 100** |
+| three causes held | nobody | nobody |
+
+⚠️ **What it means:** with only today's causes W2 is **quiet** — the release valve opens a few times a decade in a big,
+spread village and almost never in a small one. That is the cozy reading of D207 (a valve, not a pressure); the system gets
+its teeth from the causes W3 and W4 add (the tavern's absence, the dead with nowhere to lie) and the anti-vacuity guard
+(§11 item 4) is a **posed** neglected village, not the unattended harness. ⏸️ These numbers, and the cabin, are Joe's (§14).
+
+## 14. ⏸️ Open — for Joe, from step 1 (D799)
+
+1. **The line — two causes at once, held two years.** ✅ *Recommended:* 4 of his 120 adults leave in ten years, all in
+   Hollowmere; nobody in a young village. *Alternative:* one cause — a fifth of every village leaves, which is a pressure, not
+   a valve.
+2. **The walk counts from 24 tiles**, not the card's 8 — 4 % of his adults' seasons, against 64 %. ⚠️ The *card's* walk note
+   is untouched (it says the food budget, D112). *Alternative:* 16 tiles (18 %).
+3. **A cold winter is six days of going in to get warm**, remembered for the year after — 10 % of his adults' winters.
+4. **The jar counts at three dry days in a season**, not one — one dry day is the trip's rhythm.
+5. **The cabin is not a cause in W2** (§4.1 listed *the home and its tier*): a roof at all counts; living in a cabin is 44 %
+   of his adults' seasons and the cottage waits on the family tree, which the player cannot hurry — §4's lever rule. A tier
+   above the cabin may *raise* contentment later, with the tavern's rows (W3).

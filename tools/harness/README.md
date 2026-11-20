@@ -57,6 +57,10 @@ against a number from an older commit.
   and the woodcutter's hut stood, the first split, firewood in reach / the burn on each winter's first day (Years 1–5),
   houses standing and logs felled at Winter, Year 1, cold deaths by year, and the woodcutters wanted / given and farmers
   given at each season turn (Years 1–3). `ZZ_ARMS`, `ZZ_SEEDS` narrow it. Copy in, `--filter ZzFirstWinter`, delete.
+- `ZzContentment.cs` + `contentment.py` — D799's measurement for `specs/morale.md §13.1`: W2's causes per adult a season on
+  100 valleys (fifty years) or Joe's saves (`ZZ_SAVES` a copy, `ZZ_PICK`, `ZZ_YEARS` 10), with three readings of the line —
+  a streak of seasons, a rolling year, and the causes *held* as recommended. `ZZ_WALKTILES`, `ZZ_COLDDAYS`, `ZZ_COLDWINTER`,
+  `ZZ_DRYDAYS` move the cuts. Copy in, `--filter ZzContentment`, delete; `contentment.py <logs>` sums them.
 - `ZzWell.cs` + `well.py` — D777's trace of D428's question (`water-need.md §2a`): a well at Year 3 (§9.12f's pose, its stone
   given), `ZZ_WELL=1`, `ZZ_TRIP` = `water_trip_every_days` *(the jar, `water_jar`, since D778; trips and well-ticks count the river's states too since D779 — the arms with no `ZZ_WELL` walk to the bank)*, `ZZ_NOISE=n` (every stock limit +n, the noise arm), `ZZ_STATES=1`
   (the ZZT time budget, `school.py --states`). `well.py <base-arm> <files>` prints each arm and **the paired difference in alive
