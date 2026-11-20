@@ -1,3 +1,4 @@
+using Bclone.Sim.Systems;
 using Bclone.Sim.World;
 
 namespace Bclone.Sim.Core;
@@ -53,6 +54,27 @@ public sealed partial class SimWorld
         return villager.IsUnsettled
             ? $"{villager.Name} is unsettled — {listed}."
             : $"{villager.Name} is content, though {listed}.";
+    }
+
+    /// <summary>
+    /// ⭐ THE HOUSEHOLD CARD'S SENTENCE FOR THE LONGER WAIT (W2 step 4, `morale.md §10` call 4: <i>"The Ashfords are not
+    /// ready for another child — Otto is unsettled"</i>): said only while it is contentment that holds the next child off —
+    /// a child already, the ordinary interval past, the longer one not, and a roof (without one the roof is what holds a child
+    /// off, D71). Null otherwise. The card's title names the family.
+    /// </summary>
+    public string? ChildNoteFor(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        if (household.LastBirthYear == 0 || !household.HasHome
+            || HouseholdSystem.UnsettledParentOf(this, household, Config) is not Villager unsettled)
+        {
+            return null;
+        }
+
+        int since = Clock.Year - household.LastBirthYear;
+        return since >= Config.BirthIntervalYears && since < HouseholdSystem.BirthIntervalFor(this, household, Config)
+            ? $"Not ready for another child — {unsettled.Name} is unsettled."
+            : null;
     }
 
     /// <summary>

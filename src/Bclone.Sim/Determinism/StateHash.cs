@@ -322,6 +322,20 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)household.HandcartUses);
             }
 
+            // ⭐ CONTENTMENT'S HOUSEHOLD TALLIES (W2, D801–D803) — hashed since step 4, when the births gate first reads what
+            // they feed. Sparse and tagged, so a household whose fire never went out and whose jar never ran dry hashes as before.
+            if (household.FireOutHeldUntil != 0)
+            {
+                hash = MixByte(hash, 0x90);
+                hash = MixUInt32(hash, (uint)household.FireOutHeldUntil);
+            }
+
+            if (household.DryDaysThisSeason != 0)
+            {
+                hash = MixByte(hash, 0x91);
+                hash = MixUInt32(hash, (uint)household.DryDaysThisSeason);
+            }
+
             if (household.HomePosition is not null)
             {
             }
@@ -1393,6 +1407,16 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)villager.SchoolTicks);
         }
 
+        // ⭐ CONTENTMENT (W2, D801–D803): the day's tallies, the causes the season's read found and the seasons unsettled —
+        // hashed since step 4, when the births gate first reads them. Sparse and tagged, each its own, so a content person
+        // with nothing counted hashes as they did before contentment existed.
+        hash = MixSparse(hash, 14u, villager.ColdDaysThisWinter);
+        hash = MixSparse(hash, 15u, villager.LastColdDay);
+        hash = MixSparse(hash, 16u, villager.ColdWinterHeldUntil);
+        hash = MixSparse(hash, 17u, villager.CommuteTiles);
+        hash = MixSparse(hash, 18u, villager.ContentmentCauses);
+        hash = MixSparse(hash, 19u, villager.SeasonsUnsettled);
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the
@@ -1434,6 +1458,10 @@ public static class StateHash
     /// nobody renamed anything hashes as it did before renaming existed; a given name mixes its
     /// length and every character, so two villages that disagree about a name read differently.
     /// </summary>
+    /// <summary>A tag and a value, only when the value is not 0 — the sparse shape every field since D152 takes.</summary>
+    private static ulong MixSparse(ulong hash, uint tag, int value) =>
+        value == 0 ? hash : MixUInt32(MixUInt32(hash, tag), (uint)value);
+
     private static ulong MixGivenName(ulong hash, string? name)
     {
         if (name is null)

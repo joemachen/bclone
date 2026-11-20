@@ -61,6 +61,10 @@ against a number from an older commit.
   100 valleys (fifty years) or Joe's saves (`ZZ_SAVES` a copy, `ZZ_PICK`, `ZZ_YEARS` 10), with three readings of the line —
   a streak of seasons, a rolling year, and the causes *held* as recommended. `ZZ_WALKTILES`, `ZZ_COLDDAYS`, `ZZ_COLDWINTER`,
   `ZZ_DRYDAYS` move the cuts. Copy in, `--filter ZzContentment`, delete; `contentment.py <logs>` sums them.
+- `ZzTimberSeeds.cs` — D804's table for `WoodTests.TimberGatesGrowthWithoutStoppingIt`: the fixture's seeds 1–12, alive at
+  Year 120, gated (30 logs a house) and free, with contentment's longer wait on (200) and off (100) — alive / born /
+  unsettled adult-seasons, in parallel (~3 minutes). Copy in, `--filter ZzTimberSeeds`, delete. Re-run it when that test's
+  seed goes dead again, and pick by its rule.
 - `ZzWell.cs` + `well.py` — D777's trace of D428's question (`water-need.md §2a`): a well at Year 3 (§9.12f's pose, its stone
   given), `ZZ_WELL=1`, `ZZ_TRIP` = `water_trip_every_days` *(the jar, `water_jar`, since D778; trips and well-ticks count the river's states too since D779 — the arms with no `ZZ_WELL` walk to the bank)*, `ZZ_NOISE=n` (every stock limit +n, the noise arm), `ZZ_STATES=1`
   (the ZZT time budget, `school.py --states`). `well.py <base-arm> <files>` prints each arm and **the paired difference in alive

@@ -1609,8 +1609,9 @@
   // season, from causes the player can act on; a person is UNSETTLED when the
   // weights of the causes held at once reach contentment_unsettled_at. It never
   // slows work and never makes anyone sick (D207) -- health is its own system and
-  // shares no cause with it (D797). STEP 2: read and remembered, nothing acts on
-  // it yet; fewer children (step 4) and leaving (step 5) come next.
+  // shares no cause with it (D797). Since step 4 a couple waits
+  // contentment_birth_interval_percent of birth_interval_years between children
+  // while either of them is unsettled (200: twice, D798); leaving (step 5) next.
   //
   // A row each. "at" is the cause's own threshold (tiles for the walk, days for a
   // cold winter or a dry jar); "held_seasons" is how long an episode is held from
@@ -1636,6 +1637,7 @@
     { "cause": "DeathInTheFamily", "held_seasons": 4 },
   ],
   "contentment_unsettled_at": 2,
+  "contentment_birth_interval_percent": 200,
 
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one

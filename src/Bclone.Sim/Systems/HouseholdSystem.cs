@@ -669,7 +669,9 @@ public sealed class HouseholdSystem : ISimSystem
             return false;
         }
 
-        if (household.LastBirthYear != 0 && year - household.LastBirthYear < config.BirthIntervalYears)
+        // ⭐ AND LONGER WHILE EITHER OF THE COUPLE IS UNSETTLED (W2 step 4, Joe's D798 call 4: twice the interval). No draw,
+        // and only between children — a couple's first child waits on the other terms alone, as it always has.
+        if (household.LastBirthYear != 0 && year - household.LastBirthYear < BirthIntervalFor(world, household, config))
         {
             return false;
         }
@@ -773,6 +775,33 @@ public sealed class HouseholdSystem : ISimSystem
         // the woodcutter's hut was derived to heat, and sixty-seven of them froze."*
 
         return HasFertileCouple(world, household, config);
+    }
+
+    /// <summary>
+    /// The years between this household's children: <c>birth_interval_years</c>, or
+    /// <c>contentment_birth_interval_percent</c> of it while either of its fertile couple is unsettled (W2 step 4).
+    /// </summary>
+    public static int BirthIntervalFor(SimWorld world, Household household, SimConfig config) =>
+        UnsettledParentOf(world, household, config) is null
+            ? config.BirthIntervalYears
+            : config.BirthIntervalYears * config.ContentmentBirthIntervalPercent / 100;
+
+    /// <summary>
+    /// Which of the household's fertile couple is unsettled — the first of the pair, as <see cref="FertileCoupleOf"/>
+    /// orders them — or null. The one finder for the births gate and the card's sentence.
+    /// </summary>
+    public static Villager? UnsettledParentOf(SimWorld world, Household household, SimConfig config)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(household);
+        ArgumentNullException.ThrowIfNull(config);
+        if (FertileCoupleOf(world, household, config) is not { } couple)
+        {
+            return null;
+        }
+
+        (Villager one, Villager two) = couple;
+        return one.IsUnsettled ? one : two.IsUnsettled ? two : null;
     }
 
     /// <summary>

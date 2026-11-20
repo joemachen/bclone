@@ -286,8 +286,13 @@ public sealed class WoodTests
         // 37 / 46 against D473's 36 / 28, so the gate still kills nothing, but seed 1's ungated village
         // now dies (its last two cannot keep a roof, D143's endgame a little earlier). Seed 4 is the
         // lowest whose ungated village lives, at 3 / 7 — a coin again; seed 9 is the healthiest of both.
-        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 9);
-        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 9);
+        // ⚠️ SEED 12 SINCE CONTENTMENT'S LONGER WAIT (D804), BY THE SAME RULE. Seeds 1–12, alive at 120, gated / free, with the
+        // wait (`tools/harness/ZzTimberSeeds.cs`): 3/1, 1/0, 2/0, 10/10, 7/3, 23/14, 2/0, 6/9, 0/7, 0/4, 8/6, 14/15 — 76 / 69,
+        // 2 gated dead against 3 free, so the gate still kills nothing. But seed 9's gated village now dies: its adults spent
+        // 3,706 seasons unsettled, it bore 11 children where it bore 30 without the wait (6 alive), and the wait moved only
+        // seeds 2, 6 and 9 at all. Seed 12 is the healthiest of both and the wait does not touch it (14 / 15 either way).
+        SimLoop gated = Build(Config with { LogsPerHouse = 30 }, seed: 12);
+        SimLoop free = Build(Config with { LogsPerHouse = 0 }, seed: 12);
 
         gated.Step(Config.TicksPerYear * 120);
         free.Step(Config.TicksPerYear * 120);

@@ -1796,6 +1796,12 @@ public partial class Main
             Status(card, working: UiLook.TintOf(card.Status) == UiLook.Text, $"{card.Status.Text} {rebuilding}");
         }
 
+        // ⭐ THE LONGER WAIT FOR A CHILD (W2 step 4): said on the status while it is contentment holding the next one off.
+        if (living > 0 && world.ChildNoteFor(home) is string waiting)
+        {
+            Status(card, working: UiLook.TintOf(card.Status) == UiLook.Text, $"{card.Status.Text} {waiting}");
+        }
+
         card.WorkersRow.Visible = false;
         Number(card, 0, $"{food}/{foodTarget}", "food");
         Number(card, 1, $"{fuel}/{fuelTarget}", "firewood");
@@ -3977,8 +3983,53 @@ public partial class Main
             RefreshCards(world);
         }
 
+        // ---- the household's card: the longer wait for a child (step 4) ----
+        string? waiting = null;
+        Villager? partner = world.Villagers.FirstOrDefault(v => v.CanWork && v.IsPaired
+            && world.FindVillager(v.PartnerId) is { Alive: true } p && p.HouseholdId == v.HouseholdId);
+        Household? family = partner is null ? null : world.FindHousehold(partner.HouseholdId);
+        if (partner is null || family is null)
+        {
+            faults.Add("no couple at home to pose the longer wait on");
+        }
+        else
+        {
+            (int seasons, int lastBirth, Bclone.Sim.Core.Point? roof) kept = (partner.SeasonsUnsettled, family.LastBirthYear, family.HomePosition);
+            try
+            {
+                // A roof too: without one the roof holds the child off, and the card says nothing of contentment (D71).
+                family.HomePosition ??= partner.Position;
+                partner.SeasonsUnsettled = 1;
+                family.LastBirthYear = world.Clock.Year - world.Config.BirthIntervalYears;
+                OpenCard(new CardSubject(CardKind.Household, family.Id));
+                Card card = _selectedCard!;
+                waiting = world.ChildNoteFor(family);
+                if (waiting is null || !card.Status.Text.EndsWith(waiting, StringComparison.Ordinal))
+                {
+                    faults.Add($"an unsettled couple's household reads \"{card.Status.Text}\"{(waiting is null ? " (and the sim said nothing)" : string.Empty)}");
+                }
+
+                partner.SeasonsUnsettled = 0;
+                RefreshCards(world);
+                if (card.Status.Text.Contains("Not ready for another child", StringComparison.Ordinal))
+                {
+                    faults.Add("a settled couple's household still says it is not ready");
+                }
+
+                CloseCard(card);
+            }
+            finally
+            {
+                partner.SeasonsUnsettled = kept.seasons;
+                family.LastBirthYear = kept.lastBirth;
+                family.HomePosition = kept.roof;
+                RefreshCards(world);
+            }
+        }
+
         return faults.Count == 0
-            ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\"; a child has no pill"
+            ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\"; a child has no pill; "
+                + $"an unsettled couple's household says \"{waiting}\", a settled one does not"
             : $"[widths] contentment: ⛔ {string.Join("; ", faults)}";
     }
 

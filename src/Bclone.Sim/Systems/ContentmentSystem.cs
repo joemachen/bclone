@@ -10,9 +10,11 @@ namespace Bclone.Sim.Systems;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⭐ <b>Step 2 of six (`morale.md §13`): it reads and remembers, and NOTHING ACTS ON IT YET.</b> Births wait on it from
-/// step 4 and leaving from step 5. So the tallies are saved but not hashed, and a village runs to the byte as it did
-/// before — the guard is <c>ContentmentTests.NothingActsOnItYet</c>.
+/// ⭐ <b>It reads and remembers; the births gate acts on it (step 4, D804) and leaving will (step 5).</b> An unsettled
+/// couple waits <c>contentment_birth_interval_percent</c> of the interval between children
+/// (<c>HouseholdSystem.BirthIntervalFor</c>). The tallies are saved, and hashed sparsely since step 4 — until then nothing
+/// read them, so the goldens moved once, with the first effect. <i>(Read "NOTHING ACTS ON IT YET … saved but not hashed"
+/// for steps 2–3, D801–D803.)</i>
 /// </para>
 /// <para>
 /// ⭐ <b>A cause is HELD, not counted in a row</b> (D799): a standing one (no roof, the walk) while it is true, an episode

@@ -1259,7 +1259,7 @@ public sealed class Household
 
     /// <summary>
     /// The season number (<see cref="SimWorld.SeasonNumber"/>) a winter with the fire out stops being held (W2, D800) —
-    /// held while larger. ⛔ Saved, not yet hashed (see <see cref="Villager.ColdDaysThisWinter"/>).
+    /// held while larger. Saved, and hashed sparsely since step 4 (D804; see <see cref="Villager.ColdDaysThisWinter"/>).
     /// </summary>
     public int FireOutHeldUntil { get; set; }
 

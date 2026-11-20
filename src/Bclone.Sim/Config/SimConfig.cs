@@ -3133,6 +3133,14 @@ public sealed record SimConfig
     [JsonPropertyName("contentment_unsettled_at")]
     public int ContentmentUnsettledAt { get; init; } = 2;
 
+    /// <summary>
+    /// How long a couple waits between children while either of them is unsettled, as a share of
+    /// <c>birth_interval_years</c> — <b>200</b>, twice (Joe, D798 call 4: <i>"8 years in place of 4"</i>). 100 turns the
+    /// effect off. No draw, and the births gate's other terms untouched (W2 step 4).
+    /// </summary>
+    [JsonPropertyName("contentment_birth_interval_percent")]
+    public int ContentmentBirthIntervalPercent { get; init; } = 200;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -6073,6 +6081,12 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"contentment_unsettled_at must be greater than zero (got {ContentmentUnsettledAt}) — at zero everybody is unsettled.");
+        }
+
+        if (ContentmentBirthIntervalPercent < 100)
+        {
+            throw new SimConfigException(
+                $"contentment_birth_interval_percent must be at least 100 (got {ContentmentBirthIntervalPercent}) — an unsettled couple never waits less than a settled one.");
         }
 
         var contentmentSeen = new HashSet<ContentmentCause>();

@@ -368,9 +368,9 @@ public sealed class Villager
     public int Cold { get; set; }
 
     // ------------------------------------------------------------------------------------------------------------------
-    //  Contentment (W2, `morale.md §13` step 2, D798–D800) — read once a season by `ContentmentSystem`. ⛔ Saved, NOT YET
-    //  HASHED: nothing acts on them until step 4, and a fact nothing reads is not a second fact about the village — so the
-    //  goldens move once, when the first effect lands (§8, D152), not twice.
+    //  Contentment (W2, `morale.md §13` step 2, D798–D800) — read once a season by `ContentmentSystem`. Saved; hashed
+    //  sparsely SINCE STEP 4 (D804), when the births gate first reads them — not before, because a fact nothing reads is
+    //  not a second fact about the village, so the goldens moved once, with the first effect (§8, D152).
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Days this winter the person reached the get-warm line (<c>seek_shelter_percent</c>) — at most one a day.</summary>

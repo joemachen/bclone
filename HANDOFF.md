@@ -17,6 +17,22 @@
 > **✅ STEP 3 BUILT (D802, Joe: *"Go on"*): a person's NEEDS reads *Content* / *Unsettled* (amber, adults only), the
 > sentence `SimWorld.ContentmentNoteFor` its tooltip; *Happiness* off "Not here yet". No golden moved. Suite 2138 / 0 / 5 of 2143 in 16m01;
 > probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅, done.. ▶️ STEP 4: fewer children — an unsettled couple waits twice the interval; the goldens move.**
+> **✅ STEP 4 BUILT (D804, Joe: *"Go on"*): `contentment_birth_interval_percent` 200 — either partner unsettled doubles the
+> wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
+> re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
+> a child). ▶️ STEP 5: leaving.**
+> - **⛔ TRAP (D804): a whole-village effect test needs a village that GROWS.** The shipped seed 201, unattended, bred 4
+>   children in thirty years with the longer wait and 4 without — nobody reached a second child. The fixture's three
+>   households breed six-plus in forty (`BirthdayTests`); with everyone unsettled, 13 against 19.
+> - **⛔ TRAP (D804): a mutant or ablation patch that leaves a parameter unused does not compile** (`IDE0060` is an error
+>   here), and the script reads BUILD FAILED, not a verdict. Patch in a way that still reads every parameter
+>   (`value == 0 || tag != 0 ? hash : …`).
+> - **⛔ TRAP (D804): `WoodTests.TimberGatesGrowthWithoutStoppingIt` is a coin on its seed, and contentment flipped it**
+>   (seed 9's gated village died: 11 born against 30). Re-posed on seed 12 by its own rule; when it goes dead again,
+>   run `tools/harness/ZzTimberSeeds.cs` and pick by the table, never by trying seeds until one passes.
+> - **⛔ TRAP (D804): a golden is a snapshot of the LAST tick, so it cannot vouch for a field that is 0 there.** With
+>   `SeasonsUnsettled` dropped from the hash all eight goldens stayed green — nobody was unsettled when the runs ended.
+>   A newly hashed field gets its own guard (`EveryContentmentFieldIsHashed`: set it on a posed world, the hash moves).
 > - **⛔ TRAP (D802): a tie-break test whose cases sit in the list's own order cannot see the tie-break.** The grief
 >   sentence names the *latest* death; the test's two deaths died in list order, so "the first found" gave the same
 >   name and the mutant that dropped *latest* came back green. Put the cases AGAINST the list order, then red-check.
