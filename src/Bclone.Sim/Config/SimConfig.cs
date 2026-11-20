@@ -3106,6 +3106,33 @@ public sealed record SimConfig
     [JsonPropertyName("seek_shelter_percent")]
     public int SeekShelterPercent { get; init; } = 50;
 
+    /// <summary>
+    /// The causes a villager may be unsettled by (W2, `morale.md §4.1`, D798–D800) — a row each, weighed and tuned here.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Measured before typed</b> (D799, `morale.md §13.1`): the walk from 24 tiles (the card's own walk note starts at
+    /// 8, which 64 % of Joe's adults are past), a cold winter at six days at the get-warm line held the year after, the fire
+    /// out held the year after, the jar at three dry days in a season, a death in the family held four seasons, and no roof
+    /// at all. ⛔ <b>No cause is health's</b> (D797). An empty list switches contentment off: nobody is ever unsettled.
+    /// </remarks>
+    [JsonPropertyName("contentment_causes")]
+    public IReadOnlyList<ContentmentCauseRow> ContentmentCauses { get; init; } = new[]
+    {
+        new ContentmentCauseRow { Cause = ContentmentCause.NoRoof },
+        new ContentmentCauseRow { Cause = ContentmentCause.FarWalk, At = 24 },
+        new ContentmentCauseRow { Cause = ContentmentCause.ColdWinter, At = 6, HeldSeasons = 4 },
+        new ContentmentCauseRow { Cause = ContentmentCause.FireOut, HeldSeasons = 4 },
+        new ContentmentCauseRow { Cause = ContentmentCause.DryJar, At = 3 },
+        new ContentmentCauseRow { Cause = ContentmentCause.DeathInTheFamily, HeldSeasons = 4 },
+    };
+
+    /// <summary>
+    /// The weight of causes held at once that makes a villager unsettled at a season's turn — <b>2</b>, two causes at once
+    /// (Joe, D800 call 1: one cause took a fifth of every village; two takes 4 of his 120 adults in ten years).
+    /// </summary>
+    [JsonPropertyName("contentment_unsettled_at")]
+    public int ContentmentUnsettledAt { get; init; } = 2;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -6040,6 +6067,33 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"seek_shelter_percent must be between 0 and 100 (got {SeekShelterPercent}).");
+        }
+
+        if (ContentmentUnsettledAt <= 0)
+        {
+            throw new SimConfigException(
+                $"contentment_unsettled_at must be greater than zero (got {ContentmentUnsettledAt}) — at zero everybody is unsettled.");
+        }
+
+        var contentmentSeen = new HashSet<ContentmentCause>();
+        foreach (ContentmentCauseRow row in ContentmentCauses)
+        {
+            if (!Enum.IsDefined(row.Cause))
+            {
+                throw new SimConfigException($"contentment_causes names a cause this build does not know ({(int)row.Cause}).");
+            }
+
+            if (!contentmentSeen.Add(row.Cause))
+            {
+                throw new SimConfigException($"contentment_causes lists {row.Cause} twice.");
+            }
+
+            if (row.Weight <= 0 || row.At < 0 || row.HeldSeasons < 0)
+            {
+                throw new SimConfigException(
+                    $"contentment_causes' {row.Cause} needs a weight above zero and no negative at or held_seasons "
+                    + $"(got weight {row.Weight}, at {row.At}, held_seasons {row.HeldSeasons}).");
+            }
         }
 
         if (LogsPerHouse < 0)

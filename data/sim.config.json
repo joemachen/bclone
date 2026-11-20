@@ -1603,6 +1603,40 @@
   // all; higher and the walk to the fire is itself what kills them.
   "seek_shelter_percent": 50,
 
+  // ---- Contentment (W2, D797-D800, specs/morale.md) -----------------
+  //
+  // Whether a person is settled enough to stay and raise a family. Read once a
+  // season, from causes the player can act on; a person is UNSETTLED when the
+  // weights of the causes held at once reach contentment_unsettled_at. It never
+  // slows work and never makes anyone sick (D207) -- health is its own system and
+  // shares no cause with it (D797). STEP 2: read and remembered, nothing acts on
+  // it yet; fewer children (step 4) and leaving (step 5) come next.
+  //
+  // A row each. "at" is the cause's own threshold (tiles for the walk, days for a
+  // cold winter or a dry jar); "held_seasons" is how long an episode is held from
+  // the season it happened in, that one counted. Measured before typed (D799):
+  //   NoRoof             -- no house at the season's turn
+  //   FarWalk 24        -- the card's own walk note starts at 8 tiles, which
+  //                         64% of Joe's adults are past; 24+ is 4%
+  //   ColdWinter 6, 4   -- six days at the get-warm line (seek_shelter_percent),
+  //                         held the year after; 10% of his adults' winters
+  //   FireOut 4         -- a winter day at home with no firewood; never seen in
+  //                         184,000 adult-seasons, kept for the crisis it names
+  //   DryJar 3          -- one dry day is the water trip's rhythm; three is short
+  //   DeathInTheFamily 4 -- the household, or the partner
+  // Two at once (Joe, D800): 4 of his 120 adults would leave in ten years, all in
+  // Hollowmere; one at once took a fifth of every village. An empty list turns
+  // contentment off.
+  "contentment_causes": [
+    { "cause": "NoRoof" },
+    { "cause": "FarWalk", "at": 24 },
+    { "cause": "ColdWinter", "at": 6, "held_seasons": 4 },
+    { "cause": "FireOut", "held_seasons": 4 },
+    { "cause": "DryJar", "at": 3 },
+    { "cause": "DeathInTheFamily", "held_seasons": 4 },
+  ],
+  "contentment_unsettled_at": 2,
+
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one
   // undifferentiated village pile would delete the per-household

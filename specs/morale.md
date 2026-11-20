@@ -1,7 +1,8 @@
 # Spec: Contentment — why a villager stays, and why a village grows
 
 > Status: **📝 specced on `slice/morale` (W2, D797, 2026-11-19); ✅ Joe's six calls all as recommended (D798, §10);
-> nothing built — ✅ step 1 of six measured (D799, §13.1); ✅ its five calls as recommended (D800, §14); ▶️ step 2.** *(Read "▶️ step 1" at D798,
+> ✅ step 1 measured (D799, §13.1), its five calls as recommended (D800, §14); ✅ step 2 built — the causes as rows and the
+> season's read, saved, not hashed, nothing acting on it (D801); ▶️ step 3, the card.** *(Read "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
@@ -269,7 +270,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 ## 13. Build order (D798) — one step a commit, TDD, measured before typed
 
 1. ✅ **Measure** (D799, §13.1; `tools/harness/ZzContentment.cs`, copied in to run and deleted before a commit, D420). Over 100 valleys × 50 years and Joe's saves: per adult a season, how often each W2 cause is met — no roof, a cabin, a fireless or cold winter, a commute note, a dry jar, a death in the family within N years. ⭐ The question it answers is the shape of the line: **where a well-run village loses nobody and a neglected one does** (§11 item 4, both ways). No sim code.
-2. **The causes as rows, the read once a season** — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.Contentment` (the season's read), `SeasonsUnsettled`, `WintersCold` (the per-winter tally `Cold` cannot give); saved, hashed sparsely. Nothing acts on it yet. ⚠️ Whether the tally alone moves a golden is measured and stated.
+2. ✅ **The causes as rows, the read once a season** (D801) — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.Contentment` (the season's read), `SeasonsUnsettled`, `WintersCold` (the per-winter tally `Cold` cannot give); saved; ⛔ **not hashed until step 4**, when something first reads them — so the goldens move once (§8). Nothing acts on it yet (`NothingActsOnItYet`). ⚠️ *No roof* is read at the season's turn, not on any day of it as D799 counted. *(Read "hashed sparsely … whether the tally alone moves a golden is measured" until D801: nothing hashed, nothing moved.)*
 3. **The card** — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*.
 4. **Fewer children** — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated.
 5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; save format bumped. Goldens move once more.

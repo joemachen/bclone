@@ -39,6 +39,12 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public int Today => (int)(Tick / (ulong)Config.TicksPerDay) + 1;
 
+    /// <summary>
+    /// Seasons since the founding, the first being 0 — the clock contentment's held causes count in (W2, D800). A season
+    /// turns on the tick this changes.
+    /// </summary>
+    public int SeasonNumber => (int)(Tick / ((ulong)Config.TicksPerDay * (ulong)Config.DaysPerSeason));
+
     /// <summary>Seeded generator. Its state is part of world state.</summary>
     public DeterministicRandom Rng;
 

@@ -367,6 +367,33 @@ public sealed class Villager
     /// </remarks>
     public int Cold { get; set; }
 
+    // ------------------------------------------------------------------------------------------------------------------
+    //  Contentment (W2, `morale.md §13` step 2, D798–D800) — read once a season by `ContentmentSystem`. ⛔ Saved, NOT YET
+    //  HASHED: nothing acts on them until step 4, and a fact nothing reads is not a second fact about the village — so the
+    //  goldens move once, when the first effect lands (§8, D152), not twice.
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>Days this winter the person reached the get-warm line (<c>seek_shelter_percent</c>) — at most one a day.</summary>
+    public int ColdDaysThisWinter { get; set; }
+
+    /// <summary>The day (<see cref="SimWorld.Today"/>) last counted in <see cref="ColdDaysThisWinter"/>; 0 if never.</summary>
+    public int LastColdDay { get; set; }
+
+    /// <summary>The season number (<see cref="SimWorld.SeasonNumber"/>) a cold winter stops being held — held while larger.</summary>
+    public int ColdWinterHeldUntil { get; set; }
+
+    /// <summary>
+    /// The walk to work in tiles, written with <see cref="CommuteNote"/> by the allocator and cleared with it — <b>0 when
+    /// the note is not said</b> (within the old forage ring, or no job).
+    /// </summary>
+    public int CommuteTiles { get; set; }
+
+    /// <summary>The causes held at the last season's read, one bit a <see cref="ContentmentCause"/> — what the card will say.</summary>
+    public int ContentmentCauses { get; set; }
+
+    /// <summary>Seasons running this person has been unsettled — 0 when content (D798: warned at 4, gone at 8, from step 5).</summary>
+    public int SeasonsUnsettled { get; set; }
+
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 
@@ -993,6 +1020,13 @@ public sealed class Villager
             ["job_reason"] = JobReason,
             ["work_note"] = WorkNote,
             ["commute_note"] = CommuteNote,
+            // W2's tallies (D798–D800) — optional keys, so a save from before reads a content village.
+            ["cold_days_this_winter"] = ColdDaysThisWinter != 0 ? ColdDaysThisWinter : null,
+            ["last_cold_day"] = LastColdDay != 0 ? LastColdDay : null,
+            ["cold_winter_held_until"] = ColdWinterHeldUntil != 0 ? ColdWinterHeldUntil : null,
+            ["commute_tiles"] = CommuteTiles != 0 ? CommuteTiles : null,
+            ["contentment_causes"] = ContentmentCauses != 0 ? ContentmentCauses : null,
+            ["seasons_unsettled"] = SeasonsUnsettled != 0 ? SeasonsUnsettled : null,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
             ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
@@ -1058,6 +1092,12 @@ public sealed class Villager
             JobReason = save.String("job_reason"),
             WorkNote = save.String("work_note"),
             CommuteNote = save.String("commute_note"),
+            ColdDaysThisWinter = save.HasValue("cold_days_this_winter") ? save.Int("cold_days_this_winter") : 0,
+            LastColdDay = save.HasValue("last_cold_day") ? save.Int("last_cold_day") : 0,
+            ColdWinterHeldUntil = save.HasValue("cold_winter_held_until") ? save.Int("cold_winter_held_until") : 0,
+            CommuteTiles = save.HasValue("commute_tiles") ? save.Int("commute_tiles") : 0,
+            ContentmentCauses = save.HasValue("contentment_causes") ? save.Int("contentment_causes") : 0,
+            SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
             ArrivedAtTick = save.ULong("arrived_at"),

@@ -374,6 +374,9 @@ public sealed class SaveLoadTests : IDisposable
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
             "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks", "BatchTrade",
+
+            // Contentment's tallies (W2, D798–D800) — saved, not yet hashed.
+            "ColdDaysThisWinter", "LastColdDay", "ColdWinterHeldUntil", "CommuteTiles", "ContentmentCauses", "SeasonsUnsettled",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
@@ -385,6 +388,7 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse",
+            "FireOutHeldUntil", "DryDaysThisSeason",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
