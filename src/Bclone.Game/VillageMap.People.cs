@@ -236,9 +236,17 @@ public partial class VillageMap
 
         _peopleThisFrame.Sort((a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.Who.Id.CompareTo(b.Who.Id));
         float scale = PersonPixels / PersonPainter.BakeHeight;
+        bool poses = PersonPixels >= PosesFromPixels;
+        PersonCache shadow = TheShadow();
         foreach ((_, Villager villager, Vector2 point) in _peopleThisFrame)
         {
-            FigureKey key = PersonKeyOf(villager, world);
+            // ⭐ The motion (A130): the pose this frame, and how the picture is moved — the step paid for by the distance
+            // the drawn point has walked (where it is drawn: the glide, or the road a nomad walks in on).
+            Vector2 live = DrawnTile(villager);
+            float walked = WalkedTo(villager.Id, villager.LifeStage, WalkInPlaceOf(villager.Id, live, out _) ?? live);
+            FigureKey still = PersonKeyOf(villager, world);
+            PersonMotion motion = MotionOf(still, AtWork(villager.State), walked, _peopleClock, poses);
+            FigureKey key = still with { Beat = motion.Beat };
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             if (held is not null)
             {
@@ -270,8 +278,16 @@ public partial class VillageMap
                 DrawTheSelectionAtTheFeet(feet, tall);
             }
 
-            var rect = new Rect2(feet - (new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
+            // The shadow on the ground at their feet, scaled to them and not moved with them (A130).
+            PaintedFigure sf = shadow.Figure;
+            float ss = f.FeetY / sf.FeetY * scale;
+            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false);
+
+            // The person, lifted, leaned and squashed about their feet as the motion says.
+            DrawSetTransform(feet + (new Vector2(motion.Dx, motion.Dy) * tall), Mathf.DegToRad(motion.Turn), new Vector2(1f, motion.Squash));
+            var rect = new Rect2(-(new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
             DrawTextureRect(held.Texture, rect, tile: false);
+            DrawSetTransformMatrix(Transform2D.Identity);
 
             // ⭐ The water pail at their side (`water-need.md §2e`, D782) — the dots' stand-in, hung at a person's hip height.
             if (_pails.TryGetValue(villager.Id, out bool full))
@@ -303,6 +319,11 @@ public partial class VillageMap
         foreach (int id in _lastPersonKey.Keys.Where(id => !stillAlive.Contains(id)).ToList())
         {
             _lastPersonKey.Remove(id);
+        }
+
+        foreach (int id in _walked.Keys.Where(id => !stillAlive.Contains(id)).ToList())
+        {
+            _walked.Remove(id);
         }
     }
 

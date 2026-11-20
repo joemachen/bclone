@@ -159,13 +159,216 @@ public partial class VillageMap
                 faults.Add($"the cache: the same person {(ReferenceEquals(firstHeld, secondHeld) ? "kept" : "painted again")}, {_personBakes - bakesBefore} paintings (want kept, 1), mipmapped and drawn with mipmaps");
             }
 
+            string moving = ThePeopleMoveHold();
             return faults.Count == 0
-                ? $"[widths] painted villagers: ✅ painted only with the tick; resting, at school and teaching indoors and not drawn; toward, away, from the side and mirrored for the left, at work facing us with the tool out, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped"
-                : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}";
+                ? $"[widths] painted villagers: ✅ painted only with the tick; resting, at school and teaching indoors and not drawn; toward, away, from the side and mirrored for the left, at work facing us with the tool out, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
+                : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}\n{moving}";
         }
         catch (System.Exception e)
         {
             return $"[widths] painted villagers: ⛔ threw {e.GetType().Name}: {e.Message}";
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>people moving:</c> line (A130, <c>villager-animation.md §3</c>, §7) — printed with the line above, so
+    /// the shell's probe list is untouched. Every number is the spec's, never read back from the code's constants.
+    /// </summary>
+    /// <remarks>⚠️ Nothing is drawn headless (D340): that the draw uses the transform and the shadow is the renders' and Joe's.</remarks>
+    private string ThePeopleMoveHold()
+    {
+        try
+        {
+            var faults = new List<string>();
+            const float adultStep = 0.36f;
+            const double frame = 1.0 / 60.0;
+
+            // The step is paid for by distance: at 1× (0.75 tiles a second) the feet keep to the ground.
+            float oneX = WalkedOn(5f, 0.75f * (float)frame, adultStep, frame) - 5f;
+            if (Mathf.Abs(oneX - (0.75f * (float)frame)) > 1e-5f)
+            {
+                faults.Add($"a 1× frame walked {oneX:F5} tiles (want {0.75 * frame:F5}, the ground moved)");
+            }
+
+            // Paused: no step at all, whatever the point did. A jump (a birth, a move of house) is not walked.
+            float paused = WalkedOn(5f, 0.05f, adultStep, 0.0), jumped = WalkedOn(5f, 3f, adultStep, frame);
+            if (paused != 5f || jumped != 5f)
+            {
+                faults.Add($"paused walked {paused - 5f:F4}, a 3-tile jump walked {jumped - 5f:F4} (want 0, 0)");
+            }
+
+            // ⭐ At 4× (3 tiles a second) a second of frames is at most 2.4 steps (Joe's call 2), not 8.
+            float fourX = 0f;
+            for (int k = 0; k < 60; k++)
+            {
+                fourX = WalkedOn(fourX, 3f * (float)frame, adultStep, frame);
+            }
+
+            if (Mathf.Abs((fourX / adultStep) - 2.4f) > 0.01f)
+            {
+                faults.Add($"a second at 4× is {fourX / adultStep:F2} steps (want 2.40)");
+            }
+
+            // The clock: the game's speed up to 1.5×, still while paused (Joe's call 3).
+            (double clockWas, double secondsWas, double paceWas, bool pausedWas) = (_peopleClock, _peopleFrameSeconds, _flowPace, Paused);
+            var clocked = new List<double>();
+            foreach ((double pace, bool stop) in new[] { (1.0, false), (10.0, false), (4.0, true) })
+            {
+                _peopleClock = 0;
+                _flowPace = pace;
+                Paused = stop;
+                TickThePeopleClock(0.5);
+                clocked.Add(_peopleClock);
+            }
+
+            (_peopleClock, _peopleFrameSeconds, _flowPace, Paused) = (clockWas, secondsWas, paceWas, pausedWas);
+            if (Math.Abs(clocked[0] - 0.5) > 1e-9 || Math.Abs(clocked[1] - 0.75) > 1e-9 || clocked[2] != 0.0)
+            {
+                faults.Add($"half a second at 1×, 10× and paused is {clocked[0]:F2}, {clocked[1]:F2}, {clocked[2]:F2} s of the people's clock (want 0.50, 0.75, 0.00)");
+            }
+
+            // Walking: the two steps alternate, toward us and from the side; the body rises 2.2 % of its height, a half more under a load.
+            FigureKey walker = PersonKeyOf(7, LifeStage.Adult, JobKind.Woodcutter, VillagerState.TravelingHome, new Vector2(0f, 1f), null, false, false);
+            FigureKey sideways = walker with { Pose = FigurePose.Side };
+            FigureKey loaded = walker with { Good = Goods.Stone };
+            var beatsToward = new HashSet<int>();
+            var beatsSide = new HashSet<int>();
+            float highest = 0f, highestLoaded = 0f;
+            for (int k = 0; k < 72; k++)
+            {
+                float w = k * 0.01f;
+                PersonMotion m = MotionOf(walker, false, w, 0, true);
+                beatsToward.Add(m.Beat);
+                beatsSide.Add(MotionOf(sideways, false, w, 0, true).Beat);
+                highest = Mathf.Min(highest, m.Dy);
+                highestLoaded = Mathf.Min(highestLoaded, MotionOf(loaded, false, w, 0, true).Dy);
+            }
+
+            if (!beatsToward.SetEquals(new[] { 0, 1 }) || !beatsSide.SetEquals(new[] { 0, 1 }))
+            {
+                faults.Add($"two steps walked show poses {{{string.Join(",", beatsToward)}}} toward us, {{{string.Join(",", beatsSide)}}} from the side (want {{0,1}} each)");
+            }
+
+            if (Mathf.Abs(highest + 0.022f) > 0.002f || Mathf.Abs(highestLoaded + 0.032f) > 0.002f)
+            {
+                faults.Add($"a step rises {-highest:F3}, under a load {-highestLoaded:F3} of the height (want 0.022, 0.032)");
+            }
+
+            // At work with an axe: the tool raised, then the stroke — about 38 % of a 1.6 s beat; the crew out of step (D28).
+            FigureKey chopping = PersonKeyOf(7, LifeStage.Adult, JobKind.Woodcutter, VillagerState.Cutting, Vector2.Zero, null, false, false);
+            FigureKey crewmate = PersonKeyOf(8, LifeStage.Adult, JobKind.Woodcutter, VillagerState.Cutting, Vector2.Zero, null, false, false);
+            int strokes = 0, together = 0, samples = 160;
+            var workBeats = new HashSet<int>();
+            for (int k = 0; k < samples; k++)
+            {
+                double t = k * 1.6 / samples;
+                int a = MotionOf(chopping, true, 0f, t, true).Beat, b = MotionOf(crewmate, true, 0f, t, true).Beat;
+                workBeats.Add(a);
+                strokes += a == 2 ? 1 : 0;
+                together += a == b ? 1 : 0;
+            }
+
+            if (!workBeats.SetEquals(new[] { 1, 2 }) || Mathf.Abs(((float)strokes / samples) - 0.38f) > 0.05f)
+            {
+                faults.Add($"a woodcutter's beat shows poses {{{string.Join(",", workBeats)}}}, the stroke {(float)strokes / samples:P0} of it (want {{1,2}}, 38%)");
+            }
+
+            if (together == samples)
+            {
+                faults.Add("two woodcutters chop in step all the beat (want out of step)");
+            }
+
+            // Too small to see a pose (under 16 px): one pose only, the picture moved instead — a walk tilts, a swing leans.
+            bool farOnePose = true;
+            float farTilt = 0f, farLean = 0f;
+            for (int k = 0; k < 40; k++)
+            {
+                PersonMotion w = MotionOf(walker, false, k * 0.02f, 0, false), c = MotionOf(chopping, true, 0f, k * 0.04, false);
+                farOnePose &= w.Beat == 0 && c.Beat == 0;
+                farTilt = Mathf.Max(farTilt, Mathf.Abs(w.Turn));
+                farLean = Mathf.Max(farLean, Mathf.Abs(c.Turn));
+            }
+
+            if (!farOnePose || farTilt < 1f || farLean < 1.5f)
+            {
+                faults.Add($"far out: one pose {farOnePose}, the walk tilts {farTilt:F1}°, the swing leans {farLean:F1}° (want true, ~1.3°, ~2.2°)");
+            }
+
+            // A tailor at work has no tool that swings: one pose, leaning into the work.
+            FigureKey sewing = PersonKeyOf(9, LifeStage.Adult, JobKind.Tailor, VillagerState.WorkingABatch, Vector2.Zero, null, false, false);
+            bool sewingOnePose = true;
+            float sewingLean = 0f;
+            for (int k = 0; k < 40; k++)
+            {
+                PersonMotion m = MotionOf(sewing, true, 0f, k * 0.08, true);
+                sewingOnePose &= m.Beat == 0;
+                sewingLean = Mathf.Max(sewingLean, Mathf.Abs(m.Turn));
+            }
+
+            if (!sewingOnePose || sewingLean < 1.5f)
+            {
+                faults.Add($"a tailor at work: one pose {sewingOnePose}, leaning {sewingLean:F1}° (want true, ~2.2°)");
+            }
+
+            // The cold shake; nobody else shakes.
+            FigureKey cold = PersonKeyOf(7, LifeStage.Adult, JobKind.Fisher, VillagerState.SeekingShelter, new Vector2(0f, 1f), null, false, false);
+            float shake = Mathf.Abs(MotionOf(cold, false, 0f, 0.1, true).Dx - MotionOf(cold, false, 0f, 0.3, true).Dx);
+            float calm = Mathf.Abs(MotionOf(walker, false, 0f, 0.1, true).Dx) + Mathf.Abs(MotionOf(walker, false, 0f, 0.3, true).Dx);
+            if (shake < 0.01f || calm != 0f)
+            {
+                faults.Add($"the cold shake moves {shake:F3}, a warm walker {calm:F3} of the height (want ~0.02, 0)");
+            }
+
+            // The poses painted are different pictures on the same canvas: the other step, the raised axe and the stroke, the palm lowered.
+            var axe = new FigureKey(41, LifeStage.Adult, JobKind.Woodcutter, FigurePose.Front, false, FigureHold.Tool, false, true, null, false, false, false);
+            var stepSide = new FigureKey(41, LifeStage.Adult, JobKind.Woodcutter, FigurePose.Side, false, FigureHold.None, true, false, null, false, false, false);
+            var stepToward = stepSide with { Pose = FigurePose.Front };
+            var talk = new FigureKey(41, LifeStage.Adult, JobKind.Baker, FigurePose.Front, false, FigureHold.Talk, false, false, null, false, false, false);
+            var differ = new List<string>();
+            foreach ((string what, FigureKey a, FigureKey b) in new[]
+            {
+                ("the axe raised / at rest", axe with { Beat = 1 }, axe), ("the stroke / the axe raised", axe with { Beat = 2 }, axe with { Beat = 1 }),
+                ("the other step from the side", stepSide with { Beat = 1 }, stepSide), ("the other step toward us", stepToward with { Beat = 1 }, stepToward),
+                ("the palm lowered", talk with { Beat = 1 }, talk),
+            })
+            {
+                PaintedFigure pa = PersonPainter.Paint(a), pb = PersonPainter.Paint(b);
+                if (pa.Width != pb.Width || pa.Height != pb.Height || pa.Rgba.AsSpan().SequenceEqual(pb.Rgba))
+                {
+                    differ.Add(what);
+                }
+            }
+
+            if (differ.Count > 0)
+            {
+                faults.Add($"the same picture for {string.Join(", ", differ)} (want a different pose on the same canvas)");
+            }
+
+            // ⚠️ And the legs themselves moved — the check above passes on the arm or the other foot alone (A130's red-check
+            // scored it zero twice): from the side, the feet's rows differ; toward us, the right foot's (the one beat 1 lifts).
+            int sideFeet = FeetPixelsDiffering(PersonPainter.Paint(stepSide with { Beat = 1 }), PersonPainter.Paint(stepSide), rightOnly: false);
+            int towardRight = FeetPixelsDiffering(PersonPainter.Paint(stepToward with { Beat = 1 }), PersonPainter.Paint(stepToward), rightOnly: true);
+            if (sideFeet < 10 || towardRight < 10)
+            {
+                faults.Add($"the other step moves {sideFeet} pixels of the feet from the side, {towardRight} of the right foot toward us (want 10 or more each)");
+            }
+
+            // ⭐ The shadow is its own painting, under the feet to the lower right, and no longer in a person's (A130).
+            PaintedFigure shade = PersonPainter.PaintShadow(), person = PersonPainter.Paint(stepToward);
+            int sx = (int)(shade.FeetX + (0.28f * 64f)), sy = (int)(shade.FeetY + (0.03f * 64f));
+            byte inShadow = shade.Rgba[(((sy * shade.Width) + sx) * 4) + 3], inPerson = person.Rgba[(((sy * person.Width) + sx) * 4) + 3];
+            if (shade.Width != person.Width || inShadow < 40 || inPerson != 0)
+            {
+                faults.Add($"the shadow {shade.Width} wide (a person {person.Width}); at the feet's lower right the shadow's alpha {inShadow}, a person's {inPerson} (want the same canvas, 40 or more, 0)");
+            }
+
+            return faults.Count == 0
+                ? $"[widths] people moving: ✅ a step paid by the ground walked ({oneX * 60f:F2} tiles a second at 1×), none paused, none for a jump, at most 2.4 steps a second at 4×; the people's clock 1×, capped at 1.5×, still when paused; two steps alternating toward us and from the side, rising {-highest:F3} of the height, {-highestLoaded:F3} under a load; a woodcutter's axe raised then struck ({(float)strokes / samples:P0} of the beat), a crew out of step; far out one pose, the walk tilting and the swing leaning; a tailor leaning into the work; the cold shaking and nobody else; five poses each a different picture; the shadow its own painting, out of a person's"
+                : $"[widths] people moving: ⛔ {string.Join("; ", faults)}";
+        }
+        catch (System.Exception e)
+        {
+            return $"[widths] people moving: ⛔ threw {e.GetType().Name}: {e.Message}";
         }
     }
 
@@ -210,6 +413,25 @@ public partial class VillageMap
         float y = (0.2126f * lr) + (0.7152f * lg) + (0.0722f * lb);
         float z = ((0.0193f * lr) + (0.1192f * lg) + (0.9505f * lb)) / 1.08883f;
         return new Vector3((116f * F(y)) - 16f, 500f * (F(x) - F(y)), 200f * (F(y) - F(z)));
+    }
+
+    /// <summary>
+    /// How many pixels of the feet (the bottom 0.15 of an adult's height, to the feet) are solid in one picture and not the
+    /// other — on the right of the feet only, if asked.
+    /// </summary>
+    private static int FeetPixelsDiffering(PaintedFigure a, PaintedFigure b, bool rightOnly)
+    {
+        int n = 0;
+        for (int y = (int)(a.FeetY - (0.15f * 64f)); y < a.Height && y <= (int)a.FeetY + 1; y++)
+        {
+            for (int x = rightOnly ? (int)a.FeetX + 1 : 0; x < a.Width; x++)
+            {
+                int k = (((y * a.Width) + x) * 4) + 3;
+                n += (a.Rgba[k] >= 128) != (b.Rgba[k] >= 128) ? 1 : 0;
+            }
+        }
+
+        return n;
     }
 
     /// <summary>The first row with anything solid in it.</summary>

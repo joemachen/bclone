@@ -1,6 +1,7 @@
 # The villagers move: a walk, the work, a word, the cold (A129)
 
-> **Status: ✍️ specced and mocked (A129, 2026-11-20); ⏸️ Joe's pick, §6. Nothing built.** Joe, 2026-11-20: *"Can we
+> **Status: ✍️ specced and mocked (A129, 2026-11-20); ✅ B picked, every call as recommended (A130, *"B, all as
+> recommended"*); 🔨 BUILT on `art` (A130, §8), not merged — ⏸️ his eyes, then his word.** Joe, 2026-11-20: *"Can we
 > work on villager animations next?"* The painted people (A93, mock E, `villager-art.md §8`) stand in one painted pose
 > and glide from tick to tick; `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. This is
 > that piece.
@@ -91,7 +92,7 @@ loop is 4.8 s.
 | | Look | Paintings a person needs | What it gives |
 |---|---|---|---|
 | **A** | **Breathing** — the picture moved only (§2, way 1): a bob each step, a slight side-to-side tilt (1.3°) for the feet nobody sees move, a lean into the work and back, the sway, the shiver | **1**, as today | everyone alive, nothing new to paint; but the work is a rocking body — an axe never rises |
-| **B** | **Two poses** — A's bob and sway, plus a second painting for each motion: a stride and a passing step (the other foot, front and back), **the tool up and the tool struck** (held up 60 % of the beat, then the stroke), the palm raised and lowered | **2** while walking, working or talking; 1 standing | the work says itself — an axe comes down, a fork lifts — and the walk alternates feet. The manuscripts' own way: figures are poses, not in-betweens |
+| **B** | **Two poses** — A's bob and sway, plus a second painting for each motion: a stride and a passing step (the other foot, front and back), **the tool up and the tool struck** (held up 62 % of the beat, then the stroke), the palm raised and lowered | **2** while walking, working or talking; 1 standing | the work says itself — an axe comes down, a fork lifts — and the walk alternates feet. The manuscripts' own way: figures are poses, not in-betweens |
 | **C** | **Full cycle** — four paintings a motion: contact, passing, contact, passing with the arm swinging; rest, raise, strike, follow-through | **4** | the smoothest walk; at the closest zoom the difference from B is a frame of a foot; at the middle zoom none |
 
 Files (outside git): `anim_scene_summer.gif` (today, A, B, C side by side, the village), `anim_scene_summer_2x.gif` (the
@@ -120,7 +121,10 @@ today, plus one transform and a beat chosen from a float.
   way. Bar: no rise a player can see; if B's churn at 4× holds people on their first pose more than a frame in ten,
   the budget is revisited before merging, not after.
 
-## 6. ⏸️ Joe's calls — in plain words, each with a recommendation
+## 6. ✅ Joe's calls — ALL AS RECOMMENDED (A130, 2026-11-20: *"B, all as recommended"*)
+
+His answer also covers the two `VillageMap.cs` places §7 named (the message it answered asked for them in the same breath).
+In the end the build needed only one of them — the line in `_Process`; the distance is taken in `VillageMap.People.cs`.
 
 1. **Which look: A, B or C?** *(see `anim_scene_summer_2x.gif`, then `anim_motions_large.gif`)*
    ⭐ **Recommended: B, two poses.** It is the only one where the work is readable — an axe goes up and comes down, a
@@ -154,3 +158,36 @@ shape):
 - No `Main.cs` change: the game's speed already reaches the map (`SetFlowPace`, A46).
 
 Then the four checks, renders of the build on his saves, and his eyes (`.\run.bat`).
+
+## 8. ✅ As built (A130) — B, at Joe's word: *"B, all as recommended"*
+
+- **`PersonPainter.cs`** — `FigureKey` gains `Beat` (default 0, A93's picture). Walking: beat 1 is the other step — from
+  the side the passing step (the far leg under, the near knee lifted) with the free arm hanging; toward or away the right
+  foot lifted instead of the left. Talking: beat 1 the palm lowered to the chest. At work facing us with a tool that
+  swings: beat 1 the tool raised, beat 2 the stroke — the hand moved and the tool turned about it (`WorkPose`, `anim.py`'s
+  frames 1 and 2 to the number; the canvas turns points about the hand while the tool is drawn). `SwingSeconds` and
+  `StoopOf` give each tool its beat and its bend (§1). ⭐ **The shadow is its own painting now** (`PaintShadow`, an adult's,
+  on an adult's canvas): until A130 it was baked into every person's picture, so a step's rise or a lean would have lifted
+  it off the ground. A person's painting no longer computes it, which also makes each painting a little cheaper.
+- **`VillageMap.PeopleMotion.cs`** (new) — the people's clock (`TickThePeopleClock`: real seconds × the game's speed,
+  capped at 1.5×, nothing while paused); each person's walked distance (`_walked`, advanced where the drawn point moves,
+  capped at 2.4 steps' worth of the frame's real seconds, a jump not walked, dropped with the villager); `MotionOf` — pure:
+  the beat, the rise, the turn, the squash and the cold's shake, phased by the villager's id; the shadow kept.
+- **`VillageMap.People.cs`** — each frame a person's key takes the motion's beat (a pose not yet painted holds the one
+  they had, as A93's budget already did); the shadow drawn at their feet unmoved, then the person under
+  `DrawSetTransform` (feet + rise, turn, squash) and the transform reset. Under 16 px tall, beat 0 only.
+- **`VillageMap.cs`** — one line in `_Process` (the people's clock beside the meal bowl's). The distance turned out to be
+  best taken in `DrawThePeople` (`DrawnTile` and the walk-in's place, read there), so `DrawnTile` is untouched.
+- **Probe line `people moving:`** (`VillageMap.PeopleProbe.cs`, printed with `painted villagers:` so `Main.cs`'s probe
+  list is untouched): a 1× frame walks the ground's distance; paused and a jump walk nothing; a second at 4× is 2.40
+  steps; the clock 0.50 / 0.75 / 0.00 s for half a second at 1×, 10× and paused; two steps alternating toward us and from
+  the side; the rise 0.022, 0.032 under a load; a woodcutter's stroke 38 % of the beat, a crew out of step; far out one
+  pose, the walk tilting and the swing leaning; a tailor leaning; only the cold shaking; five poses each a different
+  picture, and the legs themselves moved; the shadow its own painting and out of a person's.
+  **Red-checked: 14 mutants, 14 red** — ⚠️ two scored **zero** first (the side step's legs unmoved; the toward step's
+  right foot unmoved): *"a different picture"* was satisfied by the arm or the other foot. Fixed by counting the feet's own
+  pixels (`FeetPixelsDiffering`), then both red alone.
+- **Renders of the build** on his Hollowmere (Y63 summer), in Godot's movie mode at a fixed 20 frames a second so a GIF
+  is real time: `D:\Projects\brushes\villagers\anim\built_1x_close.gif` (1×, enlarged 2×), `built_1x.gif` (the whole
+  view), `built_4x_close.gif` (4×). ⚠️ Not seen in the renders: a worker swinging (the summer save's few workers are off
+  that view) — the motions are the probe's and the mock catalogue's; Joe's eyes are the check.

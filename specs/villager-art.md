@@ -229,6 +229,7 @@ so the Professions panel's teacher is still the modder's grey: a one-line system
   **10.5 ms** in the probe (the Debug build, the first paintings JIT-compiled) — four a frame is the budget. **The draw**
   on Hollowmere (the in-game readout, one paused frame each — a rough instrument): summer closest 13.2 ms before, 12.8
   after; winter 14.3, 14.0. No rise seen. ⚠️ Memory: about 58 KB a kept person-look (with mipmaps); a few hundred kept is
-  tens of MB — the 600-frame letting-go is what bounds it.
+  tens of MB — the 600-frame letting-go is what bounds it. ⚠️ *Since A130 the shadow is no longer in a person's painting:
+  it is painted once on its own and drawn under them, so they can step and lean above it (`villager-animation.md §8`).*
 - **Renders of the build** on Joe's saves: `D:\Projects\brushes\villagers\built_people.jpg` (the game's own drawing, 2×).
 - **The four checks** (A93): the suite 2048 passed, 0 failed, 5 skipped, 17 m 10 s; the view build 0 warnings, 0 errors; the probe every line ✅ (no ⛔ anywhere), bar height 151, tile centres ✅, new game ✅, `done.`; the goldens 418 lines, and no change in `src/Bclone.Sim`, `tests/` or `data/`.
