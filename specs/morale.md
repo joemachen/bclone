@@ -1,7 +1,7 @@
 # Spec: Contentment — why a villager stays, and why a village grows
 
 > Status: **📝 specced on `slice/morale` (W2, D797, 2026-11-19); ✅ Joe's six calls all as recommended (D798, §10);
-> nothing built — ✅ step 1 of six measured (D799, §13.1); ⏸️ five calls Joe's (§14).** *(Read "▶️ step 1" at D798,
+> nothing built — ✅ step 1 of six measured (D799, §13.1); ✅ its five calls as recommended (D800, §14); ▶️ step 2.** *(Read "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
@@ -118,7 +118,7 @@ has two effects through two systems, and *"why did Otto leave?"* and *"why is Ot
 |---|---|---|
 | **A varied diet** (food groups, an immunity a one-food diet erodes) | **Health (W6)** — ⛔ *not* contentment; `systems-complete.md` W2's row listed it and is annotated | food values (D522), no groups |
 | Sickness, herbs, the infirmary | **Health (W6)** | no |
-| **The home** — a roof at all, and its tier (cabin, cottage, manor) | Contentment | ✅ `HomePosition`, house tiers (D716–D724) |
+| **The home** — a roof at all ~~, and its tier (cabin, cottage, manor)~~ *(the tier is not a cause, D800)* | Contentment | ✅ `HomePosition`, house tiers (D716–D724) |
 | **A lit hearth** — the household's firewood through the winter | Contentment | ✅ `HearthSystem`, the household's firewood |
 | **Winters spent cold** — a person who was cold through a winter, counted by winters | Contentment | ⚠️ `Villager.Cold` is a tick-level counter; a per-winter tally is new |
 | **The walk to work** | Contentment | ✅ `Villager.CommuteNote` (D112) — the sentence already exists |
@@ -314,7 +314,7 @@ spread village and almost never in a small one. That is the cozy reading of D207
 its teeth from the causes W3 and W4 add (the tavern's absence, the dead with nowhere to lie) and the anti-vacuity guard
 (§11 item 4) is a **posed** neglected village, not the unattended harness. ⏸️ These numbers, and the cabin, are Joe's (§14).
 
-## 14. ⏸️ Open — for Joe, from step 1 (D799)
+## 14. Joe's calls from step 1 (D799) — ✅ ALL FIVE AS RECOMMENDED (D800, *"all as recommended"*)
 
 1. **The line — two causes at once, held two years.** ✅ *Recommended:* 4 of his 120 adults leave in ten years, all in
    Hollowmere; nobody in a young village. *Alternative:* one cause — a fifth of every village leaves, which is a pressure, not
