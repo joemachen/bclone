@@ -12,8 +12,8 @@ using Xunit.Abstractions;
 namespace Bclone.Sim.Tests;
 
 /// <summary>
-/// Contentment, step 2 (W2, `specs/morale.md §13`, D798–D800): the causes as rows, the day's tallies, and the read at each
-/// season's turn — and nothing acting on any of it yet.
+/// Contentment, steps 2 and 3 (W2, `specs/morale.md §13`, D798–D802): the causes as rows, the day's tallies, the read at
+/// each season's turn, and the card's sentence — and nothing acting on any of it yet.
 /// </summary>
 public sealed class ContentmentTests
 {
@@ -409,5 +409,94 @@ public sealed class ContentmentTests
         Household h = back.FindHousehold(home.Id)!;
         Assert.Equal((3, 17, 9, 25, 0b101, 2), (a.ColdDaysThisWinter, a.LastColdDay, a.ColdWinterHeldUntil, a.CommuteTiles, a.ContentmentCauses, a.SeasonsUnsettled));
         Assert.Equal((7, 4), (h.FireOutHeldUntil, h.DryDaysThisSeason));
+    }
+
+    // -----------------------------------------------------------------
+    //  The card's sentence (step 3, `morale.md §6`): the read in words, never the number
+    // -----------------------------------------------------------------
+
+    /// <summary>An adult the read found nothing troubling has no sentence; the card says they are content.</summary>
+    [Fact]
+    public void AContentAdultHasNoNote()
+    {
+        SimWorld world = WorldAtTheTurnOf(1);
+        (Villager adult, _) = AHousedAdult(world);
+        Read(world);
+        Assert.False(adult.IsUnsettled);
+        Assert.Null(world.ContentmentNoteFor(adult));
+    }
+
+    /// <summary>⭐ One cause is short of the line: content, and the sentence says what is wearing on them anyway.</summary>
+    [Fact]
+    public void OneCauseIsContentThough()
+    {
+        SimWorld world = WorldAtTheTurnOf(1);
+        (Villager adult, _) = AHousedAdult(world);
+        adult.CommuteTiles = 30;
+        Read(world);
+        Assert.False(adult.IsUnsettled);
+        Assert.Equal($"{adult.Name} is content, though the walk to work is a long one.", world.ContentmentNoteFor(adult));
+    }
+
+    /// <summary>⭐ Two causes is unsettled, and both are named — in the data file's order.</summary>
+    [Fact]
+    public void TwoCausesAreUnsettledAndBothNamed()
+    {
+        SimWorld world = WorldAtTheTurnOf(1);
+        (Villager adult, Household home) = AHousedAdult(world);
+        adult.CommuteTiles = 30;
+        home.HomePosition = null;
+        Read(world);
+        Assert.True(adult.IsUnsettled);
+        Assert.Equal(
+            $"{adult.Name} is unsettled — they have no roof of their own and the walk to work is a long one.",
+            world.ContentmentNoteFor(adult));
+    }
+
+    /// <summary>A child is never read, so never has a sentence, whatever the bits say.</summary>
+    [Fact]
+    public void AChildHasNoNote()
+    {
+        SimWorld world = WorldAtTheTurnOf(1);
+        (Villager adult, _) = AHousedAdult(world);
+        adult.ContentmentCauses = 1 << (int)ContentmentCause.FarWalk;
+        adult.LifeStage = LifeStage.Child;
+        Assert.Null(world.ContentmentNoteFor(adult));
+    }
+
+    /// <summary>
+    /// ⭐ Grief names who was lost (§6: a person, not a spreadsheet) — the read's own dead, still found partway through the
+    /// season, and not a stranger who died since.
+    /// </summary>
+    [Fact]
+    public void TheGriefNamesWhoWasLost()
+    {
+        SimWorld world = WorldAtTheTurnOf(2);
+        (Villager adult, _) = AHousedAdult(world);
+        // Two losses in the family, the one first in the list dying first: the sentence names the latest, not the first found.
+        Villager one = world.Villagers.First(v => v.Id != adult.Id && v.HouseholdId == adult.HouseholdId);
+        Villager other = world.Villagers.First(v => v.HouseholdId != adult.HouseholdId && v.PartnerId != adult.Id);
+        other.HouseholdId = adult.HouseholdId;
+        bool oneFirst = world.Villagers.IndexOf(one) < world.Villagers.IndexOf(other);
+        Villager kin = oneFirst ? other : one;
+        Villager earlier = oneFirst ? one : other;
+        foreach (Villager dead in new[] { kin, earlier })
+        {
+            dead.Alive = false;
+            dead.CauseOfDeath = CauseOfDeath.OldAge;
+        }
+
+        kin.DiedAtTick = world.Tick - 1;
+        earlier.DiedAtTick = world.Tick - 2;
+        world.Tick = SeasonTicks(world.Config) * 3;
+        Read(world);
+
+        Villager stranger = world.Villagers.First(v => v.Alive && v.HouseholdId != adult.HouseholdId && v.PartnerId != adult.Id);
+        stranger.Alive = false;
+        stranger.CauseOfDeath = CauseOfDeath.OldAge;
+        stranger.DiedAtTick = world.Tick + 5;
+        world.Tick += 10;
+
+        Assert.Equal($"{adult.Name} is content, though they are grieving {kin.Name}.", world.ContentmentNoteFor(adult));
     }
 }

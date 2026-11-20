@@ -2,7 +2,8 @@
 
 > Status: **📝 specced on `slice/morale` (W2, D797, 2026-11-19); ✅ Joe's six calls all as recommended (D798, §10);
 > ✅ step 1 measured (D799, §13.1), its five calls as recommended (D800, §14); ✅ step 2 built — the causes as rows and the
-> season's read, saved, not hashed, nothing acting on it (D801); ▶️ step 3, the card.** *(Read "▶️ step 1" at D798,
+> season's read, saved, not hashed, nothing acting on it (D801); ✅ step 3 built — the card's *Content / Unsettled* and its
+> sentence (D802); ▶️ step 4, fewer children.** *(Read "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
@@ -162,7 +163,9 @@ nothing**, so the marker and the panel cannot disagree.
 
 - **On the person's card** — the **Content / Unsettled** pill in the needs row (D431's row: *Fed · Warm · Housed*,
   *"morale and water join it later"*), and the sentence, never the number. *"Otto has been cold three winters
-  running, and the walk to the quarry eats his day."*
+  running, and the walk to the quarry eats his day."* **✅ Built (D802):** *"Otto is unsettled — they have no roof of
+  their own and the walk to work is a long one."* — the last season's read, so the walk is *to work*, not to a place
+  the job may since have left.
 - **On the edge, in the village log** — when somebody **leaves**, and it names why. That is the event worth
   screenshotting, and it belongs in `tech-tree.md §10`'s milestone list.
 - ⛔ **Not an always-on alert.** D42, D123 and D147 all settled that an always-on warning is one the player stops
@@ -270,8 +273,8 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 ## 13. Build order (D798) — one step a commit, TDD, measured before typed
 
 1. ✅ **Measure** (D799, §13.1; `tools/harness/ZzContentment.cs`, copied in to run and deleted before a commit, D420). Over 100 valleys × 50 years and Joe's saves: per adult a season, how often each W2 cause is met — no roof, a cabin, a fireless or cold winter, a commute note, a dry jar, a death in the family within N years. ⭐ The question it answers is the shape of the line: **where a well-run village loses nobody and a neglected one does** (§11 item 4, both ways). No sim code.
-2. ✅ **The causes as rows, the read once a season** (D801) — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.Contentment` (the season's read), `SeasonsUnsettled`, `WintersCold` (the per-winter tally `Cold` cannot give); saved; ⛔ **not hashed until step 4**, when something first reads them — so the goldens move once (§8). Nothing acts on it yet (`NothingActsOnItYet`). ⚠️ *No roof* is read at the season's turn, not on any day of it as D799 counted. *(Read "hashed sparsely … whether the tally alone moves a golden is measured" until D801: nothing hashed, nothing moved.)*
-3. **The card** — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*.
+2. ✅ **The causes as rows, the read once a season** (D801) — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.ContentmentCauses` (the season's read, a bit a cause), `SeasonsUnsettled`, `ColdDaysThisWinter` (the per-winter tally `Cold` cannot give) *(named `Villager.Contentment` and `WintersCold` here until D802 — the plan's names, not the code's)*; saved; ⛔ **not hashed until step 4**, when something first reads them — so the goldens move once (§8). Nothing acts on it yet (`NothingActsOnItYet`). ⚠️ *No roof* is read at the season's turn, not on any day of it as D799 counted. *(Read "hashed sparsely … whether the tally alone moves a golden is measured" until D801: nothing hashed, nothing moved.)*
+3. ✅ **The card** (D802) — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*. Built: an adult's pill only; *Unsettled* in amber; the tooltip says what the last season's read found, the causes in the data file's order, grief naming who was lost; *"… is content here."* with nothing held.
 4. **Fewer children** — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated.
 5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; save format bumped. Goldens move once more.
 6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.

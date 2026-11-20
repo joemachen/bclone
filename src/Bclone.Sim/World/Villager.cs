@@ -394,6 +394,9 @@ public sealed class Villager
     /// <summary>Seasons running this person has been unsettled — 0 when content (D798: warned at 4, gone at 8, from step 5).</summary>
     public int SeasonsUnsettled { get; set; }
 
+    /// <summary>Whether the last season's read put them past the line — the card's <i>Unsettled</i> (W2 step 3).</summary>
+    public bool IsUnsettled => SeasonsUnsettled > 0;
+
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 

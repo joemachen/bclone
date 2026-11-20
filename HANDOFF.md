@@ -14,6 +14,12 @@
 > **✅ ALL FIVE AS RECOMMENDED (D800, *"all as recommended"*). ▶️ STEP 2: the causes as rows, the season's read.**
 > **✅ STEP 2 BUILT (D801): `contentment_causes`, `ContentmentSystem` (14th in the order), the tallies saved and NOT hashed;
 > no golden moved. Suite 2133 / 0 / 5 of 2138 in 15m36; probe bar 183 everywhere, tile centres ✅, new game ✅, 0 ⛔, done.. ▶️ STEP 3: the card's Content / Unsettled pill and its sentence.**
+> **✅ STEP 3 BUILT (D802, Joe: *"Go on"*): a person's NEEDS reads *Content* / *Unsettled* (amber, adults only), the
+> sentence `SimWorld.ContentmentNoteFor` its tooltip; *Happiness* off "Not here yet". No golden moved. Suite 2138 / 0 / 5 of 2143 in 16m01;
+> probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅, done.. ▶️ STEP 4: fewer children — an unsettled couple waits twice the interval; the goldens move.**
+> - **⛔ TRAP (D802): a tie-break test whose cases sit in the list's own order cannot see the tie-break.** The grief
+>   sentence names the *latest* death; the test's two deaths died in list order, so "the first found" gave the same
+>   name and the mutant that dropped *latest* came back green. Put the cases AGAINST the list order, then red-check.
 > - **⛔ TRAP (D801): a mutant script that reads `dotnet test -v q` sees no test names, and scores every mutant GREEN.**
 >   Fourteen of fourteen came back green with an empty failure list; the guards were fine, the instrument was blind. Pass
 >   `--logger "console;verbosity=normal"`, assert the test count, and red-check the script on ONE mutant first. And a
@@ -27,8 +33,9 @@
 > - **⛔ TRAP (D797): a list whose comment says *"Delete a row when it ships"* is a list nobody deletes from.** Two slices
 >   shipped (the school, the coat) and left their rows promising *"no school"* to the player. When a system ships,
 >   grep `NotYetInTheValley` as part of its view step.
-> - ⚠️ The untracked `Archivo_Narrow/` in the main checkout was missing at the claim commit and back by D797's — something
->   outside this slice moves it; never stage or delete it.
+> - ⚠️ The untracked `Archivo_Narrow/` in the main checkout is **deleted at Joe's word** (2026-11-20, *"No, delete it"*,
+>   done by the coordinator session; the game's own copies under `src/Bclone.Game/fonts/ArchivoNarrow/` untouched) — do
+>   not restore it. *(Read "missing at the claim commit and back by D797's — never stage or delete it" until D802.)*
 >
 > **⭐ W1 MERGED INTO `main` AND PUSHED AT HIS WORD (D796, 2026-11-18, *"Merge and push"*) — `6967479`, no conflict;
 > `slice/batch-trade` deleted. NO BRANCH OPEN BUT `art`. ⏸️ HIS PLAY OF A VILLAGE WITH ALL FOUR HUTS. ▶️ NEXT FOR SYSTEMS:

@@ -545,6 +545,7 @@ public partial class Main : Control
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWaterIsOnTheCards());
+        GD.Print(TheContentmentIsOnTheCard());
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());
         GD.Print(TheWordsReadOnParchment());
@@ -4734,7 +4735,6 @@ public partial class Main : Control
         ("Ale", "no brewer, no barley"),
         ("Medicine", "no physician"),
         ("Health", "illness is not modelled"),
-        ("Happiness", "not modelled"),
         ("Students", "no school"),
     };
 

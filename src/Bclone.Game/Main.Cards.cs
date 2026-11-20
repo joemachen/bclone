@@ -2002,6 +2002,13 @@ public partial class Main
         bool watered = home.Water > 0;
         SetNeed(p.Needs[3], watered, watered ? "Water" : "No water", WaterSentence(world, home) ?? string.Empty);
 
+        // ⭐ CONTENTMENT (W2, `morale.md §6`, step 3): the last season's read, an adult's only (a child is never read, D798).
+        // Amber past the line; the sim's sentence is the tooltip — what is wearing on them, never the number.
+        bool unsettled = villager.IsUnsettled;
+        p.Needs[4].Pill.Visible = villager.CanWork;
+        SetNeed(p.Needs[4], !unsettled, unsettled ? "Unsettled" : "Content",
+            world.ContentmentNoteFor(villager) ?? $"{villager.Name} is content here.");
+
         // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
         var trades = TheirTrades(world, villager);
         p.SkillsSection.Visible = trades.Count > 0;
@@ -2286,7 +2293,7 @@ public partial class Main
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
         needsRow.AddThemeConstantOverride("v_separation", 4);
-        var needs = new (PanelContainer, Label)[4]; // fed, warm, housed, water (`water-need.md §5` step 6)
+        var needs = new (PanelContainer, Label)[5]; // fed, warm, housed, water (`water-need.md §5` step 6), content (W2 step 3)
         for (int i = 0; i < needs.Length; i++)
         {
             var pill = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
@@ -3074,9 +3081,11 @@ public partial class Main
         }
 
         p.ToolUses.Text = longestTool;
-        foreach ((PanelContainer, Label) need in p.Needs)
+        foreach ((PanelContainer Pill, Label) need in p.Needs)
         {
-            SetNeed(need, false, "No roof", longest);
+            // "Unsettled" is the longest word the row says (W2 step 3); every pill shown, as an adult's are.
+            need.Pill.Visible = true;
+            SetNeed(need, false, "Unsettled", longest);
         }
 
         p.SkillsSection.Visible = true;
@@ -3898,6 +3907,79 @@ public partial class Main
                 + $"Water / No water with it; the widest line holds {CardWidth:F0} ({widest:F0}); the pail goes out empty, comes home full, "
                 + "and is put down at home, on giving up, or with the dead"
             : $"[widths] water: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ CONTENTMENT ON THE CARD (W2, `morale.md §13` step 3): a person's NEEDS reads <i>Content</i> with nothing troubling them,
+    /// <i>Content</i> with the sim's sentence for one cause, <i>Unsettled</i> in amber with it for two; a child has no pill.
+    /// Posed on the first adult and put back.
+    /// </summary>
+    private string TheContentmentIsOnTheCard()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Villager? adult = world.Villagers.FirstOrDefault(v => v.CanWork);
+        if (adult is null)
+        {
+            return "[widths] contentment: ⛔ no adult to open a card on";
+        }
+
+        (int causes, int seasons, LifeStage stage) was = (adult.ContentmentCauses, adult.SeasonsUnsettled, adult.LifeStage);
+        string? one = null;
+        string? two = null;
+        try
+        {
+            OpenCard(new CardSubject(CardKind.Villager, adult.Id));
+            Card card = _selectedCard!;
+            (PanelContainer pill, Label text) = card.Person.Needs[4];
+
+            void Pose(int bits, int unsettled)
+            {
+                adult.ContentmentCauses = bits;
+                adult.SeasonsUnsettled = unsettled;
+                RefreshCards(world);
+            }
+
+            Pose(0, 0);
+            if (!pill.Visible || text.Text != "Content" || pill.TooltipText != $"{adult.Name} is content here.")
+            {
+                faults.Add($"nothing held reads \"{text.Text}\" — \"{pill.TooltipText}\"");
+            }
+
+            Pose(1 << (int)ContentmentCause.FarWalk, 0);
+            one = world.ContentmentNoteFor(adult);
+            if (text.Text != "Content" || one is null || pill.TooltipText != one || UiLook.TintOf(text) == LightStopped)
+            {
+                faults.Add($"one cause reads \"{text.Text}\" — \"{pill.TooltipText}\"");
+            }
+
+            Pose((1 << (int)ContentmentCause.FarWalk) | (1 << (int)ContentmentCause.NoRoof), 1);
+            two = world.ContentmentNoteFor(adult);
+            if (text.Text != "Unsettled" || two is null || pill.TooltipText != two || UiLook.TintOf(text) != LightStopped)
+            {
+                faults.Add($"two causes read \"{text.Text}\"{(UiLook.TintOf(text) == LightStopped ? string.Empty : ", not amber")} — \"{pill.TooltipText}\"");
+            }
+
+            adult.LifeStage = LifeStage.Child;
+            RefreshCards(world);
+            if (pill.Visible)
+            {
+                faults.Add("a child's card shows the pill");
+            }
+
+            CloseCard(card);
+        }
+        finally
+        {
+            adult.ContentmentCauses = was.causes;
+            adult.SeasonsUnsettled = was.seasons;
+            adult.LifeStage = was.stage;
+            RefreshCards(world);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\"; a child has no pill"
+            : $"[widths] contentment: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()
