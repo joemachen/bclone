@@ -4,7 +4,9 @@
 the pen lightened at his word (A73, §7); ⭐ **MERGED INTO `main` AT HIS WORD (A74, 2026-11-14: *"Yes, merge it"*,
 `2d84c53`)** and **PUSHED** (A75, `origin/main` = `b88e37a`). 🔨 **The trampled trail (§3.5) BUILT on `art` (A82)** at Joe's
 *"Build it"* on a mock after his concept sheet 08; played (*"Looks good"*) and ✅ **merged into `main` at his word (A83, merge
-`2b41cb5`)** and **pushed** (A84, `origin/main` = `a1faeb2`). Art lane. View only: where a path runs, how it wears and what it costs are the
+`2b41cb5`)** and **pushed** (A84, `origin/main` = `a1faeb2`). 🔨 **A track across a crop field (§3.7) BUILT on `art` (A126,
+2026-11-19)** at Joe's *"the paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"*
+(2026-11-16), the three map files at his *"Yes, edit them"*; ⏸️ his eyes, then his word to merge. Art lane. View only: where a path runs, how it wears and what it costs are the
 sim's (`desire-paths.md`, `path-shapes.md`) and nothing here touches them. Neighbours: `green-ground.md` (the ground the
 paths lie on), `terrain-shader.md` (the valley's shader), `art-inventory.md §9` (the paths' row).
 
@@ -54,8 +56,15 @@ something that has not happened (§1.1) and leave paving no look of its own. C's
    track needs the sim to say which lanes carts use — a systems ask) and tier V (cobbles wait for paving, `DESIGN.md §2.6`).
 6. **Winter:** the snow lies thinner on a track (trodden), so the network still reads, and the pen lies over the snow
    as the bank's does.
-7. **Across a field** the lane is still the mesh laid over the crop (D512), in the track's sand with the tick on.
-8. **Tick off:** the mesh, exactly as before — byte for byte.
+7. ⭐ **Across a field (A126)** the crop is cut where a track runs and **the valley's own painted track shows through** —
+   one track, one shader, the same on a field and off it. Until A126 a lane across a field was D512's mesh laid over the
+   crop in the track's sand at 85 %: one flat colour and a ruled edge, the *"pale smooth band"* in Joe's Year 35 and 38
+   screenshots of Thornfield. Now: **packed**, the crop is cleared to the track's wandered edge and a little past it, to
+   where the pen's ink is still full, so the pen shows and the wheat meets it; **lightly worn**, the crop is thinned
+   (`FieldCut` x, 0.7 of it taken), a trampled lane through the wheat with the valley's trodden grass and flecks showing,
+   as tier II reads on the grass. The crop's cut edge pools a little darker in the fields' own edge colour (`FieldCutPool`),
+   as a field's outer edge does (A61). In winter the field's snow is cut the same way, so the track's thinner snow shows.
+8. **Tick off:** the mesh, and the field overlay over the crop, exactly as before — byte for byte.
 
 ⚠️ **The before/after line** (`ShowBeforeAfter`) shows the plain bake on its left side; with the paths in the ground, that
 side shows no paths. A comparison tool for the ground, so accepted and written down.
@@ -75,8 +84,16 @@ side shows no paths. A comparison tool for the ground, so accepted and written d
 - **The shader** (`valley_terrain.gdshader`): the halo and the dirt after the green ground's brush and tuft marks (the
   track covers the marks), the snow thinned over it, the pen with the other inks over the snow and under the paper grain.
   All noise world-anchored hashes, as everywhere in the valley.
-- **The values** in `looks/valley_watercolour.tres` (`Path*`). **With the tick on the trail mesh is not drawn**; the
-  field-lane overlay (D512) is laid in `PathWorn` / `PathPacked`.
+- **The values** in `looks/valley_watercolour.tres` (`Path*`, `FieldCut*`). **With the tick on the trail mesh is not drawn**,
+  and neither is the field-lane overlay (D512) while the fields are on their layer (A126).
+- **The fields' layer (A126):** a `canvas_item` material shades everything its item draws (HANDOFF art trap 19), so the
+  crop cannot be cut on the map's own canvas item. With the painted crops, the fields — every fill as its crop's painting,
+  the edges' wash and the snow — are drawn on their own layer, a `Control` behind the map (`ShowBehindParent`), added after
+  the valley's layer, under `valley_fields.gdshader`. With the tick on the fields were already the first thing the map drew
+  (the trails are in the ground), so the order of everything else is unchanged. Laid from the same cached fills
+  (`_fieldFills`, `_fieldEdges`) whenever the map draws; nothing derived anew. ⛔ **The cut is the track's own edge to the
+  pixel:** the shader reads the valley's path field texture and computes the tile, the signed distance and the wander
+  (`at_value_noise(tile / 0.9, 130u)`) line for line as `valley_terrain.gdshader` does — change one and change the other.
 
 ## 5. Limits
 
@@ -141,3 +158,30 @@ look; mocked in-game on his year-1 village and Hollowmere (`D:\Projects\brushes\
 (the hand-over; the probe's value and look checks), `VillageMap.Watercolour.cs` (the uniform list), `ValleyWatercolourLook.cs`
 with `looks/valley_watercolour.tres` (`PathTrail`, `PathTrailFeet`; `PathPenWornShare` 0.5 → 0). Nothing in `Bclone.Sim`,
 `tests/` or `data/`. **Verified.** Renders on his year-1 village and Hollowmere, before and built (`D:\Projects\brushes\paths\paths_trail_built.jpg`); tick off byte-identical to A77 at four zooms, spring and winter (readout masked); probe 118 ✅ 0 ⛔, `painted paths:` ✅, bar 151, tile centres and new game ✅, `done.`; view build 0 warnings; suite 2024 / 0 / 5 in 16m18; goldens 418 lines; sim, data, tests identical to `main`. **Red-check:** 7 mutants, 6 red of 6 guards (the trail and the feet not handed over, the feet undeclared — red because the shader then fails to compile — the grass turned all the way, the flecks' band backwards, a foot-line off the lane); one draw-time zero written down (the trail drawn as bare dirt again) — the renders are its evidence. **Cost** not measured: one noise read and two exponentials a path pixel.
+
+**A126, 2026-11-19 — a track across a crop field (§3.7).** Joe, 2026-11-16: *"the paths on/in crop fields need to be given
+the proper styling like the rest of the paths in the game"*; 2026-11-19: *"art lane should start with the crop-field paths"*.
+The fix needed three map files from the systems lane's column of HANDOFF's table; asked first, and Joe answered through the
+coordinator: *"Yes, edit them"* — `VillageMap.cs` (`DrawWorkedGround` only), `VillageMap.Watercolour.cs`, `VillageMap.Meshes.cs`
+(untouched in the end: the overlay is still built, for the tick off, and only not drawn over the fields' layer, which is a
+`DrawWorkedGround` line). Changed: `valley_fields.gdshader` (new), `VillageMap.Watercolour.cs` (the fields' layer, its hand-over,
+the probe's half), `VillageMap.cs` (`DrawWorkedGround`: the fields to their layer, the overlay not drawn over it),
+`ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (`FieldCut` 0.7 / 1, `FieldCutPool` 0.22 / 0.06 tiles).
+Nothing in `Bclone.Sim`, `tests/` or `data/`.
+
+**Verified.** Renders on Joe's Thornfield (a copy of his Year 38 autosave, the village of his screenshots), spring and winter,
+both builds from the same save copy (`D:\Projects\brushes\paths\fields\field_paths_before_after.jpg`); the lab's made-up field first (`D:\Projects\brushes\paths\fields\lab_cut.png`). Watercolour off byte-identical to the
+build before at three zooms (only the debug readout's timing line differs, trap 29; the zooms differ from each other, trap 25).
+Probe 129 ✅ 0 ⛔ (`watercolour:` carries the fields' half), bar 183, tile centres and new game ✅, `done.`; view build 0
+warnings; suite 2119 passed / 0 failed / 5 skipped in 16m58 (renders overlapped part of it); goldens 438 lines before and after,
+`src/Bclone.Sim`, `data` and `tests` identical to `main`. **Red-check:** 9 mutants, **7 red of 7 guards**, each on its own ⛔
+(the layer not behind the map; added before the valley's; the shader not compiling; the cut not the look's; the look's cut put
+back to the old band's 0.85; the path field not handed over; the layer left showing with the tick off). **Two draw-time zeros,
+written down:** the flat overlay drawn over the cut again, and a worn track cut as hard as a packed one — the renders are their
+evidence. ⚠️ **Found in the renders, fixed before commit:** cut out to the end of the pen's fade (half its width and a pixel),
+a pale line of the ground showed between a packed track's pen and the wheat; the cut stops where the pen's ink is still full
+(a quarter of its width) — HANDOFF art trap 57.
+
+**Not done, and known:** the cut values are first values, for Joe's eyes; the before/after line's left side cuts nothing (no
+painted track there to show); GPU cost not measured (one texture read and one noise a field pixel near a track, and the fields
+drawn as before).

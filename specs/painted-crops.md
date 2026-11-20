@@ -4,6 +4,11 @@
 more crops will be unlockable, so wheat won't be the only crop image we need to create - i just want to see it now"*;
 ✅ HIS FOUR CALLS ANSWERED, ALL AS RECOMMENDED (A60): ROWS EAST–WEST VALLEY-WIDE, FIVE STAGES, UNDER THE SNOW, A SOFT WASH AT THE EDGE. 🔨 BUILT (A61, §8). ⭐ APPROVED (A62, *"approved."*); MERGED INTO `main` AT HIS WORD (A63, `299517e`) AND PUSHED (A64).** Art lane, branch `art`.
 
+**A126 (2026-11-19, on `art`):** with the watercolour on, the painted fields — paintings, edge wash and snow, exactly as
+below — are drawn on **their own layer behind the map** (`VillageMap.Watercolour.cs`, `valley_fields.gdshader`) so a worn
+track can be cut out of the crop and the valley's painted track show through (`painted-paths.md §3.7`). Nothing about how
+a crop is painted changed; tick off, the map draws the fields as ever, byte for byte.
+
 ---
 
 ## 1. What this is, and what it is not

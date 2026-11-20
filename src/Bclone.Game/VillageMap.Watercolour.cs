@@ -465,7 +465,7 @@ public partial class VillageMap
     }
 
     /// <summary>One field fill as its crop's painting, the next stage over it while the season turns. False: no painting.</summary>
-    private bool LayThePaintedCrop(Terrain stage, byte crop, Vector2[] onScreen, Vector2[] uvs, int[] indices)
+    private bool LayThePaintedCrop(Rid canvas, Terrain stage, byte crop, Vector2[] onScreen, Vector2[] uvs, int[] indices)
     {
         if (stage is not (Terrain.Field or Terrain.Sown or Terrain.Ripe))
         {
@@ -480,25 +480,25 @@ public partial class VillageMap
             return false;
         }
 
-        LayTheCrop(onScreen, uvs, indices, under, 1f);
+        LayTheCrop(canvas, onScreen, uvs, indices, under, 1f);
         if (share > 0f && to != from && TheCropPainting(crop, to) is CanvasTexture over)
         {
-            LayTheCrop(onScreen, uvs, indices, over, share);
+            LayTheCrop(canvas, onScreen, uvs, indices, over, share);
         }
 
         return true;
     }
 
-    private void LayTheCrop(Vector2[] onScreen, Vector2[] uvs, int[] indices, CanvasTexture painting, float alpha) =>
+    private static void LayTheCrop(Rid canvas, Vector2[] onScreen, Vector2[] uvs, int[] indices, CanvasTexture painting, float alpha) =>
         RenderingServer.CanvasItemAddTriangleArray(
-            GetCanvasItem(), indices, onScreen, new[] { Colors.White with { A = alpha } }, uvs, texture: painting.GetRid());
+            canvas, indices, onScreen, new[] { Colors.White with { A = alpha } }, uvs, texture: painting.GetRid());
 
     /// <summary>
     /// Over the painted fields (A61): a soft darker wash along each field's edge — pigment pooling, no ink line (Joe's
     /// call 4, after A28's <i>"the ground isn't outlined"</i>) — and, in winter, the fields' snow at the valley's own share
     /// (call 3), its painting's patchiness letting stubble show where it is thin.
     /// </summary>
-    private void DrawTheFieldsEdgesAndSnow()
+    private void DrawTheFieldsEdgesAndSnow(Rid canvas)
     {
         foreach (Vector2[] edge in _fieldEdges)
         {
@@ -509,8 +509,8 @@ public partial class VillageMap
             }
 
             onScreen[edge.Length] = onScreen[0];
-            DrawPolyline(onScreen, FieldPooling with { A = 0.10f }, Mathf.Max(2f, _pixelsPerTile * 0.16f), antialiased: true);
-            DrawPolyline(onScreen, FieldPooling with { A = 0.14f }, Mathf.Max(1f, _pixelsPerTile * 0.07f), antialiased: true);
+            RenderingServer.CanvasItemAddPolyline(canvas, onScreen, new[] { FieldPooling with { A = 0.10f } }, Mathf.Max(2f, _pixelsPerTile * 0.16f), antialiased: true);
+            RenderingServer.CanvasItemAddPolyline(canvas, onScreen, new[] { FieldPooling with { A = 0.14f } }, Mathf.Max(1f, _pixelsPerTile * 0.07f), antialiased: true);
         }
 
         // The fields whiten with the ground (A76): the snow lying from its snowfalls.
@@ -530,7 +530,7 @@ public partial class VillageMap
                     onScreen[p] = ToScreen(triangles[p]);
                 }
 
-                LayTheCrop(onScreen, uvs, indices, white, snow);
+                LayTheCrop(canvas, onScreen, uvs, indices, white, snow);
             }
         }
     }
@@ -563,6 +563,12 @@ public partial class VillageMap
         if (_watercolourLayer is not null)
         {
             _watercolourLayer.Visible = on;
+        }
+
+        // The fields' layer (A126) shows with the valley's: with the tick off the map draws the fields as it always did.
+        if (_fieldsLayer is not null)
+        {
+            _fieldsLayer.Visible = on;
         }
 
         // The flakes (A76) show only with the tick, and only while snow falls — the valley's turn of `_Draw` says when.
@@ -1166,6 +1172,7 @@ public partial class VillageMap
         layer.Draw += () => layer.DrawRect(new Rect2(Vector2.Zero, layer.Size), Colors.White);
         AddChild(layer);
         _watercolourLayer = layer;
+        BuildTheFieldsLayer(watercolour);
         BuildTheSnowfallLayer();
     }
 
@@ -1198,6 +1205,7 @@ public partial class VillageMap
 
         float split = _beforeAfter && valley.Size.X > 0f ? ((_splitShare * Size.X) - valley.Position.X) / valley.Size.X : -1f;
         material.SetShaderParameter("split_u", split);
+        HandTheFieldsTheValley(valley, config, split);
     }
 
     /// <summary>
@@ -1772,6 +1780,220 @@ public partial class VillageMap
         return false;
     }
 
+    // ---- The fields' layer (A126, `painted-paths.md §3.6`) ---------------------------------------------------------------
+
+    /// <summary>The fields' own shader: the crops, their edges and snow, with the worn tracks cut out of the crop.</summary>
+    internal const string FieldsShaderPath = "res://shaders/valley_fields.gdshader";
+
+    /// <summary>
+    /// ⭐ The fields' layer (A126): between the valley's layer and the map, built with the valley's. Joe, 2026-11-16: <i>"the
+    /// paths on/in crop fields need to be given the proper styling like the rest of the paths in the game"</i>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The valley's shader paints every track into the ground (A72, A82) — under a field too, where the crop covered it, so a
+    /// lane through the wheat was D512's flat overlay laid in the track's sand: one colour and a ruled edge, the pale band in
+    /// his screenshots. A <c>canvas_item</c> material shades everything its item draws (HANDOFF art trap 19), so the crop could
+    /// not be cut on the map's own item; the fields come here instead, under a shader that cuts the crop where a track runs,
+    /// and the valley's own painted track shows through — one track, the same on a field and off it.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The order is the map's:</b> with the tick on, the fields are the first thing the map drew (the trails are painted
+    /// into the ground, A72), so drawing them behind the map, after the valley's layer, puts nothing over or under them that
+    /// was not before. Laid when the map draws (<see cref="LayTheFields"/>), from the same cached fills — nothing derived anew.
+    /// </para>
+    /// </remarks>
+    private Control? _fieldsLayer;
+
+    /// <summary>The fields' layer's material, for the probe to ask.</summary>
+    private ShaderMaterial? _fieldsMaterial;
+
+    /// <summary>The path field the fields' layer was last handed, and whether it cut — so the field is handed over once.</summary>
+    private ImageTexture? _fieldsPathsTexture;
+    private bool _fieldsPathsOn;
+
+    /// <summary>Whether the fields are drawn on their own layer — the painted crops, and the layer built.</summary>
+    private bool FieldsOnTheirLayer => _paintedCrops && _fieldsLayer is not null;
+
+    private void BuildTheFieldsLayer(ValleyWatercolourLook look)
+    {
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>(FieldsShaderPath) };
+
+        // Off until a field is handed over: an unset field reads black, which would say "inside a track" everywhere.
+        material.SetShaderParameter("paths_on", false);
+        material.SetShaderParameter("path_field_range", new Vector2(PathFieldNear, PathFieldFar));
+        material.SetShaderParameter("path_wobble_tiles", look.PathWobbleTiles);
+        material.SetShaderParameter("field_cut", look.FieldCut);
+        material.SetShaderParameter("field_cut_pen_px", FieldCutPenPx(look));
+        material.SetShaderParameter("field_pool", look.FieldCutPool);
+        material.SetShaderParameter("field_pool_srgb", Srgb(FieldPooling));
+        _fieldsMaterial = material;
+
+        var layer = new Control
+        {
+            Name = "Fields",
+            ShowBehindParent = true,
+            MouseFilter = MouseFilterEnum.Ignore,
+            Material = material,
+        };
+        layer.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        layer.Draw += LayTheFields;
+
+        // ⛔ After the valley's layer: children behind their parent draw in their order, and the fields lie on the valley.
+        AddChild(layer);
+        _fieldsLayer = layer;
+    }
+
+    /// <summary>
+    /// How far past a packed track's edge the crop is cleared, screen pixels: half the pen's half-width, where its ink is still
+    /// full, so the pen shows beside the track and the crop meets it. ⚠️ Cut out to the pen's whole fade (A126's first value,
+    /// half-width and a pixel) and a pale line of the ground beyond it showed between the pen and the wheat.
+    /// </summary>
+    private static float FieldCutPenPx(ValleyWatercolourLook look) => 0.25f * look.InkWidthPx * look.PathPenWidthShare;
+
+    /// <summary>The valley's place and zoom to the fields' layer — the same values the valley's layer takes, each draw.</summary>
+    private void HandTheFieldsTheValley(Rect2 valley, SimConfig config, float split)
+    {
+        if (_fieldsMaterial is not ShaderMaterial material)
+        {
+            return;
+        }
+
+        material.SetShaderParameter("valley_origin_px", valley.Position);
+        material.SetShaderParameter("valley_size_px", valley.Size);
+        material.SetShaderParameter("px_per_tile", _pixelsPerTile);
+        material.SetShaderParameter("ground_map_tiles", new Vector2(config.MapWidth, config.MapHeight));
+        material.SetShaderParameter("split_u", split);
+    }
+
+    /// <summary>
+    /// The valley's path field to the fields' layer — <b>only when it is a new texture or the paths were switched</b>: the
+    /// field is baked once a network into the one texture (<c>HandThePathsOver</c>), which the material already holds.
+    /// </summary>
+    private void HandTheFieldsThePaths()
+    {
+        bool on = PathsArePainted && _pathsTexture is not null;
+        if (_fieldsMaterial is not ShaderMaterial material || (on == _fieldsPathsOn && ReferenceEquals(_pathsTexture, _fieldsPathsTexture)))
+        {
+            return;
+        }
+
+        _fieldsPathsOn = on;
+        _fieldsPathsTexture = _pathsTexture;
+        if (_pathsTexture is not null)
+        {
+            material.SetShaderParameter("path_map", _pathsTexture);
+        }
+
+        material.SetShaderParameter("paths_on", on);
+    }
+
+    /// <summary>
+    /// The fields' layer's draw (A126): every field fill as its crop's painting (the flat fill where a stage has none), then
+    /// the edges' wash and the snow — what <c>DrawWorkedGround</c> drew on the map with the painted crops, on this layer.
+    /// </summary>
+    private void LayTheFields()
+    {
+        if (_world is null || _fieldsLayer is null || !_paintedCrops)
+        {
+            return;
+        }
+
+        HandTheFieldsThePaths();
+        Rid canvas = _fieldsLayer.GetCanvasItem();
+        for (int i = 0; i < _fieldFills.Count; i++)
+        {
+            (Terrain stage, byte crop, Vector2[] triangles, Vector2[] uvs, int[] indices) = _fieldFills[i];
+            var onScreen = new Vector2[triangles.Length];
+            for (int p = 0; p < triangles.Length; p++)
+            {
+                onScreen[p] = ToScreen(triangles[p]);
+            }
+
+            if (!LayThePaintedCrop(canvas, stage, crop, onScreen, uvs, indices))
+            {
+                var colours = new Color[triangles.Length];
+                System.Array.Fill(colours, FillColourOf(stage));
+                RenderingServer.CanvasItemAddTriangleArray(canvas, indices, onScreen, colours);
+            }
+        }
+
+        DrawTheFieldsEdgesAndSnow(canvas);
+    }
+
+    /// <summary>Every uniform the map sets on the fields' layer — what its compiled shader must declare (art trap 6).</summary>
+    private static readonly string[] FieldsUniforms =
+    {
+        "valley_origin_px", "valley_size_px", "px_per_tile", "ground_map_tiles", "split_u", "paths_on", "path_map",
+        "path_field_range", "path_wobble_tiles", "field_cut", "field_cut_pen_px", "field_pool", "field_pool_srgb",
+    };
+
+    /// <summary>
+    /// The probe's half of the fields' layer, inside <c>watercolour:</c> (A126): with the tick on, a layer behind the map and
+    /// after the valley's, holding a shader that compiled and declares every uniform the map sets, the look file's values, and
+    /// the path field the valley's layer holds; the fields drawn there, the map's flat lane over them not.
+    /// </summary>
+    private void TheFieldsLayerHolds(System.Collections.Generic.List<string> faults)
+    {
+        if (_fieldsLayer is not { Visible: true, ShowBehindParent: true } layer || _fieldsMaterial is not ShaderMaterial material
+            || !ReferenceEquals(layer.Material, material))
+        {
+            faults.Add("switched on, no visible fields' layer behind the map holding its material");
+            return;
+        }
+
+        if (_watercolourLayer is null || layer.GetIndex() <= _watercolourLayer.GetIndex())
+        {
+            faults.Add($"the fields' layer is child {layer.GetIndex()}, not after the valley's ({_watercolourLayer?.GetIndex()}): the valley would cover the crops");
+        }
+
+        var declared = new System.Collections.Generic.HashSet<string>();
+        foreach (Godot.Collections.Dictionary uniform in material.Shader.GetShaderUniformList())
+        {
+            declared.Add(uniform["name"].AsString());
+        }
+
+        foreach (string uniform in FieldsUniforms)
+        {
+            if (!declared.Contains(uniform))
+            {
+                faults.Add($"valley_fields.gdshader declares no {uniform} ({declared.Count} in all; 0 is a shader that did not compile)");
+            }
+        }
+
+        ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+        if (material.GetShaderParameter("field_cut").AsVector2() != look.FieldCut
+            || material.GetShaderParameter("field_pool").AsVector2() != look.FieldCutPool
+            || !Mathf.IsEqualApprox(material.GetShaderParameter("field_cut_pen_px").AsSingle(), FieldCutPenPx(look))
+            || !Mathf.IsEqualApprox(material.GetShaderParameter("path_wobble_tiles").AsSingle(), look.PathWobbleTiles))
+        {
+            faults.Add("the fields' layer does not hold the look file's cut, pool, pen and wander");
+        }
+
+        // ⛔ The 0.85 lane was the plain band (A72 → A126): the look file must not take the crop back off a packed track.
+        if (look.FieldCut.Y < 1f || look.FieldCut.X <= 0f || look.FieldCut.X > look.FieldCut.Y)
+        {
+            faults.Add($"the look's cut {look.FieldCut} does not clear a packed track (y 1) and thin a worn one (0 < x ≤ y)");
+        }
+
+        // The valley's path field, handed over: the same texture, so the cut is the painted track's own edge.
+        if (PathsArePainted && _paintedCrops)
+        {
+            HandThePathsOver();
+            HandTheFieldsThePaths();
+            if (!material.GetShaderParameter("paths_on").AsBool()
+                || !ReferenceEquals(material.GetShaderParameter("path_map").AsGodotObject(), _pathsTexture))
+            {
+                faults.Add("the fields' layer does not hold the valley's path field");
+            }
+        }
+
+        if (!FieldsOnTheirLayer)
+        {
+            faults.Add($"with the tick on the fields are not on their layer (painted crops {_paintedCrops})");
+        }
+    }
+
     private static Vector3 Srgb(Color colour) => new(colour.R, colour.G, colour.B);
 
     /// <summary>
@@ -1861,6 +2083,9 @@ public partial class VillageMap
                 faults.Add($"valley_terrain.gdshader declares no {uniform} ({declared.Count} in all; 0 is a shader that did not compile)");
             }
         }
+
+        // The fields' layer (A126): the crops on their own layer, the tracks cut out of them.
+        TheFieldsLayerHolds(faults);
 
         GrassLook look = GrassLook.Approved;
         GrassLabTerrain terrain = GrassLabTerrain.StartingPoint;
@@ -1990,6 +2215,12 @@ public partial class VillageMap
             faults.Add("switched off, the layer still shows");
         }
 
+        // ⛔ Off, the fields are the map's again (A126): their layer hidden, the map drawing them as it always did.
+        if (_fieldsLayer is { Visible: true } || FieldsOnTheirLayer)
+        {
+            faults.Add($"switched off, the fields' layer still shows ({_fieldsLayer?.Visible}) or still takes the fields ({FieldsOnTheirLayer})");
+        }
+
         // ⛔ Off, the trees mesh as they always did: no ink at all, so not one vertex differs (A28).
         if (_canopyInkTiles != 0f)
         {
@@ -2002,7 +2233,7 @@ public partial class VillageMap
         return Said();
 
         string Said() => faults.Count == 0
-            ? $"[widths] watercolour: ✅ opens on, the layer showing (A58); on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days, the trees inked; off, as it was"
+            ? $"[widths] watercolour: ✅ opens on, the layer showing (A58); on, valley_terrain.gdshader declares all {WatercolourUniforms.Length} uniforms the map sets, every value the look files' and the palette's, the mix and the colour handed over, the line taken and dragged and nothing else, the year's snow on five days, the trees inked; the fields on their own layer after the valley's, valley_fields.gdshader declaring all {FieldsUniforms.Length} of its uniforms, the look's cut and the valley's path field handed over (A126); off, as it was, the fields the map's"
             : $"[widths] watercolour: ⛔ {string.Join("; ", faults)}";
 
         void Near(string uniform, float want)
