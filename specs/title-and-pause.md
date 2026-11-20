@@ -9,7 +9,9 @@ screen, 2026-10-05 — §2)**.
 **Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** 🔨 **D706 (2026-11-07): the speed keys 1–5 and the bar's focus rule (§5.1, §8.3)
 — ✅ played, merged and pushed (D710, Joe: *"merge and push and commit in the most logical order"*; it read *"on `claude/distracted-cori-b8df71`, unmerged, unplayed"* until D744).** View only; nothing in
 `Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
-❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). ⚠️ What
+❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). 🔨 **D805 (2026-11-20, on
+`slice/morale`): the pause screen's hitch — the save list is read when *Load…* opens, and only each save's head
+(§5.2); built, unplayed, the merge at Joe's word.** ⚠️ What
 the probe cannot press (§8): *Continue* and the backdrop from a real save, *Quit to title*, a pause-screen *Load…*,
 *Quit to desktop* — they wait for §10.5. Owner: Joe + Claude Code.
 
@@ -107,6 +109,34 @@ new-game screen's shape (`NewGameScreen`, which raises events and Main acts on t
   any `BaseButton` under it that takes focus, so a later button cannot leak quietly. **No settings option**: the cause is
   a leak, not a preference, and the option Joe offered would have been a switch for a bug. `LineEdit` and `SpinBox` keep
   focus as before (the rename box, the stock limits) — the WASD poll already yields to a focused `LineEdit` (D379).
+
+### 5.2 The save list is read when *Load…* opens, never when the pause screen does (D805, 2026-11-20)
+
+- **Why.** Joe, 2026-11-20: *"there is a hitch for a few seconds after pausing and then the villagers kind of pop
+  in"*. His log had two frames of **831 and 885 ms** (`other 828.1 · gc0 136, gc2 62`), each straight after a burst of
+  one `format N, where this build reads 13` line per old save. `OpenThePause` built *Load…*'s rows on the spot, and
+  every row was `SaveFile.ReadHeader`, which gunzipped and parsed **the whole save, the village included**, to read
+  six fields at its top. He has **439 saves in 163 village folders (7.7 MB)**; read that way they take **1.8–2.0 s**
+  on this machine with hundreds of collections (a copy, measured 2026-11-20). Space-pause never hitched — it opens
+  nothing. The villagers "pop in" because the frame froze, not because of how they walk.
+- **Two changes; either alone would have done, and each covers what the other leaves:**
+  1. **The pause screen reads no save to open.** *Load…* reads the list each time its popup is about to open
+     (`MenuButton.AboutToPopup`), so it is always today's and **D518's refill after a save goes**: the next open
+     reads afresh. With no save on disk the popup holds one greyed row, *"No saved village yet."* (the title's
+     *Continue* tooltip), where the button used to be disabled — it cannot know there are none without looking.
+  2. **`SaveFile.ReadHeader` reads the head of the file only** (`save-load.md §8`): the first 4 KB inflated, the
+     top-level members up to `"world"`. On Joe's 439: **40 ms against 1.8 s**, and every one of them reaches
+     `"world"` inside its first 16 KB, old formats included. A head that does not reach `"world"` (a header grown
+     past 4 KB, members in another order) or will not read is **read whole, as before**, so every refusal the list
+     shows is today's. The title keeps its list read up front — it needs the newest save for *Continue* and the
+     backdrop — and gets the cheap read.
+- ⚠️ **The one thing the head read changes:** a save whose JSON breaks **after** its header (cut short, garbage in
+  the village) is listed as openable, and refused in words when it is picked, its `.bad` copy kept — `Open`'s
+  refusal, one click later. The list never kept a `.bad` copy; it only greyed the row. (A save that parses but holds
+  a wrong value in its village — a key missing, a wrong type — was listed as openable before D805 too: the list
+  never read past the header's six fields.)
+- **The probe** (`pause:`, §8): opening the pause screen reads no save list; *Load…*'s popup about to open reads it
+  once; and under the probe, which lists nothing, the popup holds the greyed row.
 
 ## 6. Leaving a village — the scene is reloaded, never torn down
 

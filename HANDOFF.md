@@ -21,6 +21,19 @@
 > wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
 > re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
 > a child). ▶️ STEP 5: leaving.**
+> **✅ THE PAUSE SCREEN'S HITCH (D805, its own commit on this slice — CLAUDE.md: a bug Joe finds while a slice is open goes
+> on it; built by a side session at his ask, *"pass the pause-screen hitch to the systems track - as a new session"*).**
+> Esc read every save on disk whole to fill *Load…* (439 saves, 830 ms frames). Now *Load…* reads the list as its popup
+> opens, and `SaveFile.ReadHeader` reads each save's first 4 KB up to `"world"` (whole-file fallback, so every refusal is
+> as before): 44–62 ms on his saves. Suite 2158 / 0 / 5 of 2163 in 17m15; probe clean, bar 183. ⏸️ Joe plays it (the ⏸️ OPEN item). Morale untouched.
+> - **⛔ TRAP (D805): a frame log's `other` bucket is the shell, and a burst of per-save lines before it names the culprit.**
+>   `long: 831ms … other 828.1 · gc0 136` came straight after one `format N, where this build reads 13` line per save —
+>   the list being read. Godot keeps five `godot*.log` files and the probe writes one per run: **copy Joe's log the moment
+>   he reports a hitch**, or a few probe runs push it off the disk (the 14:57 one was gone by 15:18, measured from a copy
+>   of his saves instead).
+> - **⛔ TRAP (D805): the load list must never read a village to name it.** `ReadHeader` gunzipped and parsed the whole
+>   save for six fields; a player who keeps saves makes every list a stall. Anything listing saves goes through
+>   `ReadHeader` (the head) and is read when the list is opened, not when the screen holding it is.
 > - **⛔ TRAP (D804): a whole-village effect test needs a village that GROWS.** The shipped seed 201, unattended, bred 4
 >   children in thirty years with the longer wait and 4 without — nobody reached a second child. The fixture's three
 >   households breed six-plus in forty (`BirthdayTests`); with everyone unsettled, 13 against 19.
@@ -10640,6 +10653,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   still wait on his own word. **Act on exactly what the calls listed; ask for the rest.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
+  SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,
+  no freeze and no villagers popping in**; *Load…* opens its list (it reads his saves as it opens — a blink, not
+  seconds) and lists the save he just made; old-format saves still greyed. A save cut short now lists and is refused
+  in words when picked (`title-and-pause.md §5.2`).
 
 - ✅ **MERGED INTO `main` AND PUSHED (D785, *"Merge and push"*) from `slice/established-date` (D784; Joe's go, relayed: *"Next: add the established line"*), THE MERGE AT HIS WORD — EVERY BUILDING'S CARD SAYS WHEN IT WAS ESTABLISHED** — *"every building should have an 'Established: Spring 23, year 16' type of date in its card"*. The sim already stamps every standing thing with the tick it was raised (building condition, D554), so this is likely a card line and the founders' and free buildings' cases; its own slice after `slice/water-need` merges.
 

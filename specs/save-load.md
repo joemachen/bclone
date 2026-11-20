@@ -213,6 +213,13 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
   (`SaveReader` / `SaveWriter`, every value spelled in one place; `SaveFormatException` for damage,
   `SaveDataException` for a sound save over changed data). ⚠️ A good is saved by its **id**, never its
   enum name: a modder's good has an id and no name.
+- ⭐ **`SaveFile.ReadHeader` — the load list's read — reads the head of the file only** (D805,
+  `title-and-pause.md §5.2`): the first `HeadBytes` (4 KB) inflated, the top-level members up to `"world"`,
+  through `SaveGame.HeaderOf` as before. Reading the whole village to list it cost Joe's 439 saves 1.8 s and froze
+  the pause screen; the head costs 40 ms. **A head that does not reach `"world"`, will not read, or does not make a
+  header is read whole** — today's path — so every refusal the list shows is unchanged. ⚠️ A save whose JSON
+  breaks *after* its header (cut short) lists as openable and is refused by `Open` when picked (kept as `.bad`,
+  §7); one with a wrong value in its village always did.
 - **Each class saves itself** — `ToSave` / `FromSave` (or `ReadSave` into a fresh one) beside its fields,
   so the field and its line in the save are read together. **`SimWorld`** holds the rest: an `internal`
   `CaptureTheVillage`, an `internal static Restore`, and the constructor's one new argument — given a save,

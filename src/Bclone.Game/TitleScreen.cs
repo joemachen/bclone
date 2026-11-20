@@ -122,24 +122,49 @@ public sealed partial class TitleScreen : Control
     /// its longest line.
     /// </summary>
     /// <remarks>
-    /// ⭐ <b>It owns its list and can be refilled</b> (D518): the pause screen's stayed as it was opened, so a save
-    /// made while it was up never appeared in it — Joe saved <i>test</i> three times and saw no <i>test</i>.
+    /// ⭐ <b>It owns its list</b> (D518): the pause screen's stayed as it was opened, so a save made while it was up
+    /// never appeared in it — Joe saved <i>test</i> three times and saw no <i>test</i>. ⭐ <b>And the pause screen's
+    /// reads it only as its popup opens</b> (D805, §5.2): built when the pause screen opened, it read every save on disk
+    /// and froze Joe's game for 830 ms. Read at the popup, it is today's list every time, a fresh save included.
     /// </remarks>
     internal sealed class LoadMenu
     {
+        /// <summary>The one row a list read at the popup holds when there is no save — the title's <i>Continue</i> tooltip.</summary>
+        internal const string NoSaveYet = "No saved village yet.";
+
         private readonly List<SaveListing> _listed = new();
 
+        /// <summary>The title's: the list it was given, read up front — it needs the newest save for <i>Continue</i>.</summary>
         internal LoadMenu(IReadOnlyList<SaveListing> saves, Action<string> picked)
+            : this(picked)
+        {
+            Fill(saves);
+            Button.Disabled = _listed.Count == 0;
+        }
+
+        /// <summary>The pause screen's: nothing read until the popup is about to open, then <paramref name="read"/> each time.</summary>
+        internal LoadMenu(Func<IReadOnlyList<SaveListing>> read, Action<string> picked)
+            : this(picked)
+        {
+            Button.AboutToPopup += () => Fill(read());
+        }
+
+        private LoadMenu(Action<string> picked)
         {
             Button = new MenuButton { Text = "Load…", Flat = false };
-            Button.GetPopup().IdPressed += id => picked(_listed[(int)id].Path);
-            Fill(saves);
+            Button.GetPopup().IdPressed += id =>
+            {
+                if (id < _listed.Count)
+                {
+                    picked(_listed[(int)id].Path);
+                }
+            };
         }
 
         internal MenuButton Button { get; }
 
-        /// <summary>Every row again, from <paramref name="saves"/>.</summary>
-        internal void Fill(IReadOnlyList<SaveListing> saves)
+        /// <summary>Every row again, from <paramref name="saves"/>; with none, one greyed row that says so.</summary>
+        private void Fill(IReadOnlyList<SaveListing> saves)
         {
             _listed.Clear();
             _listed.AddRange(saves);
@@ -152,7 +177,11 @@ public sealed partial class TitleScreen : Control
                 menu.SetItemTooltip(i, _listed[i].Refusal ?? _listed[i].Path);
             }
 
-            Button.Disabled = _listed.Count == 0;
+            if (_listed.Count == 0)
+            {
+                menu.AddItem(NoSaveYet, 0);
+                menu.SetItemDisabled(0, true);
+            }
         }
     }
 

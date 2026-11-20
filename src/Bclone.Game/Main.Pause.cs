@@ -10,8 +10,11 @@ namespace Bclone.Game;
 /// </summary>
 public partial class Main
 {
-    /// <summary>The pause screen while it is up; <c>null</c> otherwise. Built fresh each time, so Load… lists today's saves.</summary>
+    /// <summary>The pause screen while it is up; <c>null</c> otherwise. Built fresh each time; Load… reads today's saves as it opens (D805).</summary>
     private PauseScreen? _pause;
+
+    /// <summary>For the probe: the pause screen's Load… (D805).</summary>
+    private TitleScreen.LoadMenu? _pauseLoad;
 
     /// <summary>The speed the pause screen found, given back on <i>Resume</i> — 4× comes back 4×, a Space-pause comes back paused.</summary>
     private double _speedBeforeThePause;
@@ -46,9 +49,12 @@ public partial class Main
 
         _pause.AddButton("Resume", () => CloseThePause(resume: true));
         _pause.AddGap();
-        var load = new TitleScreen.LoadMenu(TheSavesOnDisk(_loop.World.Config), LoadFromThePause);
-        (_pauseSave, _pauseSaid) = AddTheSaveRow(_pause.Body, () => load.Fill(TheSavesOnDisk(_loop.World.Config)));
-        _pause.Body.AddChild(load.Button);
+
+        // ⛔ D805: nothing is read from disk to open the pause screen — Load… reads the list as its popup opens. Read
+        // here, Joe's 439 saves froze the frame for 830 ms ("a hitch for a few seconds after pausing").
+        _pauseLoad = new TitleScreen.LoadMenu(() => TheSavesOnDisk(_loop.World.Config), LoadFromThePause);
+        (_pauseSave, _pauseSaid) = AddTheSaveRow(_pause.Body);
+        _pause.Body.AddChild(_pauseLoad.Button);
         _pause.AddButton("Settings", OpenSettingsFromThePause);
         _pause.AddGap();
         _pause.AddButton("Quit to title", QuitToTheTitle, notSaved ?? "Saves the village first, then the title.");
@@ -164,6 +170,7 @@ public partial class Main
 
         SetSpeed(4.0);
         string open = WhatIsOpen();
+        int listsReadBefore = _saveListsRead;
         PressAKey(Key.Escape);
         if (!ThePauseIsUp)
         {
@@ -179,6 +186,25 @@ public partial class Main
             if (!HasASaveButton(_pause!.Body))
             {
                 faults.Add("the pause screen has no Save");
+            }
+
+            // ⭐ D805: opening the pause screen reads no save — Joe's 439 froze it for 830 ms — and Load… reads them as its
+            // popup opens. Under the probe nothing is listed, so the popup holds the one greyed row.
+            if (_saveListsRead != listsReadBefore)
+            {
+                faults.Add($"opening the pause screen read the saves on disk ({_saveListsRead - listsReadBefore} time(s))");
+            }
+
+            int listsReadAtOpen = _saveListsRead;
+            _pauseLoad?.Button.EmitSignal(MenuButton.SignalName.AboutToPopup);
+            PopupMenu? saves = _pauseLoad?.Button.GetPopup();
+            if (_saveListsRead != listsReadAtOpen + 1)
+            {
+                faults.Add($"Load… opening read the saves {_saveListsRead - listsReadAtOpen} time(s), not once");
+            }
+            else if (saves is not { ItemCount: 1 } || saves.GetItemText(0) != TitleScreen.LoadMenu.NoSaveYet || !saves.IsItemDisabled(0))
+            {
+                faults.Add($"Load… with no save does not hold one greyed \"{TitleScreen.LoadMenu.NoSaveYet}\" ({saves?.ItemCount} row(s))");
             }
 
             // ⭐ D518: pressing Save says what happened, on the pause screen. Safe under the probe — nothing is
@@ -214,7 +240,7 @@ public partial class Main
 
         SetSpeed(speedBefore);
         return faults.Count == 0
-            ? "[widths] pause: ✅ Esc over a moment dismisses it and does not pause; with nothing open Esc pauses under the dim, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen, says what it did, and is not in Settings"
+            ? "[widths] pause: ✅ Esc over a moment dismisses it and does not pause; with nothing open Esc pauses under the dim, reading no save, a speed key does nothing, Esc resumes at the 4x it found; Save is on the pause screen, says what it did, and is not in Settings; Load… reads the saves once as it opens"
             : $"[widths] pause: ❌ {string.Join("; ", faults)}";
 
         void PressAKey(Key key) => _UnhandledKeyInput(new InputEventKey { Keycode = key, Pressed = true });
