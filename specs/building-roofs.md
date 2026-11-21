@@ -127,6 +127,20 @@ order, the lines laid for the zoom, a face's vertex colour its piece's × 0.8; w
 ⚠️ Draw-time only, so a render's evidence: the texture's look, the stripes, the shadows' softness, a draw site that ignored
 the tick, the lines laid again when the zoom moves.
 
+## 6a. 🔨 The windmill's sails turn while it is worked (A145)
+
+Joe, relayed by the systems lane, 2026-11-21: *"windmill definitely needs to animate, but only when it is being worked"*.
+
+- The sails are a run of their own (`TurnsWithTheSails`: cloth, lattice, edge, spar), laid with the roof, between its shadow and
+  its body, and drawn through `SailsTurned(hub, angle)`; the body and cap stay still over them. A zoom re-lays them still
+  turning (`RelaidForTheZoom`).
+- **Worked** = a miller `WorkingABatch` at the mill this tick, noted once a tick (`NoteTheFires`, as the forge's fire).
+- They gather way over 2.5 s and come to rest over 4 s, about a turn in seven seconds at speed, on the people's clock (game speed
+  capped 1.5×, still when paused). View only.
+- ⚠️ No save of his has a finished mill; filmed on a scratch hack (reverted): `D:\Projects\brushes\buildings\mill\mill_turning.gif`.
+- Probe (`indoors and smoke:`) and red-check: A145 in DESIGN §7 — 11 mutants, 9 red; two zeros written down (a mill noted as
+  worked — unseen on a living mill; the turn drawn — the film).
+
 ## 7. Not done
 
 Roofs in snow (`art-inventory.md` §5.1's gap) — the snow lies on the ground only; burning and burnt; per-kind ruins (a

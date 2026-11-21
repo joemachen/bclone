@@ -26,10 +26,19 @@ public partial class VillageMap
     /// <summary>How high a puff rises in its life, how far the wind carries it, and how big it grows, in tiles.</summary>
     private const float PuffRise = 1.6f, PuffDrift = 0.65f, PuffFrom = 0.1f, PuffTo = 0.42f;
 
-    /// <summary>The wash and its pooled edge (mock B, darkened to read on snow — measured in the A138 mock).</summary>
-    private static readonly Color PuffWash = new("#b0a89e"), PuffEdge = new("#787068");
+    /// <summary>
+    /// The wash, warm and cool, and its pooled edge — ⭐ <b>darker than A139's</b> (<c>#b0a89e</c> / <c>#787068</c>; Joe, after
+    /// play: <i>"smoke from chimnies needs a bit more watercolor touch and a bit darker"</i>, A145).
+    /// </summary>
+    internal static readonly Color PuffWarm = new("#8e857a"), PuffCool = new("#7f8189"), PuffEdge = new("#4f473f");
 
-    private Texture2D? _puff;
+    /// <summary>How many puff paintings there are — each its own edge, grain and bloom, so no two puffs in the air match (A145).</summary>
+    internal const int PuffPaintings = 4;
+
+    /// <summary>A puff painting's size in pixels.</summary>
+    internal const int PuffPixels = 96;
+
+    private Texture2D[]? _puffs;
 
     /// <summary>The workplaces with a fire lit this tick (the smithy forging, an oven baking) — kept once a tick, where the states change.</summary>
     private readonly HashSet<int> _firesLit = new();
@@ -78,6 +87,7 @@ public partial class VillageMap
     private void NoteTheFires(SimWorld world)
     {
         _firesLit.Clear();
+        _millsWorked.Clear();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -97,6 +107,12 @@ public partial class VillageMap
             {
                 _firesLit.Add(villager.WorkplaceId);
             }
+
+            // A miller grinding: the mill is worked, and its sails turn (A145).
+            if (villager.State == VillagerState.WorkingABatch && world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Miller)
+            {
+                _millsWorked.Add(villager.WorkplaceId);
+            }
         }
     }
 
@@ -109,7 +125,7 @@ public partial class VillageMap
             return;
         }
 
-        Texture2D puff = ThePuff();
+        Texture2D[] puffs = ThePuffs();
         for (int f = 0; f < held.Flues.Length; f++)
         {
             float phase = RoofHash01(held.Signature.Seed, f);
@@ -124,38 +140,86 @@ public partial class VillageMap
 
                 Vector2 at = ToScreen(held.Flues[f] + offset);
                 var size = new Vector2(2f * radius, 1.56f * radius) * _pixelsPerTile;
-                DrawTextureRect(puff, new Rect2(at - (size / 2f), size), tile: false, modulate: new Color(1f, 1f, 1f, a));
+                DrawTextureRect(puffs[(i + f) % PuffPaintings], new Rect2(at - (size / 2f), size), tile: false, modulate: new Color(1f, 1f, 1f, a));
             }
         }
     }
 
     private static float RoofHash01(int seed, int flue) => Hash01(seed, flue, 7919);
 
-    /// <summary>One puff, painted once: a soft wash with a darker pooled edge, as the game's washes pool.</summary>
-    private Texture2D ThePuff()
+    /// <summary>Pure: how far a puff painting's edge reaches at this angle (0..1 of its half-width) — three slow waves, its own.</summary>
+    internal static float PuffEdgeAt(int variant, float angle)
     {
-        if (_puff is not null)
+        float p1 = Hash01(variant, 1, 4441) * Mathf.Tau, p2 = Hash01(variant, 2, 4441) * Mathf.Tau, p3 = Hash01(variant, 3, 4441) * Mathf.Tau;
+        return 0.8f + (0.07f * Mathf.Sin((3f * angle) + p1)) + (0.045f * Mathf.Sin((5f * angle) + p2)) + (0.025f * Mathf.Sin((9f * angle) + p3));
+    }
+
+    /// <summary>The puffs, each painted once (A145): <see cref="PuffPaintings"/> of them.</summary>
+    private Texture2D[] ThePuffs()
+    {
+        if (_puffs is not null)
         {
-            return _puff;
+            return _puffs;
         }
 
-        const int n = 64;
-        var image = Image.CreateEmpty(n, n, false, Image.Format.Rgba8);
+        _puffs = new Texture2D[PuffPaintings];
+        for (int v = 0; v < PuffPaintings; v++)
+        {
+            Image image = Image.CreateFromData(PuffPixels, PuffPixels, false, Image.Format.Rgba8, PaintThePuff(v));
+            image.GenerateMipmaps();
+            _puffs[v] = ImageTexture.CreateFromImage(image);
+        }
+
+        return _puffs;
+    }
+
+    /// <summary>
+    /// ⭐ Pure: one puff painting, RGBA8, <see cref="PuffPixels"/> square (A145, <c>indoors-and-smoke.md §7b</c>) — the watercolour's
+    /// touch, as the game's other washes have it: <b>a ragged edge</b> (the outline wanders with three slow waves, its own for
+    /// each painting), <b>a pooled rim</b> where the pigment dried darkest, <b>granulation</b> (the pigment settling in the paper's
+    /// grain, a speckle at a few pixels' scale), <b>a bloom</b> (a paler patch where the water ran back), and <b>warm and cool
+    /// greys</b> drifting across it. Darker than A139's one plain disc.
+    /// </summary>
+    internal static byte[] PaintThePuff(int variant)
+    {
+        const int n = PuffPixels;
+        var rgba = new byte[n * n * 4];
+        var bloom = new Vector2(Hash01(variant, 4, 4441) - 0.5f, Hash01(variant, 5, 4441) - 0.5f) * 0.6f;
+        float drift = Hash01(variant, 6, 4441) * Mathf.Tau;
+
+        // Granulation: value noise on a 3-pixel lattice, smoothed between its corners.
+        float Grain(int x, int y)
+        {
+            int cx = x / 3, cy = y / 3;
+            float fx = (x % 3) / 3f, fy = (y % 3) / 3f;
+            float a = Hash01(cx, cy, 9001 + variant), b = Hash01(cx + 1, cy, 9001 + variant);
+            float c = Hash01(cx, cy + 1, 9001 + variant), d = Hash01(cx + 1, cy + 1, 9001 + variant);
+            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fy);
+        }
+
         for (int y = 0; y < n; y++)
         {
             for (int x = 0; x < n; x++)
             {
-                float d = new Vector2(x + 0.5f - (n / 2f), y + 0.5f - (n / 2f)).Length() / (n / 2f);
+                var p = new Vector2(x + 0.5f - (n / 2f), y + 0.5f - (n / 2f)) / (n / 2f);
+                float angle = Mathf.Atan2(p.Y, p.X);
+                float edge = PuffEdgeAt(variant, angle);
+                float d = p.Length() / edge;
                 float fill = 1f - Mathf.SmoothStep(0.72f, 1f, d);
-                float ring = Mathf.Exp(-Mathf.Pow((d - 0.8f) / 0.13f, 2f)) * (1f - Mathf.SmoothStep(0.9f, 1f, d));
-                float a = Mathf.Clamp((0.72f * fill) + (0.3f * ring), 0f, 1f);
-                Color c = PuffWash.Lerp(PuffEdge, Mathf.Clamp(ring * 0.9f, 0f, 1f));
-                image.SetPixel(x, y, c with { A = a });
+                float rim = Mathf.Exp(-Mathf.Pow((d - 0.86f) / 0.1f, 2f)) * (1f - Mathf.SmoothStep(0.94f, 1.02f, d));
+                float pale = Mathf.Exp(-(p - bloom).LengthSquared() / 0.09f);
+                float grain = 0.78f + (0.44f * Grain(x, y));
+                float pigment = Mathf.Clamp(((0.74f * fill * (1f - (0.38f * pale))) + (0.42f * rim)) * grain, 0f, 1f);
+                float tint = 0.5f + (0.5f * Mathf.Sin((p.X * 2.2f) + (p.Y * 1.4f) + drift));
+                Color wash = PuffWarm.Lerp(PuffCool, tint).Lerp(PuffEdge, Mathf.Clamp(rim * 0.95f, 0f, 1f));
+                int at = ((y * n) + x) * 4;
+                rgba[at] = (byte)Mathf.RoundToInt(wash.R * 255f);
+                rgba[at + 1] = (byte)Mathf.RoundToInt(wash.G * 255f);
+                rgba[at + 2] = (byte)Mathf.RoundToInt(wash.B * 255f);
+                rgba[at + 3] = (byte)Mathf.RoundToInt(pigment * 255f);
             }
         }
 
-        image.GenerateMipmaps();
-        _puff = ImageTexture.CreateFromImage(image);
-        return _puff;
+        return rgba;
     }
 }

@@ -10633,10 +10633,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
       the art lane's.
     - ✅ **A field stops at a building** — merged (A142, built; A144, merged at his word, not pushed; `building-yards.md §7b`);
       ⚠️ one line of `VillageMap.cs` — `slice/morale` will meet it when it takes `main`.
-    - 🔨 **being built on `art`: the windmill's sails turn while it is worked** — Joe, relayed by the systems lane: *"windmill
-      definitely needs to animate, but only when it is being worked"*. Read like A139's fires: a miller at work there.
-    - 🔨 **being built on `art`: the chimney smoke darker, with more of the watercolour in it** — Joe, relayed: *"smoke from
-      chimnies needs a bit more watercolor touch and a bit darker"* (A139's look B).
+    - 🔨 **The windmill's sails turn while it is worked — built (A145, `building-roofs.md §6a`), on `art`, not merged** — Joe,
+      relayed by the systems lane: *"windmill definitely needs to animate, but only when it is being worked"*. ⚠️ Not yet seen
+      on a real working mill — none of his saves has one; filmed on a scratch hack. ⏸️ His eyes: a mill with a miller grinding.
+    - 🔨 **The chimney smoke darker, with more watercolour — built (A145, `indoors-and-smoke.md §7b`), on `art`, not merged** —
+      Joe, relayed: *"smoke from chimnies needs a bit more watercolor touch and a bit darker"*. ⏸️ His eyes: a winter village.
     - ✅ **The 18 fps** — measured: the village log re-trimming itself every frame while its window is collapsed. Already fixed
       on `slice/morale` (D807); his fps waits on that merge.
   - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
