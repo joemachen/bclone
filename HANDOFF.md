@@ -10832,7 +10832,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   test play (`data/sim.config.json`: `contentment_thinking_of_leaving_seasons` 4 → 1, `contentment_leaving_seasons`
   8 → 2, put back after).
 
-- ⏸️ **THE NEW-VALLEY SCREEN RESTYLED — 🔨 being built on `art` (A147, 2026-11-21; Joe: *"Yes, queue it"*, *"New valley
+- ⏸️ **THE NEW-VALLEY SCREEN RESTYLED — ⭐ BUILT, PLAYED AND APPROVED ON `art` (A154, *"tested and passed. all are good."*);
+  ⏸️ THE MERGE INTO `main` IS HIS WORD (A147, 2026-11-21; Joe: *"Yes, queue it"*, *"New valley
   first"*, *"Start it"*).** The map fills the screen, one parchment panel docked right, the settings grouped (*The land*,
   *Its riches*, *Its people*), *Found a new village* the one red button. ✍️ **Specced as an amendment,
   `new-game-screen.md §12`; ⏸️ his yes and three calls before any code (§12.6):** (1) the body face, from
