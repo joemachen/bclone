@@ -393,6 +393,7 @@ public partial class Main : Control
         {
             _newGame.PoseTheLongestStats();
             _newGame.PoseTheLongestRefusal();
+            _newGame.PoseTheSmallestWindow(); // A147: the footer pinned at 1280 x 720
         }
 
         if (_newGameProbeFrames < 20)
@@ -428,6 +429,8 @@ public partial class Main : Control
         {
             faults.Add("the preview has no valley on it");
         }
+
+        faults.AddRange(_newGame.LayoutFaults()); // A147: footer, ring, panel (new-game-screen.md §12.7)
 
         GD.Print(faults.Count == 0
             ? $"[widths] new game: ✅ the column wants {wants:F0}px and has {column.Size.X:F0}, the longest refusal showing; "

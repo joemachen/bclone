@@ -12,9 +12,9 @@ AND JOE'S PLAY NOTES (D481) BUILT** — guards §8.1–8.9 red-checked; no golde
 `main` and pushed (D482, 2026-10-04); Joe replayed D481's changes and approved them all (D483,
 2026-10-04).** ⚠️ Forest cover at 0 % and 100 % founds (guarded, §8.8) but is unmeasured in play —
 information for Joe, not a gate.
-**✍️ THE RESTYLE (A147, 2026-11-21, art lane) — §12: the map fills the screen, one parchment panel docked right,
-the settings grouped. PROPOSED, NOT BUILT; ⏸️ Joe's yes and four calls (§12.6) before any code.** §3's drawing is
-today's screen until step 1 lands.
+**🔨 THE RESTYLE (A147–A148, 2026-11-21, art lane) — §12: the map fills the screen, one parchment panel docked right,
+the settings grouped. Specced A147; Joe: *"All as recommended"*; STEP 1 BUILT ON `art` (A148, §12.9), ⏸️ HIS PLAY,
+then step 2's choice (§12.5).** §3's drawing is the screen before the restyle; §12.2's is the screen now.
 Owner: Joe + Claude Code.
 
 ---
@@ -374,9 +374,11 @@ wins.**
   valley is wider than the room left of the panel, so its sides run under the panel or off the screen). Where the
   window shows past the valley's edge, the parchment shows (the theme's paper colour), never black.
 - **The camera is offset so the founding (the red ring and dot) sits in the middle of the room left of the
-  panel, never under it** — ⏸️ call 3 decides what happens when the founding is near a valley's edge.
+  panel, never under it** — ✅ call 3: the camera stops at the valley's edge, so the founding sits as near the
+  middle as the valley allows.
 - **One panel, docked right, full height, 28 % of the window** (inside Joe's 25–30 %), never narrower than its
-  widest row: the in-game window sheet (`UiLook.Panel()` — A113's painted sheet, A116/A118's inked edge, A124's
+  widest row — and never past his 30 % (the probe's line): at 1280 the widest row, *River runs* with *North-west to
+  south-east*, takes it to 371 px, 29 %: the in-game window sheet (`UiLook.Panel()` — A113's painted sheet, A116/A118's inked edge, A124's
   paper), ink words (A113), the rubric accent (`ParchmentLook.Rubric`).
 - **The rows: label left, control right**, except **Seed** and **Village name**: label above, the field the
   panel's full width (Roll beside the seed). The refusal sentence stays under the seed, in rubric ink.
@@ -388,11 +390,12 @@ wins.**
   - **Footer, pinned:** the share code + Copy; then Back, Defaults, **Found a new village**.
 
   ⭐ That order is the rows' own order (river, flow, hills, woods, stone, iron, nomads), so the screen reads in
-  the share code's order. ⏸️ Call 2 decides where a row's group is written.
+  the share code's order. ✅ Call 2: a row's group is data — `NewGameRow.Group`, `"group"` in its json.
 - **A slider's named ends** (River width's *narrow* / *wide*) sit under the slider's two ends, small, instead of
   either side of it — the panel is ~360 px at 1280, and the words beside it would leave the slider ~90 px.
-- **The sliders are skinned** in the theme (today they are Godot's grey): the track the in-game bar's painted
-  `bar-track`, the grabber an ink disc. ⚠️ This reaches the only other sliders, the grass lab's.
+- **The sliders are skinned** in the theme (today they are Godot's grey): a thin ink groove, darker where it is set,
+  and an ink disc to hold. (The in-game bar's painted `bar-track` was tried first and read as nothing on the sheet at
+  1280.) ⚠️ This reaches the only other sliders, the grass lab's.
 - **Found a new village is the one primary button:** filled rubric, paper-coloured words, larger (20 px against the
   panel's 16). **Back** and **Defaults** are the theme's quiet ink buttons.
 - **The share code** stays the panel's normal size and is cut with an ellipsis where it runs out — never shrunk;
@@ -427,7 +430,7 @@ unchanged; **(c) a hand-drawn cartographer's map** — a second painter to keep 
 changes. Whichever: stone and iron distinguishable at a glance, and every setting visibly changing the map. The bake
 is re-measured before any threading is proposed.
 
-### 12.6 ⏸️ Joe's calls before code
+### 12.6 ✅ Joe's calls — ALL AS RECOMMENDED (A148, 2026-11-21, *"All as recommended"*)
 
 1. **The body face** (§12.3) — from the sample sheet. *Recommended: Cardo* (a book face; plain capitals and lining
    figures, reads at 16 px). It is in the untracked `fonts/` folder; picked, it is copied into
@@ -438,6 +441,8 @@ is re-measured before any threading is proposed.
    words; rows gather under their heading in the rows' order; a modder's row picks its heading in its line of json,
    D477's *"a new row is a config key and a line of json, never a new screen"*); and **one line in `Main.cs`**, the
    `new game:` probe calling the screen's own layout checks (§12.7). `ValleyTexture.cs` is **not** touched in step 1.
+   ⚠️ *As built it is two lines:* the probe runs at 1280 × 800 (`project.godot`), so one line poses the screen at
+   720 high (frame 5) and the other reads its checks (frame 20).
 3. **A founding near the valley's edge** — *recommended: (a)* the camera stops at the valley's edge, so no bare
    paper ever shows; the founding then sits as near the middle as the valley allows (the probe checks its ring stays left of the panel).
    **(b)** always the exact middle, and a band of plain parchment shows past the valley's edge when the founding
@@ -448,12 +453,15 @@ is re-measured before any threading is proposed.
 
 - **Unit (`NewGameScreenTests`):** the strip's sentence — a W–E river, *any* resolved and named as the seed's
   choice, no river; the shipped rows' groups in order (land: river, flow, hills; riches: woods, stone, iron;
-  people: nomads); **an old share code** (today's exact text, pinned) loads the same settings and the same
-  `GoldenMapHash` after the restyle.
+  people: nomads); **an old share code** (today's exact text, pinned) loads the same settings and the same map
+  hash after the restyle (its own pinned hash, `OldCodesMapHash` — the same with every group stripped, so the
+  headings are display only).
 - **Probe, `new game:`** keeps its claim (the panel ends inside the window, the longest refusal showing, a preview
-  baked) and adds: at 1280 × 720 the footer's *Found* button is wholly on screen with the settings scrolled to
-  their top; the founding's ring lies wholly left of the panel; and the share code's box is not wider than the
-  panel. `bar height` stays 183, `done.` printed.
+  baked) and adds (`NewGameScreen.LayoutFaults`): at 1280 × 720 the footer's *Found* button is wholly on screen
+  with the settings scrolled to their top, and not inside the scroll; the founding's ring, under the camera the map
+  was placed with, lies wholly left of the panel; a founding at the valley's east edge would be marked left of it
+  too; and the panel is no wider than 30 % (the share code never widens it). `bar height` stays 183, `done.`
+  printed.
 
 ### 12.8 Not followed from the mockup, and why
 
@@ -468,3 +476,41 @@ is re-measured before any threading is proposed.
   until one is painted.
 - **The small share code** — normal size, cut with an ellipsis (Joe: never shrink it).
 - **The two-line *Default settings*** — one word, *Defaults* (Joe's rename).
+
+### 12.9 🔨 Step 1 as built (A148, 2026-11-21; Joe: *"All as recommended"*), ⏸️ his play
+
+- **`NewGameScreen.cs`**, its layout rewritten; every handler (Roll, Copy, Back, Defaults, Found, the seed box, the
+  rows) is as it was, and every rule still the sim's. The map: the bake at 8 px a tile in a `TextureRect` placed by
+  `Camera` — the valley's height fills the window (9 px a tile at 1280 × 720), the founding moved to the middle of
+  the room left of the panel and stopped at the valley's edge. The ring is drawn under the camera the map was placed
+  with (`RingOfTheFounding`), so a camera bug cannot leave the ring on the right spot and the map on the wrong one.
+  Nothing is placed per frame: `PlaceEverything` runs on a resize and when the valley or the strip's words change.
+- **The panel:** `UiLook.Panel()`, 28 % (371 px at 1280, 29 %: *River runs* with *North-west to south-east* is the
+  widest row), a scroll between the title and the pinned footer; one label column across every group (measured once
+  the panel is in the tree — before that a label measures in the default face). The village name's placeholder (the
+  seed's own name) is inked like a caption; the theme's hint was near-invisible on the field.
+- **The sim:** `NewGameRow.Group` (`"group"`), set on the seven shipped rows; `NewGame.Describe`, the strip's
+  sentence. Display only — the share code, `Apply` and the generator are untouched.
+- **The theme (`ParchmentLook.NewValley`):** `backdrop` (the paper base `#e8dbc3`), `reading_font` (Cardo, copied
+  with its OFL into `fonts/Cardo/`), `blackletter`, the `PrimaryButton` variation (rubric fill, paper words 6.4 : 1,
+  8.5 held; 20 px), and the sliders (an ink groove, an ink disc grip). `UiLook.ReadingFace` / `Blackletter` /
+  `PrimaryButton`; on slate each is null or unnamed, so the screen falls back to today's look.
+- **`Main.cs`, two lines** (§12.6): `PoseTheSmallestWindow()` at frame 5, `LayoutFaults()` read at frame 20.
+- **The bake, re-measured** (the probe, beside the suite): **408–650 ms** a bake (the spec's ~320 was with the
+  harness running). Unchanged code; it is the number step 2 starts from.
+- **Guards, red-checked (D326), one mutant at a time:**
+
+  | Mutant | Reds |
+  |---|---|
+  | the strip's *(the seed's choice)* dropped | **2** (`TheStripSaysWhatTheValleyHas`, `UnderAnyTheStripNamesTheSeedsCourse`) |
+  | the strip names the setting's course, not the valley's | **2** |
+  | *Forest cover* under *The land* | **1** (`TheRowsGatherUnderTheirHeadingsInTheShareCodesOrder`) |
+  | the share code's separator `,` → `;` | **3** (the old-code test among them, alone: 1) |
+  | *Hilly* 200 → 190 (the generator moves) | **2** (the old-code test among them, alone: 1) |
+  | probe: the footer inside the scroll | **1** line — *"Found scrolls with the settings"*, *"Found runs 743–783px in a 720px window"* |
+  | probe: the camera centres on the whole window, not the room | **1** — *"a founding at the valley's east edge is marked at 1022px, under the panel at 909"* |
+  | probe: the share code's `ClipText` removed | **0** — written down: `TrimEllipsis` alone already lets the label narrow, so the clip is belt and braces |
+  | probe: the share code's clip and ellipsis both removed | **1** — *"the panel is 805px, past 384 (30%)"* |
+
+- **Renders** (outside git): `D:\Projects\brushes\ui\new-valley\step1-1280-*.png`, `step1-1920-*.png` — the
+  shipped seed and an *Any* code, at 1280 × 720 and 1920 × 1080.

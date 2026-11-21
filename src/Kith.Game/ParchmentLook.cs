@@ -121,8 +121,94 @@ internal static class ParchmentLook
         // The roster's column titles (Name, Age, Trade) are headers too (A121, Joe: "Yes, headers").
         theme.SetFont("title_button_font", "Tree", header);
 
+        NewValley(theme);
         DefaultTypes(theme);
         return theme;
+    }
+
+    /// <summary>
+    /// ⭐ The new-valley screen's own parts (A147, `new-game-screen.md §12`): the paper under the map, the faces, and the
+    /// one filled button. Named roles, so on slate the screen asks for them and gets today's look.
+    /// </summary>
+    private static void NewValley(Theme theme)
+    {
+        string t = UiLook.Type;
+
+        // The floor where the window shows past the valley's edge: the sheets' paper base (A124), never black.
+        theme.SetStylebox("backdrop", t, new StyleBoxFlat { BgColor = Paper });
+
+        // Joe's pick (A147, "All as recommended"): the words in Cardo, a book face that reads at 16 px — plain capitals,
+        // lining figures; Grenze Gotisch, the game's body face, on the title and the three headings only. This screen
+        // only: the game's windows keep A120's pair. SIL OFL, its licence in fonts/Cardo/.
+        theme.SetFont("reading_font", t, GD.Load<FontFile>("res://fonts/Cardo/Cardo-Regular.ttf"));
+        theme.SetFont("blackletter", t, theme.DefaultFont);
+
+        // The one primary button: filled rubric, paper words (6.4 : 1 on the rubric, 8.5 held), larger than the panel's 16.
+        theme.SetTypeVariation(UiLook.PrimaryButton, "Button");
+        foreach ((string state, Color fill) in new[]
+        {
+            ("normal", Rubric), ("hover", Rubric.Lightened(0.08f)), ("pressed", RubricInk), ("hover_pressed", RubricInk),
+            ("disabled", Rubric with { A = 0.45f }), ("focus", Rubric),
+        })
+        {
+            var box = new StyleBoxFlat { BgColor = fill, BorderColor = RubricInk, ContentMarginLeft = 16, ContentMarginRight = 16 };
+            box.ContentMarginTop = 6;
+            box.ContentMarginBottom = 6;
+            box.SetBorderWidthAll(1);
+            box.SetCornerRadiusAll(3);
+            theme.SetStylebox(state, UiLook.PrimaryButton, state == "focus" ? new StyleBoxEmpty() : box);
+        }
+
+        foreach (string colour in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })
+        {
+            theme.SetColor(colour, UiLook.PrimaryButton, PaperWords);
+        }
+
+        theme.SetColor("font_disabled_color", UiLook.PrimaryButton, PaperWords with { A = 0.7f });
+        theme.SetFontSize("font_size", UiLook.PrimaryButton, 20);
+
+        // ---- the sliders (today Godot's grey): a thin ink groove, darker where it is set, an ink disc to hold ----
+        // (The bar's painted groove was tried first and read as nothing on the sheet at 1280.) ⚠️ Reaches the only other
+        // sliders, the grass lab's (§12.2).
+        theme.SetStylebox("slider", "HSlider", Groove(Ink with { A = 0.28f }));
+        theme.SetStylebox("grabber_area", "HSlider", Groove(Ink with { A = 0.7f }));
+        theme.SetStylebox("grabber_area_highlight", "HSlider", Groove(Ink with { A = 0.7f }));
+        theme.SetIcon("grabber", "HSlider", InkDisc(Ink));
+        theme.SetIcon("grabber_highlight", "HSlider", InkDisc(RubricInk));
+    }
+
+    private static StyleBoxFlat Groove(Color ink)
+    {
+        var groove = new StyleBoxFlat { BgColor = ink, ContentMarginTop = 1.5f, ContentMarginBottom = 1.5f };
+        groove.SetCornerRadiusAll(2);
+        return groove;
+    }
+
+    /// <summary>The paper base the sheets are painted on (A124, `#e8dbc3`).</summary>
+    internal static readonly Color Paper = new("#e8dbc3");
+
+    /// <summary>Words on the rubric: the paper, a touch lighter.</summary>
+    private static readonly Color PaperWords = new("#f6ecd8");
+
+    /// <summary>A slider's grip: a 14 px disc of ink, its edge softened over a pixel, a paper glint off-centre.</summary>
+    private static ImageTexture InkDisc(Color ink)
+    {
+        const int size = 14;
+        var image = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
+        var centre = new Vector2((size - 1) / 2f, (size - 1) / 2f);
+        float radius = (size / 2f) - 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float d = new Vector2(x, y).DistanceTo(centre);
+                float a = Mathf.Clamp(radius - d + 0.5f, 0f, 1f);
+                Color c = new Vector2(x, y).DistanceTo(centre - new Vector2(2f, 2f)) < 1.6f ? ink.Lerp(Paper, 0.35f) : ink;
+                image.SetPixel(x, y, c with { A = a });
+            }
+        }
+
+        return ImageTexture.CreateFromImage(image);
     }
 
     /// <summary>What a theme alone restyles: the controls the game makes and never skins itself.</summary>

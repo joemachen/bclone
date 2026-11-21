@@ -26,6 +26,14 @@ public sealed record NewGameRow
     [JsonPropertyName("label")]
     public string Label { get; init; } = string.Empty;
 
+    /// <summary>
+    /// The heading the screen puts the row under, in the heading's own words — <c>"The land"</c> (A147,
+    /// `new-game-screen.md §12.2`). Rows gather under their heading in the rows' order; a row with none goes
+    /// after the last heading, unheaded. Display only: the share code is the rows' order, whatever their group.
+    /// </summary>
+    [JsonPropertyName("group")]
+    public string Group { get; init; } = string.Empty;
+
     /// <summary><c>range</c>, <c>scale</c> or <c>levels</c>.</summary>
     [JsonPropertyName("kind")]
     public string Kind { get; init; } = NewGame.RangeKind;
@@ -149,13 +157,13 @@ public static class NewGame
     {
         new NewGameRow
         {
-            Id = "river", Label = "River width", Kind = RangeKind,
+            Id = "river", Label = "River width", Group = "The land", Kind = RangeKind,
             Keys = new[] { "river_width_tiles" }, Min = 0, Max = 6, Step = 1, Unit = " tiles",
             MinLabel = "narrow", MaxLabel = "wide",
         },
         new NewGameRow
         {
-            Id = "flow", Label = "River runs", Kind = LevelsKind,
+            Id = "flow", Label = "River runs", Group = "The land", Kind = LevelsKind,
             Levels = new[]
             {
                 Level("we", "West to east", ("river_course", "\"we\"")),
@@ -169,7 +177,7 @@ public static class NewGame
         // a row of its own. Scales the hills, not the bowl down to the river; Rolling is the shipped file's 100.
         new NewGameRow
         {
-            Id = "hills", Label = "Hilliness", Kind = LevelsKind,
+            Id = "hills", Label = "Hilliness", Group = "The land", Kind = LevelsKind,
             Levels = new[]
             {
                 Level("gentle", "Gentle", ("hill_scale_percent", "50")),
@@ -179,12 +187,12 @@ public static class NewGame
         },
         new NewGameRow
         {
-            Id = "woods", Label = "Forest cover", Kind = RangeKind,
+            Id = "woods", Label = "Forest cover", Group = "Its riches", Kind = RangeKind,
             Keys = new[] { "forest_coverage_percent" }, Min = 0, Max = 100, Step = 5, Unit = "%",
         },
         new NewGameRow
         {
-            Id = "stone", Label = "Stone", Kind = LevelsKind,
+            Id = "stone", Label = "Stone", Group = "Its riches", Kind = LevelsKind,
             Levels = new[]
             {
                 Level("sparse", "Sparse", ("stone_seam_count", "4"), ("extra_stone_seams", "6"), ("scattered_stone_seams", "6")),
@@ -194,7 +202,7 @@ public static class NewGame
         },
         new NewGameRow
         {
-            Id = "iron", Label = "Iron", Kind = LevelsKind,
+            Id = "iron", Label = "Iron", Group = "Its riches", Kind = LevelsKind,
             Levels = new[]
             {
                 Level("sparse", "Sparse", ("iron_seam_count", "2"), ("extra_iron_seams", "0"), ("scattered_iron_seams", "1")),
@@ -206,7 +214,7 @@ public static class NewGame
         // travels in the share code; in play the village's own tick (Settings → How the village runs) takes over.
         new NewGameRow
         {
-            Id = "nomads", Label = "Nomads", Kind = LevelsKind,
+            Id = "nomads", Label = "Nomads", Group = "Its people", Kind = LevelsKind,
             Levels = new[]
             {
                 Level("on", "Come to the valley", ("nomads_enabled", "true")),
@@ -644,6 +652,39 @@ public static class NewGame
                 + World.MapGenerator.ScatteredSeamsOf(config, config.Seed, World.Terrain.IronDeposit).Count,
             iron,
             World.MapGenerator.CourseOf(config, config.Seed));
+    }
+
+    /// <summary>
+    /// ⭐ The new-game screen's summary strip, in words (A147, `new-game-screen.md §12.4`): what
+    /// <see cref="Summarise"/> read off the generated valley — never the settings restated. When the river's
+    /// course was left to the seed (<c>river_course</c> <c>any</c>) it names the way the seed chose, and says
+    /// it was the seed's.
+    /// </summary>
+    public static string Describe(SimConfig config, ValleySummary summary)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        ArgumentNullException.ThrowIfNull(summary);
+
+        string river;
+        if (config.RiverWidthTiles == 0)
+        {
+            river = "No river";
+        }
+        else
+        {
+            string runs = summary.Course switch
+            {
+                "ns" => "north to south",
+                "nwse" => "north-west to south-east",
+                "swne" => "south-west to north-east",
+                _ => "west to east",
+            };
+            string whose = config.RiverCourse == "any" ? " (the seed's choice)" : string.Empty;
+            river = $"River {config.RiverWidthTiles} wide, {runs}{whose}";
+        }
+
+        return $"Wooded {summary.WoodedPercent}% of the land · Stone {summary.StoneSeams} seams, {summary.StoneTiles} tiles · "
+            + $"Iron {summary.IronSeams} seams, {summary.IronTiles} tiles · {river}";
     }
 
     private static JsonObject Serialise(SimConfig config) =>
