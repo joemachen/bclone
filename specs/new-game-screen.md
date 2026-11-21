@@ -563,3 +563,15 @@ over it, not a second painter — but **the game's own map**, so the preview is 
     without `IsAPreview` **1**, watercolour left off **1**. ⚠️ *"No people, buildings or cart"* and *"no keys"* have
     no probe line — a fresh founding's founders stand at the cart, and nothing headless types into the box; held by
     the renders (`D:\Projects\brushes\ui\new-valley\step2-*.png`) and his play.
+- **⛔ A151 — Joe's crash, and its cause** (*"dragging the river width bar crashed it"*: `gchandle.is_released()`, then a
+  null look at `VillageMap.Watercolour.cs:1033`). `GrassLook.Approved` and `GrassLabTerrain.StartingPoint` loaded their
+  C#-scripted resource afresh on every call and kept nothing. Play builds its watercolour once, so it hardly ever
+  mattered; a preview map per valley loads both every time, and the collector could take a look Godot's cache still
+  named — the next load came back null, and the finaliser killed the game. **Fixed as `ValleyWatercolourLook.Current`
+  already was:** each loaded once and kept for the game's life (`GrassLook.cs`, `GrassLabTerrain.cs`, the art lane's).
+  Nothing writes to either; the lab's Reset reads its file by its own path. **Guard:** `new game:` makes twenty
+  previews in a row with the collector run between them and not waited for. **Reds:** with the terrain look loaded
+  and dropped again the probe **died** at `Watercolour.cs:1048`; with the grass look, green on the first run and
+  **died at 1033** (Joe's own line) on the second, so the race is a race, and a crash is the red. A weak-reference
+  check that the looks survive a collection scored **0** both times; kept, its zero in its comment. Joe's crash did
+  not reproduce by dragging (120 drags in a window); the probe's pose found it in seconds.

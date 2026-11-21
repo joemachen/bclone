@@ -225,6 +225,52 @@ public sealed partial class NewGameScreen : Control
         }
 
         faults.AddRange(SeedBoxFaults());
+        faults.AddRange(ManyValleysFaults());
+        return faults;
+    }
+
+    /// <summary>
+    /// ⛔ Joe's crash (A151, *"dragging the river width bar crashed it"*): a preview map made for every valley loaded the
+    /// grass looks afresh each time and dropped them, and the collector finalised a look Godot had already freed —
+    /// <c>gchandle.is_released()</c>, then a null look. Twenty previews in a row, the collector run between each and not waited for; the probe
+    /// dies here if it comes back.
+    /// </summary>
+    private List<string> ManyValleysFaults()
+    {
+        var faults = new List<string>();
+        if (_previewWorld is not { } world)
+        {
+            return faults;
+        }
+
+        // Collected but NOT waited for: the next preview's load lands while the last look's wrapper is gone and its
+        // finaliser still pending — the window Joe's drag fell into.
+        for (int i = 0; i < 20; i++)
+        {
+            ShowTheValley(world);
+            GC.Collect();
+        }
+
+        GC.WaitForPendingFinalizers();
+
+        if (_valleyMap is null || !_valleyMap.WatercolourShown)
+        {
+            faults.Add("twenty previews in a row left no watercolour map");
+        }
+
+        // The fix itself (A151): the looks every preview loads are kept, so the collector cannot take them from Godot's
+        // cache. Held only weakly here; collected and finalised; still alive. ⚠️ This line scored ZERO red-checked (D326):
+        // with either look loaded and dropped again it stayed green — something else keeps the wrapper alive this long.
+        // The twenty previews above are what caught it: each break killed the probe at Joe's own line.
+        WeakReference[] looks = { new(GrassLook.Approved), new(GrassLabTerrain.StartingPoint) };
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        if (!looks[0].IsAlive || !looks[1].IsAlive)
+        {
+            faults.Add($"the grass look{(looks[0].IsAlive ? string.Empty : " (approved)")}{(looks[1].IsAlive ? string.Empty : " (terrain)")} was collected — the next load can come back null and the finaliser crash the game");
+        }
+
         return faults;
     }
 

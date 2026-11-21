@@ -111,7 +111,16 @@ public sealed partial class GrassLabTerrain : Resource
     internal static readonly string[] TextureAntiTilings = { "Off", "Hex" };
 
     /// <summary>The options, from their file.</summary>
-    internal static GrassLabTerrain StartingPoint => GD.Load<GrassLabTerrain>(LabPath);
+    /// <remarks>
+    /// ⛔ <b>Loaded once and kept for the life of the game</b> (A151), as <see cref="GrassLook.Approved"/> and <see cref="ValleyWatercolourLook.Current"/> are. A
+    /// C#-scripted resource loaded afresh and dropped can be collected while Godot's cache still names it: the next load
+    /// came back null and the collector's finaliser killed the game (<c>gchandle.is_released()</c>) — Joe's crash dragging
+    /// a new valley's river (every preview map loads the looks), and one probe run in ten (trap 68). Nothing writes to it;
+    /// the lab's Reset reads the file by its own path.
+    /// </remarks>
+    internal static GrassLabTerrain StartingPoint => _startingPoint ??= GD.Load<GrassLabTerrain>(LabPath);
+
+    private static GrassLabTerrain? _startingPoint;
 
     /// <summary>The options as a list like Joe's, to follow the look's on <i>Copy current values</i>.</summary>
     internal string Say()

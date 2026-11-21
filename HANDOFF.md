@@ -10733,6 +10733,14 @@ this one's — read the command line (`Get-CimInstance Win32_Process`) before ki
 next nine runs (two of them beside the suite) were clean. Not traced: the run that died had the new slider styles
 and the ink-disc `ImageTexture` (which the grass lab's sliders now wear), so **if it comes back, suspect a theme
 resource made in C# and dropped**. Re-run once before believing a red, and never report a crashed run as a pass.
+*(Found, A151: it was exactly that — `GrassLook.Approved` and `GrassLabTerrain.StartingPoint` loaded and dropped on every
+call; Joe hit it dragging the new valley's river. Now kept, as `ValleyWatercolourLook.Current` was.)*
+(69) **A C#-scripted `Resource` must be held, never re-`GD.Load`ed and dropped** (A151): the collector can take its
+wrapper while Godot's cache still names it, and the next load returns null, then the finaliser kills the game
+(`gchandle.is_released()`, exit 132). It hid for months because play loads each look once. Keep it in a static
+(`_x ??= GD.Load<T>(path)`). **A crash that needs the collector at the wrong moment is reproduced by a tight loop with
+`GC.Collect()` between steps and NOT `WaitForPendingFinalizers`** — waiting closes the window; 120 real drags never
+hit it, twenty looped previews did within seconds. And it is a race: one mutant run green, the next died.
 **Also paid for:** a reverse mutation whose text appears twice is refused (`mutate.py` counts) and the mutant stays in —
 twice today. Check `git diff --stat` after every restore, and write mutants whose *reverse* text is unique too.
 
@@ -10845,6 +10853,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   **`main`'s play notes (D814–D820) taken into `art` (`dc4167c`, clean):** suite 2182 / 0 / 5 of 2187 in 17 m 28 s;
   view build 0 warnings; probe 137 ✅ 0 ⛔, bar 183, new game ✅, `done.`; goldens 448 = `main`'s 447 + the old code's
   pin. The preview read 3.6 s beside the suite (2.0 s alone).
+  **His play: *"dragging the river width bar crashed it"*** — 🔨 **fixed (A151):** the two grass looks were loaded
+  afresh and dropped by every preview map, and the collector took one Godot still named (trap 69). ⏸️ His play again.
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **ALL SEVEN BUILT (D814–D818), PLAYED, APPROVED AND MERGED INTO `main` (D819, *"Looks right, merge"*);
   not pushed** (Joe 2026-11-21: *"Then the play notes"*). ✅ *"maybe children / in school"* on the top bar (note

@@ -83,7 +83,16 @@ public sealed partial class GrassLook : Resource
     public float MixWidthTiles { get; set; }
 
     /// <summary>The approved look, from its file.</summary>
-    internal static GrassLook Approved => GD.Load<GrassLook>(ApprovedPath);
+    /// <remarks>
+    /// ⛔ <b>Loaded once and kept for the life of the game</b> (A151), as <see cref="ValleyWatercolourLook.Current"/> is. A
+    /// C#-scripted resource loaded afresh and dropped can be collected while Godot's cache still names it: the next load
+    /// came back null and the collector's finaliser killed the game (<c>gchandle.is_released()</c>) — Joe's crash dragging
+    /// a new valley's river (every preview map loads the looks), and one probe run in ten (trap 68). Nothing writes to it;
+    /// the lab's Reset reads the file by its own path.
+    /// </remarks>
+    internal static GrassLook Approved => _approved ??= GD.Load<GrassLook>(ApprovedPath);
+
+    private static GrassLook? _approved;
 
     /// <summary>
     /// The look as Joe writes it — the same list he approved, so a set copied from the lab can be pasted straight back.
