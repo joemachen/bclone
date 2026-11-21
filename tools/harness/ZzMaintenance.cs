@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D552's MEASUREMENT HARNESS for building condition and maintenance (specs/building-condition.md §8) — kept in
-// tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit. Never
+// tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit. Never
 // committed under tests/.
 //
 //   ZZM — one line per village per sampled year (5, 10, 20, 30, 40, 50): the people alive, every standing
@@ -30,7 +30,7 @@ public sealed class ZzMaintenance
     public void Standing(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        var sink = new Bclone.Sim.Logging.InMemoryLogSink(Bclone.Sim.Logging.LogLevel.Info);
+        var sink = new Kith.Sim.Logging.InMemoryLogSink(Kith.Sim.Logging.LogLevel.Info);
         SimLoop loop = SimFactory.CreatePhase0(config, sink);
         SimWorld world = loop.World;
         int narrated = 0, mended = 0, fellIn = 0;

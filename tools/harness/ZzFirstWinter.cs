@@ -1,17 +1,17 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D515's MEASUREMENT — the first-winter firewood race. Kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
 //
-//   cp tools/harness/ZzFirstWinter.cs tests/Bclone.Sim.Tests/
-//   dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzFirstWinter --logger "console;verbosity=detailed"
-//   rm tests/Bclone.Sim.Tests/ZzFirstWinter.cs
+//   cp tools/harness/ZzFirstWinter.cs tests/Kith.Sim.Tests/
+//   dotnet test tests/Kith.Sim.Tests -c Release --filter ZzFirstWinter --logger "console;verbosity=detailed"
+//   rm tests/Kith.Sim.Tests/ZzFirstWinter.cs
 //
 // Arms: `everyfix` is FoodConservationTests' founding (fixture config, no limits, lodge + fishery + farm
 // raised free at t0); `every` is the same on the shipped config and starting limits; `played` is
@@ -30,7 +30,7 @@ public sealed class ZzFirstWinter
     public void Measure(string arm, ulong seed)
     {
         SimConfig config = (arm == "everyfix" ? VillageFixtures.Village : ShippedConfig.Load()) with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         if (arm != "everyfix")
         {

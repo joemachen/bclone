@@ -1,19 +1,19 @@
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D619's MEASUREMENT — the doors spec's premise (`specs/doors.md §3`). Kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit (D420).
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit (D420).
 // For every standing building on a folder of saves: the tile in front of its facing (the house's own door rule,
 // `PlotShape`: centre + (0, −(H/2 + ½)) turned by the facing) — is it walkable, unbuilt, unwalled, reached from the
 // village; if not, is another side open; and how far is it against today's walk to the building itself (from the
 // first home or the founding site)? A building that is both a workplace and a store is counted once.
 // Run: copy the saves to a scratch folder (never read Joe's own folder in place), cp this in, then
-//   ZZ_SAVES=<folder> dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzDoors" --logger "console;verbosity=detailed"
+//   ZZ_SAVES=<folder> dotnet test tests/Kith.Sim.Tests -c Release --filter "FullyQualifiedName~ZzDoors" --logger "console;verbosity=detailed"
 // One ZZD line a save, one ZZD-B line a blocked front.
 public sealed class ZzDoors
 {

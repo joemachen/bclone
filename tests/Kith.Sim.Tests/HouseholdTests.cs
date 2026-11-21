@@ -1,0 +1,162 @@
+using Kith.Sim.Core;
+using Kith.Sim.Config;
+using Kith.Sim.Systems;
+using Kith.Sim.World;
+using Xunit;
+
+namespace Kith.Sim.Tests;
+
+public sealed class HouseholdTests
+{
+    /// <summary>
+    /// A config that actually has a childhood. Phase 0's fixture is able-bodied
+    /// from birth by design, so it is the wrong yardstick for life stages.
+    /// </summary>
+    private static SimConfig Config => Phase0Fixtures.Plenty with { AdultAge = 15 };
+
+    private static Household NewHousehold() => new()
+    {
+        Stockpile = new Stockpile(Stockpile.Kinds),
+        Id = 1,
+        Surname = "Thatcher",
+        HomePosition = Point.CentreOf(new GridPos(0, 0)),
+    };
+
+    [Fact]
+    public void MembersAreKeptSortedRegardlessOfInsertionOrder()
+    {
+        // Membership order is iteration order, and iteration order is part of the
+        // determinism contract. "Who eats first" must not depend on who moved in
+        // first (spec §4b).
+        var a = NewHousehold();
+        var b = NewHousehold();
+
+        foreach (int id in new[] { 7, 2, 9, 4 })
+        {
+            a.AddMember(id);
+        }
+
+        foreach (int id in new[] { 9, 4, 2, 7 })
+        {
+            b.AddMember(id);
+        }
+
+        Assert.Equal(new[] { 2, 4, 7, 9 }, a.MemberIds);
+        Assert.Equal(a.MemberIds, b.MemberIds);
+    }
+
+    [Fact]
+    public void AddingTheSameMemberTwiceIsANoOp()
+    {
+        var household = NewHousehold();
+        household.AddMember(3);
+        household.AddMember(3);
+
+        Assert.Single(household.MemberIds);
+    }
+
+    [Fact]
+    public void RemovingAMemberKeepsTheRestSorted()
+    {
+        var household = NewHousehold();
+        foreach (int id in new[] { 1, 2, 3, 4 })
+        {
+            household.AddMember(id);
+        }
+
+        Assert.True(household.RemoveMember(2));
+        Assert.Equal(new[] { 1, 3, 4 }, household.MemberIds);
+    }
+
+    [Fact]
+    public void FoodIsHeldPerHouseholdNotShared()
+    {
+        // The asymmetry decision D14 exists to create: one family can starve
+        // beside a thriving neighbour.
+        var poor = NewHousehold();
+        var rich = new Household { Id = 2, Surname = "Fletcher", HomePosition = Point.CentreOf(new GridPos(9, 0)), Stockpile = new Stockpile(Stockpile.Kinds) };
+
+        rich.Stockpile.Add(Goods.Produce, 80);
+
+        Assert.Equal(0, poor.Stockpile[Goods.Produce]);
+        Assert.Equal(80, rich.Stockpile[Goods.Produce]);
+    }
+
+    // ---------------------------------------------------------------
+    //  Life stages
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void ChildhoodIsAnAgeGate()
+    {
+        Assert.Equal(LifeStage.Child, AgeingSystem.StageForAge(0, 100, Config));
+        Assert.Equal(LifeStage.Child, AgeingSystem.StageForAge(Config.AdultAge - 1, 100, Config));
+        Assert.Equal(LifeStage.Adult, AgeingSystem.StageForAge(Config.AdultAge, 100, Config));
+    }
+
+    [Fact]
+    public void ElderhoodTracksVigourNotASecondAgeThreshold()
+    {
+        // "Elder" must mean the same thing as the frailty already on screen, or the
+        // UI ends up with two definitions of old that can disagree.
+        Assert.Equal(LifeStage.Adult, AgeingSystem.StageForAge(40, 100, Config));
+        Assert.Equal(LifeStage.Adult, AgeingSystem.StageForAge(40, AgeingSystem.FrailThreshold + 1, Config));
+        Assert.Equal(LifeStage.Elder, AgeingSystem.StageForAge(40, AgeingSystem.FrailThreshold, Config));
+    }
+
+    [Fact]
+    public void AFrailChildIsStillAChild()
+    {
+        // Age wins over vigour: a young villager cannot be an elder.
+        Assert.Equal(LifeStage.Child, AgeingSystem.StageForAge(5, 55, Config));
+    }
+
+    [Fact]
+    public void OnlyNonChildrenCanWork()
+    {
+        var child = new Villager
+        {
+            Id = 1, Name = "Tam", LifespanYears = 45, LifeStage = LifeStage.Child,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var adult = new Villager
+        {
+            Id = 2, Name = "Bess", LifespanYears = 45, LifeStage = LifeStage.Adult,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var elder = new Villager
+        {
+            Id = 3, Name = "Mabel", LifespanYears = 45, LifeStage = LifeStage.Elder,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+        var dead = new Villager
+        {
+            Id = 4, Name = "Otto", LifespanYears = 45, LifeStage = LifeStage.Adult, Alive = false,
+            Carried = new Stockpile(Stockpile.Kinds),
+        };
+
+        Assert.False(child.CanWork);
+        Assert.True(adult.CanWork);
+        Assert.True(elder.CanWork, "An elder still works — declining vigour, not retirement.");
+        Assert.False(dead.CanWork);
+    }
+
+    [Fact]
+    public void ALifePassesThroughEveryStageInOrder()
+    {
+        var seen = new List<LifeStage>();
+
+        for (int age = 0; age <= 45; age++)
+        {
+            LifeStage stage = AgeingSystem.StageForAge(
+                age, AgeingSystem.ComputeVigour(age, 45, Config), Config);
+
+            if (seen.Count == 0 || seen[^1] != stage)
+            {
+                seen.Add(stage);
+            }
+        }
+
+        Assert.Equal(new[] { LifeStage.Child, LifeStage.Adult, LifeStage.Elder }, seen);
+    }
+}

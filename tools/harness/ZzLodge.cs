@@ -1,15 +1,15 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D683's MEASUREMENT — the stalled hunter's lodge (`specs/hunting.md §6a`). Kept in tools/harness/,
-// COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit.
+// COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit.
 //
-//   dotnet test tests/Bclone.Sim.Tests -c Release --filter FullyQualifiedName~ZzLodge --logger "console;verbosity=detailed"
+//   dotnet test tests/Kith.Sim.Tests -c Release --filter FullyQualifiedName~ZzLodge --logger "console;verbosity=detailed"
 //
 // Joe's Hollowmere, Year 25: a lodge holding 2,184 meat met the 2,500 meat limit with 636 on the shelves, the met
 // limit stood the hunters down, nobody but the marketer clears a lodge, and the uncollected meat kept the limit met.
@@ -34,7 +34,7 @@ public sealed class ZzLodge
     public void Measure(string arm, string limx, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

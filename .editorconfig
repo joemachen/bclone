@@ -1,7 +1,7 @@
 root = true
 
 # =============================================================================
-#  bclone — analyzer severities
+#  Kith — analyzer severities
 #
 #  ⛔⛔ WHY THIS FILE EXISTS, AND IT IS NOT STYLE.
 #
@@ -18,10 +18,10 @@ root = true
 #  None of them could ever have been reported.
 #
 #  ⚠️ These are WARNINGS, and with TreatWarningsAsErrors that means they FAIL
-#  THE BUILD in Bclone.Sim and the test project. That is the intent — the point
+#  THE BUILD in Kith.Sim and the test project. That is the intent — the point
 #  is to make the next one impossible rather than to find this one twice.
 #
-#  ⚠️ It cannot reach `src/Bclone.Game`, which sets TreatWarningsAsErrors=false
+#  ⚠️ It cannot reach `src/Kith.Game`, which sets TreatWarningsAsErrors=false
 #  because Godot's source generators emit code we do not control. The view will
 #  report these and not fail on them, which is why `_demolishArmedAt`'s CS0414
 #  scrolled past for months. Read the view's build output; do not trust silence.

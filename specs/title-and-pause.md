@@ -8,7 +8,7 @@ pause screen exists"*), D364 (the error boundary — a stopped village is not sa
 screen, 2026-10-05 — §2)**.
 **Status:** ✅ **BUILT (D517), PLAYED (2026-10-06), THE SAVE ROW FIXED (D518), MERGED TO `main` AND PUSHED (D519).** 🔨 **D706 (2026-11-07): the speed keys 1–5 and the bar's focus rule (§5.1, §8.3)
 — ✅ played, merged and pushed (D710, Joe: *"merge and push and commit in the most logical order"*; it read *"on `claude/distracted-cori-b8df71`, unmerged, unplayed"* until D744).** View only; nothing in
-`Bclone.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
+`Kith.Sim` changed and no golden moved. Probe `title:` and `pause:` green, **9 mutants, 10 reds, no zeros** — `pause:` read
 ❌ from D567 to D584 because the probe left a moment up, fixed in the pose (D585, §8). 🔨 **D805 (2026-11-20, on
 `slice/morale`): the pause screen's hitch — the save list is read when *Load…* opens, and only each save's head
 (§5.2); built, unplayed, the merge at Joe's word.** ⚠️ What
@@ -27,7 +27,7 @@ to have: back to the title, and to the desktop.
 
 ## 2. Joe's calls (D516, asked before the spec)
 
-1. **The name on the title screen: "bclone" for now** — the codename, as Godot's window title already says.
+1. **The name on the title screen: "Kith" for now** — the codename, as Godot's window title already says.
    One string in one place, so the day it has a name it changes once.
 2. **Behind the title: your latest valley** — the valley of the newest save that opens, painted by the game's
    own `ValleyTexture` (the new-game preview's painter); a fresh random valley when there are no saves.
@@ -46,7 +46,7 @@ new-game screen's shape (`NewGameScreen`, which raises events and Main acts on t
   (`Main.OpenTheVillage`), and a second door is how the two come to differ. No saves (or the newest refused):
   a valley from a rolled seed, the new-game screen's own dice. Under the probe there are never saves
   (`save-load.md §9`), so the probe always sees the rolled valley.
-- **The words, over a dimmed band on the left**: **bclone** large; the build under it small (`v0.0.1` — the
+- **The words, over a dimmed band on the left**: **Kith** large; the build under it small (`v0.0.1` — the
   same `BuildVersion` the save list shows).
 - **The buttons, in this order:**
   - **Continue** — opens the newest save that opens. Its tooltip names it: *"Ashford — Autumn, Year 12 ·
@@ -163,7 +163,7 @@ and one style box), and `_ExitTree` already disposes the audit log.
 
 | Where | Words |
 |---|---|
-| Title | **bclone** · `v0.0.1` · **Continue** · **New village** · **Load…** · **Quit** |
+| Title | **Kith** · `v0.0.1` · **Continue** · **New village** · **Load…** · **Quit** |
 | Continue, none | *No saved village yet.* |
 | New-game screen | **Back** |
 | Pause | **Paused** · *{village} — {Day N, Season, Year N}* · **Resume** · **Save** · **Load…** · **Settings** · **Quit to title** · **Quit to desktop** |
@@ -242,7 +242,7 @@ Two new lines, each red-checked (D326) by breaking the thing it claims and count
 - **A full settings screen** (D508) — the autosave cadence and whatever else gathers there. *Settings* on the
   pause screen opens today's window.
 - **Ironman mode** (D507) — its name is Joe's.
-- **A real name and a title treatment** — *"bclone" for now*.
+- **A real name and a title treatment** — *"Kith" for now*.
 - **Deleting or renaming saves** from the list.
 
 ## 10. Order of work, and what Joe looks at

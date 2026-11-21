@@ -119,7 +119,7 @@ side shows no paths. A comparison tool for the ground, so accepted and written d
 (`DrawTrails` hands the field over and draws no mesh with the paths painted; the field overlay re-laid when that changes),
 `VillageMap.Meshes.cs` (the field overlay in the track's sand), `VillageMap.Watercolour.cs` (the look handed over),
 `ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (15 `Path*` values), `Main.cs` (the probe's print).
-Nothing in `Bclone.Sim`, `tests/` or `data/`.
+Nothing in `Kith.Sim`, `tests/` or `data/`.
 
 **As the mock, with two differences:** the pen is the bank's own (`valley_pen`: pressure, lifts, feathered edge, constant on
 screen) where the mock drew a plain line, and it fades out below 14 px a tile. The field is 960 × 640 for the config's
@@ -130,7 +130,7 @@ of his save; the debug readout's two lines masked, trap 29; the build before ren
 four zooms different from each other, trap 25). Renders with the tick on, spring and winter, beside the mock he picked.
 Probe: `painted paths:` ✅, 117 ✅ 0 ⛔, `bar height` 151, `tile centres` and `new game` ✅, `done.`. View build 0 warnings.
 **Four checks:** suite 2024 passed / 0 failed / 5 skipped in 15m59; view build 0 warnings; the probe as above; goldens 418
-lines, `src/Bclone.Sim`, `data` and `tests` identical to `main` (no golden moved).
+lines, `src/Kith.Sim`, `data` and `tests` identical to `main` (no golden moved).
 
 **Cost** (RTX 3070, 4K SubViewport, Hollowmere opened from the save copy, tick on, this build / the build before / this
 build, one sitting, three rounds each): 5.27 / 5.34 / 5.35 ms at the opening zoom, 5.26 / 5.35 / 5.57 at the other — **no
@@ -156,7 +156,7 @@ heavy/ragged. lighten up a tough?"* `PathPenStrength` 0.85 → 0.55, `PathPenWid
 look; mocked in-game on his year-1 village and Hollowmere (`D:\Projects\brushes\paths\paths_progression.jpg`), then
 *"Build it"*. Changed: `valley_terrain.gdshader` (lightly worn ground the trail; two uniforms), `VillageMap.PaintedPaths.cs`
 (the hand-over; the probe's value and look checks), `VillageMap.Watercolour.cs` (the uniform list), `ValleyWatercolourLook.cs`
-with `looks/valley_watercolour.tres` (`PathTrail`, `PathTrailFeet`; `PathPenWornShare` 0.5 → 0). Nothing in `Bclone.Sim`,
+with `looks/valley_watercolour.tres` (`PathTrail`, `PathTrailFeet`; `PathPenWornShare` 0.5 → 0). Nothing in `Kith.Sim`,
 `tests/` or `data/`. **Verified.** Renders on his year-1 village and Hollowmere, before and built (`D:\Projects\brushes\paths\paths_trail_built.jpg`); tick off byte-identical to A77 at four zooms, spring and winter (readout masked); probe 118 ✅ 0 ⛔, `painted paths:` ✅, bar 151, tile centres and new game ✅, `done.`; view build 0 warnings; suite 2024 / 0 / 5 in 16m18; goldens 418 lines; sim, data, tests identical to `main`. **Red-check:** 7 mutants, 6 red of 6 guards (the trail and the feet not handed over, the feet undeclared — red because the shader then fails to compile — the grass turned all the way, the flecks' band backwards, a foot-line off the lane); one draw-time zero written down (the trail drawn as bare dirt again) — the renders are its evidence. **Cost** not measured: one noise read and two exponentials a path pixel.
 
 **A126, 2026-11-19 — a track across a crop field (§3.7).** Joe, 2026-11-16: *"the paths on/in crop fields need to be given
@@ -167,14 +167,14 @@ coordinator: *"Yes, edit them"* — `VillageMap.cs` (`DrawWorkedGround` only), `
 `DrawWorkedGround` line). Changed: `valley_fields.gdshader` (new), `VillageMap.Watercolour.cs` (the fields' layer, its hand-over,
 the probe's half), `VillageMap.cs` (`DrawWorkedGround`: the fields to their layer, the overlay not drawn over it),
 `ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (`FieldCut` 0.7 / 1, `FieldCutPool` 0.22 / 0.06 tiles).
-Nothing in `Bclone.Sim`, `tests/` or `data/`.
+Nothing in `Kith.Sim`, `tests/` or `data/`.
 
 **Verified.** Renders on Joe's Thornfield (a copy of his Year 38 autosave, the village of his screenshots), spring and winter,
 both builds from the same save copy (`D:\Projects\brushes\paths\fields\field_paths_before_after.jpg`); the lab's made-up field first (`D:\Projects\brushes\paths\fields\lab_cut.png`). Watercolour off byte-identical to the
 build before at three zooms (only the debug readout's timing line differs, trap 29; the zooms differ from each other, trap 25).
 Probe 129 ✅ 0 ⛔ (`watercolour:` carries the fields' half), bar 183, tile centres and new game ✅, `done.`; view build 0
 warnings; suite 2119 passed / 0 failed / 5 skipped in 16m58 (renders overlapped part of it); goldens 438 lines before and after,
-`src/Bclone.Sim`, `data` and `tests` identical to `main`. **Red-check:** 9 mutants, **7 red of 7 guards**, each on its own ⛔
+`src/Kith.Sim`, `data` and `tests` identical to `main`. **Red-check:** 9 mutants, **7 red of 7 guards**, each on its own ⛔
 (the layer not behind the map; added before the valley's; the shader not compiling; the cut not the look's; the look's cut put
 back to the old band's 0.85; the path field not handed over; the layer left showing with the tick off). **Two draw-time zeros,
 written down:** the flat overlay drawn over the cut again, and a worn track cut as hard as a packed one — the renders are their

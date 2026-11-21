@@ -155,7 +155,7 @@ Consequence, and it's the one worth remembering: **a run at 4× produces exactly
 
 ---
 
-## 6. Determinism rules for `Bclone.Sim`
+## 6. Determinism rules for `Kith.Sim`
 
 These are enforced at build time by `Microsoft.CodeAnalysis.BannedApiAnalyzers` (`BannedSymbols.txt`), so violating one is a **compile error**, not a code-review miss.
 
@@ -172,7 +172,7 @@ These are enforced at build time by `Microsoft.CodeAnalysis.BannedApiAnalyzers` 
 | ~~`Math.Sqrt`~~ — **NOT banned** | ⭐ **Stated because an over-broad rule gets ignored.** Square root is one of the five operations IEEE-754 *does* require to be correctly rounded, so it is bit-identical everywhere and is safe in sim code. `Fixed` has no `Sqrt` yet only because nothing needs one. | Allowed. |
 
 **Also required, but not analyzer-enforceable** (guard by review + tests):
-- `Bclone.Sim` must never reference Godot or any engine type. Enforced by the project having no such package reference and CI building it standalone.
+- `Kith.Sim` must never reference Godot or any engine type. Enforced by the project having no such package reference and CI building it standalone.
 - The renderer reads sim state and never writes it.
 
 ---
@@ -224,7 +224,7 @@ Per tick, in order:
 2. Unit tests written and passing.
 3. Determinism test green — and demonstrably *able to fail* (anti-vacuity tests present).
 4. `dotnet build` clean with `TreatWarningsAsErrors` and the banned-API analyzer active.
-5. `Bclone.Sim` has zero engine references and builds standalone in CI.
+5. `Kith.Sim` has zero engine references and builds standalone in CI.
 6. `DESIGN.md` Progress Tracker (§6) + Decisions Log (§7) updated.
 
 No manual QA checklist here — there is nothing to watch yet. That arrives with Phase 0.

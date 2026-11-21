@@ -1,0 +1,296 @@
+using Kith.Sim.World;
+using Godot;
+
+namespace Kith.Game;
+
+/// <summary>
+/// A small drawn mark for a trade — <b>the game's own shapes, not an imported icon</b>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// ⭐ <b>Joe asked for icons on the professions table and this is what an icon is here — for now.</b>
+/// Drawn in code as a <b>placeholder, not a rule</b>: the game ships image assets (D654), and real
+/// icons wait on the art, which is parked (D639). The goods table's own note explains why emoji
+/// stay rejected: a glyph *"is at the mercy of whatever the default font happens to cover"*. A
+/// shape painted from polygons and rects renders identically on every machine and is the same
+/// visual language as the valley's placeholders.
+/// </para>
+/// <para>
+/// ⚠️ <b>These are read at a centimetre across, so they are silhouettes and not drawings.</b> Two
+/// to four shapes each. The colour carries as much of the meaning as the outline does, which is
+/// why every one that can borrow from the map does — <c>VillageMap</c> already paints a forester's
+/// trees, a river and a game animal, and a trade whose glyph disagreed with its own tiles would be
+/// worse than no glyph.
+/// </para>
+/// <para>
+/// <b>`Minimap` is the precedent</b> for a <c>Control</c> that paints itself in this project.
+/// </para>
+/// </remarks>
+public sealed partial class TradeGlyph : Control
+{
+    /// <summary>Drawn at this size, whatever the row does around it.</summary>
+    private const float Side = 14f;
+
+    private readonly JobKind _kind;
+
+    public TradeGlyph(JobKind kind)
+    {
+        _kind = kind;
+        CustomMinimumSize = new Vector2(Side, Side);
+        SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        MouseFilter = MouseFilterEnum.Ignore;
+    }
+
+    /// <summary>
+    /// The colour a trade reads as — <b>borrowed from the map wherever the map has one</b>.
+    /// </summary>
+    /// <remarks>
+    /// The same rule <see cref="GoodsPalette"/> follows, and for the same reason: a mark in a panel
+    /// and a thing in the valley meaning different colours would be two facts rather than one.
+    /// </remarks>
+    /// <remarks>
+    /// ⚠️ <b>Internal, because <see cref="BuildingGlyph"/> asks it</b>: a hut and the person who
+    /// works it read as the same colour, which is one fact rather than two. It also means these
+    /// five hexes are now borrowed from in a second place — see <c>VillageMap.TimberTone</c> and
+    /// its siblings, which is where a colour borrowed from the map <em>should</em> come from.
+    /// </remarks>
+    internal static Color ColourOf(JobKind kind) => kind switch
+    {
+        // Borrowed: the forester's trees, the river, the animals in the woods, the market's stall.
+        JobKind.Forester => new Color("#2f6b3a"),
+        JobKind.Fisher => new Color("#2f5f7a"),
+        JobKind.Hunter => new Color("#8a6a3f"),
+        JobKind.Marketer => new Color("#c98f4a"),
+        JobKind.Farmer => new Color("#4a3a2b"),
+
+        // Chosen here, because these trades have no ground of their own: the forager takes the
+        // berry red the produce chip uses, the woodcutter the firewood orange, the builder the
+        // pale grey of tools.
+        JobKind.Forager => new Color(0.82f, 0.35f, 0.38f),
+        JobKind.Woodcutter => new Color(0.88f, 0.55f, 0.24f),
+        JobKind.Builder => new Color(0.72f, 0.76f, 0.82f),
+
+        // The smith takes the iron's dark grey (D391) — a shade the builder's pale tools are not.
+        JobKind.Smith => new Color(0.42f, 0.44f, 0.50f),
+
+        // The quarrier takes the pale stone of the seams they cut (D434) — warmer than the
+        // smith's iron, lighter than the builder's tools.
+        JobKind.Quarrier => new Color(0.66f, 0.62f, 0.54f),
+
+        // The miner takes the rust of the iron seam they dig (D449) — the ore's own colour, lifted
+        // so it reads on the dark bar beside the smith's grey.
+        JobKind.Miner => new Color(0.64f, 0.40f, 0.28f),
+
+        // The miller takes the flour's cream, the baker the crust's brown (D522) — the goods they make.
+        JobKind.Miller => new Color(0.86f, 0.82f, 0.70f),
+        JobKind.Baker => new Color(0.72f, 0.48f, 0.24f),
+
+        // The tailor takes the coat's moss green (D662) — `GoodsPalette`'s clothing, the good they make.
+        JobKind.Tailor => new Color(0.40f, 0.52f, 0.34f),
+
+        // The carpenter takes fresh-sawn oak (D678) — a warm wood-brown lighter than logs' bark and nothing like the
+        // smith's iron grey; checked against the parchment by `tools/legibility/check.py`.
+        JobKind.Carpenter => new Color(0.78f, 0.60f, 0.38f),
+
+        // The herdsman takes the barn's red-brown, the merchant the slate of a river boat (D596).
+        JobKind.Herdsman => new Color("#8a4b32"),
+        JobKind.Merchant => new Color("#5f6f8c"),
+
+        // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
+        // same answer `GoodsPalette` gives a good nobody has chosen a colour for.
+        _ => new Color(0.70f, 0.70f, 0.70f),
+    };
+
+    public override void _Draw()
+    {
+        Color ink = ColourOf(_kind);
+        float s = Side;
+
+        switch (_kind)
+        {
+            // Two conifers: the forester's own tiles, shrunk.
+            case JobKind.Forester:
+                Tree(new Vector2(s * 0.32f, s * 0.55f), s * 0.30f, ink);
+                Tree(new Vector2(s * 0.68f, s * 0.75f), s * 0.36f, ink);
+                break;
+
+            // A basket: a shallow bowl with a handle over it.
+            case JobKind.Forager:
+                DrawRect(new Rect2(s * 0.18f, s * 0.50f, s * 0.64f, s * 0.34f), ink);
+                DrawArc(new Vector2(s * 0.5f, s * 0.50f), s * 0.30f, Mathf.Pi, Mathf.Tau, 10, ink, 1.6f);
+                break;
+
+            // Split wood: two wedges leaning apart from one cut.
+            case JobKind.Woodcutter:
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.44f, s * 0.16f),
+                        new Vector2(s * 0.44f, s * 0.84f),
+                        new Vector2(s * 0.16f, s * 0.84f),
+                    }, ink);
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.56f, s * 0.16f),
+                        new Vector2(s * 0.84f, s * 0.84f),
+                        new Vector2(s * 0.56f, s * 0.84f),
+                    }, ink);
+                break;
+
+            // A stall: an awning over a counter.
+            case JobKind.Marketer:
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.10f, s * 0.44f),
+                        new Vector2(s * 0.50f, s * 0.14f),
+                        new Vector2(s * 0.90f, s * 0.44f),
+                    }, ink);
+                DrawRect(new Rect2(s * 0.20f, s * 0.52f, s * 0.60f, s * 0.30f), ink);
+                break;
+
+            // A hammer: head and handle.
+            case JobKind.Builder:
+                DrawRect(new Rect2(s * 0.18f, s * 0.18f, s * 0.64f, s * 0.22f), ink);
+                DrawRect(new Rect2(s * 0.42f, s * 0.40f, s * 0.16f, s * 0.44f), ink);
+                break;
+
+            // Furrows: three rows of worked ground.
+            case JobKind.Farmer:
+                for (int i = 0; i < 3; i++)
+                {
+                    DrawRect(new Rect2(s * 0.14f, s * (0.28f + (i * 0.22f)), s * 0.72f, s * 0.12f), ink);
+                }
+
+                break;
+
+            // A fish: a body and a tail.
+            case JobKind.Fisher:
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.16f, s * 0.50f),
+                        new Vector2(s * 0.56f, s * 0.24f),
+                        new Vector2(s * 0.76f, s * 0.50f),
+                        new Vector2(s * 0.56f, s * 0.76f),
+                    }, ink);
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.76f, s * 0.50f),
+                        new Vector2(s * 0.94f, s * 0.30f),
+                        new Vector2(s * 0.94f, s * 0.70f),
+                    }, ink);
+                break;
+
+            // A hammer over an anvil (D391): the anvil's block and horn, the hammer raised.
+            case JobKind.Smith:
+                DrawRect(new Rect2(s * 0.18f, s * 0.60f, s * 0.64f, s * 0.16f), ink);
+                DrawRect(new Rect2(s * 0.34f, s * 0.76f, s * 0.32f, s * 0.10f), ink);
+                DrawLine(new Vector2(s * 0.62f, s * 0.54f), new Vector2(s * 0.40f, s * 0.20f), ink, 1.8f);
+                DrawRect(new Rect2(s * 0.30f, s * 0.10f, s * 0.22f, s * 0.14f), ink);
+                break;
+
+            // A pick over a block (D434): the head, the haft, and the stone it strikes.
+            case JobKind.Quarrier:
+                DrawRect(new Rect2(s * 0.20f, s * 0.62f, s * 0.44f, s * 0.24f), ink);
+                DrawLine(new Vector2(s * 0.32f, s * 0.56f), new Vector2(s * 0.76f, s * 0.14f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.56f, s * 0.12f), new Vector2(s * 0.88f, s * 0.28f), ink, 1.8f);
+                break;
+
+            // A pick over a lump of ore (D449): the quarrier's pick, struck into a round of iron
+            // rather than a dressed block.
+            case JobKind.Miner:
+                DrawCircle(new Vector2(s * 0.40f, s * 0.72f), s * 0.18f, ink);
+                DrawLine(new Vector2(s * 0.32f, s * 0.56f), new Vector2(s * 0.76f, s * 0.14f), ink, 1.8f);
+                DrawLine(new Vector2(s * 0.56f, s * 0.12f), new Vector2(s * 0.88f, s * 0.28f), ink, 1.8f);
+                break;
+
+            // A millstone (D522): the round stone and the hole its spindle turns in.
+            case JobKind.Miller:
+                DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.34f, ink);
+                DrawCircle(new Vector2(s * 0.50f, s * 0.54f), s * 0.08f, new Color(0.10f, 0.10f, 0.12f));
+                break;
+
+            // A needle and its thread (D662): the shaft, the eye, and the loop the thread makes below it.
+            case JobKind.Tailor:
+                DrawLine(new Vector2(s * 0.22f, s * 0.80f), new Vector2(s * 0.74f, s * 0.24f), ink, 2.2f);
+                DrawCircle(new Vector2(s * 0.74f, s * 0.24f), s * 0.07f, new Color(0.10f, 0.10f, 0.12f));
+                DrawArc(new Vector2(s * 0.40f, s * 0.70f), s * 0.18f, 0f, Mathf.Pi * 1.6f, 10, ink, 1.4f);
+                break;
+
+            // A cartwheel (D678): the rim, the hub, and four spokes — the thing a carpenter trues.
+            case JobKind.Carpenter:
+                DrawArc(new Vector2(s * 0.50f, s * 0.52f), s * 0.34f, 0f, Mathf.Tau, 16, ink, 2.0f);
+                DrawCircle(new Vector2(s * 0.50f, s * 0.52f), s * 0.07f, ink);
+                DrawLine(new Vector2(s * 0.50f, s * 0.18f), new Vector2(s * 0.50f, s * 0.86f), ink, 1.4f);
+                DrawLine(new Vector2(s * 0.16f, s * 0.52f), new Vector2(s * 0.84f, s * 0.52f), ink, 1.4f);
+                break;
+
+            // A loaf (D522): the rounded crust and two scores across it.
+            case JobKind.Baker:
+                DrawCircle(new Vector2(s * 0.50f, s * 0.58f), s * 0.30f, ink);
+                DrawRect(new Rect2(s * 0.20f, s * 0.58f, s * 0.60f, s * 0.24f), ink);
+                DrawLine(new Vector2(s * 0.36f, s * 0.40f), new Vector2(s * 0.44f, s * 0.62f), new Color(0.10f, 0.10f, 0.12f), 1.2f);
+                DrawLine(new Vector2(s * 0.56f, s * 0.40f), new Vector2(s * 0.64f, s * 0.62f), new Color(0.10f, 0.10f, 0.12f), 1.2f);
+                break;
+
+            // A bow, drawn: the stave and the string.
+            case JobKind.Hunter:
+                DrawArc(new Vector2(s * 0.34f, s * 0.5f), s * 0.36f, -Mathf.Pi / 2.2f, Mathf.Pi / 2.2f, 12, ink, 1.8f);
+                DrawLine(new Vector2(s * 0.66f, s * 0.18f), new Vector2(s * 0.66f, s * 0.82f), ink, 1.2f);
+                break;
+
+            // A beast (D596): the body, the head lowered to graze, and four legs.
+            case JobKind.Herdsman:
+                DrawRect(new Rect2(s * 0.22f, s * 0.36f, s * 0.50f, s * 0.26f), ink);
+                DrawRect(new Rect2(s * 0.68f, s * 0.46f, s * 0.18f, s * 0.16f), ink);
+                for (int leg = 0; leg < 4; leg++)
+                {
+                    DrawRect(new Rect2(s * (0.24f + (leg * 0.14f)), s * 0.62f, s * 0.06f, s * 0.20f), ink);
+                }
+
+                break;
+
+            // A boat (D596): the hull, the mast and its sail.
+            case JobKind.Merchant:
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.12f, s * 0.64f),
+                        new Vector2(s * 0.88f, s * 0.64f),
+                        new Vector2(s * 0.72f, s * 0.82f),
+                        new Vector2(s * 0.28f, s * 0.82f),
+                    }, ink);
+                DrawLine(new Vector2(s * 0.50f, s * 0.64f), new Vector2(s * 0.50f, s * 0.14f), ink, 1.6f);
+                DrawColoredPolygon(
+                    new[]
+                    {
+                        new Vector2(s * 0.54f, s * 0.18f),
+                        new Vector2(s * 0.80f, s * 0.56f),
+                        new Vector2(s * 0.54f, s * 0.56f),
+                    }, ink);
+                break;
+
+            // A modder's trade: a plain mark, honestly nobody's shape.
+            default:
+                DrawRect(new Rect2(s * 0.22f, s * 0.22f, s * 0.56f, s * 0.56f), ink);
+                break;
+        }
+    }
+
+    /// <summary>One conifer — a stacked pair of triangles over a trunk.</summary>
+    private void Tree(Vector2 foot, float height, Color ink)
+    {
+        float w = height * 0.62f;
+        DrawRect(new Rect2(foot.X - (w * 0.10f), foot.Y - (height * 0.10f), w * 0.20f, height * 0.22f), ink);
+        DrawColoredPolygon(
+            new[]
+            {
+                new Vector2(foot.X, foot.Y - height),
+                new Vector2(foot.X + w, foot.Y - (height * 0.08f)),
+                new Vector2(foot.X - w, foot.Y - (height * 0.08f)),
+            }, ink);
+    }
+}

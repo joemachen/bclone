@@ -1,0 +1,1558 @@
+using Kith.Sim.Core;
+using Kith.Sim.World;
+
+namespace Kith.Sim.Determinism;
+
+/// <summary>
+/// FNV-1a (64-bit) over a canonical view of sim state — a cheap witness that two
+/// worlds are identical.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is a <em>fingerprint</em>, not a serializer. It exists so the determinism
+/// test can compare two 10,000-tick runs with one integer comparison, and so a
+/// desync (later, in co-op or replay) can be caught at the exact tick it starts
+/// rather than whenever someone notices the towns diverged.
+/// </para>
+/// <para>
+/// <b>Keep this current.</b> Every field added to <see cref="SimWorld"/> that is
+/// genuinely part of the simulation must be mixed in here, in a fixed order.
+/// A field that is hashed but not simulated is harmless; a field that is
+/// simulated but not hashed makes the determinism test quietly weaker. When
+/// save/load arrives, this should be reconciled with canonical serialization.
+/// </para>
+/// </remarks>
+public static class StateHash
+{
+    private const ulong FnvOffsetBasis = 14695981039346656037UL;
+    private const ulong FnvPrime = 1099511628211UL;
+
+    /// <summary>Mixed before the destroy marks, so they cannot read as harvest marks (D493).</summary>
+    private const uint DestroyLayerTag = 0xDE57_0001u;
+
+
+    /// <summary>Fingerprint the whole world.</summary>
+    public static ulong Compute(SimWorld world) => Compute(world, skills: true);
+
+    /// <summary>
+    /// Fingerprint the world <b>as it was before anybody could get better at anything</b> —
+    /// everything except what each villager has put into a trade.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS EXISTS BECAUSE THE OBVIOUS NO-OP GUARD CANNOT BE WRITTEN</b>
+    /// (`skills-catalog.md §11.2.1`, D181). The spec asks landing 1 to be a **provable no-op:
+    /// goldens unmoved** — and the goldens are full state hashes, so the moment proficiency is
+    /// hashed and anybody accrues a tick they move by construction. **Hashing new state that
+    /// grows and keeping a state-hash golden byte-identical are mutually exclusive**, and the
+    /// spec reasoned by analogy from `crops-and-orchards.md`'s terrain values, where the
+    /// generator never produced the new values so a valley genuinely hashed the same.
+    /// </para>
+    /// <para>
+    /// <b>So the claim is made in the vocabulary that can be true: *nothing anybody DOES
+    /// changed*.</b> Same positions, same stores, same births, same deaths, same tick —
+    /// only the counters differ. That is a stronger statement than hash equality anyway,
+    /// because it says which half moved.
+    /// </para>
+    /// <para>
+    /// <b>⭐ And it keeps its value into landing 2, pointing the other way:</b> when mastery
+    /// starts biting, **this must move** — a skill system that changes nothing is D56's
+    /// clothing, and this is the guard that can say so.
+    /// </para>
+    /// <para>
+    /// ⚠️ Precedent: `MapGenerationTests.EachSeedsTerrainIsWhatItWas` computes a
+    /// terrain-only fingerprint for exactly this reason — *"including it would make this guard
+    /// say only 'the map changed', which is what the map golden already says and is not the
+    /// question."*
+    /// </para>
+    /// </remarks>
+    public static ulong ComputeIgnoringSkills(SimWorld world) => Compute(world, skills: false);
+
+    private static ulong Compute(SimWorld world, bool skills)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        ulong hash = FnvOffsetBasis;
+
+        // Order matters and must never change casually — it is part of the
+        // value. Append new fields at the end. A retired tag stays named where it
+        // stood and is never reissued (0x67, 0x68 — the longhouse, D571; 0x6F — the waiting band, D572).
+        hash = MixUInt64(hash, world.Tick);
+        hash = MixUInt64(hash, world.Rng.State);
+        hash = MixUInt64(hash, world.Rng.Inc);
+
+        // ---- The valley ----
+        // The map is immutable once generated, so this can never drift mid-run — but
+        // it absolutely must be here, because two runs on the same seed that generated
+        // DIFFERENT worlds would otherwise agree on the hash right up until somebody
+        // walked somewhere. It is also what makes the golden map test possible: a
+        // known seed hashes to a known valley, so a refactor that reorders the
+        // generator's draws fails the build instead of silently invalidating every
+        // seed anyone has written down.
+        hash = MixMap(hash, world.Map);
+
+        // ---- What the player has asked for ----
+        // Zones are a decision somebody made, so they are sim state (D42): two runs
+        // given the same decisions must produce the same village. Left out, a village
+        // painted differently would agree on the hash right up until it built a house.
+        // ⛔⛔ THE SUB-TILES ARE THE STATE NOW, SO THE SUB-TILES ARE WHAT IS MIXED (D335).
+        // The tile-level arrays beside them are a SUMMARY — a count folded into a bool — and
+        // hashing a summary would leave the finer paint outside the fingerprint entirely: **two
+        // villages whose players drew different shapes would hash identically**, which is the same
+        // determinism hole D329 closed for building positions, arriving one commit later in a
+        // different layer. *If it is state the player chose, it is in the hash.*
+        // ⚠️ This is the golden move (D152), and it is stated rather than discovered: sixteen times
+        // as many indices, so the numbers change while the village does not.
+        for (int i = 0; i < world.Zones.ResidentialSub.Count; i++)
+        {
+            if (world.Zones.ResidentialSub[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        hash = MixUInt32(hash, (uint)world.Zones.ResidentialTiles);
+
+        // Work ground (D86) — which building was given which tile to work. Sparse, in
+        // the same style and for the same reason: a village where nobody has painted any
+        // mixes nothing at all, so this layer is invisible to a run that does not use it
+        // and the goldens do not move for existing.
+        //
+        // The OWNER is mixed as well as the tile, because two huts given the same forty
+        // tiles the other way round is a genuinely different village and must not read as
+        // the same one (D51).
+        for (int i = 0; i < world.Zones.WorkGroundSub.Count; i++)
+        {
+            int owner = world.Zones.WorkGroundSub[i];
+            if (owner != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)owner);
+            }
+        }
+
+        // What the village means to clear (D87). Sparse, for the third time and the
+        // same reason: a village that has painted nothing mixes nothing.
+        //
+        // NO COUNT ALONGSIDE, unlike residential above — and that is the difference
+        // between this layer being invisible when unused and moving both goldens for
+        // existing. The residential count is mixed unconditionally and is baked into
+        // the hashes already; adding a second such line would mix a fresh zero into
+        // every village that has never painted a tree. The indices determine the set
+        // by themselves, so the count was only ever belt and braces.
+        for (int i = 0; i < world.Zones.HarvestSub.Count; i++)
+        {
+            if (world.Zones.HarvestSub[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        // What the village means to DESTROY (D493). Sparse, so a village that never used the red
+        // brush mixes nothing and no golden moves. ⚠️ TAGGED, unlike the three layers above: a
+        // destroy mark and a harvest mark on the same sub-tile are bare indices in the same style,
+        // and without a tag "harvest {5}" and "destroy {5}" would hash the same — two villages, one
+        // fingerprint. The tag is mixed only when the layer has anything, so it costs the
+        // unused layer nothing.
+        if (world.Zones.DestroyTiles > 0)
+        {
+            hash = MixUInt32(hash, DestroyLayerTag);
+            for (int i = 0; i < world.Zones.DestroySub.Count; i++)
+            {
+                if (world.Zones.DestroySub[i])
+                {
+                    hash = MixUInt32(hash, (uint)i);
+                }
+            }
+        }
+
+        // Stock limits (D62), and SILENCE IS THE POINT: a limit nobody has set mixes
+        // nothing at all, so a village played without ever opening the control hashes
+        // exactly as it did before the control existed. That is what makes
+        // "the default is a no-op" a golden test rather than a promise — see
+        // StockLimitTests. It is also the same shape the zone loop above already uses:
+        // painted tiles are mixed, unpainted ones are not.
+        //
+        // The good's index goes in with its value, so two different opinions can never
+        // collide, and NULL AND ZERO DIVERGE HERE: null mixes nothing, zero mixes a zero.
+        // They are different instructions — "no opinion" against "stop, I mean it" — and a
+        // hash that conflated them would let a determinism test pass across a real
+        // divergence (D51 records the same trap one control over).
+        for (int i = 0; i < world.StockLimits.Slots; i++)
+        {
+            int? limit = world.StockLimits.For((Goods)i);
+            if (limit is not null)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)limit.Value);
+            }
+        }
+
+        // Profession targets (D106), in the same shape and for the same reason: a village
+        // played without ever opening the panel mixes nothing at all, so the control is a
+        // provable no-op until somebody uses it. Null and zero diverge here too — "no opinion"
+        // and "nobody on this, I mean it" are different instructions.
+        for (int i = 0; i < JobLimits.Kinds.Count; i++)
+        {
+            int? target = world.JobLimits.For(JobLimits.Kinds[i]);
+            if (target is not null)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)target.Value);
+            }
+        }
+
+        // The share-out switch (Joe, 2026-09-03), in the same shape and for the same reason as
+        // the two controls above: it is mixed ONLY WHEN IT IS OFF, so a village played without
+        // ever opening Settings mixes nothing at all and hashes exactly as it did before the
+        // switch existed. **A preference that changes the sim is sim state** — it decides whether
+        // the three-yearly reshuffle runs — so leaving it out of the hash would let two divergent
+        // runs agree, which is the trap D51 records one control over.
+        if (!world.VillageSharesOutWork)
+        {
+            hash = MixUInt32(hash, 0x5748_4152u);
+        }
+
+        // ---- Village ----
+        // Every villager and every household, in id order. A hash that covered only
+        // the first villager would let the rest of the village desync in silence.
+        hash = MixUInt32(hash, (uint)world.Villagers.Count);
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            hash = MixVillager(hash, world.Villagers[i], skills);
+        }
+
+        hash = MixUInt32(hash, (uint)world.Households.Count);
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            hash = MixUInt32(hash, (uint)household.Id);
+            hash = MixGivenName(hash, household.GivenName);
+            hash = MixUInt32(hash, (uint)household.LastBirthYear);
+
+            // Whether the household is mid-way through topping its larder back up (D372) — a
+            // bit that decides whether somebody walks next tick, so it is state, not a reading.
+            hash = MixUInt32(hash, (household.ToppingUpFood ? 1u : 0u) | (household.ToppingUpFirewood ? 2u : 0u));
+
+            // The water in the household's jar (D778; until then the day it last went, D427) — it decides
+            // whether somebody walks to the well, so it is state. ⛔ Sparse: never filled in a village with no well.
+            if (household.Water != 0)
+            {
+                hash = MixByte(hash, 3);
+                hash = MixUInt32(hash, (uint)household.Water);
+            }
+
+            // The larder and what it has ever produced — the same loop MixStore uses, and
+            // ⭐ SPARSE FOR THE SAME REASON (2026-09-03). This was the SECOND dense goods loop and
+            // the one that hid: making `MixStore` sparse did not stop a new catalogue row moving
+            // the hash, because a household nobody had ever seen a hunter in still mixed a zero
+            // here for meat and another for leather. **Two loops, one rule, and finding the second
+            // took a guard that failed at tick 0 rather than four years in.**
+            hash = MixStore(hash, household.Stockpile);
+            for (int g = 0; g < household.Stockpile.Slots; g++)
+            {
+                int made = household.Stockpile.Produced((Goods)g);
+                if (made != 0)
+                {
+                    hash = MixUInt32(hash, (uint)g);
+                    hash = MixUInt32(hash, (uint)made);
+                }
+            }
+
+            // ⛔⛔ WHERE THE FAMILY LIVES, WHICH THIS DID NOT MIX AT ALL UNTIL D329. A house could
+            // be raised, moved or pulled down and **the fingerprint did not change** — the same
+            // hole workplaces and stores had, and it is why "no golden moved" was a weaker claim
+            // through the whole gridless stretch than it read as.
+            // ⚠️ DENSE, WITH A FLAG, RATHER THAN SPARSE. Every village has households and every
+            // household eventually has a home, so the sparseness rule this file states five times
+            // — *a village that never uses a feature must hash byte-identically* — does not apply;
+            // and the flag is what stops a homeless family aliasing with one whose coordinates
+            // happen to match the numbers that follow.
+            if (household.HomePosition is Point home)
+            {
+                hash = MixByte(hash, 1);
+                hash = MixFixed(hash, home.X);
+                hash = MixFixed(hash, home.Y);
+
+                // Which way it faces (D386): a turned house stands on different ground and
+                // fronts a different lane. Only with a home, so a homeless family hashes as
+                // it always did.
+                hash = MixAngle(hash, household.HomeFacing);
+
+                // When it was raised and last mended (D552): condition is derived from these two.
+                hash = MixUInt64(hash, household.HomeRaisedAtTick);
+                hash = MixUInt64(hash, household.HomeRepairedAtTick);
+                if (household.HomeClosed)
+                {
+                    hash = MixByte(hash, 0x60);
+                }
+
+                // Which house it is (D719, `house-tiers.md §7`) — sparse, so a village of cabins hashes as it always did.
+                if (household.HomeKind != BuildingKind.Home)
+                {
+                    hash = MixByte(hash, 0x80);
+                    hash = MixUInt32(hash, (uint)household.HomeKind);
+                }
+
+                // Kept as it is (D723) — only when set.
+                if (household.KeepsItsHouse)
+                {
+                    hash = MixByte(hash, 0x86);
+                }
+            }
+
+            // 0x68 was `Household.LodgedIn` (D566; retired with the longhouse, D571) — sparse, so a family that never
+            // lodged hashes exactly as it did. The tag is never reused.
+
+            // The fence (D388): what was built, tile by tile. Sparse — a roofless family with no
+            // site has none, and hashes as it always did.
+            hash = MixUInt32(hash, (uint)household.FencedTiles.Count);
+            for (int t = 0; t < household.FencedTiles.Count; t++)
+            {
+                hash = MixUInt32(hash, (uint)household.FencedTiles[t].X);
+                hash = MixUInt32(hash, (uint)household.FencedTiles[t].Y);
+            }
+
+            // The household's handcart and the trips left in it (`handcart.md §3`, Slice H) — it decides whether a
+            // member walks for one and how deep the shopper's armful is. Sparse, under its own tag, so a village with
+            // no cart hashes as it did before carts existed (0x68 is retired above and never reused).
+            if (household.HandcartUses != 0)
+            {
+                hash = MixByte(hash, 0x70);
+                hash = MixUInt32(hash, (uint)household.HandcartUses);
+            }
+
+            // ⭐ CONTENTMENT'S HOUSEHOLD TALLIES (W2, D801–D803) — hashed since step 4, when the births gate first reads what
+            // they feed. Sparse and tagged, so a household whose fire never went out and whose jar never ran dry hashes as before.
+            if (household.FireOutHeldUntil != 0)
+            {
+                hash = MixByte(hash, 0x90);
+                hash = MixUInt32(hash, (uint)household.FireOutHeldUntil);
+            }
+
+            if (household.DryDaysThisSeason != 0)
+            {
+                hash = MixByte(hash, 0x91);
+                hash = MixUInt32(hash, (uint)household.DryDaysThisSeason);
+            }
+
+            if (household.HomePosition is not null)
+            {
+            }
+            else
+            {
+                hash = MixByte(hash, 0);
+            }
+
+            hash = MixUInt32(hash, (uint)household.MemberIds.Count);
+            for (int m = 0; m < household.MemberIds.Count; m++)
+            {
+                hash = MixUInt32(hash, (uint)household.MemberIds[m]);
+            }
+        }
+
+        hash = MixUInt32(hash, (uint)world.Workplaces.Count);
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            hash = MixUInt32(hash, (uint)workplace.Id);
+            hash = MixGivenName(hash, workplace.GivenName);
+
+            // ⛔⛔ WHERE IT STANDS AND WHICH WAY IT IS TURNED — AND NEITHER WAS HASHED UNTIL D329.
+            // **A building could be raised, moved or pulled down and the fingerprint would not
+            // change.** That is the hole free placement had to close before a continuous position
+            // could mean anything: sim state the hash cannot see is sim state the determinism
+            // suite cannot guard, and `StateHash`'s own standing rule at the top of this file says
+            // every field that is genuinely part of the simulation is mixed here, in a fixed order.
+            // ⚠️ IT CANNOT BE MADE SPARSE, unlike almost everything else in this file: every
+            // village has a position for every building, so there is no "never used this feature"
+            // state to preserve. **This is the golden move (D152), and it is stated rather than
+            // discovered** — the village did not change, the fingerprint's shape did, and the
+            // byte-identical proof is in the commit that took it.
+            // ⚠️ The EXTENT is deliberately not mixed: it is read from the building's row, so it
+            // is a function of the catalogue rather than per-building state, and the catalogue is
+            // already part of what a seed means.
+            // ⭐ RAW BITS, NEVER QUANTISED — see `MixFixed` below. `StateHash` is a fingerprint,
+            // where a collision is the failure; the map generator's hash is a bucketing hash,
+            // where a collision is the feature. Two jobs, two functions, never one.
+            hash = MixFixed(hash, workplace.Position.X);
+            hash = MixFixed(hash, workplace.Position.Y);
+            hash = MixAngle(hash, workplace.Facing);
+
+            // Player intent is sim state (D42's rule, D51's case): an override changes
+            // who works where, so two runs of one seed that differ in it are different
+            // runs and must hash differently. Null hashes distinctly from any real
+            // count, so "let the village decide" is not the same state as "0".
+            hash = MixUInt32(hash, workplace.StaffingOverride is int places
+                ? (uint)places + 1u
+                : 0u);
+            hash = MixUInt32(hash, (uint)workplace.WorkerIds.Count);
+            for (int k = 0; k < workplace.WorkerIds.Count; k++)
+            {
+                hash = MixUInt32(hash, (uint)workplace.WorkerIds[k]);
+            }
+
+            // Where the player put this site in the build queue (D105). SILENT UNTIL SOMEBODY
+            // MOVES SOMETHING, in the same shape and for the same reason as the stock limits
+            // below: a village played without ever reordering the queue must hash exactly as
+            // it did before the control existed, which is what makes "the default is a no-op"
+            // a golden test rather than a promise. Null and a number are different states.
+            if (workplace.QueueRank is int rank)
+            {
+                hash = MixUInt32(hash, (uint)rank);
+            }
+
+            // And what the place is set to do (`forests-and-gathering.md`). SILENT UNTIL
+            // SOMEBODY SWITCHES ONE, in the same shape and for the same reason as the queue
+            // rank above and the stock limits below: a village where nobody has ever touched a
+            // mode must hash exactly as it did before modes existed, which is what lets a new
+            // control ship without re-taking a single golden.
+            // ⚠️ AGAINST THE DEFAULT, NEVER AGAINST A MODE BY NAME (D136). This read
+            // `!= WorkMode.Harvest`, which was the same thing right up until Joe made planting
+            // the default — at which point every untouched forester's hut in the game would
+            // have started mixing, and every golden would have moved for a control nobody had
+            // used. The sentinel means *"the player has touched this"*, so it has to follow
+            // whatever untouched currently is.
+            //
+            // ⭐ AND IT IS WHAT MADE D146 FREE. The toggle became FELLING rather than planting,
+            // and the value `0` changed meaning from *fell only* to *plant only* — a rewrite of
+            // what the enum says, with the numbering untouched. Because this mixes nothing at
+            // all for an untouched hut, and no golden in the suite switches one, not a single
+            // stored hash depends on what `0` meant.
+            if (workplace.Mode != Workplace.DefaultMode)
+            {
+                hash = MixUInt32(hash, (uint)workplace.Mode);
+            }
+
+            // What a smithy forges (`tools-and-the-smith.md §9.3`) — the same silence for the same
+            // reason: a smithy left on stone mixes nothing. A tag goes in first, because the mode
+            // above mixes a bare small number and a forge kind is one too (D291).
+            if (workplace.ForgeGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 0xF0u);
+                hash = MixUInt32(hash, (uint)workplace.ForgeGood);
+            }
+
+            // What a workshop makes (D678, `workshop-and-the-carpenter.md §4.3`) — the forge's rule one building over: a
+            // workshop left on handcarts mixes nothing, so every golden holds; its own tag, so a product cannot read as a
+            // forge kind.
+            if (workplace.MakeGood != Workplace.DefaultMakeGood)
+            {
+                hash = MixUInt32(hash, 0xF1u);
+                hash = MixUInt32(hash, (uint)workplace.MakeGood);
+            }
+
+            // The building's handcart and the trips left in it (`handcart.md §13.2`) — it decides whether a worker walks for
+            // one and how deep the counter's load is. Sparse under its own tag, so a village whose trades own no cart hashes
+            // as it did before they could.
+            if (workplace.HandcartUses != 0)
+            {
+                hash = MixUInt32(hash, 0xF2u);
+                hash = MixUInt32(hash, (uint)workplace.HandcartUses);
+            }
+
+            // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
+            // It decides how much ground the farm commits every spring, so two runs of one
+            // seed that differ in it are different runs and must hash differently.
+            //
+            // SPARSE, AND SILENT UNTIL A FARM HAS SOWN SOMETHING — the same shape as the queue
+            // rank and the work mode above, and for the same reason: a village with no
+            // farmhouse in it must hash exactly as it did before this existed. That is what
+            // keeps the two fifty-year goldens still while the seam golden moves, and the two
+            // fifty-year villages never place a farmhouse (D162). ⚠️ If they move anyway, the
+            // memory has leaked into a village with no farm in it, which is a bug and not a
+            // re-base.
+            if (workplace.FieldTilesLearned != 0 || workplace.FieldSixteenthsSown != 0)
+            {
+                hash = MixUInt32(hash, (uint)workplace.FieldSixteenthsSown);
+                hash = MixUInt32(hash, (uint)workplace.FieldHandsAtAutumn);
+                hash = MixUInt32(hash, (uint)workplace.FieldTilesLearned);
+                hash = MixUInt32(hash, (uint)(workplace.FieldWalkWhenLearned + 1));
+                hash = MixUInt64(hash, workplace.FieldClearedAtTick);
+                hash = MixByte(hash, (byte)((workplace.FieldProbedThisYear ? 1 : 0) | (workplace.FieldProbeFailed ? 2 : 0)));
+            }
+
+            hash = MixStore(hash, workplace.Store);
+
+            // A bridge's site carries its far bank (D546) — sparse, so no other site mixes a byte.
+            if (workplace.Construction is { BridgeTo: Point far } bridgeSite)
+            {
+                hash = MixByte(hash, 0x4B);
+                hash = MixFixed(hash, far.X);
+                hash = MixFixed(hash, far.Y);
+                hash = MixByte(hash, bridgeSite.RebuildsBridge ? (byte)1 : (byte)0);
+            }
+
+            // The herd on a barn (D590) — sparse, so a workplace with no herd mixes nothing.
+            if (workplace.HerdHead != 0 || workplace.HerdGrowth != 0)
+            {
+                hash = MixByte(hash, 0x76);
+                hash = MixUInt32(hash, (uint)workplace.HerdHead);
+                hash = MixUInt32(hash, (uint)workplace.HerdGrowth);
+            }
+
+            // A pasture's fence (D598) — the fact, never the walls it raises (D335); sparse, so no other workplace mixes a byte.
+            if (workplace.FencedTiles.Count > 0)
+            {
+                hash = MixByte(hash, 0x7A);
+                hash = MixUInt32(hash, (uint)workplace.FencedTiles.Count);
+                for (int t = 0; t < workplace.FencedTiles.Count; t++)
+                {
+                    hash = MixUInt32(hash, (uint)workplace.FencedTiles[t]);
+                }
+
+                hash = MixUInt32(hash, (uint)(workplace.FenceGate?.X ?? 0));
+                hash = MixUInt32(hash, (uint)(workplace.FenceGate?.Y ?? 0));
+                hash = MixByte(hash, workplace.FenceStands ? (byte)1 : (byte)0);
+            }
+
+            // A house's site above the cabin carries its row, and a rebuild says so (`house-tiers.md §7`, D721) — sparse, so
+            // a village that never chose a tier mixes nothing for any site.
+            if (workplace.Construction is { } houseSite && BuildingKinds.TierOf(houseSite.Kind) > 0)
+            {
+                hash = MixByte(hash, 0x84);
+                hash = MixUInt32(hash, (uint)houseSite.Kind);
+                hash = MixByte(hash, houseSite.RebuildsHome ? (byte)1 : (byte)0);
+            }
+
+            // A fence's site carries its barn (D598) — sparse, as a bridge site's far bank is.
+            if (workplace.Construction is { FencesBarnId: not 0 } fenceSite)
+            {
+                hash = MixByte(hash, 0x7B);
+                hash = MixUInt32(hash, (uint)fenceSite.FencesBarnId);
+            }
+
+            // What a herdsman has put out and cut this year (D593) — sparse under its own tag.
+            if (workplace.HayPutOut != 0 || workplace.HayCutThisYear != 0)
+            {
+                hash = MixByte(hash, 0x77);
+                hash = MixUInt32(hash, (uint)workplace.HayPutOut);
+                hash = MixUInt32(hash, (uint)workplace.HayCutThisYear);
+            }
+
+            // When it was raised and last mended (D552): condition is derived from these two.
+            hash = MixUInt64(hash, workplace.RaisedAtTick);
+            hash = MixUInt64(hash, workplace.RepairedAtTick);
+            if (workplace.Closed)
+            {
+                hash = MixByte(hash, 0x61);
+            }
+        }
+
+        // ---- Storage buildings (D30) ----
+        hash = MixUInt32(hash, (uint)world.StoreBuildings.Count);
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            hash = MixUInt32(hash, (uint)world.StoreBuildings[i].Id);
+            hash = MixGivenName(hash, world.StoreBuildings[i].GivenName);
+
+            // Where it stands and how it is turned (D329) — see the workplace block above for why
+            // this was missing, why it cannot be sparse, and why the extent is not here.
+            hash = MixFixed(hash, world.StoreBuildings[i].Position.X);
+            hash = MixFixed(hash, world.StoreBuildings[i].Position.Y);
+            hash = MixAngle(hash, world.StoreBuildings[i].Facing);
+
+            hash = MixStore(hash, world.StoreBuildings[i].Store);
+
+            // And which goods the player has told this store to take (D141). SILENT UNTIL
+            // SOMEBODY SETS ONE, in the same shape and for the same reason as the queue rank
+            // and the work mode above: zero is "they have not said", which is every store in
+            // every village that has never used the control, so those hash exactly as they did
+            // before filters existed and not one golden moves for the feature landing.
+            // ⚠️ BOTH HALVES SINCE D210, because the mask is a long now and the sentinel sits at
+            // bit 62. Mixing only the low 32 bits would leave every good above the thirty-second —
+            // and the `Spoken` flag itself — outside the hash, which is the quiet kind of
+            // determinism bug: two runs that read identical and are not.
+            //
+            // ⭐ The goldens do not move for this, and the reason is the guard above rather than
+            // luck: zero is *"they have not said"*, which is every store in every village that has
+            // never used the control — so an unattended fifty-year run mixes nothing here, exactly
+            // as it did before filters existed.
+            long allowed = world.StoreBuildings[i].AllowedGoods;
+            if (allowed != 0)
+            {
+                hash = MixUInt32(hash, (uint)allowed);
+                hash = MixUInt32(hash, (uint)(allowed >> 32));
+            }
+
+            // And whether it is closed or being emptied (D389) — the player's, and it decides
+            // what every errand may put here. ⚠️ Not hashed at all before D389, as a bare bool.
+            // Sparse in the same shape: open is every store nobody has touched.
+            if (world.StoreBuildings[i].Stocking != Stocking.Open)
+            {
+                hash = MixByte(hash, (byte)world.StoreBuildings[i].Stocking);
+            }
+
+            // And the building it was raised as, when that is not the row its store kind names
+            // (D455) — a longhouse stores as a warehouse, and it decides the shape a demolition or a
+            // move puts back. Sparse in the same shape: every granary, warehouse and market is the
+            // row of its kind, so a village that never raised a longhouse mixes nothing here.
+            StoreBuilding raised = world.StoreBuildings[i];
+            if (raised.RaisedAs is BuildingKind raisedAs
+                && raisedAs != world.BuildingsCatalog.ThatStores(raised.Kind))
+            {
+                hash = MixUInt32(hash, (uint)raisedAs);
+            }
+
+            // And the player's limits at this counter (D372) — the village stock limits' shape
+            // exactly: sparse, null and zero diverging, silent for every market nobody has typed
+            // at. A market's stock is what the marketer keeps there, so the number that says how
+            // much is a fact about the village.
+            StockLimits limits = world.StoreBuildings[i].Limits;
+            for (int g = 0; g < limits.Slots; g++)
+            {
+                int? limit = limits.For((Goods)g);
+                if (limit is not null)
+                {
+                    hash = MixUInt32(hash, (uint)g);
+                    hash = MixUInt32(hash, (uint)limit.Value);
+                }
+            }
+
+            // When it was raised and last mended (D552).
+            hash = MixUInt64(hash, world.StoreBuildings[i].RaisedAtTick);
+            hash = MixUInt64(hash, world.StoreBuildings[i].RepairedAtTick);
+            if (world.StoreBuildings[i].Closed)
+            {
+                hash = MixByte(hash, 0x62);
+            }
+        }
+
+        // ---- What the village knows (Phase 4) ----
+        //
+        // ⛔ HASHED BECAUSE THE SIM READS IT. `SimWorld.YieldWithTechnique` asks this array how much
+        // a trade brings in, so two runs that disagree about it are two villages producing
+        // different amounts of food — and *state the sim reads that the hash cannot see is two runs
+        // that read identical and are not*, the trap this project treats as P0.
+        //
+        // ⭐ SPARSELY, in the shape the crop layer and the sapling bit already use: a village where
+        // nobody has mastered anything mixes NOTHING AT ALL, so no golden moved for the feature
+        // merely existing. Every fifty-year run reaches mastery and moves anyway — the sparseness
+        // is not there to protect the goldens, it is there so the hash says *this village knows
+        // something* rather than *this village has a knowledge system*.
+        //
+        // ⚠️ The last-knower id rides with it. It is only ever read to write a sentence, but it is
+        // set from a scan over the living, so a run that disagreed about it has already diverged
+        // somewhere that matters — and leaving it out would be a silent asymmetry between two
+        // arrays maintained by one loop.
+        for (int i = 0; i < world.KnowledgeStates.Length; i++)
+        {
+            if (world.KnowledgeStates[i] == KnowledgeState.Unknown)
+            {
+                continue;
+            }
+
+            hash = MixUInt32(hash, (uint)i);
+            hash = MixByte(hash, (byte)world.KnowledgeStates[i]);
+            hash = MixUInt32(hash, (uint)world.LastKnowerIds[i]);
+        }
+
+        // ---- When the granary's count began (Phase 4, D32's literacy) ----
+        //
+        // ⛔ HASHED BECAUSE THE SIM READS IT: `HasLiteracy` decides whether a library may be
+        // placed at all, so two runs disagreeing about it are two villages with different
+        // buildings available. **Sparse** — a village that has never raised a granary mixes
+        // nothing, so nothing moved for the feature merely existing.
+        if (world.FirstGranaryTick > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.FirstGranaryTick);
+            hash = MixUInt32(hash, (uint)(world.FirstGranaryTick >> 32));
+        }
+
+        // ---- The food ledger (D387) ----
+        //
+        // ⛔ HASHED BECAUSE IT DECIDES BIRTHS. Every village produces food, so the sparseness rule
+        // does not apply: three counters, always. `FoodLedgerYears` is what says the first year is
+        // not judged, so it is state too.
+        hash = MixUInt32(hash, (uint)world.FoodProducedThisYear);
+        hash = MixUInt32(hash, (uint)world.FoodProducedLastYear);
+        hash = MixUInt32(hash, (uint)world.FoodLedgerYears);
+        hash = MixUInt32(hash, (uint)world.FoodEatenThisYear);
+        hash = MixUInt32(hash, (uint)world.FoodEatenLastYear);
+
+        // ---- A library the village has been given and not yet placed ----
+        //
+        // ⛔ HASHED BECAUSE IT CHANGES WHAT A BUILDING COSTS. Two runs disagreeing about it are two
+        // villages paying different prices for the same library. **Sparse** — false mixes nothing,
+        // so it is invisible to every run that has not reached literacy.
+        if (world.AFreeLibraryIsOwed)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        // The smithy's gift (D444), for the library's reason — sparse, under its own tag.
+        if (world.AFreeSmithyIsOwed)
+        {
+            hash = MixByte(hash, 0x5F);
+        }
+
+        // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
+        // sparse, so a valley nobody has walked mixes nothing. It is state because it decides
+        // where people go and how long they take; a fingerprint that skipped it would stay green
+        // while two villages wore different streets.
+        for (int i = 0; i < world.Paths.Tiles.Count; i++)
+        {
+            if (world.Paths.Tiles[i] != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, world.Paths.Tiles[i]);
+            }
+        }
+
+        if (world.AFirstPathHasWorn)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        // ---- What the village has dug by hand (`quarry.md §3.2`, D434) ----
+        // The quarry's unlock and the smithy gift read these, so they are state. Sparsely, under a
+        // tag each, so a village that never dug hashes as it did and stone cannot read as iron.
+        if (world.StoneEverDug != 0)
+        {
+            hash = MixByte(hash, 0x51);
+            hash = MixUInt32(hash, (uint)world.StoneEverDug);
+        }
+
+        if (world.IronEverDug != 0)
+        {
+            hash = MixByte(hash, 0x1E);
+            hash = MixUInt32(hash, (uint)world.IronEverDug);
+        }
+
+        // The iron tools the smith has forged — the mine's unlock reads it (D449), so it is state.
+        // Sparse, under its own tag: a village that never forged iron hashes as it did.
+        if (world.IronToolsEverForged != 0)
+        {
+            hash = MixByte(hash, 0x2F);
+            hash = MixUInt32(hash, (uint)world.IronToolsEverForged);
+        }
+
+        // The mill's and the bakery's unlock reads this (D522, D523), so it is state — sparse, under a tag.
+        // Flour ground is a statistic since the two are learned together, and is not mixed.
+        if (world.WheatEverReaped != 0)
+        {
+            hash = MixByte(hash, 0x3A);
+            hash = MixUInt32(hash, (uint)world.WheatEverReaped);
+        }
+
+        // The tailor's shop's unlock reads this (D659, `clothing.md §3.6`), so it is state — sparse, under a tag. Coats
+        // sewn is a statistic and is not mixed.
+        if (world.LeatherEverHeld != 0)
+        {
+            hash = MixByte(hash, 0x3B);
+            hash = MixUInt32(hash, (uint)world.LeatherEverHeld);
+        }
+
+        // Whether the tech-tree map has been introduced (D440) — sparse: a village that never
+        // learned by doing mixes nothing.
+        if (world.ShownTheTechTree)
+        {
+            hash = MixByte(hash, 0x7E);
+        }
+
+        // ⭐ Whether the workshop has been learned (D678, `workshop-and-the-carpenter.md §4.1a`, choice 2) — a tag byte when
+        // true, `ShownTheTechTree`'s shape. The gate reads THIS FLAG, not `LogsEverFelled`, so the thing the sim reads is
+        // what is hashed: two villages that differ in what the player may build differ in hash (the `StoneEverDug`
+        // remark's sentence), and a village that has not learned it hashes byte for byte as before.
+        //
+        // ⚠️ THE GAP, STATED (D676): `LogsEverFelled` stays an unhashed statistic — the flag is set from it where it
+        // moves (`SimWorld.Felled`). So two villages at 100 and 2,400 logs felled hash alike and will diverge later: a
+        // FUTURE difference, not a present one. Everything felling changes in the present (the tile, the store, the
+        // villager's load and state) is hashed; the counter is saved (`logs_ever_felled`), so the round trip keeps it;
+        // and the fingerprint has never been asked to catch a nondeterminism that moved only this counter and nothing
+        // else. Hashing the counter densely would move every golden once for a difference below the gate that nothing
+        // reads (every village fells wood from day one). `WorkshopTests.ALearnedWorkshopIsInTheFingerprint` asserts the
+        // gap on purpose — read §4.1a before closing it.
+        if (world.WorkshopLearned)
+        {
+            hash = MixByte(hash, 0x7F);
+        }
+
+        // ⭐ The school's latch (D754), joined at `school-and-education.md §12` step 5 (D766) with the goldens taken once (D152):
+        // a tag byte only when learned, so a village before its library hashes as before. ⚠️ No golden moved: D754 feared every
+        // golden village learns it from the library gift, but an unattended village never raises its gifted library (the
+        // harness's own lesson, ZzSchool). `SchoolsAreFull` is NOT mixed — narration bookkeeping (D42's shape) — and
+        // `ChildrenWaitingForSchool` is a cache.
+        if (world.SchoolLearned)
+        {
+            hash = MixByte(hash, 0x87);
+        }
+
+        // ⭐ The houses the family tree has taught, and what the village builds its homes as (`house-tiers.md §7`, D721) —
+        // a tag byte each, only when learned or chosen, so a village of cabins hashes byte for byte as before.
+        //
+        // ⚠️ THE GAP, STATED (D676's shape): the two factors — the deepest generation born and the most ever alive — are
+        // derived from the villagers and mixed nowhere as such. Two villages a generation apart hash alike until the
+        // latch; the latch is what the sim reads, and it is mixed here. `HouseTierTests` asserts the gap on purpose.
+        if (world.CottageLearned)
+        {
+            hash = MixByte(hash, 0x81);
+        }
+
+        if (world.ManorLearned)
+        {
+            hash = MixByte(hash, 0x82);
+        }
+
+        if (world.HomesBuiltAs != BuildingKind.Home)
+        {
+            hash = MixByte(hash, 0x83);
+            hash = MixUInt32(hash, (uint)world.HomesBuiltAs);
+        }
+
+        // Rebuild older homes, unticked (D723) — only when off.
+        if (!world.RebuildsOlderHomes)
+        {
+            hash = MixByte(hash, 0x85);
+        }
+
+        // ---- The libraries, and what is written in them (Phase 4 slice 2) ----
+        //
+        // ⚠️ THE RECORDS ARE MIXED IN SHELF ORDER, NOT AS A SET, and that is deliberate. Two runs
+        // that recorded the same techniques in different years are **different villages that made
+        // the same choices at different times** — and the shelf a record sits on is what a later
+        // slice's fire will take, so which building holds what has to be part of the fingerprint.
+        // ⛔⛔ SPARSELY, AND I BROKE THIS ONE BLOCK AFTER WRITING IT DOWN. Mixing the count
+        // unconditionally put a zero into every village that has no library — **which moved five
+        // goldens for a feature none of those villages uses.** The rule is stated directly above
+        // for the knowledge states and it is the same rule here: *a village with no library is not
+        // different from a village from before libraries existed.* **A golden that moves for a
+        // feature a run never touches is a golden that has stopped meaning anything.**
+        if (world.Libraries.Count > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.Libraries.Count);
+        }
+
+        for (int i = 0; i < world.Libraries.Count; i++)
+        {
+            Library library = world.Libraries[i];
+            hash = MixFixed(hash, library.Position.X);
+            hash = MixFixed(hash, library.Position.Y);
+            hash = MixAngle(hash, library.Facing);
+            hash = MixUInt32(hash, (uint)library.Records.Count);
+            for (int r = 0; r < library.Records.Count; r++)
+            {
+                // ⚠️ THE TECHNIQUE ONLY, NOT THE NAME BESIDE IT (D258). The finder's name is
+                // HISTORY, not machinery — nothing in the sim reads it, and it is a pure
+                // function of who mastered the trade, which the villagers are already hashed
+                // for. **Mixing it would move every golden with a library for a field that
+                // cannot make two runs of one seed differ.**
+                hash = MixUInt32(hash, (uint)library.Records[r].TechniqueId);
+            }
+
+            // When it was raised and last mended (D552).
+            hash = MixUInt64(hash, library.RaisedAtTick);
+            hash = MixUInt64(hash, library.RepairedAtTick);
+            if (library.Closed)
+            {
+                hash = MixByte(hash, 0x63);
+            }
+        }
+
+        // ---- The founders' hall: the gift, the moment, and the building (D252) ----
+        //
+        // ⛔ ALL THREE ARE SIM STATE THE SIM READS. The gift changes what a building costs; the
+        // moment is a fires-once latch, so two runs disagreeing about it are one village that will
+        // be given a hall and one that will not; and the hall's position is a place people walk to.
+        //
+        // ⛔⛔ SPARSE, ALL THE WAY DOWN, AND THIS IS THE THIRD BLOCK IN THIS FILE TO SAY SO — the
+        // library's comment directly above records breaking exactly this rule and moving five
+        // goldens for a feature none of those villages used. **A village whose founders are still
+        // alive is not a different village from one that predates town halls.** Every guard in
+        // this suite that never reaches the trigger must hash byte-identically to before, and that
+        // is a claim to check with a `git diff`, not to notice.
+        if (world.SaidTheFoundersAreGone)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        if (world.ATownHallIsOwed)
+        {
+            hash = MixByte(hash, 1);
+        }
+
+        if (world.TownHall is { } townHall)
+        {
+            hash = MixFixed(hash, townHall.Position.X);
+            hash = MixFixed(hash, townHall.Position.Y);
+            hash = MixAngle(hash, townHall.Facing);
+
+            // When it was raised (never hashed before D552 — it is a fact of the village) and last mended.
+            hash = MixUInt64(hash, townHall.RaisedAtTick);
+            hash = MixUInt64(hash, townHall.RepairedAtTick);
+        }
+
+        // ---- The wells (D427) ----
+        // A place people walk to, so where it stands is sim state. ⛔ Sparse, the library's rule
+        // above: a village with no well hashes as it did before wells existed. `Draws` is history
+        // nothing reads, left out as the library's finder's name is.
+        if (world.Wells.Count > 0)
+        {
+            hash = MixUInt32(hash, (uint)world.Wells.Count);
+        }
+
+        for (int i = 0; i < world.Wells.Count; i++)
+        {
+            Well well = world.Wells[i];
+            hash = MixFixed(hash, well.Position.X);
+            hash = MixFixed(hash, well.Position.Y);
+            hash = MixAngle(hash, well.Facing);
+            hash = MixUInt32(hash, (uint)well.Kind);
+            hash = MixUInt64(hash, well.RaisedAtTick);
+            hash = MixUInt64(hash, well.RepairedAtTick);
+            if (well.Closed)
+            {
+                hash = MixByte(hash, 0x64);
+            }
+        }
+
+        // ---- 0x67 was the longhouses (D566; retired D571) ---- the block was sparse (the count mixed only when
+        // one stood), so a village that never raised one hashes exactly as it did. The tag is never reused.
+
+        // ---- The bridges (D546) ----
+        // A deck over the water decides where everybody can walk, so it is sim state. ⛔ Sparse, the
+        // well's rule: a village with no bridge hashes as it did before bridges existed. The deck index
+        // is derived from these and is not mixed (D335); a bridge's crossings are history nothing reads.
+        if (world.Bridges.Count > 0)
+        {
+            hash = MixByte(hash, 0x4C);
+            hash = MixUInt32(hash, (uint)world.Bridges.Count);
+        }
+
+        for (int i = 0; i < world.Bridges.Count; i++)
+        {
+            Bridge bridge = world.Bridges[i];
+            hash = MixFixed(hash, bridge.Near.X);
+            hash = MixFixed(hash, bridge.Near.Y);
+            hash = MixFixed(hash, bridge.Far.X);
+            hash = MixFixed(hash, bridge.Far.Y);
+            hash = MixUInt32(hash, (uint)bridge.Kind);
+            hash = MixUInt64(hash, bridge.RaisedAtTick);
+            hash = MixUInt64(hash, bridge.RepairedAtTick);
+            if (bridge.Closed)
+            {
+                hash = MixByte(hash, 0x65);
+            }
+        }
+
+        // The stone bridge's unlock reads the crossings (D546), so they are state — sparse, under a tag.
+        if (world.BridgeCrossings != 0)
+        {
+            hash = MixByte(hash, 0x4D);
+            hash = MixUInt32(hash, (uint)world.BridgeCrossings);
+        }
+
+        // ---- Goods on the ground (D96) ----
+        // A heap is as much sim state as anything in a store — it is goods in a place, which
+        // is the whole reason it can be walked to (D96, against D83's arms).
+        //
+        // SPARSE AND WITH NO COUNT, exactly like the harvest layer above and for exactly that
+        // reason: a village that has never set anything down mixes nothing at all, so this is
+        // invisible to every run that does not use it and the goldens do not move for it
+        // existing. A count mixed unconditionally would put a fresh zero into every
+        // established village — the mistake the residential layer made, and the one D87
+        // deliberately declined to repeat.
+        for (int i = 0; i < world.GroundStacks.Count; i++)
+        {
+            GroundStack stack = world.GroundStacks[i];
+            hash = MixUInt32(hash, (uint)stack.Position.X);
+            hash = MixUInt32(hash, (uint)stack.Position.Y);
+            hash = MixByte(hash, (byte)stack.Goods);
+            hash = MixUInt32(hash, (uint)stack.Amount);
+        }
+
+        // ---- Piles waiting on their ground to be cleared (D100) ----
+        // Player intent, so it is sim state: a pile that is coming is a different world from
+        // one that is not. Sparse and countless for the third time, so a village that has
+        // marked none mixes nothing.
+        // ⛔ THE KIND AND THE FACING WERE FLATTENED AWAY BEFORE THIS COULD SEE THEM (D329).
+        // `BuildingsWaitingOnTheGround` exposes a list of positions, while the field behind it
+        // holds a `PendingBuilding(Position, Kind, Facing)` — so **which building was waiting, and
+        // which way round, was sim state nothing hashed.** Two villages each waiting on one tile
+        // for two different buildings had the same fingerprint.
+        for (int i = 0; i < world.BuildingsWaiting.Count; i++)
+        {
+            hash = MixFixed(hash, world.BuildingsWaiting[i].Position.X);
+            hash = MixFixed(hash, world.BuildingsWaiting[i].Position.Y);
+            hash = MixUInt32(hash, (uint)world.BuildingsWaiting[i].Kind);
+            hash = MixAngle(hash, world.BuildingsWaiting[i].Facing);
+        }
+
+        // ---- The nomads (`nomads.md §6`, D565) ----
+        // The count and the next knock's year decide when the next band comes, so they are state; sparse, under
+        // a tag, so a village nobody has ever knocked on hashes as it did. The band itself is not state: it is
+        // derived at the knock and settled the same tick (D572), and the villagers it became are hashed as villagers.
+        if (world.BandsEverKnocked != 0 || world.NextKnockYear != 0)
+        {
+            hash = MixByte(hash, 0x6E);
+            hash = MixUInt32(hash, (uint)world.BandsEverKnocked);
+            hash = MixUInt32(hash, (uint)world.NextKnockYear);
+        }
+
+        // How many times the valley has been re-founded (D567) — the next wait is hashed on it. Sparse.
+        if (world.Refoundings != 0)
+        {
+            hash = MixByte(hash, 0x69);
+            hash = MixUInt32(hash, (uint)world.Refoundings);
+        }
+
+        // 0x6F was the waiting band (D565; retired D572 — the switch is the permission and a band settles the tick it
+        // knocks). It was sparse, so a village between knocks hashes exactly as it did. The tag is never reused.
+
+        // The Nomads switch (D570), in the share-out switch's shape: mixed only when it is off, so a village that
+        // never touched it hashes as it did. A preference that changes the sim is sim state.
+        if (!world.NomadsEnabled)
+        {
+            hash = MixByte(hash, 0x6A);
+        }
+
+        // ---- Trade (D590, `trade.md §11` commit 1) ----
+        // ⭐ ALL SPARSE, AND THAT IS WHAT HOLDS THE GOLDENS (`trade.md §11.1`): a village that never set an order, saw a
+        // boat or woke the region mixes nothing here at all. Each block under its own tag so two facts cannot collide.
+        // The orders are a stock limit's shape and hash its way: the good with its value, null nothing, zero a zero.
+        for (int i = 0; i < world.TradeKeep.Slots; i++)
+        {
+            if (world.TradeKeep.For((Goods)i) is int keep)
+            {
+                hash = MixByte(hash, 0x70);
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)keep);
+            }
+        }
+
+        for (int i = 0; i < world.TradeBuy.Slots; i++)
+        {
+            if (world.TradeBuy.For((Goods)i) is int buy)
+            {
+                hash = MixByte(hash, 0x71);
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)buy);
+            }
+        }
+
+        if (world.Boat is TradeBoat boat)
+        {
+            hash = MixByte(hash, 0x72);
+            hash = MixUInt32(hash, (uint)boat.NeighbourId);
+            hash = MixUInt64(hash, boat.AppearsAtTick);
+            hash = MixUInt64(hash, boat.DocksAtTick);
+            hash = MixUInt64(hash, boat.LeavesAtTick);
+        }
+
+        if (world.BoatsEverCame != 0)
+        {
+            hash = MixByte(hash, 0x73);
+            hash = MixUInt32(hash, (uint)world.BoatsEverCame);
+        }
+
+        // The post's order for animals (D595) — sparse; none and zero are different orders, as a keep order's are.
+        if (world.TradeBuyHead is int head)
+        {
+            hash = MixByte(hash, 0x79);
+            hash = MixUInt32(hash, (uint)head);
+        }
+
+        // When the region woke (D594) — sparse: a village that never built a post mixes nothing.
+        if (world.RegionAwakeSince != 0)
+        {
+            hash = MixByte(hash, 0x78);
+            hash = MixUInt64(hash, world.RegionAwakeSince);
+        }
+
+        // A neighbour's stock: each held good with its index, and its animals — only what is not zero.
+        for (int n = 0; n < world.NeighbourStocks.Count; n++)
+        {
+            NeighbourStock stock = world.NeighbourStocks[n];
+            for (int i = 0; i < stock.Held.Length; i++)
+            {
+                if (stock.Held[i] != 0)
+                {
+                    hash = MixByte(hash, 0x74);
+                    hash = MixUInt32(hash, (uint)n);
+                    hash = MixUInt32(hash, (uint)i);
+                    hash = MixUInt32(hash, (uint)stock.Held[i]);
+                }
+            }
+
+            if (stock.Animals != 0)
+            {
+                hash = MixByte(hash, 0x75);
+                hash = MixUInt32(hash, (uint)n);
+                hash = MixUInt32(hash, (uint)stock.Animals);
+            }
+        }
+
+        return hash;
+    }
+
+    /// <summary>Mix the contents of one store.</summary>
+    /// <remarks>
+    /// Shared by every place that holds things, so a store added to a new kind of
+    /// building cannot be left out of the hash by being written in a different style.
+    /// </remarks>
+    private static ulong MixStore(ulong hash, Stockpile store)
+    {
+        // Every good, by index, rather than three lines naming three of them. A good
+        // that is not hashed is a good two different worlds can disagree about while
+        // reading identical — D51's trap, and the reason this is a loop the day stone
+        // and tools arrive rather than the day somebody notices.
+        //
+        // ⭐ BOUNDED BY THE STORE'S OWN SIZE, NOT BY THE ENUM (D210, slice 1b). Every stockpile in
+        // a run is sized from that run's goods catalogue, so this covers a mod-added good for
+        // free — where `Stockpile.Kinds` would have silently stopped at the sixth and left the
+        // village holding something the hash never saw. That is the same trap one level up: not a
+        // crash, but two runs that read identical and are not.
+        // ⭐⭐ SPARSE, AND THE INDEX GOES IN WITH THE VALUE (2026-09-03). This used to mix every
+        // slot including the empty ones, which meant **adding a good to the catalogue changed the
+        // hash of every village that had never seen it** — five goldens moved for `Meat` and
+        // `Leather`, neither of which any of those villages contains.
+        //
+        // ⛔ THAT BROKE THIS PROJECT'S OWN RULE, WHICH IS WRITTEN ON EVERY OTHER CONTROL IN THIS
+        // FILE: *a village that never uses a feature must hash byte-identically.* Zones, stock
+        // limits, profession targets, ground stacks and pending piles are all sparse for exactly
+        // this reason; stores were the one dense loop left, and goods are the one catalogue that
+        // is expected to keep growing — Joe has already asked for *"different types of game
+        // meat."* **Every one of those would have churned the goldens again.**
+        //
+        // ⚠️ THE INDEX IS WHAT MAKES SPARSE SAFE. Mixing values alone relied on position, so
+        // dropping the empties would make {0,0,5} and {5,0,0} collide. Mixing (slot, amount) pairs
+        // for the non-empty slots only is the same shape the stock-limit loop above already uses,
+        // and `OneGrainOfPitchIsEnoughToShowUp` is the guard that a single unit still shows.
+        for (int i = 0; i < store.Slots; i++)
+        {
+            int held = store[(Goods)i];
+            if (held != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixUInt32(hash, (uint)held);
+            }
+        }
+
+        return hash;
+    }
+
+    /// <summary>Fingerprint a generated valley — its terrain and everything on it.</summary>
+    public static ulong MixMap(ulong hash, GeneratedMap map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+
+        hash = MixUInt32(hash, (uint)map.Width);
+        hash = MixUInt32(hash, (uint)map.Height);
+        hash = MixUInt32(hash, (uint)map.MinX);
+        hash = MixUInt32(hash, (uint)map.MinY);
+
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            hash = MixByte(hash, (byte)map.Tiles[i]);
+        }
+
+        // What is sown where (D161). ⭐ SPARSE, AND WITH NO COUNT ALONGSIDE — the same shape as
+        // the harvest zone above and for exactly the reason stated there: a village that has
+        // never sown a field mixes *nothing at all*, so this layer is invisible to every run
+        // that does not farm and neither golden moves for its existing. A full pass would
+        // mix a fresh zero per tile into every village in the game.
+        //
+        // The index alone determines the set, so the count was only ever belt and braces —
+        // and here it would be the belt that moved the hashes.
+        for (int i = 0; i < map.Crops.Count; i++)
+        {
+            if (map.Crops[i] != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixByte(hash, map.Crops[i]);
+            }
+        }
+
+        // ⭐ THE HEIGHTS (D735, `heights.md §9`) — world state the walking reads, so in the hash. ⭐ SPARSE, in the crop
+        // layer's shape and for its reason: a flat valley (`height_levels` 1, and every save from before heights) mixes
+        // nothing at all, which is what lets every re-taken golden be proven against the flat valley by ablation.
+        for (int i = 0; i < map.Heights.Count; i++)
+        {
+            if (map.Heights[i] != 0)
+            {
+                hash = MixUInt32(hash, (uint)i);
+                hash = MixByte(hash, map.Heights[i]);
+            }
+        }
+
+        // Which saplings were planted and have not yet been passed over (D220). ⭐ SPARSE, in
+        // the same shape and for the same reason as the crop layer above: a village whose
+        // forester has never planted mixes *nothing at all*, so this is invisible to every run
+        // that does not plant.
+        //
+        // ⚠️ AND IT MUST BE HASHED, because it decides *when a tile becomes wood*. State the
+        // sim reads and the hash does not see is two runs that read identical and are not — the
+        // trap `MixStore`'s own comment records, and the one this project treats as P0. It is
+        // one bit per tile and it changes the map, which is as sim as state gets.
+        for (int i = 0; i < map.YoungSaplings.Count; i++)
+        {
+            if (map.YoungSaplings[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        // ⭐ AND THE LAID-BARE TILES (D493) — they decide whether a wood may return, which is the
+        // young-sapling argument above, word for word. Sparse, so a valley nothing was ever
+        // destroyed in mixes nothing. ⚠️ Untagged, unlike the destroy layer, because it cannot
+        // collide: a young sapling is always Sapling terrain and a laid-bare tile never is, and the
+        // terrain is mixed above — a tag here would be code no guard could ever catch missing.
+        for (int i = 0; i < map.LaidBare.Count; i++)
+        {
+            if (map.LaidBare[i])
+            {
+                hash = MixUInt32(hash, (uint)i);
+            }
+        }
+
+        // The forage sites and the tree stands were mixed in here, counts and all. They no
+        // longer exist (`forests-and-gathering.md` slice 5), so there is nothing to mix —
+        // and the woodland that replaced them is in `map.Tiles` above, which is where a fact
+        // about the ground belongs. **Every tree in the valley is still hashed**; what has
+        // gone is a list of eight positions that used to say which of them mattered.
+        hash = MixUInt32(hash, (uint)map.FoundingSite.X);
+        return MixUInt32(hash, (uint)map.FoundingSite.Y);
+    }
+
+    private static ulong MixVillager(ulong hash, Villager villager, bool skills)
+    {
+        hash = MixUInt32(hash, (uint)villager.Id);
+        hash = MixUInt32(hash, (uint)villager.HouseholdId);
+        hash = MixByte(hash, (byte)villager.LifeStage);
+        // ⛔ `AgeYears` is not mixed (D468): it is derived from `BirthTick`, which is (D335).
+        hash = MixUInt32(hash, (uint)villager.Hunger);
+        hash = MixUInt32(hash, (uint)villager.TicksAtMaxHunger);
+        hash = MixUInt32(hash, (uint)villager.Cold);
+        hash = MixByte(hash, (byte)villager.State);
+        // ⭐ RAW FIXED-POINT BITS, ALL SIXTY-FOUR, NEVER QUANTISED (gridless slice 3, D354;
+        // `gridless.md §5`). Two villagers a fraction of a tile apart are two different worlds, and
+        // the fingerprint has to say so. ⛔ Proved the D211/D329 way before a golden was re-taken:
+        // with `Tile.X/Tile.Y` mixed here as before, every one of 1,091 guards was byte-identical
+        // — the village did not move, the fingerprint's shape did.
+        hash = MixFixed(hash, villager.Position.X);
+        hash = MixFixed(hash, villager.Position.Y);
+        // ⭐ The leg (D356): where the straight line began and ends, the journey's target, and how
+        // far along it is — sim state a fresh machine could not re-derive from the position alone.
+        hash = MixFixed(hash, villager.LegFrom.X);
+        hash = MixFixed(hash, villager.LegFrom.Y);
+        hash = MixFixed(hash, villager.LegTo.X);
+        hash = MixFixed(hash, villager.LegTo.Y);
+        hash = MixUInt32(hash, (uint)villager.LegTarget.X);
+        hash = MixUInt32(hash, (uint)villager.LegTarget.Y);
+        // Its cost and how much is walked are `Fixed` since steady pace (D463), raw bits like the rest.
+        hash = MixFixed(hash, villager.LegTicks);
+        hash = MixFixed(hash, villager.LegWalked);
+        hash = MixUInt32(hash, (uint)villager.ActionTicksRemaining);
+        hash = MixByte(hash, villager.Alive ? (byte)1 : (byte)0);
+        hash = MixByte(hash, (byte)villager.CauseOfDeath);
+        hash = MixUInt64(hash, villager.DiedAtTick ?? ulong.MaxValue);
+        hash = MixUInt32(hash, (uint)villager.WintersSurvived);
+        hash = MixUInt32(hash, (uint)villager.TotalGathers);
+        hash = MixUInt32(hash, (uint)villager.LifespanYears);
+        hash = MixUInt32(hash, (uint)villager.Vigour);
+        hash = MixByte(hash, (byte)villager.Stage);
+        hash = MixUInt32(hash, (uint)villager.GathersThisSeason);
+        hash = MixUInt64(hash, unchecked((ulong)villager.BirthTick));
+        hash = MixUInt32(hash, (uint)villager.PartnerId);
+        hash = MixUInt32(hash, (uint)villager.WorkplaceId);
+
+        // What is in their arms, which this had been missing. Carried goods are as much
+        // sim state as anything in a store — they are the goods that exist between two
+        // buildings — and a village could have desynced in exactly the amount somebody
+        // was holding without the determinism test noticing. Appended at the end, per
+        // the note at the top of this file.
+        //
+        // ⭐ AND IT IS THE SAME LOOP EVERY OTHER STORE GETS (D211). These were three lines
+        // naming three goods, over three named fields — the arms being the one stockpile in
+        // the game D82 never reached. **The trap is the one `MixStore`'s own comment records:**
+        // a good that is not hashed is a good two runs can disagree about while reading
+        // identical, and a villager can carry stone now.
+        hash = MixStore(hash, villager.Carried);
+
+        // The stint (D384): how many splits into the day a woodcutter is decides whether the
+        // next completion re-arms or walks home. Appended at the end, per the note at the top.
+        hash = MixUInt32(hash, (uint)villager.SplitsThisStint);
+        hash = MixUInt32(hash, (uint)villager.ErrandX);
+        hash = MixUInt32(hash, (uint)villager.ErrandY);
+
+        // ⭐ Their own rhythm (§3.5, D190) — sim state, because it decides what they do.
+        //
+        // ⚠️ SPARSE, and the reason is the same one the zone loops above record: mixing it
+        // unconditionally would put a fresh zero into every villager in the game, so a village
+        // played with the rhythm switched off could never hash as it did before §3.5 existed —
+        // and §10 asks for exactly that village to be posable. A rhythm is only ever pending
+        // for a few ticks at the start of a working life; once spent it is inert, and inert
+        // state has no business in a fingerprint.
+        // When a nomad came to the valley (D565) — the most-ever-held reads it, so it is state. Sparse, under
+        // a tag: a founder and anybody born here mix nothing new.
+        if (villager.ArrivedAtTick != 0UL)
+        {
+            hash = MixByte(hash, 0x4E);
+            hash = MixUInt64(hash, villager.ArrivedAtTick);
+        }
+
+        if (villager.Rhythm != 0)
+        {
+            hash = MixUInt32(hash, (uint)villager.Rhythm);
+        }
+
+        // ⭐ THE TRADE THE PLAYER KEEPS THEM ON, and it MUST be hashed because it changes what
+        // somebody does — the P0 rule this file is built on. **Sparse, like `Rhythm` above and
+        // for the same reason:** mixing it unconditionally would put a fresh zero into every
+        // villager in every village nobody has pinned anybody in, and move every golden for a
+        // feature none of them uses. That is the mistake recorded against the library count.
+        //
+        // ⚠️ `+ 1` so that a pin on the trade whose enum value is 0 is distinguishable from no
+        // pin at all — `(int)JobKind.Forager` is 0, and `if (x != 0)` would silently never mix it.
+        if (villager.PinnedTrade is JobKind pinned)
+        {
+            hash = MixUInt32(hash, (uint)pinned + 1u);
+        }
+
+        // The tool in their hands and the forge stint (D391) — both decide what they do next.
+        // Sparse, like the pin above and for the same reason: a village with no tools and no
+        // smithy hashes as it did before either existed (`AVillageWithNoToolsAndNoSmithHashesAsBefore`).
+        // A tag goes in with each value so that a tool of five and a stint of five cannot read
+        // the same (D291's index, one villager deep).
+        if (villager.ToolUses != 0)
+        {
+            hash = MixUInt32(hash, 1u);
+            hash = MixUInt32(hash, (uint)villager.ToolUses);
+
+            // WHICH KIND (`tools-and-the-smith.md §9.2`) — as a difference from stone, so the
+            // founders' stone tools mix nothing new and a village with only stone tools hashes as
+            // it did before iron tools existed. Its own tag, after the uses it qualifies.
+            if (villager.ToolGood != Goods.Tools)
+            {
+                hash = MixUInt32(hash, 4u);
+                hash = MixUInt32(hash, (uint)villager.ToolGood);
+            }
+        }
+
+        if (villager.ForgesThisStint != 0)
+        {
+            hash = MixUInt32(hash, 2u);
+            hash = MixUInt32(hash, (uint)villager.ForgesThisStint);
+        }
+
+        if (villager.DigsThisStint != 0)
+        {
+            hash = MixUInt32(hash, 3u);
+            hash = MixUInt32(hash, (uint)villager.DigsThisStint);
+        }
+
+        // ⭐ A FULL BELLY (`food-chain.md §3.2`, D522) — it decides when they next eat. Sparse, so a
+        // village with no bread, where nobody is ever full, hashes as it did before bread existed.
+        if (villager.FullFor != 0)
+        {
+            hash = MixUInt32(hash, 5u);
+            hash = MixUInt32(hash, (uint)villager.FullFor);
+        }
+
+        // The mill's and the oven's stint (D522), sparse and tagged like the forge's above.
+        if (villager.BatchesThisStint != 0)
+        {
+            hash = MixUInt32(hash, 6u);
+            hash = MixUInt32(hash, (uint)villager.BatchesThisStint);
+        }
+
+        // ⭐ WHOSE BATCH (W1, D792): the trade beside the shared state, which cannot say it — and decides the recall. Sparse,
+        // only while at a batch, so a village with no batch hut hashes as it did before W1; tagged like the stints.
+        if (villager.State is VillagerState.TravelingToABatch or VillagerState.WorkingABatch)
+        {
+            hash = MixUInt32(hash, 13u);
+            hash = MixUInt32(hash, villager.BatchTrade is JobKind trade ? (uint)trade : uint.MaxValue);
+        }
+
+        // The site a builder serves (D602) — it decides where the next builder goes. Sparse and tagged like the stints.
+        if (villager.ServingSiteId != 0)
+        {
+            hash = MixUInt32(hash, 7u);
+            hash = MixUInt32(hash, (uint)villager.ServingSiteId);
+        }
+
+        // The coat on their back (D659, `clothing.md §3.3`) — it decides how fast open ground chills them. Sparse and
+        // tagged like the tool, so a village with no coat hashes as it did before coats existed.
+        if (villager.CoatDays != 0)
+        {
+            hash = MixUInt32(hash, 8u);
+            hash = MixUInt32(hash, (uint)villager.CoatDays);
+        }
+
+        // The household's cart in their hands (`handcart.md §4`, Slice H) — it decides how much they carry and how fast
+        // they walk. Sparse and tagged like the coat, so a village with no cart hashes as it did before carts existed.
+        if (villager.PushingACart)
+        {
+            hash = MixUInt32(hash, 9u);
+        }
+
+        // Whose cart it is (`handcart.md §13.2`) — the works' cart parks at the building and wears the building's count, the
+        // household's at the door. Sparse and tagged like the pusher's flag.
+        if (villager.CartForTheWorks)
+        {
+            hash = MixUInt32(hash, 10u);
+        }
+
+        // ⭐ The school (D754): where they are a pupil and the term served — both decide what they do and, from §12 step 2,
+        // what school gives them. Sparse and tagged, so a village with no school hashes as it did before schools existed.
+        if (villager.SchoolId != 0)
+        {
+            hash = MixUInt32(hash, 11u);
+            hash = MixUInt32(hash, (uint)villager.SchoolId);
+        }
+
+        if (villager.SchoolTicks != 0)
+        {
+            hash = MixUInt32(hash, 12u);
+            hash = MixUInt32(hash, (uint)villager.SchoolTicks);
+        }
+
+        // ⭐ CONTENTMENT (W2, D801–D803): the day's tallies, the causes the season's read found and the seasons unsettled —
+        // hashed since step 4, when the births gate first reads them. Sparse and tagged, each its own, so a content person
+        // with nothing counted hashes as they did before contentment existed.
+        hash = MixSparse(hash, 14u, villager.ColdDaysThisWinter);
+        hash = MixSparse(hash, 15u, villager.LastColdDay);
+        hash = MixSparse(hash, 16u, villager.ColdWinterHeldUntil);
+        hash = MixSparse(hash, 17u, villager.CommuteTiles);
+        hash = MixSparse(hash, 18u, villager.ContentmentCauses);
+        hash = MixSparse(hash, 19u, villager.SeasonsUnsettled);
+
+        // Gone from the valley (W2 step 5): sparse, so a village nobody has left hashes as it did. The state is mixed above.
+        if (villager.LeftAtTick is ulong left)
+        {
+            hash = MixUInt64(MixUInt32(hash, 20u), left);
+        }
+
+        // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
+        // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
+        // mixes nothing for a villager who has never held a job and cannot depend on the
+        // sequence entries happened to be created in (D15).
+        //
+        // ⚠️ NO COUNT ALONGSIDE, on the same reasoning `Zones.Harvest` records: the ids
+        // determine the set by themselves, and mixing a length would put a fresh zero into
+        // every villager who has never worked — which is exactly the invisibility this
+        // structure is shaped for.
+        if (!skills)
+        {
+            return hash;
+        }
+
+        for (int i = 0; i < villager.Skills.Count; i++)
+        {
+            SkillProgress progress = villager.Skills[i];
+            hash = MixUInt32(hash, (uint)progress.SkillId);
+            hash = MixUInt32(hash, (uint)progress.Ticks);
+            hash = MixUInt32(hash, (uint)progress.Work);
+            hash = MixByte(hash, progress.Mastered ? (byte)1 : (byte)0);
+
+            // ⭐ AND WHETHER THEY WORKED IT OUT HERE, sparsely — false mixes nothing, so a village
+            // whose only master arrived with the cart is byte-identical to one from before this
+            // existed. The sim reads it (`KnowledgeSystem` asks it to decide whether a technique
+            // can be discovered at all), so it cannot be left out of the fingerprint.
+            if (progress.MasteredHere)
+            {
+                hash = MixByte(hash, 1);
+            }
+        }
+
+        return hash;
+    }
+
+    /// <summary>Mix eight bytes, low byte first, into the running hash.</summary>
+    /// <summary>
+    /// A name the player typed (D376) — <b>sparse</b>: null mixes nothing, so a village where
+    /// nobody renamed anything hashes as it did before renaming existed; a given name mixes its
+    /// length and every character, so two villages that disagree about a name read differently.
+    /// </summary>
+    /// <summary>A tag and a value, only when the value is not 0 — the sparse shape every field since D152 takes.</summary>
+    private static ulong MixSparse(ulong hash, uint tag, int value) =>
+        value == 0 ? hash : MixUInt32(MixUInt32(hash, tag), (uint)value);
+
+    private static ulong MixGivenName(ulong hash, string? name)
+    {
+        if (name is null)
+        {
+            return hash;
+        }
+
+        hash = MixUInt32(hash, (uint)name.Length);
+        for (int i = 0; i < name.Length; i++)
+        {
+            hash = MixUInt32(hash, name[i]);
+        }
+
+        return hash;
+    }
+
+    public static ulong MixUInt64(ulong hash, ulong value)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            hash ^= (value >> (i * 8)) & 0xFF;
+            hash = unchecked(hash * FnvPrime);
+        }
+
+        return hash;
+    }
+
+    /// <summary>
+    /// Mix a fixed-point value — <b>all sixty-four bits of it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔⛔ RAW BITS, NEVER QUANTISED, AND THE DISTINCTION IS A DETERMINISM BUG IF IT IS
+    /// MISSED.</b> <c>specs/gridless.md §5</c> once said positions hash as *"quantised fixed-point
+    /// bits"*. That phrasing came from D303, and D303 is right — <em>about a different hash</em>.
+    /// The map generator uses a hash as a <b>pseudo-random source</b>, where quantising is the
+    /// whole point: nearby queries must land in one bucket so terrain is stable under a small
+    /// movement.
+    /// </para>
+    /// <para>
+    /// <b>This file is the opposite kind of thing: a fingerprint.</b> Its entire contract is that
+    /// any differing state byte differs the hash. A quantising mixer here would let two worlds
+    /// whose villagers stand a fraction of a tile apart hash <em>identically</em> — so the
+    /// determinism suite would go green across a genuine divergence, which is the trap every
+    /// sparse block in this file is written to avoid. <c>FixedTests</c> asserts that two values
+    /// differing only in their fraction hash differently, so this stays a fact rather than a
+    /// comment. **Two jobs, two functions, never one.**
+    /// </para>
+    /// <para>
+    /// ⚠️ Nothing in the sim hashes a <see cref="Fixed"/> yet — slice 1 introduces the type and no
+    /// behaviour. Its only caller today is the fixed-point replay guard, which is deliberate: an
+    /// unused mixer is the kind of API this project deletes.
+    /// </para>
+    /// </remarks>
+    public static ulong MixFixed(ulong hash, Fixed value) => MixUInt64(hash, (ulong)value.RawBits);
+
+    /// <summary>
+    /// Mix a binary angle — all sixteen bits, never a quantised bucket.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ D317's raw-not-quantised rule, one type over — and worth restating because Joe raised the
+    /// opposite rule from the other direction: *"quantize for the hash, not for the state"*. That is
+    /// right for a <b>bucketing</b> hash — draw-call batching, spatial keys, sprite-facing lookup —
+    /// and this file is the other kind. <b><c>StateHash</c> is a fingerprint</b>, so two villages
+    /// whose buildings face 0.0055° apart are different villages and must hash differently.
+    /// ⚠️ Nothing in the sim hashes an <c>Angle</c> yet; its caller is the guard in <c>AngleTests</c>.
+    /// </remarks>
+    public static ulong MixAngle(ulong hash, Angle value) => MixUInt32(hash, value.Raw);
+
+    /// <summary>Mix four bytes into the running hash.</summary>
+    public static ulong MixUInt32(ulong hash, uint value)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            hash ^= (value >> (i * 8)) & 0xFF;
+            hash = unchecked(hash * FnvPrime);
+        }
+
+        return hash;
+    }
+
+    /// <summary>Mix a single byte into the running hash.</summary>
+    public static ulong MixByte(ulong hash, byte value)
+    {
+        hash ^= value;
+        return unchecked(hash * FnvPrime);
+    }
+}

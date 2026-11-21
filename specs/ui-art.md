@@ -186,7 +186,7 @@ reading test), `ui_winter.jpg` (parchment over snow), `ui_young.jpg` (Ashbourne)
 
 > *"They're a step in the right direction, but we can go further. the UI should look like the parchment in the attached.
 > parchment/scrolls. and they should roll-up animate to close."* · *"yes, that is the reason for the fonts folder. use
-> them."* · *"okay art lane changes the systems lane files after water merges"* · *"the name 'bclone' is just a place
+> them."* · *"okay art lane changes the systems lane files after water merges"* · *"the name 'Kith' is just a place
 > holder/working name. final name still TBD."* · *"confirmed i dont want the UI to stay slate. i want to see parchment
 > scrolls in the style of manuscript scrolls with some watercolor of their own."*
 
@@ -202,7 +202,7 @@ parchment strip), and a manuscript page (rubricated lines, an illuminated initia
 3. **His `fonts/` folder is the type** (five OFL faces: Cardo, Eagle Lake, Grenze Gotisch, MedievalSharp, Metamorphous).
    They move into the game's files with their `OFL.txt` when the build starts; until then they stay untracked.
 4. **The seam (§4) is the art lane's, after water merges into `main`.**
-5. **No wordmark yet: the name is a placeholder.** The seal is drawn blank; nothing says *bclone* but the title text the
+5. **No wordmark yet: the name is a placeholder.** The seal is drawn blank; nothing says *Kith* but the title text the
    game already has.
 
 ### 8.3 The scroll look (mocked; `D:\Projects\brushes\ui\scroll\`, `scrolls.py`)
@@ -262,7 +262,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 
 1. The seam (§4) — panels, text roles, state colours, **and the log's inline colours**, read from the theme; today's
    values by default, byte-identical; probe `ui theme:`; red-checked. After water merges, on `art`.
-2. The fonts into `src/Bclone.Game/fonts/` with their licences; the scroll 9-patches as textures with their `.import`
+2. The fonts into `src/Kith.Game/fonts/` with their licences; the scroll 9-patches as textures with their `.import`
    sidecars (trap 2); the theme `.tres`; `[gui] theme/custom`. Probe: `bar height` re-measured and written down; the
    contrast line over the theme's colours.
 3. The roll-up helper (§8.4); a probe line that a folded window's height is its title's.
@@ -271,7 +271,7 @@ minimap with a compass, ribbon banners, a wordmark when the game has a name.
 ## 9. 🔨 The hook-in — the plan (A108, 2026-11-16; his calls answered, A109); BEING BUILT ON `art` (Joe: *"UI hook-in can start now"*, the Established-date slice merged, D785)
 
 **Joe's order (relayed 2026-11-16): *"Next: add the established line / then hook in the UI and villagers"*.** The art is
-in `main` (A107): 169 files in `src/Bclone.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
+in `main` (A107): 169 files in `src/Kith.Game/textures/ui/`, on disk, loaded by nothing. **Nothing below starts until the
 systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` too, and the two lanes never edit
 `Main.cs`/`Main.Cards.cs` at once (§4). Planning only until then; read off `main` c220e7a.
 
@@ -312,7 +312,7 @@ systems lane's Established-date slice has merged** — it edits `Main.Cards.cs` 
    (`ui-assets.md §1.5`; Godot's `StyleBoxTexture` draws texture pixels 1 : 1). The UI-size setting (`Main.Settings.cs`,
    `SetUiScale`) must keep them sharp at 75–150 %. Probe: `bar height` re-measured (see call 1); the contrast line
    over the theme's own colours (4.5:1).
-4. **The fonts.** Joe's chosen faces into `src/Bclone.Game/fonts/` with their licences (the untracked `fonts/` is
+4. **The fonts.** Joe's chosen faces into `src/Kith.Game/fonts/` with their licences (the untracked `fonts/` is
    his source; nothing ships without a licence file beside it).
 5. **The screens.** The title band (a plain `chrome/sheet.png` since A114) and seal, new game (`chrome/sheet-large.png`), the tech cards, and `boot_splash`. The app icon still waits on
    the name.
@@ -335,7 +335,7 @@ first in-game render. The four as they were asked:*
 
 ### 9.5 ✅ Step 1 as built — the seam (A110)
 - **`UiLook.cs`** (the art lane's): every role and skin asked for by name and answered from the project theme's
-  `BcloneLook` type when the theme names it, or with the literal that stood at the site before. **No theme names any
+  `KithLook` type when the theme names it, or with the literal that stood at the site before. **No theme names any
   entry today, so the screen is slate to the byte.** A look is now a theme and textures; nothing below needs
   `Main.cs` again for colour.
   - **Text roles:** `text`, `text_faint` (55 %, `Muted`), `text_soft` (70 %), `text_hint` (65 %), `text_dim` (45 %),
@@ -365,7 +365,7 @@ first in-game render. The four as they were asked:*
 - **Everything else the probe measures is unchanged** against A107's run, timings aside. `vlog` grew 992 → 1361
   characters: the Established probe, merged since, builds and demolishes a pile before it. The seam changes no text,
   and colour tags are not counted.
- **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 20 m 34 s; the view build 0 warnings; the probe 127 ✅ and 0 ⛔, bar height 151, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
+ **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 20 m 34 s; the view build 0 warnings; the probe 127 ✅ and 0 ⛔, bar height 151, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Kith.Sim`, `tests/` or `data/` changed).
 
 ### 9.6 ✅ Step 2 as built — the painted icons (A111)
 - **`UiIcons.cs`** (the art lane's) finds an icon by **the thing's own name**:
@@ -405,7 +405,7 @@ first in-game render. The four as they were asked:*
 - **The checks:**
   - Probe: 128 ✅ and 0 ⛔; tile centres ✅, new game ✅, `bars:` ✅, `done.`.
   - View build: 0 warnings.
-  - The suite was not re-run. It does not build the game (D11), and no file in `src/Bclone.Sim`, `tests/` or `data/`
+  - The suite was not re-run. It does not build the game (D11), and no file in `src/Kith.Sim`, `tests/` or `data/`
     changed since step 1's run (2066 passed). No golden moved.
   - Renders of his summer save: `D:\Projects\brushes\ui\hookin\step2_game.png`, `step2_bar.png`.
 
@@ -420,7 +420,7 @@ first in-game render. The four as they were asked:*
 - **The look is a theme, built in the art lane's files.**
   - `ParchmentLook.cs` builds the theme from the painted chrome and controls.
   - `LookLoader.cs` (an autoload, `project.godot [autoload]`) puts it on the root window and on `UiLook` before any
-    window is built. `BCLONE_LOOK=slate` starts in slate, for a before-and-after render only.
+    window is built. `KITH_LOOK=slate` starts in slate, for a before-and-after render only.
   - `PaintedPatch.cs` draws a 2× or 4× 9-patch at half or a quarter of its pixels. Godot's own draws 1 : 1.
   - `SizedTexture.cs` lets a 4× checkbox report and draw at 14 px.
 - **What it skins:**
@@ -482,16 +482,16 @@ first in-game render. The four as they were asked:*
 - **A121 — the column heads are headers** (Joe: *"Yes, headers"*): the roster's Name / Age / Trade (the Tree's `title_button_font`), Professions' TYPE and ASSIGNED / MAX, and the build queue's # / Site / Materials / Work are set in Metamorphous. Capitals starting ordinary words stay Grenze Gotisch's.
 - **A120 — his font pair.** Joe: *"Use this as header font: ... Metamorphous ... Use this as non-header font: ... Grenze Gotisch"*, then *"BUILD is considered a header - everything in that main row is"*.
   - **Headers in Metamorphous:** window titles, card titles, a card's section heads, and every button and label in the control bar's main row (Pause through Cancel). `UiLook.Header` and `HeadersIn` mark them with the theme type variations `HeaderLabel` and `HeaderButton`; on slate the marks name nothing.
-  - **Everything else in Grenze Gotisch** (its variable font, default weight). Both are SIL OFL; their licences sit beside them in `src/Bclone.Game/fonts/`. Archivo Narrow (A119) stays there, unused.
+  - **Everything else in Grenze Gotisch** (its variable font, default weight). Both are SIL OFL; their licences sit beside them in `src/Kith.Game/fonts/`. Archivo Narrow (A119) stays there, unused.
   - ⚠️ **Legibility, shown to him before he settled it:** Grenze Gotisch's capitals are blackletter. All-caps words were nearly unreadable (*BUILD* read *BUICD*) until his main row went to Metamorphous. Capitals that start a word still mislead (*Able* reads *Rble*), including the column heads (*TYPE*, *ASSIGNED / MAX*, *Name / Age / Trade*), and its figures are old-style.
   - **The layout:** the bar is taller, so its guard is **183** (CLAUDE.md). Metamorphous is broad, and the widest own name overran the card by 18 px, so the theme's `card_room` gives cards 20 px more (D467: a person's own name is never trimmed).
-- **A119 — his font, and the folded windows' smear.** Joe added **Archivo Narrow** (*"i just added a font ... that you can use"*). It is SIL OFL, and the static weights live in `src/Bclone.Game/fonts/ArchivoNarrow/` with the licence. **SemiBold** is the theme's font: Medium read lighter than his reference panel, side by side. It is narrower than Godot's default, so the build bar fits in fewer rows: **bar height 177 → 173**, written into CLAUDE.md's guard. The top bar now ends at 892 at 75 %, clear of the right column, which keeps the top. **His other question, *"what are these blurry looking things?"*** — a folded window's sheet:
+- **A119 — his font, and the folded windows' smear.** Joe added **Archivo Narrow** (*"i just added a font ... that you can use"*). It is SIL OFL, and the static weights live in `src/Kith.Game/fonts/ArchivoNarrow/` with the licence. **SemiBold** is the theme's font: Medium read lighter than his reference panel, side by side. It is narrower than Godot's default, so the build bar fits in fewer rows: **bar height 177 → 173**, written into CLAUDE.md's guard. The top bar now ends at 892 at 75 %, clear of the right column, which keeps the top. **His other question, *"what are these blurry looking things?"*** — a folded window's sheet:
   - **The cause.** A folded window is one title row, so its middle squashed the sheet's 782 master px into about 28. The GPU read a mipmap that small, blurred in every direction, and the sheet's side columns smeared into a band past both ends of the window.
   - **Found by tinting each painted style a different colour for one render.** The band came out the window's own colour, not some other control's.
   - **The fix (`PaintedPatch`).** Squashed past 2 : 1, the painting is read without mipmaps, so the squashed axis is sampled sparsely and the other stays sharp. Tile mode was tried first; it crops cleanly but left 1 px seams where the tiles meet the corners.
   - The sheets' fixed corners are smaller too (28 / 28 / 32 / 30 master px; the band 32 / 20 / 34 / 26), and a box smaller than its corners draws the painting smaller rather than overlapping them.
 - **A118 — no grey margin, a dark muddled ink line** (Joe: *"the edges dont look the same. remove the grey margin/padding whatever it is and increase the stroke darkness of the ink. maybe muddle it a bit like we do for paths?"*). The grey band he saw was a bug as much as a look: A116's script edit appended a comment to a line, and that comment swallowed the vignette's blend mode and opacity. Since A116 the "soft 26 % multiply" was painted as a full grey band. It is removed outright. The ink is now near-black in the dry-brush tip, with a second drifting stroke over it, and the shadow is tight. The faintest word at an inner edge rose to 5.15 : 1.
-- **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Bclone.Sim`, `tests/` or `data/` changed).
+- **The four checks:** the suite 2066 passed, 0 failed, 5 skipped, 15 m 59 s; the view build 0 warnings; the probe 129 ✅ and 0 ⛔, bar height 177, tile centres ✅, new game ✅, `done.`; no golden moved (no file in `src/Kith.Sim`, `tests/` or `data/` changed).
 
 
 ### 9.9 ✅ A124 — the paper repainted to his concept's grain (2026-11-18; Joe: *"Yes, build it"*; merged and pushed at his word, A125)

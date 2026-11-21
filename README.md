@@ -1,4 +1,4 @@
-# bclone
+# Kith
 
 A ground-up, generational village-builder / survival sim — a spiritual successor to *Banished*. You grow a town across generations against a world that pushes back. No combat, no traditional win condition. The game is watching a lineage survive.
 
@@ -22,30 +22,30 @@ The game runs. A village founds itself, feeds itself, cuts timber, builds, has c
 
 **C# (.NET 8) + Godot 4.7.1** (`DESIGN.md` §7, D1–D3). You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) to build and test, and Godot 4 (the .NET/Mono build) to run the game.
 
-The simulation lives in `src/Bclone.Sim`, a plain class library with **zero Godot references** — headlessly testable, fast in CI, and portable if the shell ever needs replacing. Godot is the render/UI/input layer only, and never mutates sim state.
+The simulation lives in `src/Kith.Sim`, a plain class library with **zero Godot references** — headlessly testable, fast in CI, and portable if the shell ever needs replacing. Godot is the render/UI/input layer only, and never mutates sim state.
 
 ```
-src/Bclone.Sim/       simulation core (engine-free)
+src/Kith.Sim/       simulation core (engine-free)
   Core/               SimWorld, SimLoop, FixedTimestepDriver, ISimSystem
   Determinism/        DeterministicRandom (PCG32), StateHash
   Logging/            tick-stamped structured logger
   Config/             JSON-backed tunables
   Systems/            one file per tick-order step
   World/              villagers, households, workplaces, stores, the map
-src/Bclone.Game/      Godot view shell — NOT in bclone.sln, see below
+src/Kith.Game/      Godot view shell — NOT in Kith.sln, see below
 tests/                xUnit suite, including the P0 determinism test
 data/                 content and tunables (JSON, modder-editable)
 specs/                one spec per system, written before the code
 screenshots/          the record of 2026-08-01 (the per-version rule was withdrawn, D160)
 ```
 
-### ⚠️ `bclone.sln` does not contain the Godot project
+### ⚠️ `Kith.sln` does not contain the Godot project
 
-This is the first thing that will bite you. `src/Bclone.Game` is deliberately outside the solution (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). So:
+This is the first thing that will bite you. `src/Kith.Game` is deliberately outside the solution (D11 — a root Godot project globs `**/*.cs` and would swallow the sim and the tests into the game build). So:
 
 ```bash
-dotnet build bclone.sln                              # sim + tests. NOT the view.
-dotnet build src/Bclone.Game/Bclone.Game.csproj      # the view.
+dotnet build Kith.sln                              # sim + tests. NOT the view.
+dotnet build src/Kith.Game/Kith.Game.csproj      # the view.
 ```
 
 A green solution build says nothing about whether the game compiles. CI has a separate step for it, and `run.bat` builds it before launching. Found the hard way: a build menu was written, wired up, and never appeared, because the assembly Godot ran was a day old.
@@ -59,11 +59,11 @@ Two Windows batch files wrap the commands and capture timestamped logs to `logs/
 - **`test.bat`** — the full suite, determinism test included.
 - **`run.bat`** — builds the view, then launches Godot. Set `GODOT` to your editor executable if it is not at `D:\Projects\Godot\Godot_v4.7.1-stable_mono_win64\`.
 
-Every run also writes a full audit trail to `logs/bclone-<timestamp>.log` — every villager state change, every load carried, every job taken and every refusal, tick-stamped. Together with the seed shown in the header, that is what reproduces and explains a run.
+Every run also writes a full audit trail to `logs/Kith-<timestamp>.log` — every villager state change, every load carried, every job taken and every refusal, tick-stamped. Together with the seed shown in the header, that is what reproduces and explains a run.
 
 ### ⚠️ The view has no automated verification
 
-Nothing in `src/Bclone.Game` can be unit-tested (D11), and as of D160 there is no screenshot hook either — it fast-forwarded an *unattended* founding, which the game is designed to let die (D143), so it had been photographing an empty valley. **Looking at the game is the verification.** This is a known hole, not an oversight.
+Nothing in `src/Kith.Game` can be unit-tested (D11), and as of D160 there is no screenshot hook either — it fast-forwarded an *unattended* founding, which the game is designed to let die (D143), so it had been photographing an empty valley. **Looking at the game is the verification.** This is a known hole, not an oversight.
 
 ---
 

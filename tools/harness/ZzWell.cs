@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D777's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there
+// ⛔ D777's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there
 // before any commit (D420). `water-need.md §5` step 1: D428's open question — why the well's trip every 10 days cost 21
 // shipped villagers of 169 (`organic-housing.md §9.12f`), re-measured on today's code over 100 valleys with a noise arm,
 // and the time budget read for where the hours went.
@@ -24,7 +24,7 @@ namespace Bclone.Sim.Tests;
 // well and drawing, resting, working at a trade, fetching for the household, seeking warmth, eating. ZZ_STATES=1 adds
 // ZzSchool's ZZT line (`school.py --states` sums it).
 //
-// Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzWell --logger "console;verbosity=detailed"` per arm;
+// Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzWell --logger "console;verbosity=detailed"` per arm;
 // delete.
 public sealed class ZzWell
 {
@@ -48,7 +48,7 @@ public sealed class ZzWell
         int low = int.Parse(Environment.GetEnvironmentVariable("ZZ_LOW")
             ?? shipped.WaterLowDays.ToString(System.Globalization.CultureInfo.InvariantCulture));
         SimConfig config = shipped with { Seed = seed, WaterJar = trip, WaterLowDays = low };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
         if (noise != 0)

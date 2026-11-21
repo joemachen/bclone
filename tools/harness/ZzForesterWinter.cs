@@ -1,17 +1,17 @@
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D728's MEASUREMENT — `forests-and-gathering.md §10`: what stopping a forester planting in winter costs. Kept in
-// tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit (D420). The
+// tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit (D420). The
 // unattended harness never paints a forester's ground, so this runs on Joe's own villages, which have it.
 // Run once on the parent and once on the change, on a folder of COPIES of his saves (`SaveFile.Open` keeps a damaged
 // file as .bad beside it):
-//   ZZ_SAVES=<folder> ZZ_LABEL=<old|new> [ZZ_YEARS=10] dotnet test tests/Bclone.Sim.Tests -c Release
+//   ZZ_SAVES=<folder> ZZ_LABEL=<old|new> [ZZ_YEARS=10] dotnet test tests/Kith.Sim.Tests -c Release
 //     --filter "FullyQualifiedName~ZzForesterWinter" --logger "console;verbosity=detailed"
 // One ZZF line a save:
 //   huts / ground — forester's huts with painted ground, and their tiles;
@@ -32,7 +32,7 @@ public sealed class ZzForesterWinter
     [MemberData(nameof(Saves))]
     public void Step(string path)
     {
-        SaveOpened opened = SaveFile.Open(path, ShippedConfig.Load(), new Bclone.Sim.Logging.InMemoryLogSink());
+        SaveOpened opened = SaveFile.Open(path, ShippedConfig.Load(), new Kith.Sim.Logging.InMemoryLogSink());
         Assert.True(opened.Loop is not null, opened.Detail);
         SimLoop loop = opened.Loop!;
         SimWorld world = loop.World;

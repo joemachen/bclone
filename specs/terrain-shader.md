@@ -22,7 +22,7 @@ Code.
 ## 1. What is already settled
 
 - **The ground is parchment** (D635, `seasonal-grass.md §6.0`). The grass is Joe's pack, Multiply over it, at the look
-  in `src/Bclone.Game/looks/grass_approved.tres` (`grass-look.md`).
+  in `src/Kith.Game/looks/grass_approved.tres` (`grass-look.md`).
 - **One `canvas_item` shader on the valley's existing `DrawTextureRect`, through a coverage map** (D628,
   `seasonal-grass.md §6.6`, option A). `ValleyTexture`'s bake also writes a grass-coverage channel. Season and jitter are
   uniforms set per frame, never a re-bake (D338).
@@ -448,7 +448,7 @@ back grown and the probe went on with a valley the check had changed; it now put
 
 - **The approved look holds:** with every switch off the lab's renders are **byte-identical** to the same cases rendered
   before this slice (`lab_render.gd`, a cases file; `cmp`, not a tolerance). `lab_check.py parity` still applies.
-- **The probe** (`BCLONE_PROBE_WIDTHS=1`, headless): every new control reaches its uniform, opens off, and comes back on
+- **The probe** (`KITH_PROBE_WIDTHS=1`, headless): every new control reaches its uniform, opens off, and comes back on
   *Reset*; the fake map is what §4 says. ⚠️ **A shader that does not compile fails quietly:** a headless Godot does
   compile it and logs `SHADER ERROR`, but every line above stays ✅, because a material holds whatever it is told. So
   `terrain lab, shader:` asks the compiled shader for each uniform the panel sets (a failed one declares none). It
@@ -517,7 +517,7 @@ back grown and the probe went on with a valley the check had changed; it now put
   is what would catch it; none of today's two has one.
 - **Parity does not cover the new layers** (`tools/grass/grass_antitile_ref.py` mirrors the approved path only). Their
   look is Joe's eyes.
-- **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
+- **Rendering only.** `git diff main -- src/Kith.Sim data tests` stays empty; no golden can move.
 - **Not known until the valley is wired:** how any of this reads under the real bake and its dressing, or beside fences,
   fields and paths, which the lab does not draw.
 

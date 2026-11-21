@@ -280,7 +280,7 @@ regrowth sweep.
 
 ## 5. The calendar
 
-`SeasonRules` (`src/Bclone.Sim/World/Season.cs`) is where "what can be done now" lives — it was
+`SeasonRules` (`src/Kith.Sim/World/Season.cs`) is where "what can be done now" lives — it was
 created in D159 for exactly this kind of question, and it currently answers one.
 
 | Season | The field | The farmer |

@@ -1,0 +1,184 @@
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Kith.Sim.Tests;
+
+/// <summary>
+/// ⭐⭐ Every unit of food is produced, eaten, or held somewhere the village can name (D397).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Joe, 2026-09-19:</b> *"please double check the journey for all food from all sources to
+/// ensure it is all making it from those sources through the delivery to the granary/market then
+/// to the villager's homes and then being consumed."* The accountant's answer: on every tick of
+/// fifty years, <c>produced − eaten == held − held at the start</c>, where <em>held</em> is every
+/// stockpile (shelves, larders, huts), every pair of hands and every heap on the ground
+/// (<see cref="SimWorld.FoodHeldAnywhere"/>). A drift is a unit that left the world by a door
+/// nobody wrote down — a demolition, a death, a store emptied — and the tick it first moves says
+/// which.
+/// </para>
+/// <para>
+/// <b>Measured before it was written, and it held:</b> zero drift on every tick, three shipped
+/// seeds, two fixture seeds, and three fixture villages with every source raised (a lodge, a
+/// fishing hut, a farm with ground).
+/// </para>
+/// <para>
+/// ⭐⭐ <b>And what the ledger found is asserted now too (D398): the pile is gone.</b> The audit
+/// read <b>300–420k</b> of meat and fish on the ground after fifty years while the village wanted
+/// no more food — the hunt and the cast answered *"my family is short"* with 900 and 400 at a time
+/// into a full lodge, and the overflow went down at a full store's door (D370). Joe's call (a):
+/// the hunt and the cast answer the village, a short larder answers with a fetch. The all-sources
+/// arm now asserts the ground <b>stays small</b> — a conservation guard that only asks *is it all
+/// there?* passed happily over four hundred thousand meat in a field (trap 113).
+/// </para>
+/// </remarks>
+public sealed class FoodConservationTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public FoodConservationTests(ITestOutputHelper output) => _output = output;
+
+    [Theory]
+    [InlineData(12345UL, false)]
+    // ⚠️ SEED 7 FOR EVERY SOURCE SINCE D412, AND WHY: raising a lodge, a fishery and a farm at the
+    // founding kills half its villages on main AND on D412 (seeds 3 and 7 die on main, 3 and 12345
+    // on D412 — no forage and no fish produced in either) — only which half moved. The ledger held
+    // to the unit in the dead ones too; the coverage half needs a village that lives. On Joe's list.
+    // ⚠️ AND SEED 4 SINCE D414: walkers keeping to the lanes moved the half again — measured over
+    // thirteen seeds, 5 live on main (2 7 8 10 11) and 5 on D414 (2 4 11 12 12345). Seed 7 died.
+    // ⚠️ AND SEED 10 SINCE D424: a step treads every tile it passes over, and the half moved again —
+    // swept over the same thirteen, 4 live with every source producing (2 16 alive, 10 19, 12 6,
+    // 11 3); seed 4 fished nothing and died.
+    // ⚠️ AND SEED 6 SINCE D463: steady pace, and the half moved again — the other way. Swept over
+    // seventeen (1–16 and 12345): 5 villages alive at fifty on main (32 people) against 9 on D463
+    // (90 people); seed 10 fell to one survivor who never fished. Seed 6 lives with 15 and every
+    // source producing (fish 23,198, meat 29,046, wheat 18,496).
+    // ⚠️ AND SEED 4 SINCE D469: each household has its own day for a child, and the half moved
+    // again. Swept over the same seventeen: the ledger held to the unit in all of them; 10 villages
+    // are alive at fifty (D463: 9), 8 of them with every source producing (2 4 8 10 11 12 13 16 —
+    // 3 and 15 fished nothing); seed 6 died with no fish. Seed 4 lives with 14 (fish 25,905, meat
+    // 14,570, wheat 35,158).
+    // ⚠️ AND SEED 14 SINCE D511: farmhands rest at the steading, and the half moved again. Swept over
+    // the same seventeen, main and the slice in one sitting: the ledger held to the unit in all of
+    // them; 6 villages alive at fifty on main (82 people) against 8 on D511 (124). Seed 4 froze in its
+    // first winter — on main too it is a near miss: no woodcutter until the farm's seats close for
+    // winter, and three villagers at cold ~4,900 when firewood reached one home at t381; on D511 the
+    // first split landed thirty ticks later, after a chore that history had moved. Seed 14 lives on
+    // BOTH arms with every source producing (D511: 16 alive; fish 22,479, meat 12,451, wheat 35,886).
+    // ⚠️ D515: that race is this founding's, not a player's — the farm below is raised free at t0 and takes two hands
+    // from spring of Year 1; a farm a player marks at t0 stands after sowing (`tools/harness/ZzFirstWinter.cs`).
+    [InlineData(14UL, true)]
+    [InlineData(2UL, true)]
+    public void EveryUnitOfFoodIsProducedEatenOrHeldSomewhere(ulong seed, bool everySource)
+    {
+        SimConfig config = VillageFixtures.Village with { Seed = seed };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+
+        if (everySource)
+        {
+            // A lodge, a fishing hut and a farm with ground: fish, meat and wheat beside the
+            // forager's produce, so the claim covers every source the game has.
+            HuntingTests.RaiseALodgeFor(world);
+            FishingTests.RaiseAFishery(world);
+            Workplace farm = FarmFixtures.RaiseAFarm(world);
+            FarmFixtures.GiveItGround(world, farm, 3);
+
+            // ⚠️ AND A WINTER'S FIREWOOD IN EVERY HOME (D529). The farm raised free above takes its hands from
+            // spring of Year 1, so no woodcutter splits before winter — D515's fixture effect, the race this
+            // seed list has already lost twice (seed 4, see above). When the founders' meals moved a few ticks
+            // (`skills-catalog.md §3.5a`) seed 2 lost it too: no fish ever caught, 2,531 food in fifty years
+            // against 47,562. Firewood is not food, so the ledger is untouched; the claim needs every source alive.
+            foreach (Household household in world.Households)
+            {
+                household.Stockpile.Add(Goods.Firewood, VillageEconomy.FirewoodStoreWantedPerHousehold(config));
+            }
+        }
+
+        // ⚠️ The cart's food was never produced, so the ledger starts from what is held now.
+        int held0 = world.FoodHeldAnywhere();
+        int produced0 = world.FoodEverProduced;
+        int broughtIn0 = world.FoodEverBroughtIn;
+        int eaten0 = world.FoodEverEaten;
+
+        // ⭐ A third door since D572: a band of nomads settles with a few days' food each, neither produced nor eaten
+        // here (`FoodEverBroughtIn`). The first run without it said 40 food appeared on the spring turn of Year 8–12.
+        for (int tick = 0; tick < config.TicksPerYear * 50; tick++)
+        {
+            loop.StepOnce();
+            int produced = world.FoodEverProduced - produced0;
+            int broughtIn = world.FoodEverBroughtIn - broughtIn0;
+            int eaten = world.FoodEverEaten - eaten0;
+            int held = world.FoodHeldAnywhere() - held0;
+            int drift = produced + broughtIn - eaten - held;
+            Assert.True(
+                drift == 0,
+                $"At tick {world.Tick} ({world.Clock.SeasonAndYear()}) {Math.Abs(drift)} food "
+                + $"{(drift > 0 ? "vanished" : "appeared")}: produced {produced}, brought in {broughtIn}, eaten {eaten}, "
+                + $"held {held} more than at the start. Something moved food by a door the ledger does not see.");
+        }
+
+        IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
+        var bySource = new List<string>();
+        for (int i = 0; i < edible.Count; i++)
+        {
+            bySource.Add($"{world.GoodsCatalog.NameOf(edible[i])} {world.FoodEverProducedOf(edible[i])}");
+        }
+
+        int onTheGround = 0;
+        for (int i = 0; i < world.GroundStacks.Count; i++)
+        {
+            for (int g = 0; g < edible.Count; g++)
+            {
+                if (world.GroundStacks[i].Goods == edible[g])
+                {
+                    onTheGround += world.GroundStacks[i].Amount;
+                }
+            }
+        }
+
+        _output.WriteLine(
+            $"seed {seed}{(everySource ? ", every source" : "")}: fifty years conserved to the unit — "
+            + $"produced {world.FoodEverProduced - produced0} ({string.Join(", ", bySource)}), "
+            + $"eaten {world.FoodEverEaten - eaten0}; now on the shelves {world.FoodInGranaries()}, "
+            + $"in the huts {world.FoodWaitingInHuts()}, in the larders {world.FoodInLarders()}, "
+            + $"on the ground {onTheGround}; {world.Population} alive");
+
+        // Anti-vacuity (D7): a village that produced nothing conserves nothing.
+        Assert.True(world.FoodEverProduced - produced0 > 1000, "The village barely produced, so this measures nothing.");
+
+        // ⭐ AND IT ENDED UP SOMEWHERE THE VILLAGE CAN USE (D398). A heap at a full store's door is
+        // right and normal (D370) — a lodge's worth of it is not. The bar is one lodge and one
+        // store's capacity, which a working village never approaches: measured at 0 on both
+        // all-sources arms after fifty years, against 345,569 and 421,042 before the split.
+        // ⚠️ A `Stockpile`'s default capacity is `int.MaxValue` (a household larder has no wall),
+        // so the bar is taken from the BUILDINGS the village put up and clamped — doubling
+        // `int.MaxValue` overflowed negative and failed a village with nothing on the ground at all.
+        long bar = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            bar = Math.Max(bar, Math.Min(world.Workplaces[i].Store.Capacity, 100_000));
+        }
+
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            bar = Math.Max(bar, Math.Min(world.StoreBuildings[i].Store.Capacity, 100_000));
+        }
+
+        Assert.True(
+            onTheGround <= bar * 2,
+            $"After fifty years {onTheGround} food is lying on the ground — more than two buildings could hold ({bar * 2}). "
+            + "It is all accounted for and none of it is being eaten: something is producing food the village has no room for.");
+        if (everySource)
+        {
+            Assert.True(
+                world.FoodEverProducedOf(Goods.Fish) > 0 && world.FoodEverProducedOf(Goods.Meat) > 0 && world.FoodEverProducedOf(Goods.Wheat) > 0,
+                "A source produced nothing, so the claim does not cover it.");
+        }
+    }
+}

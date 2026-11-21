@@ -16,14 +16,14 @@ OUT="${OUT:-$ROOT/harness-out}"
 export ZZ_WIDE="${ZZ_WIDE:-1}"
 mkdir -p "$OUT"
 cd "$ROOT"
-cp tools/harness/ZzBase.cs tests/Bclone.Sim.Tests/ZzBase.cs
-trap 'rm -f "$ROOT/tests/Bclone.Sim.Tests/ZzBase.cs"' EXIT
-dotnet build tests/Bclone.Sim.Tests --nologo -v q > "$OUT/build.txt" 2>&1 || { cat "$OUT/build.txt"; exit 1; }
+cp tools/harness/ZzBase.cs tests/Kith.Sim.Tests/ZzBase.cs
+trap 'rm -f "$ROOT/tests/Kith.Sim.Tests/ZzBase.cs"' EXIT
+dotnet build tests/Kith.Sim.Tests --nologo -v q > "$OUT/build.txt" 2>&1 || { cat "$OUT/build.txt"; exit 1; }
 outs=()
 for arm in "$@"; do
   out="$OUT/row-${arm/=/-}.txt"
   if [ "$arm" = base ]; then unset ZZ_ROW; else export ZZ_ROW="$arm"; fi
-  dotnet test tests/Bclone.Sim.Tests --nologo --no-build --filter "FullyQualifiedName~ZzBase" \
+  dotnet test tests/Kith.Sim.Tests --nologo --no-build --filter "FullyQualifiedName~ZzBase" \
     --logger "console;verbosity=detailed" > "$out" 2>&1 || true
   echo "$arm: $(grep -c 'ZZB ' "$out") runs"
   outs+=("$out")

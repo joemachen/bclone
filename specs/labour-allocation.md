@@ -147,7 +147,7 @@ A villager with no work must always be able to say **which constraint** excluded
 
 ## 7. Testing
 
-All of these live in `tests/Bclone.Sim.Tests/LabourAllocationTests.cs` and are green.
+All of these live in `tests/Kith.Sim.Tests/LabourAllocationTests.cs` and are green.
 
 - **Nobody is sent past a nearer opening.** The failure mode of the even-split attempt, asserted directly.
 - **Quotas are respected**: the village never spares more hands for timber than it has beyond feeding everyone. **[revised]** — the draft said "total foragers never exceeds what the village needs fed", which stopped being the rule when the forager quota became a floor. The quota's real bite is on the timber side.

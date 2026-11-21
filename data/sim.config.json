@@ -1,6 +1,6 @@
 {
   // ============================================================
-  //  bclone — simulation config
+  //  Kith — simulation config
   //
   //  Data-driven from day one (DESIGN.md §3): no tunable lives in
   //  code. Comments and trailing commas are permitted here —

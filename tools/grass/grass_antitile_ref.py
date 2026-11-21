@@ -1,11 +1,11 @@
 """
 Reference maths for the grass lab's anti-tiling (`specs/seasonal-grass.md §5.3`, D631). LAB ONLY.
 
-Mirrors src/Bclone.Game/shaders/grass_antitile.gdshaderinc and the fragment of grass_lab.gdshader step for step —
+Mirrors src/Kith.Game/shaders/grass_antitile.gdshaderinc and the fragment of grass_lab.gdshader step for step —
 keep the three in sync. The recolour itself is Joe's: this file calls his pack's grass_ref.py (jitter) and checks its
 own per-pixel-season recolour against grass_ref.recolor before it is trusted (`--selfcheck`).
 
-Where the pack lives: $BCLONE_GRASS_PACK, else D:/Projects/brushes/seasons.
+Where the pack lives: $KITH_GRASS_PACK, else D:/Projects/brushes/seasons.
 
     python -X utf8 -I tools/grass/grass_antitile_ref.py --selfcheck
 
@@ -20,7 +20,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-PACK = os.environ.get("BCLONE_GRASS_PACK", "D:/Projects/brushes/seasons")
+PACK = os.environ.get("KITH_GRASS_PACK", "D:/Projects/brushes/seasons")
 sys.path.insert(0, PACK)
 import grass_ref  # noqa: E402  (Joe's pack: the recolour this lab never changes)
 

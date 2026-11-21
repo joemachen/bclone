@@ -86,7 +86,7 @@ pin that number.
 
 ## 4. Found in passing: two goldens the CLAUDE.md grep cannot see
 
-CLAUDE.md's fourth verification line is `grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs`, and it misses goldens
+CLAUDE.md's fourth verification line is `grep -rn "[0-9]\{15,\}" tests/Kith.Sim.Tests/*.cs`, and it misses goldens
 written with digit separators:
 
 - `AngleTests.cs:336`: `14_897_684_010_207_565_105UL`
@@ -195,7 +195,7 @@ still in the barn — nobody carried it out"*. ⚠️ `ZZW`'s largest waits (2,6
 artefact: a herd that dies out leaves the clock running until the next beasts come. They are not a herdsman gone for
 years.
 
-**Never played.** Joe's 1,286 logs in `src/Bclone.Game/logs/` show barns marked and finished (3) and boats docking.
+**Never played.** Joe's 1,286 logs in `src/Kith.Game/logs/` show barns marked and finished (3) and boats docking.
 None has a beast landing, a herdsman, or any herd line. D600 played the fences, not a winter herd. **The winter herd
 has never been played**, so this harness result has nothing played to check it against.
 
@@ -409,7 +409,7 @@ the same run: wheat reaped, flour ground, bread baked, stone quarried at the qua
 water drawn, the bridge crossed, a boat docked, cattle landed by it, a calf born, and a beast culled into leather.
 **Red-check:** the smithy's forging broken must turn the golden and the coverage test red.
 
-**Built (D648).** `tests/Bclone.Sim.Tests/PhaseFiveGoldenTests.cs`: `ThePosedPhaseFiveVillageRunsTheSameWayEveryTime` pins
+**Built (D648).** `tests/Kith.Sim.Tests/PhaseFiveGoldenTests.cs`: `ThePosedPhaseFiveVillageRunsTheSameWayEveryTime` pins
 `9279994292569338767` (`Compute`) and `6069163189267979265` (`ComputeIgnoringSkills`); `EveryPhaseFiveChainTurnsOver` reads
 the same run (one shared run, 5 s in Release, 11 s in Debug). Over the 20 years: 17,008 wheat, 3,460 flour, 3,260 bread,
 477 stone quarried, 204 iron mined, 18 tools, 324 villager-ticks drawing water, 84 crossings, 70 days a boat was docked,

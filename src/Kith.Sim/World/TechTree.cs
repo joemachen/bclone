@@ -1,0 +1,415 @@
+using System.Text.Json.Serialization;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+
+namespace Kith.Sim.World;
+
+/// <summary>What a tech-tree node waits on (`tech-tree-map.md §3.1`).</summary>
+/// <remarks>Read from data by name (<c>"StoneDug"</c>) through the loader's global enum converter.</remarks>
+public enum TechCondition
+{
+    /// <summary>Stone dug by hand — <see cref="SimWorld.StoneEverDug"/> against <c>quarry_unlock_stone</c>.</summary>
+    StoneDug,
+
+    /// <summary>Iron dug by hand — <see cref="SimWorld.IronEverDug"/> against <c>smithy_unlock_iron</c>.</summary>
+    IronDug,
+
+    /// <summary>Years since the first granary was raised, against <c>literacy_years</c>.</summary>
+    KeptGranaryYears,
+
+    /// <summary>The founders dead — <see cref="SimWorld.SaidTheFoundersAreGone"/>.</summary>
+    FoundersGone,
+
+    /// <summary>The horizon: nobody in this valley knows how yet. In sight, never known.</summary>
+    NotYet,
+
+    /// <summary>Iron tools forged — <see cref="SimWorld.IronToolsEverForged"/> against <c>mine_unlock_iron_tools</c> (D449).</summary>
+    IronToolsForged,
+
+    /// <summary>Wheat reaped — <see cref="SimWorld.WheatEverReaped"/> against <c>mill_unlock_wheat</c> (D522).</summary>
+    WheatReaped,
+
+    /// <summary>The most people ever alive at once — <see cref="SimWorld.MostEverAlive"/> against <c>bridge_unlock_population</c> (D546, SCALE).</summary>
+    VillageSize,
+
+    /// <summary>Crossings walked over bridges — <see cref="SimWorld.BridgeCrossings"/> against <c>stone_bridge_unlock_crossings</c> (D546).</summary>
+    CrossingsWalked,
+
+    /// <summary>Leather ever held — <see cref="SimWorld.LeatherEverHeld"/> against <c>tailor_unlock_leather</c> (D659).</summary>
+    LeatherHeld,
+
+    /// <summary>
+    /// Logs ever felled — <see cref="SimWorld.LogsEverFelled"/> against <c>workshop_unlock_logs</c> (D678). ⚠️ The gate
+    /// itself reads <see cref="SimWorld.WorkshopLearned"/>, set where the counter crosses; the map reads the counter
+    /// so it can say how far (`workshop-and-the-carpenter.md §4.1a`).
+    /// </summary>
+    LogsFelled,
+
+    /// <summary>
+    /// The stone cottage's family tree (`house-tiers.md §4.4`, D721): <c>cottage_unlock_generation</c> born in the valley
+    /// and <c>cottage_unlock_population</c> held — <see cref="SimWorld.DeepestGenerationBorn"/> and
+    /// <see cref="SimWorld.MostEverAlive"/>. ⚠️ Known reads <see cref="SimWorld.CottageLearned"/>, the latch.
+    /// </summary>
+    CottageFamilyTree,
+
+    /// <summary>The insulated manor's family tree (§4.4) — the cottage learned first, then its own two factors; the latch is <see cref="SimWorld.ManorLearned"/>.</summary>
+    ManorFamilyTree,
+
+    /// <summary>
+    /// A library stands (D754, `school-and-education.md §11.3` call 1) — the latch is <see cref="SimWorld.SchoolLearned"/>,
+    /// set where a library is raised. Not learned by doing with the hands, so it does not introduce the map.
+    /// </summary>
+    LibraryStands,
+}
+
+/// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
+public enum TechState
+{
+    /// <summary>Not yet seen — a silhouette, no name.</summary>
+    Fogged,
+
+    /// <summary>A node it hangs from is known, or its own progress is above nought.</summary>
+    InSight,
+
+    /// <summary>Its condition is met.</summary>
+    Known,
+}
+
+/// <summary>One node of the tech-tree map — a row, so a modder adds one in data (D440).</summary>
+public sealed record TechNodeRow
+{
+    /// <summary>A stable id the <see cref="Requires"/> of other rows name.</summary>
+    [JsonPropertyName("id")]
+    public required string Id { get; init; }
+
+    /// <summary>The name as the player reads it.</summary>
+    [JsonPropertyName("name")]
+    public required string Name { get; init; }
+
+    /// <summary>The building it puts in the menu, or none for a horizon node.</summary>
+    [JsonPropertyName("unlocks")]
+    public BuildingKind? Unlocks { get; init; }
+
+    /// <summary>What it waits on.</summary>
+    [JsonPropertyName("condition")]
+    public TechCondition Condition { get; init; }
+
+    /// <summary>The ids of the nodes it hangs from — the map's edges.</summary>
+    [JsonPropertyName("requires")]
+    public IReadOnlyList<string> Requires { get; init; } = Array.Empty<string>();
+
+    /// <summary>What it takes, in the village's words.</summary>
+    [JsonPropertyName("says")]
+    public string Says { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// ⭐ The tech-tree map's reader (`tech-tree-map.md`, D440) — <b>pure, over state the sim already
+/// keeps</b>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Nothing here unlocks anything.</b> The gates are the sim's own (<see cref="SimWorld.WhyNotYet"/>,
+/// <see cref="SimWorld.HasLiteracy"/>, <see cref="SimWorld.SaidTheFoundersAreGone"/>); the map reads
+/// the same numbers, so it cannot say a building is known while <c>Mark</c> refuses it.
+/// </para>
+/// <para>
+/// ⛔ Not hashed and not kept — derived on asking. The view asks when the panel opens and once a
+/// season while it is open, never per frame.
+/// </para>
+/// </remarks>
+public static class TechTree
+{
+    /// <summary>The built-in nodes: what exists (D440), and a fogged horizon from `tech-tree.md §9`.</summary>
+    public static IReadOnlyList<TechNodeRow> DefaultNodes() => new[]
+    {
+        new TechNodeRow
+        {
+            Id = "quarry", Name = "The quarry", Unlocks = BuildingKind.Quarry, Condition = TechCondition.StoneDug,
+            Says = "Dig stone out of a seam by hand, and somebody works out how to cut a quarry.",
+        },
+        new TechNodeRow
+        {
+            Id = "smithy", Name = "The smithy", Unlocks = BuildingKind.Smithy, Condition = TechCondition.IronDug,
+            Says = "Dig iron out of a seam by hand, and the smith's craft comes to the village.",
+        },
+        new TechNodeRow
+        {
+            Id = "library", Name = "The library", Unlocks = BuildingKind.Library, Condition = TechCondition.KeptGranaryYears,
+            Says = "Keep a granary's count for long enough, and the counting becomes writing.",
+        },
+        new TechNodeRow
+        {
+            Id = "town-hall", Name = "The town hall", Unlocks = BuildingKind.TownHall, Condition = TechCondition.FoundersGone,
+            Says = "When the last of the founders is gone, the village raises a hall to remember them.",
+        },
+        new TechNodeRow
+        {
+            Id = "mason", Name = "The mason's yard", Condition = TechCondition.NotYet, Requires = new[] { "quarry" },
+            Says = "Cut stone dressed into blocks — what every lasting building stands on.",
+        },
+        // ⭐ THE FAMILY TREE, BOTH RUNGS (`house-tiers.md §4.4`, D721) — no longer hung from the mason: Joe, D717, *"i dont
+        // want it to be stone related. it should feel earned"*. One sentence each: the tree's card is 160 tall (`tech tree:`).
+        new TechNodeRow
+        {
+            Id = "cottage", Name = "The stone cottage", Unlocks = BuildingKind.Cottage, Condition = TechCondition.CottageFamilyTree,
+            Says = "Raise grandchildren in the valley and grow the village, and it learns to build in stone — half the firewood.",
+        },
+        new TechNodeRow
+        {
+            Id = "manor", Name = "The insulated manor", Unlocks = BuildingKind.Manor, Condition = TechCondition.ManorFamilyTree,
+            Requires = new[] { "cottage" },
+            Says = "Generations more, and a bigger village, and it learns to build tight — a house that barely needs a fire.",
+        },
+        new TechNodeRow
+        {
+            Id = "mine", Name = "The iron mine", Unlocks = BuildingKind.Mine, Condition = TechCondition.IronToolsForged,
+            Requires = new[] { "smithy" },
+            Says = "Let the smith work iron, and the village learns good ore when it sees it — a mine "
+                + "that never runs out as a seam does.",
+        },
+        new TechNodeRow
+        {
+            Id = "mill", Name = "The mill", Unlocks = BuildingKind.Mill, Condition = TechCondition.WheatReaped,
+            Says = "Reap enough wheat, and somebody works out how to set millstones turning — and the bakery "
+                + "comes with it.",
+        },
+        new TechNodeRow
+        {
+            Id = "bakery", Name = "The bakery", Unlocks = BuildingKind.Bakery, Condition = TechCondition.WheatReaped,
+            Says = "Learned with the mill: an oven to bake its flour into bread, which keeps a villager "
+                + "full for longer than grain.",
+        },
+        new TechNodeRow
+        {
+            Id = "tailor", Name = "The tailor's shop", Unlocks = BuildingKind.TailorShop, Condition = TechCondition.LeatherHeld,
+            // One sentence: the tree's card is 160 tall and the probe holds it there (`tech tree:`).
+            Says = "Handle enough hides, and somebody works out how to cut and sew them into a coat — a roof you wear.",
+        },
+        new TechNodeRow
+        {
+            Id = "workshop", Name = "The workshop", Unlocks = BuildingKind.Workshop, Condition = TechCondition.LogsFelled,
+            // One sentence, as the tailor's: the tree's card is 160 tall and the probe holds it there (`tech tree:`).
+            Says = "Fell enough timber, and somebody works out the wheelwright's trade — a workshop that makes a household's handcart.",
+        },
+        new TechNodeRow
+        {
+            Id = "bridging", Name = "The wooden bridge", Unlocks = BuildingKind.Bridge, Condition = TechCondition.VillageSize,
+            Says = "Grow the village, and somebody works out how to put a span of timber across the water.",
+        },
+        new TechNodeRow
+        {
+            Id = "stone-arch", Name = "The stone bridge", Unlocks = BuildingKind.StoneBridge,
+            Condition = TechCondition.CrossingsWalked, Requires = new[] { "bridging" },
+            Says = "Cross the wooden bridges often enough, and somebody learns to set the span in stone.",
+        },
+        new TechNodeRow
+        {
+            // ⭐ Learned once a library stands (D754, call 1); Joe's model, not `tech-tree.md §7d`'s *readers* (D209, D753):
+            // what school gives is the person's — full strength longer, and an eye for the year (§11.4).
+            Id = "school", Name = "The school", Unlocks = BuildingKind.School, Condition = TechCondition.LibraryStands,
+            Requires = new[] { "library" },
+            Says = "With a library standing, somebody thinks to teach the young — years at school that pay out for forty.",
+        },
+    };
+
+    /// <summary>A node's state, and its progress against what it takes (`tech-tree-map.md §3.2–§3.3`).</summary>
+    public static (TechState State, int Progress, int Of) StateOf(SimWorld world, TechNodeRow node)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        ArgumentNullException.ThrowIfNull(node);
+
+        (int progress, int of) = ProgressOf(world, node.Condition);
+        bool known = node.Condition switch
+        {
+            TechCondition.NotYet => false,
+            TechCondition.FoundersGone => world.SaidTheFoundersAreGone,
+            TechCondition.KeptGranaryYears => world.HasLiteracy,
+            TechCondition.CottageFamilyTree => world.CottageLearned,
+            TechCondition.ManorFamilyTree => world.ManorLearned,
+            TechCondition.LibraryStands => world.SchoolLearned,
+            _ => of > 0 && progress >= of,
+        };
+
+        if (known)
+        {
+            return (TechState.Known, progress, of);
+        }
+
+        bool aParentIsKnown = false;
+        IReadOnlyList<TechNodeRow> all = world.Config.TechNodeRows;
+        for (int i = 0; i < node.Requires.Count && !aParentIsKnown; i++)
+        {
+            for (int j = 0; j < all.Count; j++)
+            {
+                if (all[j].Id == node.Requires[i] && StateOf(world, all[j]).State == TechState.Known)
+                {
+                    aParentIsKnown = true;
+                    break;
+                }
+            }
+        }
+
+        return (aParentIsKnown || progress > 0 ? TechState.InSight : TechState.Fogged, progress, of);
+    }
+
+    /// <summary>
+    /// The gate's own number and its bar — read from the same state and the same config key the sim
+    /// gates on, never a second copy (`tech-tree-map.md §3.3`).
+    /// </summary>
+    public static (int Progress, int Of) ProgressOf(SimWorld world, TechCondition condition)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        switch (condition)
+        {
+            case TechCondition.StoneDug:
+                return (world.StoneEverDug, world.Config.QuarryUnlockStone);
+            case TechCondition.IronDug:
+                return (world.IronEverDug, world.Config.SmithyUnlockIron);
+            case TechCondition.IronToolsForged:
+                return (world.IronToolsEverForged, world.Config.MineUnlockIronTools);
+            case TechCondition.WheatReaped:
+                return (world.WheatEverReaped, world.Config.MillUnlockWheat);
+            case TechCondition.LeatherHeld:
+                return (world.LeatherEverHeld, world.Config.TailorUnlockLeather);
+            case TechCondition.LogsFelled:
+                return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
+            case TechCondition.VillageSize:
+                return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
+            case TechCondition.CrossingsWalked:
+                return (world.BridgeCrossings, world.Config.StoneBridgeUnlockCrossings);
+            case TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree:
+                // Two factors, one bar: the lesser of the two in hundredths, so the bar is full only when both are.
+                // The manor's is nought until the cottage is learned, so it waits in the fog behind it.
+                (int generation, int ofGeneration, int people, int ofPeople) = FamilyTreeOf(world, condition);
+                if (condition == TechCondition.ManorFamilyTree && !world.CottageLearned)
+                {
+                    return (0, 100);
+                }
+
+                int byGeneration = ofGeneration <= 0 ? 100 : Math.Min(100, generation * 100 / ofGeneration);
+                int byPeople = ofPeople <= 0 ? 100 : Math.Min(100, people * 100 / ofPeople);
+                return (Math.Min(byGeneration, byPeople), 100);
+            case TechCondition.KeptGranaryYears:
+                int years = world.FirstGranaryTick == 0 || world.Tick < world.FirstGranaryTick
+                    ? 0
+                    : (int)((world.Tick - world.FirstGranaryTick) / (ulong)world.Config.TicksPerYear);
+                return (Math.Min(years, world.Config.LiteracyYears), world.Config.LiteracyYears);
+            case TechCondition.FoundersGone:
+                int founders = 0;
+                int gone = 0;
+                for (int i = 0; i < world.Villagers.Count; i++)
+                {
+                    if (world.Villagers[i].Founder)
+                    {
+                        founders++;
+                        if (!world.Villagers[i].Alive)
+                        {
+                            gone++;
+                        }
+                    }
+                }
+
+                return (gone, founders);
+            default:
+                return (0, 0);
+        }
+    }
+
+    /// <summary>
+    /// The family tree's two factors, each against its number (`house-tiers.md §4.4`) — what the card says beside the bar:
+    /// the deepest generation born, and the most people ever held.
+    /// </summary>
+    public static (int Generation, int OfGeneration, int People, int OfPeople) FamilyTreeOf(SimWorld world, TechCondition condition)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        return condition == TechCondition.ManorFamilyTree
+            ? (world.DeepestGenerationBorn, world.Config.ManorUnlockGeneration, world.MostEverAlive, world.Config.ManorUnlockPopulation)
+            : (world.DeepestGenerationBorn, world.Config.CottageUnlockGeneration, world.MostEverAlive, world.Config.CottageUnlockPopulation);
+    }
+
+    /// <summary>Whether a condition is the village learning by DOING with its hands — the kind that introduces the map (Joe, D440).</summary>
+    /// <remarks>The family tree is said through <c>LearnedByDoing</c> at a birth (D721), so it introduces the map too.</remarks>
+    public static bool IntroducesTheMap(TechCondition condition) =>
+        condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
+            or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled
+            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree;
+
+    /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
+    public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+        ArgumentNullException.ThrowIfNull(node);
+
+        int deepest = 0;
+        for (int i = 0; i < node.Requires.Count; i++)
+        {
+            for (int j = 0; j < nodes.Count; j++)
+            {
+                if (nodes[j].Id == node.Requires[i])
+                {
+                    deepest = Math.Max(deepest, 1 + DepthOf(nodes, nodes[j]));
+                }
+            }
+        }
+
+        return deepest;
+    }
+
+    /// <summary>Refuse a tree that cannot be drawn honestly: repeated ids, unknown parents, a cycle.</summary>
+    public static void Validate(IReadOnlyList<TechNodeRow> nodes)
+    {
+        ArgumentNullException.ThrowIfNull(nodes);
+
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (TechNodeRow node in nodes)
+        {
+            if (string.IsNullOrWhiteSpace(node.Id) || !ids.Add(node.Id))
+            {
+                throw new SimConfigException($"tech_nodes repeats or blanks an id (\"{node.Id}\").");
+            }
+        }
+
+        foreach (TechNodeRow node in nodes)
+        {
+            foreach (string parent in node.Requires)
+            {
+                if (!ids.Contains(parent))
+                {
+                    throw new SimConfigException($"tech node \"{node.Id}\" requires \"{parent}\", which is no node.");
+                }
+            }
+
+            if (node.Unlocks is null != (node.Condition == TechCondition.NotYet))
+            {
+                throw new SimConfigException(
+                    $"tech node \"{node.Id}\" must unlock a building unless it is on the horizon (not_yet), and only then.");
+            }
+        }
+
+        foreach (TechNodeRow node in nodes)
+        {
+            Climb(node, new HashSet<string>(StringComparer.Ordinal));
+        }
+
+        void Climb(TechNodeRow node, HashSet<string> above)
+        {
+            if (!above.Add(node.Id))
+            {
+                throw new SimConfigException($"tech_nodes has a cycle through \"{node.Id}\".");
+            }
+
+            foreach (string parent in node.Requires)
+            {
+                foreach (TechNodeRow row in nodes)
+                {
+                    if (row.Id == parent)
+                    {
+                        Climb(row, new HashSet<string>(above, StringComparer.Ordinal));
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,1189 @@
+using System.Text.Json.Nodes;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+
+namespace Kith.Sim.World;
+
+/// <summary>A position on the abstract map. Integers only — see decision D2.</summary>
+public readonly record struct GridPos(int X, int Y)
+{
+    /// <summary>
+    /// Manhattan distance. Deliberately not straight-line: a square root would put a
+    /// float in the middle of travel-cost arithmetic, and travel cost feeds movement,
+    /// which feeds sim state.
+    /// </summary>
+    public int ManhattanDistanceTo(GridPos other) =>
+        Math.Abs(X - other.X) + Math.Abs(Y - other.Y);
+
+    /// <summary>One axis-aligned step toward <paramref name="target"/>. X first, then
+    /// Y — a fixed rule, because "pick the nearer axis" would need a tiebreak and
+    /// tiebreaks are where determinism bugs live.</summary>
+    public GridPos StepToward(GridPos target)
+    {
+        if (X != target.X)
+        {
+            return this with { X = X + Math.Sign(target.X - X) };
+        }
+
+        if (Y != target.Y)
+        {
+            return this with { Y = Y + Math.Sign(target.Y - Y) };
+        }
+
+        return this;
+    }
+
+    public override string ToString() => $"({X}, {Y})";
+}
+
+/// <summary>
+/// One villager — a person with a name and a history, not a headcount
+/// (DESIGN.md §1.4).
+/// </summary>
+public sealed class Villager
+{
+    public required int Id { get; init; }
+
+    /// <summary>"Mabel", never "Villager_01". The story depends on this.</summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// Their family name: their household's surname when they were born or founded it, and the
+    /// new household's when they move in with a partner (D467, <c>names-and-birthdays.md §4</c>).
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Stored, not read through the household</b> — the dead stay in their household's
+    /// member list, and a couple taking over the house renames it; read through the household, a
+    /// dead Thatcher would become a Cooper after death. Not hashed, like <see cref="Name"/>.
+    /// </remarks>
+    public string Surname { get; internal set; } = string.Empty;
+
+    /// <summary>"Agnes Cooper" — the first name alone where nobody has given them a surname.</summary>
+    public string FullName => Surname.Length == 0 ? Name : $"{Name} {Surname}";
+
+    /// <summary>The year they would die of old age, drawn once at birth.</summary>
+    public required int LifespanYears { get; init; }
+
+    /// <summary>Which household they belong to — where they live and whose food they eat.</summary>
+    public int HouseholdId { get; set; }
+
+    /// <summary>
+    /// The villager they founded a household with, or 0 if unpaired.
+    /// </summary>
+    /// <remarks>
+    /// Only a couple has children, which is what stops siblings breeding in the
+    /// parental home and forces the village to actually form new households in
+    /// order to grow.
+    /// </remarks>
+    public int PartnerId { get; set; }
+
+    /// <summary>True once they have a partner.</summary>
+    public bool IsPaired => PartnerId != 0;
+
+    /// <summary>
+    /// What they are capable of, derived from age each tick by <c>AgeingSystem</c>.
+    /// </summary>
+    public LifeStage LifeStage { get; set; } = LifeStage.Adult;
+
+    /// <summary>True when they are old enough to do a day's work.</summary>
+    public bool CanWork => Alive && LifeStage != LifeStage.Child;
+
+    /// <summary>Workplace they currently hold a job at, or 0 for none.</summary>
+    public int WorkplaceId { get; set; }
+
+    /// <summary>
+    /// The construction site this builder is serving — clearing, carrying to, fetching for or working — or 0 (D602).
+    /// </summary>
+    /// <remarks>
+    /// Set whenever a builder chooses a site and cleared when they find nothing to build, so the next builder to decide
+    /// can take a site nobody is on (Joe: <i>"despite having 3 builders, it takes … months! for a builder to start"</i>;
+    /// `multi-material-construction.md §4.1`). Only counted while they are alive and seated at a builder's hut, so a
+    /// stale id on somebody who has since changed trade holds nothing. Saved, and hashed sparsely.
+    /// </remarks>
+    public int ServingSiteId { get; set; }
+
+    /// <summary>
+    /// The last place they actually worked — <b>memory that survives the labourer pool</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ D20's promise stopped being keepable without it, and D262 is why.</b> *"A reshuffle
+    /// that cannot explain itself is worse than no reshuffle"* — so a villager whose work moves
+    /// says **"Moved to the market. The forager's hut had no room this year"** rather than a bare
+    /// *"Took work at"*. The allocator built that sentence from the id the villager held when the
+    /// pass began.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>NOTHING SURVIVES A WINTER IN THAT FIELD.</b> Nobody gathers in winter (D44), so the
+    /// winter pass warehouses every forager to <c>0</c>, and by the spring reshuffle the id they held
+    /// *"when the pass began"* is nothing. **Every year has a winter**, so building-to-building
+    /// moves became unsayable — measured on the shipped fixture: not one *"Moved to"* in a
+    /// hundred and fifty years, and a village that reorganised itself annually in silence.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It matters far more since the two-seat cap than it ever did before.</b> Hands the
+    /// huts cannot seat go to the labourers and come back somewhere else, so *"the forager's hut
+    /// had no room this year"* is now the commonest true thing the village has to tell a player
+    /// — and it is exactly the sentence that says **build another hut**.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Deliberately not in <c>StateHash</c>, on the same footing as <c>JobReason</c></b>,
+    /// which it exists only to word. Divergence is still caught:
+    /// <c>TheSameSeedGivesIdenticalAssignmentsAndIdenticalReasons</c> hashes the reason strings
+    /// themselves, precisely because *"a desync in a runner-up's name would not move a single
+    /// integer"*.
+    /// </para>
+    /// </remarks>
+    public int LastWorkplaceId { get; set; }
+
+    /// <summary>The trade the player has kept them on, or null if the village decides.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A TRADE, NEVER A WORKPLACE — AND THAT DISTINCTION IS THE WHOLE REASON THIS IS
+    /// ALLOWED TO EXIST.</b> Joe, 2026-08-22, asking for it: <i>"a job dropdown on the villager
+    /// inspector, and a 'permanent?' checkbox that locks that person to that trade."</i>
+    /// </para>
+    /// <para>
+    /// <b>⛔ The Banished pattern §2.2 deletes is slotting a NAMED WORKER INTO A BUILDING</b>, and
+    /// <c>LabourTests.NoPublicApiLetsACallerAssignAVillagerToAWorkplace</c> exists to make that
+    /// unexpressible. **This does not do it.** The player says *what Hattie does*; **proximity,
+    /// household and catchment still choose WHICH hut she walks to**, so every
+    /// <see cref="JobReason"/> sentence stays true and answerable.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It is D51's precedent exactly, one axis over.</b> <c>SetStaffing</c> was allowed
+    /// because it sets a <em>count</em> and leaves the person to the sim; this is allowed because
+    /// it sets a <em>trade</em> and leaves the place to the sim. **Joe offered to overrule the
+    /// guard and did not need to — the guard never forbade this.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Hashed sparsely</b> (<c>StateHash.MixVillager</c>), like <see cref="Rhythm"/>: a
+    /// village nobody has pinned anybody in mixes nothing, so every existing golden is untouched.
+    /// </para>
+    /// </remarks>
+    public JobKind? PinnedTrade { get; set; }
+
+    /// <summary>True when the player has kept them on a trade.</summary>
+    public bool IsPinned => PinnedTrade is not null;
+
+    /// <summary>
+    /// Plain-language reason they hold this job, naming the runner-up where there
+    /// was one.
+    /// </summary>
+    /// <remarks>
+    /// The phase's actual deliverable. With one villager, "why is she doing that" was
+    /// self-evident; with twenty simultaneous decisions it is not, and an opaque
+    /// simulation is precisely the failure DESIGN.md §2.2 warns against. Every
+    /// assignment must be explainable in one sentence, which is only possible because
+    /// the assignment rule is a ranked list rather than a weighted score.
+    /// </remarks>
+    public string JobReason { get; set; } = string.Empty;
+
+    /// <summary>True when they hold a job.</summary>
+    public bool HasJob => WorkplaceId != 0;
+
+    /// <summary>
+    /// An able adult no workplace currently wants — a laborer (D63).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>A reader, not a stored state, and deliberately not a <see cref="JobKind"/>.</b>
+    /// Joe's own definition is <em>"villagers who aren't assigned to a specific job"</em>,
+    /// which is a question the world can already answer — so asking it beats maintaining a
+    /// flag: nothing to hash, nothing to set and fail to clear, and no way for the roster and
+    /// the reality to disagree. A `JobKind.Laborer` would need a phantom workplace to hang
+    /// off, since every other kind names a place, and `LabourAllocator` would then have to be
+    /// taught not to allocate to it — a rule invented purely to undo a type that should not
+    /// have existed.
+    /// </para>
+    /// <para>
+    /// <b>Being a laborer is not yet a job of work</b>, and that is measured rather than
+    /// assumed. See <c>specs/stock-limits-and-laborers.md §5.2</c>: both errands the spec
+    /// proposed for them — clearing workplace buffers, and carrying materials to
+    /// construction sites — were measured over a hundred years and occur on <b>0.0%</b> of
+    /// ticks, because producers already carry their own output and builders already fetch
+    /// their own materials. So this exists to be <em>named</em> on screen today, and gains
+    /// work when slice B gives the map raw materials to gather.
+    /// </para>
+    /// </remarks>
+    public bool IsLaborer => CanWork && !HasJob && !IsPupil;
+
+    /// <summary>
+    /// The school this villager is a pupil at — its workplace id — or 0 (D754, `school-and-education.md §12` step 1). Set
+    /// and cleared only by <c>SchoolRoll</c>; a pupil holds no job and is not one of the village's hands.
+    /// </summary>
+    public int SchoolId { get; set; }
+
+    /// <summary>Whether they are at school now (D754).</summary>
+    public bool IsPupil => SchoolId != 0;
+
+    /// <summary>
+    /// Ticks spent as a pupil — <b>the honest calendar, kept for life</b> (D754): a pupil whose school closes keeps the years
+    /// served (call 5's credit), and what school gives is scaled by it against <c>SchoolTermTicks</c> (§11.4).
+    /// </summary>
+    public int SchoolTicks { get; set; }
+
+    /// <summary>Whether they can be offered a job: able, and not at school (D754).</summary>
+    public bool CanTakeAJob => CanWork && !IsPupil;
+
+    /// <summary>
+    /// Why someone who holds a job is not doing it today, or empty when they are.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="JobReason"/> answers "why this job?", which is a question about the
+    /// allocator. This answers "so why are you sitting at home?", which is a different
+    /// question and, before the woodcutter's hut, never had an interesting answer — a
+    /// forager rests in winter and everyone knows why.
+    /// <para>
+    /// The hut changed that: it is the first workplace that can be idle for want of an
+    /// <em>input</em> rather than a worker or a season (D29). A manned building doing
+    /// nothing, with no explanation, is exactly the opaque simulation §2.2 warns
+    /// against — so it says so.
+    /// </para>
+    /// </remarks>
+    public string WorkNote { get; set; } = string.Empty;
+
+    /// <summary>
+    /// What this villager's commute costs them, when it costs enough to matter.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE CONDITION ON DELETING CATCHMENT, AND IT SHIPS IN THE SAME SLICE AS THE
+    /// DELETION</b> (D112, spec §7.1). A fence makes a ruinous commute impossible; removing
+    /// it makes a ruinous commute <em>silent</em>, and a village that thins out with nothing
+    /// on screen saying why is §1.1 failing and the one uncozy state §0.1 rules out.
+    /// </para>
+    /// <para>
+    /// So the walk is stated as what it actually takes: <em>"Elias walks 19 tiles to the
+    /// north hut — about two-fifths of his working year goes on the road."</em> A share of
+    /// the year rather than a distance, because tiles are a number and *most of your year*
+    /// is a decision. Empty when the walk is ordinary; a note that appears for everybody
+    /// says nothing about anybody.
+    /// </para>
+    /// <para>
+    /// <b>Not hashed, and not sim state in any meaningful sense</b> — the same standing as
+    /// <see cref="JobReason"/> and <see cref="WorkNote"/>. It is derived from the position
+    /// and the workplace, both of which are hashed already.
+    /// </para>
+    /// </remarks>
+    public string CommuteNote { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The tick they were born on — their birthday (D468, <c>names-and-birthdays.md §5</c>).
+    /// </summary>
+    /// <remarks>
+    /// <b>Negative for a founder</b>, who was born before the valley was: <c>founder_age</c> years
+    /// before the first tick, and a hash of the seed and their id further into the year before
+    /// that, so each founder is <c>founder_age</c> on the first tick and has a birthday of their own
+    /// in Year 1. A child's is the tick they are born on. Hashed; <see cref="AgeYears"/> is
+    /// derived from it.
+    /// </remarks>
+    public long BirthTick { get; init; }
+
+    /// <summary>
+    /// Whether they are one of the people the village was founded by — <b>the four who arrived
+    /// with the cart</b> (D252, `specs/town-hall.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ MARKED, NOT DERIVED, AND THAT IS THE DECISION RATHER THAN THE DETAIL.</b> A founder
+    /// is arithmetically visible — <c>BirthTick</c> is negative and nobody born here
+    /// has a negative one — but D195 is the standing warning about deriving state you then cannot
+    /// pose, and the derivation is a coincidence of two config keys rather than a fact about a
+    /// person. <b>It is also what lets the tribute NAME them</b>, which is the whole point:
+    /// *a monument that cannot say who it is for is a stats screen with a plaque on it.*
+    /// </para>
+    /// <para>
+    /// <b><c>init</c>-only, and that is the model saying it never changes.</b> Nobody becomes a
+    /// founder and no founder stops being one — dying does not un-found a village, which is
+    /// exactly why the flag has to outlive the person. ⭐ The re-founding of a dead valley (D567,
+    /// `nomads.md §4.6`) marks its four as founders too — a second generation, told apart by
+    /// <see cref="ArrivedAtTick"/>, which the first four never carry.
+    /// </para>
+    /// </remarks>
+    public bool Founder { get; init; }
+
+    /// <summary>
+    /// The tick they joined the village as a grown nomad (`nomads.md §4.4`, D564), or 0 for a founder and for
+    /// anybody born here. <see cref="Core.SimWorld.MostEverAlive"/> counts them from it, not from a birth they had
+    /// elsewhere. Hashed sparsely; saved.
+    /// </summary>
+    public ulong ArrivedAtTick { get; init; }
+
+    /// <summary>
+    /// Which generation in the valley this villager is (`house-tiers.md §4.4`, D718): <b>1</b> for a founder, a re-founder
+    /// and a grown nomad — new to the valley however old — and for a child born here <b>one more than the elder of its two
+    /// parents</b>. The family tree the house tiers are learned on (Joe: <i>"I love the family tree unlock idea!"</i>).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Saved, not hashed</b> — a statistic the gates count, D676's shape: the flag a gate latches is what the sim reads,
+    /// and that is what gets hashed. Two villages that differ only here hash alike until a gate latches;
+    /// <c>HouseTierTests.TheGenerationIsSavedAndNotHashed</c> asserts the gap so nobody "fixes" it unread. Set by the birth
+    /// (<c>HouseholdSystem.TryBirth</c>), never changed after.
+    /// </remarks>
+    public int Generation { get; internal set; } = 1;
+
+    /// <summary>
+    /// Years lived — one more on each birthday, not at New Year (D468). Maintained where it changes
+    /// (<c>ClockSystem</c>, on the tick a year since <see cref="BirthTick"/> completes), never
+    /// recomputed per tick; derived from <see cref="BirthTick"/>, so not hashed (D335). It stops at
+    /// death.
+    /// </summary>
+    public int AgeYears { get; set; }
+
+    /// <summary>
+    /// Physical capability, 0–100. Full through the prime years, then declining
+    /// with age. Scales how much a foraging trip actually brings home, which is
+    /// what turns ageing from a countdown into something you can watch happen.
+    /// </summary>
+    public int Vigour { get; set; } = 100;
+
+    /// <summary>Which band <see cref="Vigour"/> currently falls in. Stored so the
+    /// life log narrates each turn once, not every tick.</summary>
+    public VigourStage Stage { get; set; } = VigourStage.Prime;
+
+    /// <summary>0 = full, rising to <c>hunger_max</c>.</summary>
+    public int Hunger { get; set; }
+
+    /// <summary>Consecutive ticks spent at maximum hunger. Starvation counts from here.</summary>
+    public int TicksAtMaxHunger { get; set; }
+
+    /// <summary>
+    /// How cold this villager has got, counted from where they have been standing (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Not a tick count</b> — it rises faster outdoors than under a fireless roof and
+    /// falls beside a burning fire, so its unit is
+    /// <see cref="Config.SimConfig.ExposureThreshold"/> rather than time — divide by it
+    /// for anything a person sees.
+    /// </para>
+    /// <para>
+    /// It used to be <c>TicksCold</c>: consecutive ticks in a home whose household had no
+    /// firewood, asked identically of everyone everywhere. That is the household
+    /// bookkeeping D45 replaces — a villager froze because of a number attached to their
+    /// family rather than because of where they had been.
+    /// </para>
+    /// </remarks>
+    public int Cold { get; set; }
+
+    // ------------------------------------------------------------------------------------------------------------------
+    //  Contentment (W2, `morale.md §13` step 2, D798–D800) — read once a season by `ContentmentSystem`. Saved; hashed
+    //  sparsely SINCE STEP 4 (D804), when the births gate first reads them — not before, because a fact nothing reads is
+    //  not a second fact about the village, so the goldens moved once, with the first effect (§8, D152).
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>Days this winter the person reached the get-warm line (<c>seek_shelter_percent</c>) — at most one a day.</summary>
+    public int ColdDaysThisWinter { get; set; }
+
+    /// <summary>The day (<see cref="SimWorld.Today"/>) last counted in <see cref="ColdDaysThisWinter"/>; 0 if never.</summary>
+    public int LastColdDay { get; set; }
+
+    /// <summary>The season number (<see cref="SimWorld.SeasonNumber"/>) a cold winter stops being held — held while larger.</summary>
+    public int ColdWinterHeldUntil { get; set; }
+
+    /// <summary>
+    /// The walk to work in tiles, written with <see cref="CommuteNote"/> by the allocator and cleared with it — <b>0 when
+    /// the note is not said</b> (within the old forage ring, or no job).
+    /// </summary>
+    public int CommuteTiles { get; set; }
+
+    /// <summary>The causes held at the last season's read, one bit a <see cref="ContentmentCause"/> — what the card will say.</summary>
+    public int ContentmentCauses { get; set; }
+
+    /// <summary>Seasons running this person has been unsettled — 0 when content. At <c>contentment_thinking_of_leaving_seasons</c> (4) the log warns once; at <c>contentment_leaving_seasons</c> (8) they are ready to leave (D798 call 3, step 5).</summary>
+    public int SeasonsUnsettled { get; set; }
+
+    /// <summary>Whether the last season's read put them past the line — the card's <i>Unsettled</i> (W2 step 3).</summary>
+    public bool IsUnsettled => SeasonsUnsettled > 0;
+
+
+    public VillagerState State { get; set; } = VillagerState.Idle;
+
+    /// <summary>
+    /// ⭐ Where they are — a <see cref="Point"/>, since gridless slice 3 (D354).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// D329's shape, for people: the position is continuous and <see cref="Tile"/> is the derived
+    /// question every tile-indexed system asks — the cost field, the zones, the ground, *"is
+    /// anybody at this site?"*. At the shipped pace a villager is on a tile centre at every tick
+    /// boundary and the walk is exactly the tile stepping it replaced; what changed is that a
+    /// villager who arrives at a free-placed building stands <em>on</em> it (D330 put the
+    /// building at a `Point`; until this slice its worker stood at the anchor tile's centre, half
+    /// a tile from the door), and that a slower pace is a fraction of a tile a tick rather than
+    /// a jump and a wait.
+    /// </para>
+    /// <para>
+    /// Hashed as raw fixed-point bits, never quantised (`gridless.md §5`).
+    /// </para>
+    /// </remarks>
+    public Point Position
+    {
+        get => _position;
+
+        // ⛔ Setting it from OUTSIDE the walk drops any leg in progress (gridless slice 4, D356).
+        // A leg is committed state — where a straight line began and ends — and a villager put
+        // somewhere by hand (a new door, a finished house, a test posing them) is no longer on it.
+        // Left standing, a stale leg would march them back to where the line began. The walk
+        // itself advances through <see cref="WalkTo"/>, which keeps the leg.
+        set
+        {
+            _position = value;
+            LegTicks = Fixed.Zero;
+            LegWalked = Fixed.Zero;
+        }
+    }
+
+    private Point _position;
+
+    /// <summary>Advance along the leg in progress — the one setter that keeps it.</summary>
+    internal void WalkTo(Point along) => _position = along;
+
+    /// <summary>The tile they are on — derived, and what every tile-keyed question asks.</summary>
+    public GridPos Tile => Position.ToTile();
+
+    // ---------------------------------------------------------------
+    //  The leg — a straight line across the tile route (gridless slice 4, D356)
+    // ---------------------------------------------------------------
+    //
+    // ⭐⭐ THIS IS THE STATE SLICE 3 REFUSED TO INVENT IMPLICITLY. A villager walking a straight
+    // line across the cost field's staircase must know where the line ENDS — mid-leg, the tile
+    // they are on cannot say whether they are leaving it or arriving. So the leg is written down:
+    // where it started, where it ends (a route tile's centre, or the place they will stand), what it
+    // costs in ticks, and how much of that has been walked.
+    //
+    // ⭐⭐ STEADY PACE (D463, `gridless.md §8` slice 6): the cost is a `Fixed`, never rounded, and a
+    // walker spends exactly one tick of it a tick — a leg that ends mid-tick hands the rest of the
+    // tick to the next. Until D463 it was `round(length × cost)` whole ticks, so a short leg strode
+    // anything from 0.55 to 2.8 tiles a tick and the view drew the long ones as teleports.
+    //
+    // All five are hashed. `LegTicks == 0` means no leg in progress.
+
+    /// <summary>Where the current leg began — the point the line is drawn from.</summary>
+    public Point LegFrom { get; set; }
+
+    /// <summary>Where the current leg ends — a route tile's centre, or the place they will stand on arriving.</summary>
+    public Point LegTo { get; set; }
+
+    /// <summary>The tile the whole journey is toward, so a change of mind can be seen.</summary>
+    public GridPos LegTarget { get; set; }
+
+    /// <summary>What the leg costs, in ticks of walking — its length times the ground's price, unrounded (D463).</summary>
+    public Fixed LegTicks { get; set; }
+
+    /// <summary>How much of <see cref="LegTicks"/> has been walked.</summary>
+    public Fixed LegWalked { get; set; }
+
+    /// <summary>The tick <see cref="PaceLeft"/> belongs to (D463).</summary>
+    /// <remarks>
+    /// ⭐ One tick's walk is the VILLAGER's, not one journey's: an arrival can start the next errand in
+    /// the same tick, and a second <c>Travel</c> handed a fresh tick of pace strode two tiles at once
+    /// (measured — leaving home, putting a tool down, a heap tidied). ⚠️ <b>Not hashed, on purpose:</b>
+    /// it never outlives its tick — on the next one <see cref="PacedOnTick"/> is stale and the pace is
+    /// a whole tick again whatever it says — so it is not a fact about the village between ticks.
+    /// </remarks>
+    internal ulong PacedOnTick { get; set; } = ulong.MaxValue;
+
+    /// <summary>How much of this tick's walk is left, once <see cref="PacedOnTick"/> is this tick.</summary>
+    internal Fixed PaceLeft { get; set; }
+
+    /// <summary>Put them somewhere outright — a new door, a finished house — and forget any walk in progress.</summary>
+    public void StandAt(Point where) => Position = where;
+
+    /// <summary>What is in their arms right now, between where they took it and where it goes.</summary>
+    /// <remarks>
+    /// <para>
+    /// Goods used to teleport: a logger finished a cut and the timber appeared in
+    /// their household's larder from wherever they were standing. That is what let
+    /// logs pile up in the logger's own house where nobody could spend them (D25),
+    /// and it is why "the village's logs" had to be faked with a sweep across every
+    /// household.
+    /// </para>
+    /// <para>
+    /// Carrying makes the haul a real leg of a real trip, which is the point of D30 —
+    /// and it is what gives §2.6's desire paths something to be about, because a route
+    /// walked with a load is traffic.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THIS WAS THREE NAMED FIELDS, AND THREE OF THE SIX GOODS COULD NOT BE PICKED UP</b>
+    /// (`goods-catalog.md §4.0`, D211). D82 made every <em>store</em> an indexed array and never
+    /// reached the villager's arms, so a laborer sent to clear a stone seam spent the tile —
+    /// <c>Harvest</c> sets it to grass — carried nothing, and left nothing behind. <b>The yield
+    /// stopped existing.</b> Measured before it was fixed: eight painted seams cleared in two
+    /// years, <b>zero stone in the stores and zero on the ground</b>, and the same for iron.
+    /// </para>
+    /// <para>
+    /// It is the same array a granary, a larder and a cart hold, sized from the same catalogue —
+    /// so <b>a good a modder adds can be carried the day it is added</b>, which is the whole
+    /// promise `goods-catalog.md` makes and the one place it did not reach.
+    /// </para>
+    /// <para>
+    /// <b>Uncapped, deliberately.</b> <c>carry_capacity</c> is applied by the errands that pick
+    /// things up — a fetch, a tidy — and giving the arms a <see cref="Stockpile.Capacity"/> as
+    /// well would silently clamp a gather or a fell that has always been allowed to exceed it.
+    /// That would be a balance change hiding inside a refactor.
+    /// </para>
+    /// </remarks>
+    public required Stockpile Carried { get; init; }
+
+    /// <summary>
+    /// Logs in their arms right now, between the stumps and the warehouse.
+    /// </summary>
+    /// <remarks>
+    /// <b>A named reader over the one array</b>, exactly as <see cref="Stockpile.Logs"/> is —
+    /// and for the reason recorded there: readers read as English at the call site and cannot go
+    /// stale, while the named <em>mutators</em> are gone so that every place that changes a load
+    /// has to say which good it means.
+    /// </remarks>
+    public int CarriedLogs => Carried.Logs;
+
+    /// <summary>Firewood in their arms.</summary>
+    public int CarriedFirewood => Carried.Firewood;
+
+    /// <summary>Food in their arms — used once fetching lands.</summary>
+    public int CarriedProduce => Carried[Goods.Produce];
+
+    /// <summary>True when they are hauling anything at all.</summary>
+    /// <remarks>
+    /// <b>Every good, not the three that had a field.</b> This read
+    /// <c>CarriedLogs &gt; 0 || CarriedFirewood &gt; 0 || CarriedProduce &gt; 0</c>, which is what
+    /// made a villager holding stone look empty-handed to every caller — including
+    /// <c>ArriveAt</c>, whose set-down is the conservation rule's last line of defence.
+    /// </remarks>
+    public bool IsCarrying => Carried.Held > 0;
+
+    /// <summary>Where a marketer is walking to pick their load up.</summary>
+    /// <remarks>
+    /// Remembered rather than recomputed each tick, and that is not an optimisation.
+    /// The cheapest pickup is judged from where the villager is <em>standing</em>, so a
+    /// marketer who re-decides while walking watches the answer change under them with
+    /// every step and can shuttle between two sources forever without reaching either.
+    /// A destination has to outlive the walk to it.
+    /// </remarks>
+    public int ErrandX { get; set; }
+
+    /// <summary>Where a marketer is walking to pick their load up.</summary>
+    public int ErrandY { get; set; }
+
+    /// <summary>Ticks left in the current timed action (gathering, travel delay).</summary>
+    public int ActionTicksRemaining { get; set; }
+
+    /// <summary>
+    /// True on a tick where they paused to eat. Eating preempts whatever they were
+    /// doing rather than replacing it, so <see cref="State"/> keeps the underlying
+    /// activity and the interrupted action resumes next tick.
+    /// </summary>
+    public bool JustAte { get; set; }
+
+    public bool Alive { get; set; } = true;
+
+    public CauseOfDeath CauseOfDeath { get; set; } = CauseOfDeath.None;
+
+    /// <summary>Tick at which they died. Null while alive — and for somebody who left (<see cref="LeftAtTick"/>).</summary>
+    public ulong? DiedAtTick { get; set; }
+
+    /// <summary>
+    /// The tick they left the valley, unsettled two years (W2 step 5, `morale.md §13.2`) — a fate beside death: not
+    /// <see cref="Alive"/>, <see cref="DiedAtTick"/> null. Null otherwise. Saved when set, hashed sparsely.
+    /// </summary>
+    public ulong? LeftAtTick { get; set; }
+
+    /// <summary>
+    /// ⭐ The tick they stopped being here, either way — what a reader asks that once meant <i>died</i> (the valley's peak, its
+    /// emptying, the founders' tribute). Grief asks <see cref="DiedAtTick"/>: a departure is not a death in the family.
+    /// </summary>
+    public ulong? GoneAtTick => DiedAtTick ?? LeftAtTick;
+
+    /// <summary>Winters survived — the unit a hard life is measured in.</summary>
+    public int WintersSurvived { get; set; }
+
+    /// <summary>Lifetime count of completed gathers, for the epitaph.</summary>
+    public int TotalGathers { get; set; }
+
+    /// <summary>Gathers since the season turned. Reset by <c>ClockSystem</c> after
+    /// it summarises the season into the life log.</summary>
+    public int GathersThisSeason { get; set; }
+
+    /// <summary>
+    /// Splits made at the hut since this woodcutter last walked to it — the stint (D384). Zero
+    /// when they are not at the block.
+    /// </summary>
+    public int SplitsThisStint { get; set; }
+
+    /// <summary>
+    /// The uses left in the tool in their hands — <b>zero is no tool</b> (D391,
+    /// `specs/tools-and-the-smith.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>On the villager, not the household</b>, as `wood-fuel-and-tools.md §7` asked when it
+    /// deferred tools: so §2.1 can say <em>"a skilled worker with a good tool"</em> without a
+    /// migration. Worn by one where an action begins (<c>SimWorld.BeginWork</c>); filled from a
+    /// store's count and never conjured; hashed sparsely, so a village with no tools hashes as it
+    /// did before tools existed.
+    /// </para>
+    /// <para>
+    /// <b>Zero is today's number to the unit.</b> A worker without a tool is the baseline the
+    /// survival floor is solved for; the tool is the bonus (D353). There is no cliff here — the
+    /// founders' twenty fade one use at a time, and the card says how many are left.
+    /// </para>
+    /// </remarks>
+    public int ToolUses { get; set; }
+
+    /// <summary>
+    /// Which kind of tool is in their hands — the good it was taken as (`tools-and-the-smith.md
+    /// §9.2`). Meaningless while <see cref="ToolUses"/> is zero.
+    /// </summary>
+    /// <remarks>
+    /// <b>The stone tool by default</b>, so every hand that took a tool before iron existed held
+    /// stone, and the hash mixes this only as a difference from it — a village with only stone tools
+    /// hashes as it did before this field existed. The tool's numbers are read off this good's row.
+    /// </remarks>
+    public Goods ToolGood { get; set; } = Goods.Tools;
+
+    /// <summary>
+    /// The winter days left in the coat on their back — <b>0 for no coat</b> (`clothing.md §3.3`, D659).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="ToolUses"/>' shape one good over: taken from a store's count, never conjured; worn a day every
+    /// winter day whatever the day held; hashed sparsely, so a village with no coat hashes as it did before coats
+    /// existed. While it is above zero, open ground chills them at the roof's rate (<c>HearthSystem</c>).
+    /// </para>
+    /// <para>
+    /// <b>Zero is the founders' furs.</b> D69's third rate was never built and is not wanted (Joe, D659): today's 15
+    /// days outdoors is what they arrived in, and the coat is the upgrade.
+    /// </para>
+    /// </remarks>
+    public int CoatDays { get; set; }
+
+    /// <summary>
+    /// Whether the household's handcart is in their hands just now (`handcart.md §4`, Slice H) — taken from the doorstep
+    /// as a shopping trip begins, parked again when they reach the door; and on the walk home with a new cart from the
+    /// store (<see cref="VillagerState.PushingAHandcart"/>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The cart is the household's (<c>Household.HandcartUses</c>); this says who has it.</b> While it is true the
+    /// shopper's armful is <c>cart_armfuls</c> deep, the leg is slow on grass and quick on a path, and every tile the
+    /// wheels cross is a path at once (§4–§7). Hashed sparsely under its own tag, so a village with no cart hashes as it
+    /// did before carts existed.
+    /// </para>
+    /// <para>
+    /// ⚠️ Cleared where the person stops being this household's — death, and moving house (<c>HouseholdSystem.MoveIn</c>).
+    /// The cart itself stays the household's: a pusher who dies on the road leaves it to be found, which the sim does
+    /// not step, so it simply counts as home. Written down rather than modelled: a cart is a good, not a positioned thing.
+    /// </para>
+    /// </remarks>
+    public bool PushingACart { get; set; }
+
+    /// <summary>
+    /// Whether the cart in their hands — or the one they are walking to fetch — is their <b>workplace's</b>, the market's or
+    /// the trading post's, and not the household's (`handcart.md §13.2`). <see cref="PushingACart"/> stays the one flag that
+    /// says a cart is in their hands (the slow grass walk, the tread and the rectangle behind the dot read it unchanged);
+    /// this says <i>whose</i>. Pushing the works' cart implies <see cref="PushingACart"/>.
+    /// </summary>
+    /// <remarks>
+    /// Set when a worker sets off for the building's cart or takes it from the building's door; cleared when the cart is
+    /// parked at the building, and where the person stops being the building's — death, or the seat lost — when the cart
+    /// counts as back at its building (written down rather than modelled, as the household's is). Moving house leaves it,
+    /// because the cart was never the household's. Hashed sparsely under its own tag.
+    /// </remarks>
+    public bool CartForTheWorks { get; set; }
+
+    /// <summary>Forges made at the smithy since this smith last walked to it — the stint (D391).</summary>
+    public int ForgesThisStint { get; set; }
+
+    /// <summary>Digs at the quarry face since this quarrier last walked to it — the stint (D434).</summary>
+    public int DigsThisStint { get; set; }
+
+    /// <summary>
+    /// Grinds at the mill, or bakes at the oven, since this miller or baker last walked to it — the
+    /// stint (D522). One field for both: a villager holds one job, and the first bake of a stint is
+    /// the one that lights the oven.
+    /// </summary>
+    public int BatchesThisStint { get; set; }
+
+    /// <summary>
+    /// ⭐ Whose batch it is — the trade beside <see cref="VillagerState.TravelingToABatch"/> and
+    /// <see cref="VillagerState.WorkingABatch"/> (W1, Joe's call A, D792; `batch-trade.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>The shared state cannot say it, and the D281 recall reads exactly that.</b> The yearly share-out moves a miller
+    /// to the bakery mid-stint; the recall sends them home because the errand was a miller's. Read the trade off the seat
+    /// instead and they walk on and bake standing at the mill. Set with <see cref="BatchWords"/> by
+    /// <see cref="SetBatch"/> when the walk begins; meaningful only while at a batch, and hashed only then.
+    /// </remarks>
+    public JobKind? BatchTrade { get; private set; }
+
+    /// <summary>The trade's words, its product put in (W1) — derived from the row, never hashed or saved; put back on load.</summary>
+    internal BatchWords? BatchWords { get; private set; }
+
+    /// <summary>Whose batch it is and what it is called — set together, so the card cannot name another trade's work.</summary>
+    internal void SetBatch(JobKind trade, BatchWords words)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        BatchTrade = trade;
+        BatchWords = words;
+    }
+
+    /// <summary>
+    /// ⭐ Ticks this villager's last meal still holds hunger off — what it was worth beyond a plain meal
+    /// (`food-chain.md §3.2`, D522). While above nought, hunger does not rise; it counts down instead.
+    /// </summary>
+    /// <remarks>
+    /// Nought after any meal of foods worth one, so a village with no bread is never full and hashes as
+    /// it did before bread existed (sparse in the hash).
+    /// </remarks>
+    public int FullFor { get; set; }
+
+    /// <summary>
+    /// The best food in the meal that made them full — what the card names (*"Full from a meal of
+    /// bread"*). Meaningless while <see cref="FullFor"/> is nought.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Saved but not hashed: no rule reads it, only the card. It cannot change what anybody does.
+    /// </remarks>
+    public Goods FullFrom { get; set; }
+
+    /// <summary>
+    /// Ticks this villager still has to wait before their working life begins — <b>a seeded
+    /// personal rhythm, drawn once at birth</b> (`skills-catalog.md §3.5`, D28).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ HALF THE ANSWER TO THE OLDEST OPEN OBSERVATION IN THE PROJECT.</b> Joe watched the
+    /// village at 4× in Phase 1 and saw people travelling as duos rather than as individuals.
+    /// Measured, it is near-total: **two adults of one household holding one job are on the same
+    /// tile 99.9% of ticks, with identical hunger 100% of the time.** They are not short of
+    /// variability — they are *symmetric*: same home tile, same fixed stepping rule, same
+    /// constant action durations, so they even stop to eat on the same tick.
+    /// </para>
+    /// <para>
+    /// <b>⭐ A ONE-TIME STAGGER IS ENOUGH, BECAUSE NOTHING EVER RE-SYNCHRONISES THEM.</b> Two
+    /// villagers who set off a tick apart arrive a tick apart, work a tick apart and eat a tick
+    /// apart for the rest of their lives — the same reasoning §3.3 gives for why differing
+    /// action durations break the lockstep permanently.
+    /// </para>
+    /// <para>
+    /// <b>Bounded by a day, and derived rather than picked</b> (D16): the draw is
+    /// <c>0 … ticks_per_day − 1</c>, which is *people do not all get up at the same moment*
+    /// stated in the calendar's own unit. §3.5's hard bound is that **if it changes what anybody
+    /// produces across a year it is too big** — this costs at most three ticks **once in a
+    /// lifetime**, against 480 ticks in every year of it.
+    /// </para>
+    /// <para>
+    /// <b>Spent when their working life starts, not at birth</b>, so a child does not burn it
+    /// during infancy where it would do nothing. Hashed, because it is sim state that decides
+    /// what somebody does.
+    /// </para>
+    /// </remarks>
+    public int Rhythm { get; set; }
+
+    /// <summary>
+    /// What this person has put into each trade — <b>time on the task, in ticks</b>
+    /// (`specs/skills-catalog.md §3.1`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ NOT EXPERIENCE POINTS, AND THE DISTINCTION IS NOT PEDANTRY.</b> An XP number is a
+    /// thing the player learns to farm: it invites *"what gives the most XP?"*, which is a
+    /// question this game should never be able to answer. **Time-on-task can only be answered
+    /// one way — *she did the work*** — and it is the same argument §2.7 makes when it refuses a
+    /// Civ-style research bar.
+    /// </para>
+    /// <para>
+    /// <b>⛔ SORTED BY <see cref="SkillProgress.SkillId"/> AND KEPT THAT WAY.</b> This is mixed
+    /// into the state hash in list order, so an unordered container would make the hash depend
+    /// on the sequence entries happened to be created in — D15's *an unordered tie is a desync
+    /// waiting to happen*, arriving through a dictionary. <see cref="ProgressIn"/> is the only
+    /// door that adds to it, and it inserts in place.
+    /// </para>
+    /// <para>
+    /// <b>Sparse.</b> A villager who has never held a job carries an empty list and mixes
+    /// nothing (§8) — which is the contract that let this land before the behaviour it will
+    /// eventually drive.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It dies with them, always</b> (§5.4). Proficiency is one person's years; nothing
+    /// in the game may write it back into somebody else, and no record ever restores it.
+    /// </para>
+    /// </remarks>
+    public List<SkillProgress> Skills { get; } = new();
+
+    /// <summary>Ticks this villager has put into one skill, or zero if they never have.</summary>
+    public int TicksIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i].Ticks;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>What they have in one skill, or null if they have never touched it.</summary>
+    /// <remarks>
+    /// <b>Null rather than a zeroed entry</b>, so reading a skill can never create one — an
+    /// accessor that quietly materialises state is how a sparse structure stops being sparse
+    /// and every golden moves for a panel being opened.
+    /// </remarks>
+    public SkillProgress? FindProgressIn(int skillId)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (Skills[i].SkillId == skillId)
+            {
+                return Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What they have in one skill, creating a zeroed entry if this is their first tick.</summary>
+    /// <remarks>
+    /// <b>The one door that adds to <see cref="Skills"/></b>, and it inserts in id order so the
+    /// list is sorted by construction rather than by anybody remembering to sort it.
+    /// </remarks>
+    public SkillProgress ProgressIn(int skillId)
+    {
+        int at = 0;
+        while (at < Skills.Count && Skills[at].SkillId < skillId)
+        {
+            at++;
+        }
+
+        if (at < Skills.Count && Skills[at].SkillId == skillId)
+        {
+            return Skills[at];
+        }
+
+        var fresh = new SkillProgress { SkillId = skillId };
+        Skills.Insert(at, fresh);
+        return fresh;
+    }
+
+    /// <summary>
+    /// Plain-language description of the current action, for the UI.
+    /// </summary>
+    /// <param name="workplaceName">
+    /// Where they work, if anywhere — so the line names the actual place. There are
+    /// several forage sites now, and "walking to the berry patch" was simply untrue
+    /// for most of the village. A UI line that contradicts the map is worse than a
+    /// vague one.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// <b>Every state has to be here.</b> This covered ten of them and fell through to
+    /// <c>State.ToString()</c> for the rest, so the panel whose entire job is legibility
+    /// printed <c>HaulingToStore</c> and <c>SeekingShelter</c> at the player — raw enum
+    /// names, in the one place the game is supposed to explain itself. Seven of seventeen
+    /// states read like that, and every one of them was added after this method was
+    /// written.
+    /// </para>
+    /// <para>
+    /// <b>There is a second mapping</b> — <c>BehaviorSystem.Describe</c> — and it is
+    /// deliberate rather than an oversight. That one writes terse log lines
+    /// (<em>"idle → gathering"</em>); this one writes a sentence for a person
+    /// (<em>"gathering berries"</em>). Two registers for two readers. What is <em>not</em>
+    /// allowed is either of them going stale, which is why a test walks every value of the
+    /// enum through both and fails if it gets an enum name back.
+    /// </para>
+    /// </remarks>
+    /// <param name="atTheSteading">
+    /// Whether they rest at their farm just now rather than at home (D511) — the sim's
+    /// <c>RestsAtTheSteading</c>, asked by the caller, so a farmhand reads <em>"resting at
+    /// Eastfield"</em> where they are, not <em>"resting at home"</em> where they are not.
+    /// </param>
+    /// <param name="unhoused">
+    /// ⭐ Whether their household has no house yet (D782, Joe: <i>"It shows these people … 'resting at home' in the field?"</i>) —
+    /// they rest at the cart, or the founding site once it is gone, out in the open, and it is said so, not called home.
+    /// </param>
+    public string DescribeState(string? workplaceName = null, bool atTheSteading = false, bool unhoused = false)
+    {
+        if (JustAte && Alive)
+        {
+            return "stopping to eat";
+        }
+
+        string where = string.IsNullOrEmpty(workplaceName) ? "work" : workplaceName;
+
+        return State switch
+        {
+            VillagerState.Idle => "standing idle",
+            VillagerState.TravelingToFood => $"walking out to the woods near {where}",
+            VillagerState.Gathering => "gathering berries in the woods",
+        VillagerState.Fishing => "fishing",
+        VillagerState.TravelingToWater => "walking to the water",
+        VillagerState.TravelingToGame => "walking out to the woods",
+        VillagerState.Hunting => "hunting in the woods",
+            VillagerState.TravelingHome => atTheSteading && !IsCarrying ? $"walking back to {where}"
+                // The works' cart home for the night (`handcart.md §13.2b`); the household's as before (§8).
+                : PushingACart ? (IsCarrying ? "pushing a load home" : CartForTheWorks ? "pushing the handcart home for the night" : "pushing the cart home")
+                : unhoused ? "walking back to where they sleep — no house yet" : "walking home",
+            VillagerState.TravelingToTrees => $"walking to {where}",
+            VillagerState.Cutting => "felling trees",
+            VillagerState.TravelingToHut => $"walking to {where}",
+            VillagerState.MakingFirewood => SplitsThisStint > 0
+            ? $"splitting logs into firewood, the {SplitsThisStint + 1}{(SplitsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} split of the day"
+            : "splitting logs into firewood",
+            VillagerState.Resting => atTheSteading ? $"resting at {where}" : unhoused ? "resting in the open — no house yet" : "resting at home",
+            VillagerState.Dead => "dead",
+            VillagerState.Left => "gone from the valley",
+            VillagerState.HaulingToStore => "carrying a load to the store",
+            // The shopper with the household's cart (`handcart.md §8`): the same errand, a thing on the map behind them.
+            VillagerState.FetchingFromStore => PushingACart ? "pushing the cart to the shops" : "fetching supplies for home",
+            VillagerState.SeekingShelter => "going indoors to get warm",
+            VillagerState.CollectingForMarket => "collecting goods for the market",
+            // The first leg (`handcart.md §13.2a`): empty-handed, to the door the cart is parked at.
+            VillagerState.WalkingToTheMarket => "walking to the market for its handcart",
+            // A pupil has no job, so `where` names none of theirs: their words stand without it (D754).
+            VillagerState.WalkingToSchool => IsPupil ? "walking to school" : $"walking to {where}",
+            VillagerState.AtSchool => "at school",
+            VillagerState.Teaching => $"teaching at {where}",
+            VillagerState.FetchingMaterials => "fetching materials for the building site",
+            VillagerState.Building => "raising a building",
+            // Trees, stone or iron — the state does not know which, and "trees" was wrong for a
+            // laborer at a seam (found by D434).
+            VillagerState.Clearing => "clearing ground the village marked",
+            VillagerState.TidyingGround => "fetching a load left on the ground",
+            VillagerState.ClearingABuffer => "carrying food out of a hut to a store",
+            VillagerState.ClearingAStore => "carrying goods out of a store being cleared",
+            VillagerState.TravelingToField => $"walking out to the fields at {where}",
+            VillagerState.Sowing => "sowing a field",
+            VillagerState.Reaping => "reaping the harvest",
+            VillagerState.HaulingToFarm => Carried[Goods.Meat] > 0
+                ? $"carrying the meat back to {where}"
+                : "carrying the harvest to the farm",
+            // The empty leg back with the market's cart (`handcart.md §13.2`): the loaded leg keeps its words.
+            VillagerState.StockingTheMarket => CartForTheWorks && !IsCarrying ? "pushing the market's handcart back" : "carrying goods to the market",
+            VillagerState.FetchingATool => "fetching a tool from a store",
+            VillagerState.FetchingACoat => "fetching a coat from a store",
+            VillagerState.TravelingToSmithy => $"walking to {where}",
+            VillagerState.Forging => ForgesThisStint > 0
+                ? $"forging tools, the {ForgesThisStint + 1}{(ForgesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} of the day"
+                : "forging tools at the anvil",
+            // ⭐ Every batch trade, in its row's words (W1): "grinding wheat, the 2nd grind of the day", "lighting the oven".
+            VillagerState.TravelingToABatch => $"walking to {where}",
+            VillagerState.WorkingABatch => BatchWords is not BatchWords words ? "at work"
+                : BatchesThisStint > 0
+                    ? $"{words.Working}, the {BatchesThisStint + 1}{(BatchesThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }}"
+                        + $"{(words.StintWord.Length > 0 ? " " + words.StintWord : string.Empty)} of the day"
+                    : words.FirstBatch,
+            VillagerState.FetchingAHandcart => "fetching a handcart from a store",
+            // The works' cart (`handcart.md §13.5`): a new cart goes to the market or the post, not home.
+            VillagerState.PushingAHandcart => CartForTheWorks ? "pushing the new handcart to work" : "pushing the new handcart home",
+            VillagerState.TravelingToQuarry => $"walking to the face at {where}",
+            VillagerState.Quarrying => DigsThisStint > 0
+                ? $"cutting stone, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} block of the stint"
+                : "cutting stone at the quarry face",
+            VillagerState.TravelingToMine => $"walking to the face at {where}",
+            VillagerState.Mining => DigsThisStint > 0
+                ? $"digging iron, the {DigsThisStint + 1}{(DigsThisStint + 1) switch { 2 => "nd", 3 => "rd", _ => "th" }} dig of the stint"
+                : "digging iron at the mine face",
+            VillagerState.WalkingToTheWell => "walking to the well",
+            VillagerState.DrawingWater => "drawing water at the well",
+            VillagerState.WalkingToTheRiver => "walking to the river for water",
+            VillagerState.DrawingAtTheRiver => "drawing water at the river",
+            VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
+            VillagerState.Tending => $"tending the wheat at {where}",
+            VillagerState.WalkingBackToTheSteading => $"walking back to {where}",
+            VillagerState.CuttingHay => $"cutting hay on the pasture of {where}",
+            VillagerState.FetchingHay => $"fetching hay from {where}",
+            VillagerState.FeedingTheHerd => $"carrying hay out to the herd at {where}",
+            VillagerState.Culling => $"culling a beast the pasture at {where} cannot hold",
+            VillagerState.CollectingForThePost => "collecting goods the village sells",
+            VillagerState.StockingThePost => CartForTheWorks && !IsCarrying ? "pushing the post's handcart back" : $"carrying goods down to {where} to sell",
+            VillagerState.FetchingFromThePost => $"bringing home what a boat left at {where}",
+            _ => State.ToString(),
+        };
+    }
+
+    // ---------------------------------------------------------------
+    //  Save and load (`specs/save-load.md §5`)
+    // ---------------------------------------------------------------
+    //
+    // ⚠️ Everything here but `PacedOnTick` / `PaceLeft`, which only mean anything inside the tick that
+    // wrote them — a save is taken between ticks, so a loaded villager's pace is already "not this tick".
+    // `SaveLoadTests`' field guard names every field that is left out, and why.
+
+    internal JsonObject ToSave()
+    {
+        var skills = new JsonArray();
+        foreach (SkillProgress skill in Skills)
+        {
+            skills.Add(skill.ToSave());
+        }
+
+        return new JsonObject
+        {
+            ["id"] = Id,
+            ["name"] = Name,
+            ["surname"] = Surname,
+            ["lifespan_years"] = LifespanYears,
+            ["household"] = HouseholdId,
+            ["partner"] = PartnerId,
+            ["life_stage"] = SaveWriter.Enum(LifeStage),
+            ["workplace"] = WorkplaceId,
+            ["last_workplace"] = LastWorkplaceId,
+            ["serving_site"] = ServingSiteId,
+            ["pinned_trade"] = SaveWriter.Enum(PinnedTrade),
+            ["job_reason"] = JobReason,
+            ["work_note"] = WorkNote,
+            ["commute_note"] = CommuteNote,
+            // W2's tallies (D798–D800) — optional keys, so a save from before reads a content village.
+            ["cold_days_this_winter"] = ColdDaysThisWinter != 0 ? ColdDaysThisWinter : null,
+            ["last_cold_day"] = LastColdDay != 0 ? LastColdDay : null,
+            ["cold_winter_held_until"] = ColdWinterHeldUntil != 0 ? ColdWinterHeldUntil : null,
+            ["commute_tiles"] = CommuteTiles != 0 ? CommuteTiles : null,
+            ["contentment_causes"] = ContentmentCauses != 0 ? ContentmentCauses : null,
+            ["seasons_unsettled"] = SeasonsUnsettled != 0 ? SeasonsUnsettled : null,
+            ["birth_tick"] = SaveWriter.Hex(BirthTick),
+            ["founder"] = Founder,
+            ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
+            ["generation"] = Generation,
+            ["age_years"] = AgeYears,
+            ["vigour"] = Vigour,
+            ["vigour_stage"] = SaveWriter.Enum(Stage),
+            ["hunger"] = Hunger,
+            ["ticks_at_max_hunger"] = TicksAtMaxHunger,
+            ["cold"] = Cold,
+            ["state"] = SaveWriter.Enum(State),
+            ["at"] = SaveWriter.Point(_position),
+            ["leg_from"] = SaveWriter.Point(LegFrom),
+            ["leg_to"] = SaveWriter.Point(LegTo),
+            ["leg_target"] = SaveWriter.GridPos(LegTarget),
+            ["leg_ticks"] = SaveWriter.Fixed(LegTicks),
+            ["leg_walked"] = SaveWriter.Fixed(LegWalked),
+            ["carried"] = Carried.ToSave(),
+            ["errand_x"] = ErrandX,
+            ["errand_y"] = ErrandY,
+            ["action_ticks_remaining"] = ActionTicksRemaining,
+            ["just_ate"] = JustAte,
+            ["alive"] = Alive,
+            ["cause_of_death"] = SaveWriter.Enum(CauseOfDeath),
+            ["died_at"] = SaveWriter.Hex(DiedAtTick),
+            ["left_at"] = LeftAtTick is null ? null : SaveWriter.Hex(LeftAtTick),
+            ["winters_survived"] = WintersSurvived,
+            ["total_gathers"] = TotalGathers,
+            ["gathers_this_season"] = GathersThisSeason,
+            ["splits_this_stint"] = SplitsThisStint,
+            ["tool_uses"] = ToolUses,
+            ["tool_good"] = SaveWriter.Good(ToolGood),
+            ["coat_days"] = CoatDays,
+            ["school_id"] = SchoolId,
+            ["school_ticks"] = SchoolTicks,
+            ["pushing_a_cart"] = PushingACart,
+            ["cart_for_the_works"] = CartForTheWorks,
+            ["forges_this_stint"] = ForgesThisStint,
+            ["digs_this_stint"] = DigsThisStint,
+            ["batches_this_stint"] = BatchesThisStint,
+            ["batch_trade"] = SaveWriter.Enum(BatchTrade),
+            ["full_for"] = FullFor,
+            ["full_from"] = SaveWriter.Good(FullFrom),
+            ["rhythm"] = Rhythm,
+            ["skills"] = skills,
+        };
+    }
+
+    internal static Villager FromSave(SaveReader save)
+    {
+        var villager = new Villager
+        {
+            Id = save.Int("id"),
+            Name = save.String("name"),
+            Surname = save.String("surname"),
+            LifespanYears = save.Int("lifespan_years"),
+            HouseholdId = save.Int("household"),
+            PartnerId = save.Int("partner"),
+            LifeStage = save.Enum<LifeStage>("life_stage"),
+            WorkplaceId = save.Int("workplace"),
+            LastWorkplaceId = save.Int("last_workplace"),
+            ServingSiteId = save.HasValue("serving_site") ? save.Int("serving_site") : 0,
+            PinnedTrade = save.NullableEnum<JobKind>("pinned_trade"),
+            JobReason = save.String("job_reason"),
+            WorkNote = save.String("work_note"),
+            CommuteNote = save.String("commute_note"),
+            ColdDaysThisWinter = save.HasValue("cold_days_this_winter") ? save.Int("cold_days_this_winter") : 0,
+            LastColdDay = save.HasValue("last_cold_day") ? save.Int("last_cold_day") : 0,
+            ColdWinterHeldUntil = save.HasValue("cold_winter_held_until") ? save.Int("cold_winter_held_until") : 0,
+            CommuteTiles = save.HasValue("commute_tiles") ? save.Int("commute_tiles") : 0,
+            ContentmentCauses = save.HasValue("contentment_causes") ? save.Int("contentment_causes") : 0,
+            SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
+            BirthTick = save.Long("birth_tick"),
+            Founder = save.Bool("founder"),
+            ArrivedAtTick = save.ULong("arrived_at"),
+            Generation = save.Int("generation"),
+            AgeYears = save.Int("age_years"),
+            Vigour = save.Int("vigour"),
+            Stage = save.Enum<VigourStage>("vigour_stage"),
+            Hunger = save.Int("hunger"),
+            TicksAtMaxHunger = save.Int("ticks_at_max_hunger"),
+            Cold = save.Int("cold"),
+            LegFrom = save.Point("leg_from"),
+            LegTo = save.Point("leg_to"),
+            LegTarget = save.GridPos("leg_target"),
+            LegTicks = save.Fixed("leg_ticks"),
+            LegWalked = save.Fixed("leg_walked"),
+            Carried = Stockpile.FromSave(save.Object("carried")),
+            ErrandX = save.Int("errand_x"),
+            ErrandY = save.Int("errand_y"),
+            ActionTicksRemaining = save.Int("action_ticks_remaining"),
+            JustAte = save.Bool("just_ate"),
+            Alive = save.Bool("alive"),
+            CauseOfDeath = save.Enum<CauseOfDeath>("cause_of_death"),
+            DiedAtTick = save.NullableULong("died_at"),
+            LeftAtTick = save.HasValue("left_at") ? save.NullableULong("left_at") : null,
+            WintersSurvived = save.Int("winters_survived"),
+            TotalGathers = save.Int("total_gathers"),
+            GathersThisSeason = save.Int("gathers_this_season"),
+            SplitsThisStint = save.Int("splits_this_stint"),
+            ToolUses = save.Int("tool_uses"),
+            ToolGood = save.Good("tool_good"),
+            CoatDays = save.Int("coat_days"),
+
+            // A save from before the school (D754) has neither key: nobody was a pupil.
+            SchoolId = save.NullableInt("school_id") ?? 0,
+            SchoolTicks = save.NullableInt("school_ticks") ?? 0,
+            PushingACart = save.Bool("pushing_a_cart"),
+            CartForTheWorks = save.Bool("cart_for_the_works"),
+            ForgesThisStint = save.Int("forges_this_stint"),
+            DigsThisStint = save.Int("digs_this_stint"),
+            BatchesThisStint = save.Int("batches_this_stint"),
+            FullFor = save.Int("full_for"),
+            FullFrom = save.Good("full_from"),
+            Rhythm = save.Int("rhythm"),
+        };
+
+        // ⭐ THE STATE, WITH THE FOUR OLD BATCH PAIRS READ AS THE SHARED ONE AND THEIR TRADE (W1, D792): a save from before
+        // W1 loads, no format bump. A save since names the trade itself, read tolerantly (absent before W1).
+        (villager.State, JobKind? oldTrade) = save.String("state") switch
+        {
+            "TravelingToMill" => (VillagerState.TravelingToABatch, JobKind.Miller),
+            "Grinding" => (VillagerState.WorkingABatch, JobKind.Miller),
+            "TravelingToBakery" => (VillagerState.TravelingToABatch, JobKind.Baker),
+            "Baking" => (VillagerState.WorkingABatch, JobKind.Baker),
+            "TravelingToTailor" => (VillagerState.TravelingToABatch, JobKind.Tailor),
+            "Sewing" => (VillagerState.WorkingABatch, JobKind.Tailor),
+            "TravelingToWorkshop" => (VillagerState.TravelingToABatch, JobKind.Carpenter),
+            "Making" => (VillagerState.WorkingABatch, JobKind.Carpenter),
+            _ => (save.Enum<VillagerState>("state"), (JobKind?)null),
+        };
+        villager.BatchTrade = oldTrade ?? save.NullableEnum<JobKind>("batch_trade");
+
+        // ⚠️ Through the field, never `Position`'s setter — that drops the leg (D356), and a villager
+        // saved half way along one must load half way along it.
+        villager._position = save.Point("at");
+        foreach (SaveReader skill in save.Objects("skills"))
+        {
+            villager.Skills.Add(SkillProgress.FromSave(skill));
+        }
+
+        return villager;
+    }
+}

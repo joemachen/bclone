@@ -6,7 +6,7 @@ D678 / D682 / D684 (Slice W: the Workshop, the Carpenter and `Goods.Handcart` on
 D537 (the armful, one meaning), D587 call 8 (a cart's pass makes a path), D30 (a tool follows the person; a cart serves the
 larder), D372 (the shop walk), D510 (an older save is refused in words), D291 (the hash is sparse over goods).
 **Status:** ✅ **SLICE H BUILT, on `claude/slice-handcart-b0230a` (2026-11-04, D686–D689), PLAYED (Joe, 2026-11-05: *"the cart stuff seems pretty good"*) AND MERGED INTO `main` (D690) on 2026-11-05 — five pieces, each its
-own commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 19 facts), red-checked and counted (§11: 36 mutants, 39
+own commit with its guards (`tests/Kith.Sim.Tests/HandcartTests.cs`, 19 facts), red-checked and counted (§11: 36 mutants, 39
 reds, three zeros written down); every number measured on `ZzLogistics` before typed; no golden moved. The verdict against
 D668's measurement is `logistics.md §6`: Hollowmere's Fetch share 17.6 → 11.3 %, trips a household-year 5.69 → 3.49. Merged at his
 word; the marketer's and merchant's carts followed as §13 (D692–D694, merged D695).** ✅ Piece 1 — the household's cart: owned,
@@ -262,7 +262,7 @@ section as the two levers if a played village ever shows otherwise — Joe's cal
 5. A cart slower on grass than on the path (§6) — ✅ slower on grass, measured with and without (piece 5).
 6. The marketer's cart in slice H, or later (§4)? — ✅ later.
 
-## 11. How it is tested — `tests/Bclone.Sim.Tests/HandcartTests.cs`
+## 11. How it is tested — `tests/Kith.Sim.Tests/HandcartTests.cs`
 
 TDD, each guard red-checked by a mutant and the reds counted (D326); a zero is written down, never hidden. The filter for
 every score: `HandcartTests`, `LegibilityTests`, `EveryVillagerStateIsDeliberatelyClassified` (16 tests).
@@ -369,7 +369,7 @@ checks green; no golden moved (the shipped harness builds no workshop); `logisti
 ## 13. The trades' carts — the market's and the trading post's (Joe, 2026-11-05: *"one more owner of the same good"*)
 
 **Status: ✅ BUILT on `claude/elastic-dewdney-d55a19` (2026-11-05, D692–D694), off `main` 6a2f4fe (D691) — three pieces, each its own
-commit with its guards (`tests/Bclone.Sim.Tests/HandcartTests.cs`, 16 §13 facts), red-checked and counted (§13.8: 37 mutants, 54 reds,
+commit with its guards (`tests/Kith.Sim.Tests/HandcartTests.cs`, 16 §13 facts), red-checked and counted (§13.8: 37 mutants, 54 reds,
 three zeros written down, one dead clause found by a zero and deleted); measured before and after on `ZzLogistics` (§13.6: Oakhaven's
 Market bucket 9.1 → 8.2 % of adult ticks, counter trips 18.3 → 14.4 a marketer-year; ⚠️ half the counter trips begin at home on foot —
 Joe's call); no golden moved. MERGED INTO `main` AT JOE'S WORD (D695, 2026-11-06), UNPLAYED — Joe chose the merge over playing it first; he plays it from `main`. ⭐ §13.2a THE MARKETER'S FIRST LEG BUILT (D696, 2026-11-06, his call), measured (§13.6: carted counter trips 29–51 % → 58–74 %), MERGED INTO `main` AT JOE'S WORD (D698, 2026-11-06), UNPLAYED; ⏸️ the one-armful restock is the next call (§13.6). ⭐ §13.2b–§13.2c THE CART'S NIGHT AT HOME AND THE RESTOCK KNOB BUILT (D700, 2026-11-06; Joe: *"can the marketer take the cart home with him at the end of the day so it's there at the beginning of the day?"*), measured on twelve valleys with a before-arm (§13.6, third table: the Market share −0.35 points in 11 of 12, two-thirds of the first legs gone, trips unchanged; the knob at 3: −0.85 in 12 of 12, trips −1 a marketer-year in 8 of 12), 7 guards + 3 re-aimed, 12 mutants, 21 reds, one zero written down (§13.8.5); the knob shipped at 1 and ✅ **ships at 3 since D707** (Joe left the number to Claude, 2026-11-07). PLAYED BY JOE (2026-11-07, *"good"*) AND MERGED INTO `main` (D700's merge, 2026-11-07).** ✅ Piece 1 (D692): the owners, the fetch, the

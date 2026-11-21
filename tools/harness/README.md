@@ -49,7 +49,7 @@ against a number from an older commit.
 - `ZzReplay.cs` — D507's measurement for save/load: what a *replay* save would cost to load — the founding plus
   fifty shipped years, timed, over four arms (unattended / played / every / established), ten seeds each, with
   one `StateHash` timed at the end — and, since D509, the snapshot saved and opened again (hash checked) with its
-  size. Copy in, `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzReplay
+  size. Copy in, `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzReplay
   --logger "console;verbosity=detailed"`, delete. ⚠️ No harness village passes ~19 people, so its times are a floor.
 - `ZzFirstWinter.cs` — D515's measurement of the first-winter firewood race: five arms (`everyfix` = `FoodConservationTests`'
   founding with its free t0 lodge, fishery and farm; `every` the same on the shipped config; `played`; `farm0` / `farm2` a

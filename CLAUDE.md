@@ -75,15 +75,15 @@ If a request — from Joe or your own inference — would violate a Non-Negotiab
 ⛔ **All four, every time. "The tests passed" is not a verdict on this project.**
 
 ```bash
-dotnet test bclone.sln --nologo -v q          # the suite, including determinism
-dotnet build src/Bclone.Game/Bclone.Game.csproj
-BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game
-grep -rn "[0-9]\{15,\}" tests/Bclone.Sim.Tests/*.cs   # the goldens, before and after
+dotnet test Kith.sln --nologo -v q          # the suite, including determinism
+dotnet build src/Kith.Game/Kith.Game.csproj
+KITH_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Kith.Game
+grep -rn "[0-9]\{15,\}" tests/Kith.Sim.Tests/*.cs   # the goldens, before and after
 ```
 
-- ⛔ **`dotnet build bclone.sln` does NOT compile the game** (D11), and `dotnet test` already builds
+- ⛔ **`dotnet build Kith.sln` does NOT compile the game** (D11), and `dotnet test` already builds
   the solution — so the second line is the one that matters and it is not optional.
-- ⚠️ **READ the view's build output; do not trust its silence.** `src/Bclone.Game` sets
+- ⚠️ **READ the view's build output; do not trust its silence.** `src/Kith.Game` sets
   `TreatWarningsAsErrors=false` deliberately, because Godot's generators emit code nobody controls
   (METHODOLOGY §5a) — **it reports and does not fail.** A `CS0414` warned there for months unseen.
   Everything else in the repo fails the build on a warning, and `.editorconfig` promotes dead code
@@ -131,7 +131,7 @@ committing.
   his, not yours.
 
 ## Before large moves
-- **The stack is settled** (D1): C# (.NET 8) + Godot 4, with the sim in a Godot-free class library. Anything that would couple `Bclone.Sim` to the engine is a design change, not a detail — raise it.
+- **The stack is settled** (D1): C# (.NET 8) + Godot 4, with the sim in a Godot-free class library. Anything that would couple `Kith.Sim` to the engine is a design change, not a detail — raise it.
 - Flag any architecture deviation from DESIGN.md §3 before committing to it.
 
 ## Working with Joe

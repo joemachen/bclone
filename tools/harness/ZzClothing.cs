@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D533's MEASUREMENT — `specs/clothing.md §5` re-taken on today's code. Kept in tools/harness/,
-// COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit.
+// COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit.
 //
 // Three cold worlds, the same valley each time:
 //   bare — the shipped rates (outdoors 15 days, a roof 25);
@@ -67,7 +67,7 @@ public sealed class ZzClothing
         int aTile = new GoodsCatalog(config.GoodsCatalog).YieldPerTileOf(Goods.Stone);
         int extraRock = (stoneTheyCost + aTile - 1) / aTile;
 
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

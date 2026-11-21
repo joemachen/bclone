@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Logging;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 /// <summary>
 /// W2 step 6's measure (copied into tests/ to run, deleted before any commit, D420): the anti-vacuity pair's shapes before a

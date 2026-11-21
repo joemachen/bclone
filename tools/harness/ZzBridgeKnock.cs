@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D576's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ WITH ZzBridges.cs (its
+// ⛔ D576's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ WITH ZzBridges.cs (its
 // seed list) to run, and DELETED from there before any commit. Joe's D576 note: when does a village first hold
 // 10 / 12 / 15 / 20 people now that bands knock, and was that first tick a knock tick (the bridge's stop and the
 // nomads' stop raised together)? Release, ~50 s for the 43 villages.
@@ -22,7 +22,7 @@ public sealed class ZzBridgeKnock
     public void Knock(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = config.StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

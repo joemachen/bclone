@@ -1,9 +1,9 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // D561's measurement: per seam in 100 shipped valleys, its size (what a quarry or mine may paint now) against the most
 // a building standing by it could paint under D541's diamond (seam tiles within 2 of the building's tile).
@@ -22,7 +22,7 @@ public sealed class ZzSeamGround
     public void Measure(ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimWorld world = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink()).World;
+        SimWorld world = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink()).World;
         int reach = config.FaceReachTiles;
         var size = new Dictionary<int, int>();
         var kind = new Dictionary<int, Terrain>();

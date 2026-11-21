@@ -2,7 +2,7 @@
 # in-game screenshot hook; this runs the lab scene from outside it). Windowed, never --headless: a headless Godot has no
 # image to give and hangs (HANDOFF trap 39).
 #
-#   "$GODOT" --path src/Bclone.Game -s "$(pwd -W)/tools/grass/lab_render.gd" -- OUT_DIR [CASES.json]
+#   "$GODOT" --path src/Kith.Game -s "$(pwd -W)/tools/grass/lab_render.gd" -- OUT_DIR [CASES.json]
 # (PowerShell: -s "$PWD\tools\grass\lab_render.gd". The path must be absolute: a relative one is read as res://.)
 #
 # With no CASES file it renders the reference set at the APPROVED look, exactly as the lab opens on it
