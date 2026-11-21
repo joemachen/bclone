@@ -10704,6 +10704,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   schools are the player's; (6) the tech tree renamed **Lore** — the words he sees, ⚠️ not the JSON keys or save fields
   (renaming those breaks old saves and mods; he answered the art lane's recommendation *"All of that yes"*). The first
   commit for each claims it here.
+  **(7), 2026-11-21, relayed by the art lane: nothing built on steep ground.** Joe, with a screenshot of a site on a ridge
+  at the valley's east edge: *"Shouldnt be able to build buildings or put things like farm fields or livestock fields on
+  the edge/peak of a hill/mountain - right or wrong?"* The art lane proposed refusing any building, field or pasture whose
+  footprint touches a **Steep** tile (`SimWorld.SlopeAt`, D735), allowing gentle, with the refusal *"too steep to build
+  on"*. Joe: *"Yes, as proposed"*. It reverses `heights.md §2`'s *"out unless he asks"*: he has asked. **Where it lands
+  (read, not built):** placement never asks about slope today; the checks are `CanBuildAt` (×2), `CanPaintResidential`
+  and `CanPaintWorkGround` in `SimWorld.cs`, and perhaps `CanBridge`'s banks. Harvest and destroy zones are not
+  building and stay as they are. **To settle when it is built:** what already stands on steep ground in his saves
+  (refuse new placements only, never knock down what is there); the founding ring (smoothed, so expected safe; a guard
+  says so); and his ridge first. It may be the valley's drawn edge rather than steep tiles, so hover *What's here*
+  there or read his save. Expect goldens to need a look only if a harness places on steep ground. Unclaimed; his order
+  with the other six.
 
 - ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
   SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,
