@@ -14,6 +14,15 @@ public sealed partial class SimWorld
         Slopes.ClassOf(Map.SteepnessAt(tile), Config.SlopeGentleAt, Config.SlopeSteepAt);
 
     /// <summary>
+    /// Whether this tile refuses a building, a house, a field or a pasture for being steep (`heights.md §13`, D814) —
+    /// false everywhere while <c>steep_refuses_building</c> is off.
+    /// </summary>
+    public bool TooSteepToBuild(GridPos tile) => Config.SteepRefusesBuilding && SlopeAt(tile) == Slope.Steep;
+
+    /// <summary>The one sentence every steep refusal says (Joe's proposal: <i>"too steep to build on"</i>).</summary>
+    public const string TooSteepSentence = "Too steep to build on.";
+
+    /// <summary>
     /// <i>What's here</i>'s line for a tile's slope — or null on the flat, where it would be noise on most of the valley
     /// (D358's rule for the trail lines). Water is level and says nothing.
     /// </summary>

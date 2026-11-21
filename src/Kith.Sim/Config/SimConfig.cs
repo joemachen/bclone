@@ -3359,6 +3359,19 @@ public sealed record SimConfig
     public int SlopeSteepCostPercent { get; init; } = 150;
 
     /// <summary>
+    /// ⭐ Nothing is built on steep ground (`heights.md §13`, D814; Joe: <i>"Shouldnt be able to build buildings or put
+    /// things like farm fields or livestock fields on the edge/peak of a hill/mountain"</i> — <i>"Yes, as proposed"</i>):
+    /// a building, a house plot, a field or a pasture refuses any tile that is <see cref="World.Slope.Steep"/>. Gentle
+    /// ground takes them. Only new placements: what already stands, or is already painted, stays.
+    /// </summary>
+    /// <remarks>
+    /// <b>Off in code, on in the shipped data</b> — `height_levels`' precedent (§7): the code's valley is flat, where it
+    /// changes nothing, and the goldens taken on the shipped hills are proven by turning it off.
+    /// </remarks>
+    [JsonPropertyName("steep_refuses_building")]
+    public bool SteepRefusesBuilding { get; init; }
+
+    /// <summary>
     /// Years between the village sharing out its work again from scratch.
     /// </summary>
     /// <remarks>

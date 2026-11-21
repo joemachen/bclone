@@ -193,3 +193,12 @@ file it deletes.
    a row moved — quits, relaunches, and finds all of it; *Reset window positions* stays reset across a
    relaunch; a hand-broken file opens on defaults, says why, and keeps `settings.json.bad`.
 5. DESIGN §4, §6 and §7, and `HANDOFF.md`, updated in the same commits as the code.
+
+## 11. Full screen, and a window renamed (D816, D815 — Joe's play notes, 2026-11-21)
+
+- **Full screen, on by default** (note 1: *"a full-screen option in Settings, on by default"*): a *full screen* tick in
+  Settings, remembered as the toggle `full_screen` (§4's toggles, so no new field and no version). Pressed when the
+  file says nothing — a file from before D816 opens full screen. Borderless (`WindowMode.Fullscreen`), not exclusive.
+  Probe line `full screen:`; headless, the display takes no mode, so the wish is read back and the look is Joe's.
+- **A renamed window keeps its place** (D815): the tech tree's window is *Lore*, and a file that remembers *Tree* is
+  read for it once (`Main.FormerTitles`), then written under *Lore* with *Tree* dropped. Probe line `settings:`.

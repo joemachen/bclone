@@ -5,7 +5,8 @@ calls 1–4). Neighbours: D2 (integer costs), D15/§2.6 (one shared cost field),
 paths in the field), D383 (buildings as obstacles), D404 (fences), D473 (a stage per stream), D477 (height
 parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D641 (Phase 5's exit gate),
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
-**Status:** ✅ **BUILT AND MERGED INTO `main` AT JOE'S WORD (D742, 2026-11-13: *"okay merge then"* (relayed verbatim by the session that started this one)).** The hills'
+**Status:** ✅ **§13, nothing built on steep ground — built on `slice/play-notes` (D814, 2026-11-21), his play to come.**
+✅ **BUILT AND MERGED INTO `main` AT JOE'S WORD (D742, 2026-11-13: *"okay merge then"* (relayed verbatim by the session that started this one)).** The hills'
 *look* goes to the art lane, which draws them to his concept; `VillageMap.Relief.cs` is its stand-in and is not tuned
 further (Joe, on D741: *"still just looks like a shadow, not a hill"*). *(As it stood before the merge:)* 🔨 **BEING BUILT
 on `slice/heights` at Joe's word (*"Build it"*, 2026-11-12), §12's four steps — step 1
@@ -39,7 +40,7 @@ build the store on the near side of the hill.
 | 5 | A row on the new-game screen? | **Yes: *Hilliness — Gentle / Rolling / Hilly*, default *Rolling*** (D477's place for it). |
 | 6 | Now, or after Phase 5's gate? | **Spec now; build at his word.** |
 
-⛔ **Out unless he asks:** building on slopes (level ground, levelling as work), farming worse on a slope,
+⛔ **Out unless he asks:** ~~building on slopes~~ *(he asked, 2026-11-21: nothing is built on steep ground — §13, D814)* (level ground, levelling as work), farming worse on a slope,
 snow lying longer up high, terraforming. Each would be its own call.
 
 ## 3. What a height is
@@ -347,3 +348,29 @@ used `hills` as their made-up unknown setting; it is `weather` now.
 4. §8's measurement, the numbers set, Joe plays it.
 
 Each step is its own commit on `slice/heights`, and the four checks run at each.
+
+## 13. Nothing built on steep ground (D814, 2026-11-21)
+
+**Joe**, with a screenshot of a site on a ridge at the valley's east edge: *"Shouldnt be able to build buildings or put
+things like farm fields or livestock fields on the edge/peak of a hill/mountain - right or wrong?"* — the art lane:
+right, and proposed the rule below — Joe: *"Yes, as proposed"*.
+
+1. **A steep tile (§3's class, `slope_steep_at`) refuses** a building (every tile its footprint covers, a move as well
+   as a new one), a house plot (the paint, and the house-site chooser on paint already there), a field and a pasture —
+   in one sentence: *"Too steep to build on."* (`SimWorld.TooSteepSentence`). **Gentle ground takes them.**
+2. **The woods, a quarry and a mine are worked on any slope**, as before: a face is cut into a hillside, and seams are
+   where the hills are. Harvest and destroy marks are not building.
+3. **Only new placements.** What stands on steep ground, or is painted there, stays; nothing is knocked down. A yard
+   may run onto a slope (it is a fenced garden, not a building).
+4. **`steep_refuses_building`**: off in code, on in the shipped data — §7's precedent, so a posed test keeps its
+   ground.
+5. **Measured:** with the rule on, every golden-holding test class passes unchanged (144 tests): no harness village
+   ever placed on steep ground, so no golden moved and none needed the ablation. The founding never stands on steep
+   ground on seeds 1–12, rule or no rule, ring or no ring.
+6. **Guards** (`SteepGroundTests`, 5): the switch; a building refused with the sentence, a move too, gentle taken; a
+   house neither painted nor raised; a field and a pasture refused, the woods not; the founding never steep. **7
+   mutants, 7 red.** ⚠️ The founding guard scores **zero** against every code mutant, and against a pose with the ring
+   unsmoothed and the rule off: founding sites are flat by how the site is chosen. Kept as a property guard; the zero
+   is written here.
+7. ⏸️ **Joe's play:** his ridge first — if it was the valley's drawn edge rather than steep tiles, this rule does not
+   reach it, and that is its own note.

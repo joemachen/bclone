@@ -90,7 +90,7 @@ public sealed class TechTreeTests
         Moment learned = Assert.Single(world.Moments);
         _output.WriteLine(learned.Body);
         Assert.True(world.ShownTheTechTree);
-        Assert.Contains("the Tree shows", learned.Body, StringComparison.Ordinal);
+        Assert.Contains("Lore shows", learned.Body, StringComparison.Ordinal);
 
         Assert.True(TechTree.IntroducesTheMap(TechCondition.StoneDug));
         Assert.True(TechTree.IntroducesTheMap(TechCondition.IronDug));
