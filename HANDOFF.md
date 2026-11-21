@@ -10624,15 +10624,15 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     (⭐ C), a chimney for the school, which trades work indoors, the door's fade, his OK for `VillageMap.cs`.**
     **✅ Answered — B, the school's chimney, indoors, instant, his OK — and 🔨 built (A139, §7). ✅ Played and merged at his word (A140).**
     **🔨 Then (A141, *"they still dont go inside the granary or the warehouse"* → *"Yes, step inside"*): every errand
-    into a store goes in by its door for its tick there — drop-offs, fetches, the market, the post. On `art`, not merged.
-    ⏸️ His eyes: `.\run.bat` in the art folder, watch a hauler at the granary — and at 4×, whether it reads as a blink.**
+    into a store goes in by its door for its tick there — drop-offs, fetches, the market, the post. ✅ Played and merged
+    into `main` at his word (A144, *"Looks right, merge"*, `31a6682`); not pushed.**
   - **JOE'S NOTES, 2026-11-21 (A142, his: *"Yes, as proposed"*):**
-    - 🔨 **Cloaks dyed by household — built (A143, *"Yes, as recommended"*, `villager-art.md §9a`)**: seven dyes in founding
-      order, worn whenever owned. ⏸️ His eyes: `.\run.bat` in the art folder; render `D:\Projects\brushes\villagers\cloaks\cloaks_built.png`.
+    - ✅ **Cloaks dyed by household — merged (A143, built; A144, merged at his word, not pushed; `villager-art.md §9a`)**: seven
+      dyes in founding order, worn whenever owned.
     - ➡️ **No building, field or pasture on steep ground** — a sim rule, sent to the systems session (`slice/morale`'s). Not
       the art lane's.
-    - 🔨 **A field stops at a building** — built (A142, `building-yards.md §7b`); ⚠️ one line of `VillageMap.cs`, flagged to him.
-      ⏸️ His eyes: a farmhouse with field painted under it.
+    - ✅ **A field stops at a building** — merged (A142, built; A144, merged at his word, not pushed; `building-yards.md §7b`);
+      ⚠️ one line of `VillageMap.cs` — `slice/morale` will meet it when it takes `main`.
     - 🔨 **being built on `art`: the windmill's sails turn while it is worked** — Joe, relayed by the systems lane: *"windmill
       definitely needs to animate, but only when it is being worked"*. Read like A139's fires: a miller at work there.
     - 🔨 **being built on `art`: the chimney smoke darker, with more of the watercolour in it** — Joe, relayed: *"smoke from

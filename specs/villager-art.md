@@ -266,7 +266,7 @@ tunic pigments; by mid-game nearly everyone owns a coat and the village is green
 **⏸️ His calls:** (1) by household (recommended) or by person; (2) the seven dyes, or others; (3) the cloak drawn only in the cold
 seasons, or whenever owned as today (recommended: as today — the sim says nothing about wearing it).
 
-## 9a. 🔨 As built (A143) — Joe: *"Yes, as recommended"*
+## 9a. ✅ As built (A143) — Joe: *"Yes, as recommended"*; merged at his word (A144, `31a6682`)
 
 By household; the seven dyes; worn whenever owned, as today.
 
