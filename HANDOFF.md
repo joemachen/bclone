@@ -43,6 +43,13 @@
 > - **⛔ TRAP (D807): a frame log's steady `refresh` floor is a per-frame rebuild until shown otherwise.** Joe's
 >   `refresh` sat at ~30 ms from tick ~1,500 for an hour and a half before the crash, and nothing reported it: the
 >   long-frame lines were there the whole time. A throwaway stress through the game's own refresh found it in one run.
+> - **⚠️ 2026-11-21, the art lane measured the same loop in his *lark-tansy* Year 33 (his "18 fps"), from the art folder
+>   on `main`, which D807 has not reached:** with the Village log window **collapsed**, the label is 1 px wide, every
+>   word wraps to its own line, and **15 entries already counted past 800**. So the loop starts within minutes of
+>   loading, not after 400 entries. `refresh` climbs 1 → 35 → 50–70 ms a frame as the log fills: 2,100 trims in
+>   ~3,000 frames. D807's paragraph count doesn't depend on width, so the fix covers it; no new guard, because the
+>   mutant that puts `GetLineCount()` back already reds `log trim:`. **His 18 fps stays until `slice/morale` merges**,
+>   or until he plays from the main checkout, which is on this slice.
 > **✅ STEP 5a BUILT (D806, Joe: *"No, go on to step 5"* — the first child does not wait, as built): warned after a year
 > unsettled (one `Warning` line, the card's *thinking of leaving*), gone after two at a season's turn — a couple only when
 > both are ready, the children with a couple or the last adult; `VillagerState.Left`, `LeftAtTick`, `GoneAtTick` for the
