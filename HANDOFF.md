@@ -10842,6 +10842,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   (the flat preview took 0.4–0.65), the screen still meanwhile. If it is too slow: the preview's ground at half detail
   (`ValleyTexture.cs` — his OK) or the paint off the main thread, each measured first. Renders
   `D:\Projects\brushes\ui\new-valley\step2-*.png`. ⚠️ `VillageMap.cs` is the systems lane's file: a merge meets it.
+  **`main`'s play notes (D814–D820) taken into `art` (`dc4167c`, clean):** suite 2182 / 0 / 5 of 2187 in 17 m 28 s;
+  view build 0 warnings; probe 137 ✅ 0 ⛔, bar 183, new game ✅, `done.`; goldens 448 = `main`'s 447 + the old code's
+  pin. The preview read 3.6 s beside the suite (2.0 s alone).
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **ALL SEVEN BUILT (D814–D818), PLAYED, APPROVED AND MERGED INTO `main` (D819, *"Looks right, merge"*);
   not pushed** (Joe 2026-11-21: *"Then the play notes"*). ✅ *"maybe children / in school"* on the top bar (note
