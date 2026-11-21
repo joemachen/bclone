@@ -10617,6 +10617,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     `specs/indoors-and-smoke.md`; `D:\Projects\brushes\smoke\smoke_*.gif`); ⏸️ five calls his (§6): the smoke's look
     (⭐ C), a chimney for the school, which trades work indoors, the door's fade, his OK for `VillageMap.cs`.**
     **✅ Answered — B, the school's chimney, indoors, instant, his OK — and 🔨 built (A139, §7). ✅ Played and merged at his word (A140).**
+    **🔨 Then (A141, *"they still dont go inside the granary or the warehouse"* → *"Yes, step inside"*): every errand
+    into a store goes in by its door for its tick there — drop-offs, fetches, the market, the post. On `art`, not merged.
+    ⏸️ His eyes: `.\run.bat` in the art folder, watch a hauler at the granary — and at 4×, whether it reads as a blink.**
   - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
     log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logs\run_20261120_203730.log`
     in the art folder). Not reproduced. `Main.cs` — the systems lane's; onto the open slice (CLAUDE.md: a bug found while a

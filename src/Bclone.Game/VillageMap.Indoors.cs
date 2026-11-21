@@ -23,15 +23,30 @@ public partial class VillageMap
     /// <summary>
     /// ⭐ Indoors (A90 call 3; A133; A139). Pure: at school and teaching, always; resting, with a house (A133 — in the open
     /// before the first one); <b>warming by a fire, and the smith at the forge and the batch trades at their work, once inside
-    /// a building with a door</b> (A139 calls 3 and §3.3) — the house's smoke, the forge's, says what they are doing.
+    /// a building with a door</b> (A139 calls 3 and §3.3) — the house's smoke, the forge's, says what they are doing; <b>and an
+    /// errand into a store, once at its door</b> (A141, Joe: <i>"Yes, step inside"</i>) — see <see cref="GoesInByTheDoor"/>.
     /// </summary>
     internal static bool Indoors(VillagerState state, bool housed, bool inADooredBuilding) => state switch
     {
         VillagerState.AtSchool or VillagerState.Teaching => true,
         VillagerState.Resting => housed,
-        VillagerState.SeekingShelter or VillagerState.Forging or VillagerState.WorkingABatch => inADooredBuilding,
-        _ => false,
+        _ => GoesInByTheDoor(state) && inADooredBuilding,
     };
+
+    /// <summary>
+    /// Pure: the states that are in once their walk has reached a building with a door — warming by a fire, the forge and the
+    /// batch trades at work (A139), and ⭐ <b>every errand into a store</b> (A141): putting a load in (a store, the farm's
+    /// buffer, the market, the post), taking one out (a household's fetch, a builder's materials, a tool, a coat, a handcart,
+    /// hay, a marketer's or the post's collecting, clearing a store), and a shopper at the market. Open-air places — a pile,
+    /// the well, a barn, a farmhouse — have no door (D624), so the same states stand there in the open.
+    /// </summary>
+    internal static bool GoesInByTheDoor(VillagerState state) => state is
+        VillagerState.SeekingShelter or VillagerState.Forging or VillagerState.WorkingABatch
+        or VillagerState.HaulingToStore or VillagerState.HaulingToFarm or VillagerState.StockingTheMarket
+        or VillagerState.StockingThePost or VillagerState.FetchingFromStore or VillagerState.FetchingMaterials
+        or VillagerState.FetchingATool or VillagerState.FetchingACoat or VillagerState.FetchingAHandcart
+        or VillagerState.FetchingHay or VillagerState.FetchingFromThePost or VillagerState.CollectingForMarket
+        or VillagerState.CollectingForThePost or VillagerState.ClearingAStore or VillagerState.WalkingToTheMarket;
 
     /// <summary>
     /// Whether a villager in this state is drawn: anyone not <see cref="Indoors"/>, and anyone indoors whose walk has not
@@ -48,8 +63,7 @@ public partial class VillageMap
     {
         VillagerState state = villager.State;
         bool housed = state == VillagerState.Resting && world.HouseholdOf(villager).HasHome;
-        bool inside = state is VillagerState.SeekingShelter or VillagerState.Forging or VillagerState.WorkingABatch
-            && world.DoorCovering(villager.Tile) is Door { Shut: false };
+        bool inside = GoesInByTheDoor(state) && world.DoorCovering(villager.Tile) is Door { Shut: false };
         bool arrived = !_tiles.TryGetValue(villager.Id, out var known)
             || AtTheDoorAlready(AtTheDoor(known.Previous, state), AtTheDoor(known.Current, state), (float)_alpha);
         return ShownAsAPerson(state, housed, inside, arrived);
@@ -149,7 +163,14 @@ public partial class VillageMap
             Want(!Indoors(VillagerState.SeekingShelter, false, inADooredBuilding: false), "walking to a fire is indoors");
             Want(Indoors(VillagerState.Forging, false, true) && Indoors(VillagerState.WorkingABatch, false, true), "the smith or a batch trade at work inside is not indoors (call 3)");
             Want(!Indoors(VillagerState.Forging, false, false), "a smith not inside is indoors");
-            Want(!Indoors(VillagerState.HaulingToStore, false, true) && !Indoors(VillagerState.Fishing, false, true), "a hauler at a store's door or a fisher is indoors");
+            Want(!Indoors(VillagerState.Fishing, false, true), "a fisher at the hut is indoors (piece (b)'s place)");
+            Want(Indoors(VillagerState.HaulingToStore, false, true) && Indoors(VillagerState.FetchingFromStore, false, true)
+                && Indoors(VillagerState.FetchingMaterials, false, true) && Indoors(VillagerState.StockingTheMarket, false, true),
+                "putting a load into a store, fetching from one, a builder's materials or stocking the market, at the door, is not indoors (A141)");
+            Want(!Indoors(VillagerState.HaulingToStore, false, false) && !Indoors(VillagerState.FetchingFromStore, false, false),
+                "a hauler on the road, or at a pile with no door, is indoors");
+            Want(!Indoors(VillagerState.DrawingWater, false, true) && !Indoors(VillagerState.TravelingHome, false, true) && !Indoors(VillagerState.Cutting, false, true),
+                "someone drawing water, walking home or cutting is indoors");
             Want(ShownAsAPerson(VillagerState.Resting, true, false, arrived: false) && !ShownAsAPerson(VillagerState.Resting, true, false, arrived: true),
                 "going home: not seen walking up to the door, or still seen once there");
 
@@ -180,7 +201,7 @@ public partial class VillageMap
             Want(smith == 1 && school == 1 && manor == 2 && forager == 0, $"flues: smithy {smith}, school {school}, manor {manor}, forager's hut {forager} (want 1, 1, 2, 0)");
 
             return faults.Count == 0
-                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open, haulers and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0"
+                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0"
                 : $"[widths] indoors and smoke: ⛔ {string.Join("; ", faults)}";
         }
         catch (Exception e)
