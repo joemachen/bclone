@@ -18,8 +18,8 @@ namespace Kith.Game;
 /// </para>
 /// <para>
 /// ⭐ <b>The preview is the real valley</b>: <see cref="SimWorld.Create"/> from exactly the settings on
-/// screen (about a millisecond), painted by the same <see cref="ValleyTexture"/> the game uses — one
-/// look, or the preview would lie about the valley. The strip is read off that world
+/// screen (about a millisecond), drawn by the game's own <see cref="VillageMap"/> in watercolour as a preview (A150) —
+/// one painter, or the preview would lie about the valley. The strip is read off that world
 /// (<see cref="NewGame.Summarise"/>, <see cref="NewGame.Describe"/>), never restated from the settings.
 /// </para>
 /// <para>
@@ -61,12 +61,15 @@ public sealed partial class NewGameScreen : Control
     private readonly SimConfig _config;
     private readonly System.Random _dice = new();
     /// <summary>
-    /// The preview's bake, at <see cref="PreviewPixelsPerTile"/> — at 1280 × 720 the valley's height fills the window at
-    /// 9 screen pixels a tile, so 8 is near 1 : 1 there at a quarter of the game's pixels.
+    /// ⭐ The preview: the game's own map in watercolour over the preview's world (A150, §12.10) — made afresh for each
+    /// valley, so whatever the ground art becomes, the preview shows it. One painter.
     /// </summary>
-    private readonly ValleyTexture _bake = new(PreviewPixelsPerTile);
+    private VillageMap? _valleyMap;
 
-    private const int PreviewPixelsPerTile = 8;
+    /// <summary>When the newest preview map was asked for (µs), until its first paint has been timed; 0 when timed.</summary>
+    private ulong _paintAsked;
+
+    private int _framesSincePaintAsked;
     private readonly Dictionary<string, Control> _rowControls = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Label> _rowReadings = new(StringComparer.Ordinal);
     private readonly List<Label> _rowLabels = new();
@@ -82,7 +85,6 @@ public sealed partial class NewGameScreen : Control
     private PanelContainer _strip = null!;
     private PanelContainer _panel = null!;
     private ScrollContainer _scroll = null!;
-    private TextureRect _preview = null!;
     private Control _map = null!;
     private Control _mark = null!;
     private Button _found = null!;
@@ -114,17 +116,17 @@ public sealed partial class NewGameScreen : Control
         _settings = NewGame.Remembered(config, NewGame.Defaults(config, RollASeed()), remembered, problems);
     }
 
-    /// <summary>For the probe: the slowest preview bake so far, in milliseconds.</summary>
+    /// <summary>For the probe: the slowest preview paint so far, in milliseconds — the map made, framed and first drawn.</summary>
     internal double SlowestBakeMs { get; private set; }
 
-    /// <summary>For the probe: the last preview bake, in milliseconds — past the first's warm-up.</summary>
-    internal double LastBakeMs => _bake.LastBakeMs;
+    /// <summary>For the probe: the last preview paint timed, in milliseconds (A150: the watercolour map's first frame).</summary>
+    internal double LastBakeMs { get; private set; }
 
-    /// <summary>For the probe: bake the preview again now, as a change would.</summary>
+    /// <summary>For the probe: make the preview again now, as a change would (it paints on the next frame).</summary>
     internal void BakeAgain() => BakeThePreview();
 
     /// <summary>For the probe: the preview has a valley on it.</summary>
-    internal bool HasAPreview => _bake.Texture is not null && _preview.Texture is not null;
+    internal bool HasAPreview => _valleyMap is not null && _previewWorld is not null;
 
     /// <summary>For the probe: the panel, whose width is the one that must fit.</summary>
     internal Control Column { get; private set; } = null!;
@@ -210,6 +212,11 @@ public sealed partial class NewGameScreen : Control
             }
         }
 
+        if (_valleyMap is null || !_valleyMap.IsAPreview || !_valleyMap.WatercolourShown)
+        {
+            faults.Add("the preview is not the game's own map in watercolour, as a preview (A150)");
+        }
+
         // Joe's range is 25–30 % (§12.2): 28 % is the aim, and a row that cannot narrow may take the panel to 30, no further.
         float most = Mathf.Ceil(Size.X * PanelMostShare);
         if (_panel.Size.X > most + 0.5f)
@@ -285,15 +292,7 @@ public sealed partial class NewGameScreen : Control
         _map = new Control { MouseFilter = MouseFilterEnum.Ignore, ClipContents = true };
         _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        _preview = new TextureRect
-        {
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.Scale,
-            TextureFilter = TextureFilterEnum.Linear,
-            MouseFilter = MouseFilterEnum.Ignore,
-        };
-        _map.AddChild(_preview);
-
+        // The preview map goes in under the ring when a valley is made (BakeThePreview).
         // The founders' camp, ringed: where the village will begin.
         _mark = new Control { MouseFilter = MouseFilterEnum.Ignore };
         _mark.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -702,6 +701,8 @@ public sealed partial class NewGameScreen : Control
 
     public override void _Process(double delta)
     {
+        TimeThePaint();
+
         if (!_changed)
         {
             return;
@@ -733,13 +734,54 @@ public sealed partial class NewGameScreen : Control
         }
 
         _previewWorld = SimWorld.Create(config);
-        _bake.BakeAfresh(_previewWorld);
-        SlowestBakeMs = Math.Max(SlowestBakeMs, _bake.LastBakeMs);
-        _preview.Texture = _bake.Texture;
+        ShowTheValley(_previewWorld);
 
         _stats.Text = NewGame.Describe(config, NewGame.Summarise(config, _previewWorld.Map));
         _name.PlaceholderText = _previewWorld.Name;
         PlaceEverything();
+    }
+
+    /// <summary>
+    /// ⭐ The valley as play will show it (A150, §12.10): a fresh <see cref="VillageMap"/> over <paramref name="world"/>, a
+    /// preview — watercolour on, no game or forage, no keys or clicks — under the founding's ring. The old one goes.
+    /// </summary>
+    private void ShowTheValley(SimWorld world)
+    {
+        if (_valleyMap is not null)
+        {
+            _map.RemoveChild(_valleyMap);
+            _valleyMap.QueueFree();
+        }
+
+        _valleyMap = new VillageMap { IsAPreview = true, ClipContents = true };
+        _valleyMap.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _map.AddChild(_valleyMap);
+        _map.MoveChild(_valleyMap, 0);
+        _valleyMap.MouseFilter = MouseFilterEnum.Ignore; // after its _Ready, which asks for the mouse
+        _valleyMap.ShowGame(false);
+        _valleyMap.ShowForage(false);
+        _valleyMap.ShowWatercolour(true);
+        PlaceEverything();
+        _valleyMap.Present(world, 0d, -1, null, MapDetail.Off);
+
+        _paintAsked = Time.GetTicksUsec();
+        _framesSincePaintAsked = 0;
+    }
+
+    /// <summary>
+    /// How long a new preview takes to appear: from the map being made to the end of the frame it is first drawn in (the
+    /// second <c>_Process</c> after — the draw is the frame between). The watercolour's whole-valley bake is most of it.
+    /// </summary>
+    private void TimeThePaint()
+    {
+        if (_paintAsked == 0 || ++_framesSincePaintAsked < 2)
+        {
+            return;
+        }
+
+        LastBakeMs = (Time.GetTicksUsec() - _paintAsked) / 1000d;
+        SlowestBakeMs = Math.Max(SlowestBakeMs, LastBakeMs);
+        _paintAsked = 0;
     }
 
     /// <summary>
@@ -763,14 +805,18 @@ public sealed partial class NewGameScreen : Control
 
         PlaceTheStrip(room, window.Y);
 
-        if (_previewWorld is null || _bake.Texture is null)
+        if (_previewWorld is null || _valleyMap is null)
         {
             return;
         }
 
         (_origin, _perTile) = Camera(_previewWorld.Map.FoundingSite.X, _previewWorld.Map.FoundingSite.Y, room, window.Y);
-        _preview.Position = _origin;
-        _preview.Size = new Vector2(_previewWorld.Config.MapWidth, _previewWorld.Config.MapHeight) * _perTile;
+
+        // The map draws a tile's centre at (tile − centre) × px + its size ÷ 2; the valley's top-left corner, half a tile
+        // out from its first tile's centre, goes at the camera's origin.
+        SimConfig c = _previewWorld.Config;
+        var corner = new Vector2(c.MapMinX - 0.5f, c.MapMinY - 0.5f);
+        _valleyMap.LookAt(corner + (((_valleyMap.Size / 2f) - _origin) / _perTile), _perTile);
         _mark.QueueRedraw();
     }
 
@@ -832,7 +878,7 @@ public sealed partial class NewGameScreen : Control
     /// <summary>Ring the founding site — the red ring and dot — where the camera put it.</summary>
     private void DrawTheFounding()
     {
-        if (_previewWorld is null || _bake.Texture is null)
+        if (_previewWorld is null || _valleyMap is null)
         {
             return;
         }

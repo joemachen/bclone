@@ -10818,6 +10818,13 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   🔨 **fixed (A149):** the box keeps a code while it is used, the seed on Enter or leaving it. **And his step-2 answer:**
   *"Can the preview be watercolor painted? with trees and ore seams (doesnt need animals or forage goods)"* — the
   game's own in-play look, not a second painter; ⏸️ the plan put to him (A149's message), nothing built.
+  ✅ **His answer: *"Yes, as recommended"* (A150). 🔨 BUILT on `art` (A150, `new-game-screen.md §12.10`):** the preview
+  is the game's own `VillageMap` in watercolour — the ground, the river, the painted trees and deposits, the hills —
+  with no people, buildings, cart, game or forage; `VillageMap.cs` gained a preview switch (`IsAPreview`, `LookAt`, at
+  his yes), off in play. ⏸️ **HIS PLAY, and the wait:** a new valley takes **2.0 s** to appear after a setting is let go
+  (the flat preview took 0.4–0.65), the screen still meanwhile. If it is too slow: the preview's ground at half detail
+  (`ValleyTexture.cs` — his OK) or the paint off the main thread, each measured first. Renders
+  `D:\Projects\brushes\ui\new-valley\step2-*.png`. ⚠️ `VillageMap.cs` is the systems lane's file: a merge meets it.
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
   (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the

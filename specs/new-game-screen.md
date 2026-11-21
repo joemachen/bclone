@@ -422,7 +422,7 @@ river"*.
 
 ⏸️ Call 2: the sentence moves into the sim's `NewGame` (pure, beside `Summarise`) so a test can pin it.
 
-### 12.5 Step 2 — the map's look (after Joe plays step 1)
+### 12.5 Step 2 — the map's look (after Joe plays step 1) — ✅ answered: the game's own map (§12.10)
 
 Put to him plainly after step 1, not before: **(a) today's painter as it is** — what you see is what you get;
 **(b) map marks over the game's own picture** — hill hachures, stone and iron glyphs, drawn over the bake, the bake
@@ -523,3 +523,43 @@ is re-measured before any threading is proposed.
   game:`, `ScreenFaults` — `LayoutFaults` renamed, its `Main.cs` line with it): a code typed into the box stays there,
   sets its row, and Enter leaves the seed. **Reds:** the old cut on every keystroke put back **1** (*"became "oak"
   while it was being typed"*); Enter doing nothing **1** (*"Enter left "oak#river=0" in the seed box"*).
+
+### 12.10 Step 2 — the preview is the game's own watercolour map (A150, 2026-11-21; ✍️ specced, Joe: *"Yes, as recommended"*)
+
+**Joe, after playing step 1:** *"Can the preview be watercolor painted? with trees and ore seams (doesnt need animals
+or forage goods)"*. Put to him with its costs, all as recommended: none of §12.5's three — not a flat bake with marks
+over it, not a second painter — but **the game's own map**, so the preview is the valley exactly as play will show it.
+
+- **What he sees:** behind the panel, the map the game draws in play, in watercolour (`VillageMap`, A25 onward) — the
+  ground and the river, the painted trees (A35), the painted stone and iron deposits (A60) — for the valley on screen,
+  in summer (year 1's start: the summer sets). **No people, no buildings, no founders' cart, no animals, no forage**:
+  just the red ring and dot where the founders will begin (§12.2's camera and ring, unchanged).
+- **One painter.** The preview is a `VillageMap` over the preview's `SimWorld`, made afresh for each valley; the flat
+  `ValleyTexture` bake leaves the screen. Whatever the ground art becomes, the preview shows it.
+- **The preview switch in `VillageMap.cs`** (the systems lane's file, at Joe's yes): `IsAPreview` — `_Draw` keeps the
+  valley, the woods (deposits among them) and the canopy, and draws nothing a village puts down or anyone who walks;
+  `_Process` polls no keys (typing a seed would otherwise pan it: WASD); `_GuiInput` takes nothing. And `LookAt`, a
+  camera set from outside without the play camera's clamps (the screen's own camera stops at the valley's edge).
+  Nothing changes in play: every line is behind the switch, off by default.
+- **The wait, measured before it is cut.** The game paints a whole valley's watercolour ground in about 1–1.5 s, once
+  per valley; so the preview repaints that long after a setting is let go (0.12 s after, as now). Built at the game's
+  own detail first and measured; only if it is too slow, the ground at half detail for the preview (a quarter of the
+  work — needs his OK for `ValleyTexture.cs`) or the paint off the main thread.
+- **Guards:** the probe's `new game:` keeps every check of §12.7 and A149, reads the paint's time, and asks the
+  preview map that it is a preview, in watercolour, and over the screen's own valley; the play map is untouched
+  (every other probe line, and `watercolour:`, stay as they were).
+- **🔨 As built (A150), ⏸️ his play:**
+  - `VillageMap.cs` (+40 lines, all behind the switch): `IsAPreview`, `LookAt`; `_Process` returns before the WASD
+    poll; `_GuiInput` returns; `_Draw` after `DrawValley` (the ground, the river, the deposits) draws the painted canopy
+    and stops. Off by default — play is untouched (the probe's `watercolour:` and every other line unchanged).
+  - `NewGameScreen.cs`: `ShowTheValley` makes a preview `VillageMap` (game and forage off, watercolour on, mouse
+    ignored) under the ring for each valley, the old one freed; `PlaceEverything` turns §12.2's camera into the map's
+    `LookAt`. The flat `ValleyTexture` bake is gone from the screen (the title's backdrop keeps its own).
+  - **The wait, measured** (the probe, nothing beside it): **2.0 s** from a valley asked for to its first frame drawn
+    (2.1 s the first time), against the flat bake's 0.4–0.65 s. The UI holds still for that long after a setting is
+    let go. More than the guess above: a new map also meshes its trees and deposits and builds its river and hills,
+    not only the ground's bake. ⏸️ **His to feel first**; then the cuts above, measured, if he wants them.
+  - **Guard:** `ScreenFaults` asks that the preview is the game's map, a preview, in watercolour — **reds:** made
+    without `IsAPreview` **1**, watercolour left off **1**. ⚠️ *"No people, buildings or cart"* and *"no keys"* have
+    no probe line — a fresh founding's founders stand at the cart, and nothing headless types into the box; held by
+    the renders (`D:\Projects\brushes\ui\new-valley\step2-*.png`) and his play.

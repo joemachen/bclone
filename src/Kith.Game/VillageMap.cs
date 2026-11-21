@@ -627,6 +627,25 @@ public partial class VillageMap : Control
     }
 
     /// <summary>
+    /// ⭐ This map is the new-valley screen's preview (A150, `new-game-screen.md §12.10`; Joe: <em>"Can the preview be
+    /// watercolor painted? with trees and ore seams"</em>): the valley, its woods and deposits and the canopy, and nothing a
+    /// village puts down or anyone who walks; no keys, no clicks; its camera set by <see cref="LookAt"/>. Off in play.
+    /// </summary>
+    internal bool IsAPreview { get; set; }
+
+    /// <summary>
+    /// The preview's camera (A150): <paramref name="centreTile"/> at the map's centre at <paramref name="pixelsPerTile"/>,
+    /// as given — the screen's own camera stops at the valley's edge, so the play camera's clamps are not asked.
+    /// </summary>
+    internal void LookAt(Vector2 centreTile, float pixelsPerTile)
+    {
+        _centreTile = centreTile;
+        _pixelsPerTile = Mathf.Max(0.01f, pixelsPerTile);
+        _framed = true;
+        QueueRedraw();
+    }
+
+    /// <summary>
     /// Frame the settlement: centred on where people live, zoomed so their homes and
     /// the work around them fill the panel.
     /// </summary>
@@ -713,6 +732,12 @@ public partial class VillageMap : Control
 
         // The river's clock (A45): real seconds while the village runs and the water may move.
         TickTheFlowClock(delta);
+
+        // A preview takes no keys (A150): WASD typed into the new-valley screen's boxes must not pan it.
+        if (IsAPreview)
+        {
+            return;
+        }
 
         // Polled rather than event-driven: held keys have to pan smoothly, and key
         // events only fire on press and repeat.
@@ -1380,7 +1405,8 @@ public partial class VillageMap : Control
 
     public override void _GuiInput(InputEvent @event)
     {
-        if (_world is null)
+        // A preview takes no clicks (A150).
+        if (_world is null || IsAPreview)
         {
             return;
         }
@@ -3235,6 +3261,19 @@ public partial class VillageMap : Control
         }
 
         DrawValley();
+
+        // ⭐ A preview is the land alone (A150): the valley with its deposits, and the painted canopy — no herds, boat,
+        // bridge, route, building, heap, cart, villager, selection or tool. The founders' place is the screen's ring.
+        if (IsAPreview)
+        {
+            if (_paintedTrees && _treesShown)
+            {
+                DrawThePaintedCanopy();
+            }
+
+            RecordTheFrame(frameStarted);
+            return;
+        }
 
         // ⭐ WHAT LIVES AND GROWS SITS ON THE GROUND, UNDER EVERYTHING THE PLAYER ACTS ON. Animals
         // move, so the rule below would argue for drawing them late — but that rule is about
