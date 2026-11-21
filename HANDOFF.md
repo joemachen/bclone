@@ -10779,7 +10779,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   8 → 2, put back after).
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
-  yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
+  yes"*).** 🔨 **being built on `slice/play-notes`** (all seven, Joe 2026-11-21: *"Then the play notes"*). ✅ **The P0 crash — fixed on `slice/morale` (D807)**, merged. **Six asks, claimed:**
   (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
   spare hands…"* into a tooltip on *Laborers: n*, beside *Able adults: n*; (4) the village roster's sort headers jump and
   shift the panel; (5) the top bar drops the labourer count (it is in Professions) — maybe children / in school once
