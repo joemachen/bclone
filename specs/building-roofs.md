@@ -127,7 +127,7 @@ order, the lines laid for the zoom, a face's vertex colour its piece's × 0.8; w
 ⚠️ Draw-time only, so a render's evidence: the texture's look, the stripes, the shadows' softness, a draw site that ignored
 the tick, the lines laid again when the zoom moves.
 
-## 6a. 🔨 The windmill's sails turn while it is worked (A145)
+## 6a. ✅ The windmill's sails turn while it is worked (A145; merged at his word, A146, `71212d5`)
 
 Joe, relayed by the systems lane, 2026-11-21: *"windmill definitely needs to animate, but only when it is being worked"*.
 

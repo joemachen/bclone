@@ -134,7 +134,7 @@ had a person dropping goods off **stand at the door** — and his answer was *"Y
   down** — the villager's own answer keeping the old three needs a living village; the traced render is its evidence.
 - ⚠️ At 4× the tick inside is a third of a second: whether that reads as a blink is his eye's.
 
-## 7b. 🔨 The smoke darker, with the watercolour in it (A145)
+## 7b. ✅ The smoke darker, with the watercolour in it (A145; merged at his word, A146, `71212d5`)
 
 Joe, relayed by the systems lane, 2026-11-21: *"smoke from chimnies needs a bit more watercolor touch and a bit darker"*.
 
