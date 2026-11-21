@@ -204,6 +204,12 @@ public partial class VillageMap
         ForgetGoneRoofs(frame);
         RoofCache held = CachedRoof(new RoofSignature(roof, at, wide, deep, facing, colour, worn == Condition.Ruin, door, doorAt, seed, yard), homeYard);
         held.LastSeen = frame;
+        if (roof.Form == RoofForm.Mill)
+        {
+            // ⭐ The sails turn while the mill is worked (A145): its seed is its workplace's id.
+            TurnTheSails(held, _millsWorked.Contains(seed));
+        }
+
         DrawRoofRuns(held, alpha);
 
         // ⭐ Smoke from its chimneys while its fire burns (A139, `indoors-and-smoke.md §2`).
@@ -221,7 +227,8 @@ public partial class VillageMap
     /// A run of pieces drawn as one mesh: filled, painted in one material, or pen lines — the lines laid for one zoom
     /// (<paramref name="LinePpt"/>), because their width is in pixels, and laid again only when the zoom changes.
     /// </summary>
-    internal sealed record RoofRun(ArrayMesh Mesh, RoofMaterial? Material, List<RoofPiece>? Lines, int Triangles, float LinePpt = 0f);
+    /// <remarks><paramref name="Turns"/>: a mill's sails (A145) — drawn turned about the hub, the rest of the roof still.</remarks>
+    internal sealed record RoofRun(ArrayMesh Mesh, RoofMaterial? Material, List<RoofPiece>? Lines, int Triangles, float LinePpt = 0f, bool Turns = false);
 
     /// <summary>A building's pieces, laid in tile space once, as runs in their drawing order.</summary>
     internal sealed class RoofCache
@@ -237,6 +244,15 @@ public partial class VillageMap
 
         /// <summary>Its smoke, 0 cold to 1 lit, carried frame to frame (<see cref="SmokeOn"/>).</summary>
         public float Smoke { get; set; }
+
+        /// <summary>A mill's hub, in the view's tiles (A145): what its sails turn about.</summary>
+        public Vector2 Hub { get; init; }
+
+        /// <summary>A mill's sails: how far round (radians) and how fast, 0 still to 1 at speed — carried frame to frame.</summary>
+        public float SailsAt { get; set; }
+
+        /// <summary><inheritdoc cref="SailsAt"/></summary>
+        public float SailSpeed { get; set; }
     }
 
     /// <summary>The painted buildings' meshes, one entry a building, keyed by where it stands.</summary>
@@ -264,7 +280,11 @@ public partial class VillageMap
         List<RoofPiece> pieces = RoofDrawing(
             signature.Look, signature.At, signature.Wide, signature.Deep, signature.Facing, signature.Colour, 1f,
             signature.Door, signature.DoorAt, signature.Seed, signature.FallenIn, signature.Yard, homeYard?.Invoke(signature.At));
-        var laid = new RoofCache { Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile), Flues = FluesOf(pieces), Smoke = held?.Smoke ?? 0f };
+        var laid = new RoofCache
+        {
+            Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile), Flues = FluesOf(pieces), Smoke = held?.Smoke ?? 0f,
+            Hub = HubOf(pieces), SailsAt = held?.SailsAt ?? 0f, SailSpeed = held?.SailSpeed ?? 0f,
+        };
         _roofCache[signature.At] = laid;
         KeepTheStep(signature, pieces);
         return laid;
@@ -286,13 +306,15 @@ public partial class VillageMap
             {
                 // ⭐ A86: fills and pen lines in one mesh, in their order — a yard alternates them thing by thing, and a run
                 // each was a draw call each (A85's cost). Laid for the zoom when it holds a line.
+                // ⭐ A mill's sails a run of their own (A145), so they can turn while the body over them stays still.
+                bool turns = TurnsWithTheSails(first);
                 var mixed = new List<RoofPiece>();
-                while (i < pieces.Count && pieces[i].Kind != RoofPieceKind.Textured)
+                while (i < pieces.Count && pieces[i].Kind != RoofPieceKind.Textured && TurnsWithTheSails(pieces[i]) == turns)
                 {
                     mixed.Add(pieces[i++]);
                 }
 
-                runs.Add(RoofLineRun(mixed, ppt));
+                runs.Add(RoofLineRun(mixed, ppt) with { Turns = turns });
                 continue;
             }
 
@@ -446,6 +468,9 @@ public partial class VillageMap
         return new RoofRun(mesh, null, anyLine ? lines : null, vertices.Count / 3, ppt);
     }
 
+    /// <summary>Pure: a run's pen lines laid again for a new zoom — still turning if it turned (A145: a mill's sails).</summary>
+    internal static RoofRun RelaidForTheZoom(RoofRun run, List<RoofPiece> lines, float ppt) => RoofLineRun(lines, ppt) with { Turns = run.Turns };
+
     /// <summary>Draw a building's runs, each mesh through the frame's one transform; its lines laid again if the zoom has moved.</summary>
     private void DrawRoofRuns(RoofCache roof, float alpha)
     {
@@ -456,7 +481,7 @@ public partial class VillageMap
             RoofRun run = roof.Runs[i];
             if (run.Lines is { } lines && run.LinePpt != _pixelsPerTile)
             {
-                run = roof.Runs[i] = RoofLineRun(lines, _pixelsPerTile);
+                run = roof.Runs[i] = RelaidForTheZoom(run, lines, _pixelsPerTile);
             }
 
             if (run.Mesh.GetSurfaceCount() == 0)
@@ -464,15 +489,17 @@ public partial class VillageMap
                 continue;
             }
 
+            Transform2D place = run.Turns ? toScreen * SailsTurned(roof.Hub, roof.SailsAt) : toScreen;
+
             if (run.Material is RoofMaterial material)
             {
                 CanvasTexture? painting = RoofTextureOf(material);
                 float lift = 1f / RoofTextureMean;
-                RenderingServer.CanvasItemAddMesh(canvas, run.Mesh.GetRid(), toScreen, new Color(lift, lift, lift, alpha), painting?.GetRid() ?? default);
+                RenderingServer.CanvasItemAddMesh(canvas, run.Mesh.GetRid(), place, new Color(lift, lift, lift, alpha), painting?.GetRid() ?? default);
             }
             else
             {
-                RenderingServer.CanvasItemAddMesh(canvas, run.Mesh.GetRid(), toScreen, new Color(1f, 1f, 1f, alpha));
+                RenderingServer.CanvasItemAddMesh(canvas, run.Mesh.GetRid(), place, new Color(1f, 1f, 1f, alpha));
             }
         }
     }

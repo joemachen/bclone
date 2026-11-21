@@ -200,8 +200,81 @@ public partial class VillageMap
             int smith = Flues(RoofOf(JobKind.Smith)), school = Flues(RoofOf(JobKind.Teacher)), manor = Flues(RoofOf(BuildingKind.Manor)), forager = Flues(RoofOf(JobKind.Forager));
             Want(smith == 1 && school == 1 && manor == 2 && forager == 0, $"flues: smithy {smith}, school {school}, manor {manor}, forager's hut {forager} (want 1, 1, 2, 0)");
 
+            // ⭐ The windmill's sails (A145): gather way and come to rest, never jump, still while paused; a run of their own,
+            // under the body, turned about the hub; a cottage has nothing that turns.
+            Want(Mathf.IsEqualApprox(SailSpeedOn(0f, true, SailSpinUpSeconds), 1f) && Mathf.IsEqualApprox(SailSpeedOn(1f, false, SailSpinDownSeconds), 0f),
+                "the sails do not reach speed, or come to rest, in their seconds");
+            float gathering = SailSpeedOn(0f, true, 1.0);
+            Want(gathering > 0f && gathering < 1f, $"the sails jump to speed ({gathering:F2} after a second; want between)");
+            Want(Mathf.IsEqualApprox(SailSpeedOn(0.5f, true, 0.0), 0.5f) && Mathf.IsEqualApprox(SailSpeedOn(0.5f, false, 0.0), 0.5f), "the sails change while paused");
+            List<RoofPiece> mill = RoofDrawing(RoofOf(JobKind.Miller), Vector2.Zero, 1.6f, 1.6f, 0, Colors.White, 1f, null, Vector2.Zero, 1, false);
+            List<RoofRun> millRuns = RoofRuns(mill, 40f);
+            int turning = millRuns.Count(r => r.Turns), sailPieces = mill.Count(TurnsWithTheSails);
+            int turnAt = millRuns.FindIndex(r => r.Turns);
+            Want(turning == 1 && sailPieces == 16 && millRuns[turnAt].Lines?.Count == 16 && turnAt > 0 && turnAt < millRuns.Count - 1,
+                $"a mill's sails: {turning} turning runs, {sailPieces} sail pieces, the run at {turnAt} of {millRuns.Count} (want 1, 16 — four sails' cloth, lattice, edge and spar — all in it, under the body)");
+            Want(RoofRuns(RoofDrawing(RoofOf(BuildingKind.Cottage), Vector2.Zero, 1f, 1f, 0, Colors.White, 1f, null, Vector2.Zero, 1, false), 40f).All(r => !r.Turns),
+                "a cottage has something that turns");
+            Vector2 hub = HubOf(mill);
+            Transform2D quarter = SailsTurned(new Vector2(3f, -2f), Mathf.Pi / 2f);
+            Want(hub.IsEqualApprox(Vector2.Zero) && (quarter * new Vector2(3f, -2f)).IsEqualApprox(new Vector2(3f, -2f))
+                && (quarter * new Vector2(4f, -2f)).IsEqualApprox(new Vector2(3f, -1f)),
+                $"the sails do not turn about the hub (hub at {hub}; a quarter turn takes (4, -2) to {quarter * new Vector2(4f, -2f)}, want (3, -1))");
+
+            // ⭐ The smoke darker, with the watercolour in it (A145): darker than A139's wash, four paintings each its own, a
+            // ragged edge, grain in the wash.
+            double darkest = 0;
+            var paintings = new List<byte[]>();
+            for (int v = 0; v < PuffPaintings; v++)
+            {
+                byte[] puff = PaintThePuff(v);
+                paintings.Add(puff);
+                double tone = 0, weight = 0;
+                for (int px = 0; px < puff.Length; px += 4)
+                {
+                    double a = puff[px + 3] / 255.0;
+                    tone += a * ((0.2126 * puff[px]) + (0.7152 * puff[px + 1]) + (0.0722 * puff[px + 2])) / 255.0;
+                    weight += a;
+                }
+
+                darkest = Math.Max(darkest, tone / weight);
+            }
+
+            Color a139 = new("#b0a89e");
+            double before = (0.2126 * a139.R) + (0.7152 * a139.G) + (0.0722 * a139.B);
+            Want(darkest < before - 0.1, $"the smoke's wash at {darkest:F3} is not darker than A139's {before:F3} by 0.1");
+            Want(paintings.Select(p => Convert.ToBase64String(p)).Distinct().Count() == PuffPaintings, "two puff paintings are the same");
+
+            byte[] first = paintings[0];
+            int n = PuffPixels;
+            for (int v = 0; v < PuffPaintings; v++)
+            {
+                var reach = Enumerable.Range(0, 64).Select(k => PuffEdgeAt(v, k * Mathf.Tau / 64f)).ToList();
+                float ragged = (reach.Max() - reach.Min()) / reach.Average();
+                Want(ragged > 0.12f, $"puff {v}'s edge is a circle (its reach varies {ragged:P0}; want over 12 %)");
+            }
+
+            // Granulation: the pigment changes from one pixel to the next in the middle — the bloom and the tint change slowly.
+            double steps = 0;
+            int counted = 0;
+            for (int y = (n / 2) - 12; y < (n / 2) + 12; y++)
+            {
+                for (int x = (n / 2) - 12; x < (n / 2) + 12; x++)
+                {
+                    steps += Math.Abs(first[(((y * n) + x) * 4) + 3] - first[(((y * n) + x + 1) * 4) + 3]);
+                    counted++;
+                }
+            }
+
+            double grain = steps / counted;
+            Want(grain > 3, $"the wash has no grain (its pigment steps {grain:F1} of 255 a pixel in the middle; want over 3)");
+
+            // A zoom lays a run's pen lines again — a mill's sails must still turn after it.
+            RoofRun sails = millRuns[turnAt];
+            Want(sails.Lines is { } sailLines && RelaidForTheZoom(sails, sailLines, 13f).Turns, "a zoom stops the sails turning");
+
             return faults.Count == 0
-                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0"
+                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0; the sails gather way and come to rest, held while paused, a run of their own under the body turned about the hub, nothing turns on a cottage (A145); the smoke darker than A139's, four paintings, a ragged edge, grain in the wash (A145)"
                 : $"[widths] indoors and smoke: ⛔ {string.Join("; ", faults)}";
         }
         catch (Exception e)

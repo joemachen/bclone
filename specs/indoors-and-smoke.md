@@ -133,3 +133,15 @@ had a person dropping goods off **stand at the door** — and his answer was *"Y
   the road or at a pile seen; drawing water, walking home and cutting never in. **Red-check 5 mutants, 4 red; one zero written
   down** — the villager's own answer keeping the old three needs a living village; the traced render is its evidence.
 - ⚠️ At 4× the tick inside is a third of a second: whether that reads as a blink is his eye's.
+
+## 7b. ✅ The smoke darker, with the watercolour in it (A145; merged at his word, A146, `71212d5`)
+
+Joe, relayed by the systems lane, 2026-11-21: *"smoke from chimnies needs a bit more watercolor touch and a bit darker"*.
+
+- Four puff paintings (`PaintThePuff`) in place of one disc, each its own: a ragged edge (`PuffEdgeAt`, three slow waves), a
+  pooled rim, granulation (value noise on a 3-px lattice), a paler bloom where the water ran back, warm and cool greys.
+- Darker: wash `#8e857a` / `#7f8189`, rim `#4f473f` (A139's `#b0a89e` / `#787068`). The rise, drift, life and fading are A139's.
+- Before / after on his Ravenscar's first snow: `D:\Projects\brushes\smoke\smoke_a145_before_after.png` (A139 above).
+- Probe (`indoors and smoke:`): darker than A139's by 0.1 in tone; four paintings; each edge's reach varies over 12 %; the wash
+  steps over 3 of 255 a pixel in its middle. Red-check in DESIGN §7, A145.
+
