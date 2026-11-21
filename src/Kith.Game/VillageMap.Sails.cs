@@ -1,6 +1,6 @@
 using Godot;
 
-namespace Bclone.Game;
+namespace Kith.Game;
 
 /// <remarks>
 /// ⭐⭐ THE WINDMILL'S SAILS TURN WHILE IT IS WORKED (A145, <c>specs/building-roofs.md §6a</c>; Joe, relayed by the systems lane:
