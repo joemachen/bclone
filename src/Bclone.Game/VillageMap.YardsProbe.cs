@@ -319,8 +319,27 @@ public partial class VillageMap
                 faults.Add("the stock levels do not break at 1, 5, 20 and 60");
             }
 
+            // A field stops at a building (A142): its tiles under a farmhouse's yard are not drawn as field, in any stage.
+            foreach (Terrain stage in new[] { Terrain.Field, Terrain.Sown, Terrain.Ripe })
+            {
+                if (FieldStageDrawn(stage, standing: true) is Terrain.Field or Terrain.Sown or Terrain.Ripe)
+                {
+                    faults.Add($"a {stage} tile under a building is drawn as field (want the building's ground)");
+                }
+
+                if (FieldStageDrawn(stage, standing: false) != stage)
+                {
+                    faults.Add($"a {stage} tile in the open is drawn as {FieldStageDrawn(stage, standing: false)} (want {stage})");
+                }
+            }
+
+            if (FieldStageDrawn(Terrain.Grass, standing: false) is Terrain.Field or Terrain.Sown or Terrain.Ripe)
+            {
+                faults.Add("grass in a farm's ground is drawn as field");
+            }
+
             return faults.Count == 0
-                ? $"[widths] building yards: ✅ twelve stock things drawn only with their stock (the founders' cart's food and tools among them) and eleven piles only while working (§2's table); the dressing always, the founders' cart a wagon with its wheels, bed, shafts and canvas; every yard thing on its building's ground at four turns ({checkedKinds} kinds), the fishing hut's dock out on its water's side and none without water; the roof on the door's half, the step past its eave; a home's things on its plot and off its house, the woodpile longer with each level, a larder of its level, no vegetable beds, for the cabin, cottage and manor; the fences by tier; the pen's strokes inside their roof for seven materials, thinned under 3 px, hatching only in shade; the parked cart a cart; §2's table of what each yard reads, and each read its own good; the levels at 1, 5, 20, 60"
+                ? $"[widths] building yards: ✅ twelve stock things drawn only with their stock (the founders' cart's food and tools among them) and eleven piles only while working (§2's table); the dressing always, the founders' cart a wagon with its wheels, bed, shafts and canvas; every yard thing on its building's ground at four turns ({checkedKinds} kinds), the fishing hut's dock out on its water's side and none without water; the roof on the door's half, the step past its eave; a home's things on its plot and off its house, the woodpile longer with each level, a larder of its level, no vegetable beds, for the cabin, cottage and manor; the fences by tier; the pen's strokes inside their roof for seven materials, thinned under 3 px, hatching only in shade; the parked cart a cart; §2's table of what each yard reads, and each read its own good; the levels at 1, 5, 20, 60; a field stops at a building, every stage (A142)"
                 : $"[widths] building yards: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)
