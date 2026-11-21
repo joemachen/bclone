@@ -4148,7 +4148,8 @@ public sealed partial class SimWorld : IObstacles
         if (!ShownTheTechTree)
         {
             ShownTheTechTree = true;
-            body += " It is the first thing this village has learned by doing — the Tree shows what "
+            // The player's word is Lore (D815, Joe's play note 6); the flag and the code keep "tech tree".
+            body += " It is the first thing this village has learned by doing — Lore shows what "
                 + "else it may, and what each will take.";
         }
 
@@ -5899,6 +5900,13 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No("Nobody can live on the water.");
         }
 
+        // ⛔ NOR ON STEEP GROUND (D814): a house is a building. Paint already there stays; the chooser will not raise a house
+        // on its steep tiles either (`Household.TilesClippedOff`).
+        if (TooSteepToBuild(tile))
+        {
+            return PlacementVerdict.No(TooSteepSentence);
+        }
+
         // ⚠️ Asked BEFORE the tile is painted and it does not read the zone, so the answer is
         // the same either side of the stroke — which is what makes it safe to show in advance.
         int budget = VillageEconomy.MaxHomeToWorkTiles(Config);
@@ -6243,6 +6251,13 @@ public sealed partial class SimWorld : IObstacles
         if (workplace.Kind is JobKind.Farmer or JobKind.Herdsman && TerrainRules.IsSeam(Map.TerrainAt(tile)))
         {
             return PlacementVerdict.No("Not on a seam — clear it first.");
+        }
+
+        // ⛔ NOR A FIELD OR A PASTURE ON STEEP GROUND (D814, Joe: "farm fields or livestock fields"). A quarry, a mine and the
+        // woods are worked on any slope, as they were: a face is cut into a hillside.
+        if (workplace.Kind is JobKind.Farmer or JobKind.Herdsman && TooSteepToBuild(tile))
+        {
+            return PlacementVerdict.No(TooSteepSentence);
         }
 
         int owner = Zones.WorkGroundOwner(tile);
@@ -9277,6 +9292,13 @@ public sealed partial class SimWorld : IObstacles
             if (WhoseYard(onTheGround[i]) is string yard)
             {
                 return PlacementVerdict.No($"That is {yard} yard.");
+            }
+
+            // ⛔ NOR ON STEEP GROUND (D814, `heights.md §13`; Joe: "Yes, as proposed"). Asked of every tile it would cover,
+            // moved or new — a building carried onto a ridge is a new placement there.
+            if (TooSteepToBuild(onTheGround[i]))
+            {
+                return PlacementVerdict.No(TooSteepSentence);
             }
 
             // ⛔ NOR ON A BRIDGE'S END (D546): it is walkable, not an obstacle, so the overlap test above

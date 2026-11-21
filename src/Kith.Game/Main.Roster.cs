@@ -56,8 +56,12 @@ public partial class Main
     /// <summary>The column titles, in <see cref="RosterOrder"/>'s order — the sort is the column you click (D616).</summary>
     private static readonly string[] RosterTitles = { "Name", "Age", "Trade" };
 
-    /// <summary>The age column's width: three digits and the sort mark, right-aligned so the years line up.</summary>
+    /// <summary>The age column's width: three digits and the sort mark. Left-aligned like the name and the trade since D818 (Joe:
+    /// <i>"left align the age number column like trade and name are"</i>) — it was right-aligned, a table's habit for numbers.</summary>
     private const int RosterAgeWidth = 44;
+
+    /// <summary>Air after a column title and its mark, so <i>Age ▾</i> does not run into <i>Trade</i> (Joe's screenshot, D818).</summary>
+    private const float TitleGap = 8f;
 
     /// <summary>The trade column's width: <i>woodcutter</i> whole at the panel's own size; anything longer trims.</summary>
     private const int RosterTradeWidth = 96;
@@ -102,7 +106,7 @@ public partial class Main
         tree.SetColumnClipContent(0, true);
         tree.SetColumnExpand(1, false);
         tree.SetColumnCustomMinimumWidth(1, RosterAgeWidth);
-        tree.SetColumnTitleAlignment(1, HorizontalAlignment.Right);
+        tree.SetColumnTitleAlignment(1, HorizontalAlignment.Left);
         tree.SetColumnExpand(2, false);
         tree.SetColumnCustomMinimumWidth(2, RosterTradeWidth);
         tree.SetColumnClipContent(2, true);
@@ -131,11 +135,29 @@ public partial class Main
     }
 
     /// <summary>The ▾ on the column the list is sorted by, and on no other.</summary>
+    /// <remarks>
+    /// ⛔ <b>Every column is as wide as its title WITH the mark, sorted or not</b> (Joe's play note 4, D816: <i>"the village
+    /// roster's sort headers jump and shift the panel"</i>). A tree's column is never narrower than its title, so the ▾
+    /// widened whichever column wore it — measured: the roster's minimum width was 187 sorted by name and 174 by age or
+    /// trade, and the panel moved with it. Measured in both of the tree's fonts, the larger kept.
+    /// </remarks>
     private void ShowTheRosterOrder()
     {
+        // ⛔ The WIDEST of the title's three boxes, not the plain one (Joe, after D816: "the village panel headings still move
+        // around/resize"): hovered, the title is drawn in a box with margins of its own (12 between them, measured), and "Age ▾"
+        // wrapped onto two lines inside it. And a little air, so the mark does not touch the next title.
+        float padding = TitleGap + new[] { "title_button_normal", "title_button_hover", "title_button_pressed" }
+            .Select(s => _roster.GetThemeStylebox(s))
+            .Max(b => b.GetMargin(Side.Left) + b.GetMargin(Side.Right));
         for (int c = 0; c < RosterTitles.Length; c++)
         {
-            _roster.SetColumnTitle(c, c == (int)_rosterOrder ? $"{RosterTitles[c]} ▾" : RosterTitles[c]);
+            string marked = $"{RosterTitles[c]} ▾";
+            float wide = Mathf.Max(
+                _roster.GetThemeFont("title_button_font").GetStringSize(marked, HorizontalAlignment.Left, -1, _roster.GetThemeFontSize("title_button_font_size")).X,
+                _roster.GetThemeFont("font").GetStringSize(marked, HorizontalAlignment.Left, -1, _roster.GetThemeFontSize("font_size")).X);
+            int floor = c switch { 1 => RosterAgeWidth, 2 => RosterTradeWidth, _ => 0 };
+            _roster.SetColumnCustomMinimumWidth(c, Math.Max(floor, Mathf.CeilToInt(wide + padding)));
+            _roster.SetColumnTitle(c, c == (int)_rosterOrder ? marked : RosterTitles[c]);
         }
     }
 
@@ -221,7 +243,7 @@ public partial class Main
             item.SetText(0, row.Surname.Length == 0 ? row.Name : $"{row.Name} {row.Surname}");
             item.SetTextOverrunBehavior(0, TextServer.OverrunBehavior.TrimEllipsis);
             item.SetText(1, age);
-            item.SetTextAlignment(1, HorizontalAlignment.Right);
+            item.SetTextAlignment(1, HorizontalAlignment.Left);
             item.SetText(2, row.Work);
             if (!row.Child && UiIcons.Find("trades", row.Work) is Texture2D trade)
             {
@@ -328,6 +350,10 @@ public partial class Main
         RosterOrder was = _rosterOrder;
         var orders = new List<string>();
         var living = world.Villagers.Where(v => v.Alive).Select(v => v.Id).OrderBy(id => id).ToList();
+
+        // ⭐ AND NOTHING MOVES WHEN YOU SORT (Joe's play note 4, D816: "the village roster's sort headers jump and shift the
+        // panel"): the roster's minimum width and every column's width read the same whichever column wears the ▾.
+        var shapes = new List<string>();
         foreach (RosterOrder order in new[] { RosterOrder.Name, RosterOrder.Age, RosterOrder.Trade })
         {
             _roster.EmitSignal(Tree.SignalName.ColumnTitleClicked, (long)order, (long)MouseButton.Left);
@@ -372,6 +398,7 @@ public partial class Main
             }
 
             orders.Add(string.Join(",", listed));
+            shapes.Add($"{_roster.GetCombinedMinimumSize().X:F0} [{_roster.GetColumnWidth(0)}/{_roster.GetColumnWidth(1)}/{_roster.GetColumnWidth(2)}]");
 
             string? captured = CaptureSettings().RosterSort;
             if (captured != PlayerSettings.RosterSorts[(int)order])
@@ -387,10 +414,45 @@ public partial class Main
             faults.Add($"the columns are {_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide");
         }
 
+        if (shapes.Distinct().Count() != 1)
+        {
+            faults.Add($"sorting moves the roster: by name, age and trade it is {string.Join(", ", shapes)}");
+        }
+
+        // ⭐ EVERY COLUMN READS FROM THE LEFT, TITLE AND ROWS (D818, Joe: "left align the age number column like trade and name are").
+        for (int c = 0; c < RosterTitles.Length; c++)
+        {
+            bool rowsLeft = _roster.GetRoot().GetChildren().All(i => i.GetTextAlignment(c) == HorizontalAlignment.Left);
+            if (_roster.GetColumnTitleAlignment(c) != HorizontalAlignment.Left || !rowsLeft)
+            {
+                faults.Add($"the {RosterTitles[c]} column is not left-aligned (title {_roster.GetColumnTitleAlignment(c)}, rows {(rowsLeft ? "left" : "not left")})");
+            }
+        }
+
+        // ⭐ AND EVERY TITLE FITS WITH ITS MARK IN EVERY STATE (Joe, after D816: "the village panel headings still move
+        // around/resize", two screenshots): a title hovered or pressed is drawn in a box of its own, and "Age ▾" wrapped onto
+        // two lines in the hover's margins. Measured here, apart from the code: the title font, and the widest of the three boxes.
+        float margins = new[] { "title_button_normal", "title_button_hover", "title_button_pressed" }
+            .Select(s => _roster.GetThemeStylebox(s))
+            .Max(b => b.GetMargin(Side.Left) + b.GetMargin(Side.Right));
+        Font titleFont = _roster.GetThemeFont("title_button_font");
+        int titleSize = _roster.GetThemeFontSize("title_button_font_size");
+        var fits = new List<string>();
+        for (int c = 0; c < RosterTitles.Length; c++)
+        {
+            float need = titleFont.GetStringSize($"{RosterTitles[c]} ▾", HorizontalAlignment.Left, -1, titleSize).X + margins;
+            int has = _roster.GetColumnWidth(c);
+            fits.Add($"{RosterTitles[c]} {has}≥{need:F0}");
+            if (has < need)
+            {
+                faults.Add($"\"{RosterTitles[c]} ▾\" needs {need:F0} with the widest box's margins ({margins:F0}) and its column is {has}");
+            }
+        }
+
         SortTheRoster(was);
 
         return faults.Count == 0
-            ? $"[widths] roster sort: ✅ name, age and trade against posed rows typed by hand, every tiebreak posed; the three column titles each set the order and wear the ▾, list the {living.Count} alive once in it, a name, the years and a trade in their columns ({_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide), and are captured ({orders.Distinct().Count()} distinct orders here)"
+            ? $"[widths] roster sort: ✅ one shape sorted any way ({shapes[0]}); every title fits with its mark hovered or pressed ({string.Join(", ", fits)}); every column left-aligned; name, age and trade against posed rows typed by hand, every tiebreak posed; the three column titles each set the order and wear the ▾, list the {living.Count} alive once in it, a name, the years and a trade in their columns ({_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide), and are captured ({orders.Distinct().Count()} distinct orders here)"
             : $"[widths] roster sort: ⛔ {string.Join("; ", faults)}";
     }
 }

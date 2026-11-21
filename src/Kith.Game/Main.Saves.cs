@@ -194,6 +194,78 @@ public partial class Main
         GetTree().ReloadCurrentScene();
     }
 
+    /// <summary>The quicksave's name — one a village, in its folder beside its autosaves and named saves (D816).</summary>
+    internal const string QuickSaveName = "quicksave";
+
+    /// <summary>What F7 says when this village has no quicksave to go back to.</summary>
+    internal const string NoQuickSave = "There is no quicksave of this village yet — F5 makes one.";
+
+    /// <summary>
+    /// ⭐ F5 (Joe's play note 2, D816): the village saved as its quicksave, the last one replaced — the pause screen's own
+    /// named save, so the refusals (a village stopped on an error) and the log's sentence are its.
+    /// </summary>
+    private void QuickSave() => SaveUnderAName(QuickSaveName);
+
+    /// <summary>
+    /// ⭐ F7 (D816): back to this village's quicksave, through the pause screen's own load — so the village as it stands is
+    /// autosaved first, and an F7 pressed by mistake costs nothing the autosaves do not keep.
+    /// </summary>
+    private void QuickLoad()
+    {
+        string? path = _saveFolder is null ? null : System.IO.Path.Combine(_saveFolder, QuickSaveName + SaveFile.Extension);
+        if (path is null || !System.IO.File.Exists(path))
+        {
+            SayInTheLog(NoQuickSave);
+            return;
+        }
+
+        LoadFromThePause(path);
+    }
+
+    /// <summary>
+    /// ⭐ F5 and F7 (D816) — <b>a probe line</b>: F5 writes this village's quicksave (into a scratch folder the probe sets,
+    /// then deletes), and F7 with no quicksave says so and loads nothing. F7 with one reloads the scene, which a probe
+    /// cannot survive — that half is Joe's to play.
+    /// </summary>
+    private string F5SavesAndF7SaysWhenThereIsNothing()
+    {
+        var faults = new List<string>();
+        string? folderWas = _saveFolder;
+        string scratch = ProjectSettings.GlobalizePath("user://probe-quicksave");
+        System.IO.Directory.CreateDirectory(scratch);
+        string quick = System.IO.Path.Combine(scratch, QuickSaveName + SaveFile.Extension);
+        try
+        {
+            _saveFolder = scratch;
+            _UnhandledKeyInput(new InputEventKey { Keycode = Key.F5, Pressed = true });
+            if (!System.IO.File.Exists(quick))
+            {
+                faults.Add("F5 wrote no quicksave");
+            }
+            else if (SaveFile.ReadHeader(quick).Refusal is string refused)
+            {
+                faults.Add($"the quicksave does not read back: {refused}");
+            }
+
+            System.IO.File.Delete(quick);
+            string saidBefore = _lastSaidInTheLog;
+            _UnhandledKeyInput(new InputEventKey { Keycode = Key.F7, Pressed = true });
+            if (_lastSaidInTheLog != NoQuickSave || _saveToOpen is not null)
+            {
+                faults.Add($"F7 with no quicksave said '{(_lastSaidInTheLog == saidBefore ? "nothing" : _lastSaidInTheLog)}'{(_saveToOpen is null ? string.Empty : " and set a load going")}");
+            }
+        }
+        finally
+        {
+            _saveFolder = folderWas;
+            System.IO.Directory.Delete(scratch, recursive: true);
+        }
+
+        return faults.Count == 0
+            ? "[widths] quicksave: ✅ F5 writes the village's quicksave and it reads back; F7 with none says so and loads nothing"
+            : $"[widths] quicksave: ⛔ {string.Join("; ", faults)}";
+    }
+
     /// <summary>This village's folder: its name and its seed, so two Ashfords are two folders (§7).</summary>
     private void BeginSaving() =>
         _saveFolder = NothingIsWritten ? null : System.IO.Path.Combine(SavesRoot, FolderFor(_loop.World.Name, _shareCode));

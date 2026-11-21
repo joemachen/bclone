@@ -102,8 +102,9 @@ from it on `manor_family_tree` (the 5th + 45), in the fog until the cottage is l
 
 `SimWorld.ShownTheTechTree` is hashed sparsely. The first crossing of a `stone_dug` or `iron_dug`
 node (or, since D449, `iron_tools_forged` — never `kept_granary_years` or `founders_gone` — Joe) sets it, and that moment's body ends:
-*"…It is the first thing this village has learned by doing — the Tree shows what else it may, and
-what each will take."* Every later unlock is its moment without the line.
+*"…It is the first thing this village has learned by doing — Lore shows what else it may, and
+what each will take."* *(Read "the Tree shows" until D815: the player's word for the map is **Lore**, Joe's play note 6 —
+the window, its button and this line; the data, the save and the code keep "tech tree".)* Every later unlock is its moment without the line.
 
 ### 3.6 Where it lives
 
