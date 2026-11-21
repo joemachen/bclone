@@ -10633,6 +10633,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
       the art lane's.
     - 🔨 **A field stops at a building** — built (A142, `building-yards.md §7b`); ⚠️ one line of `VillageMap.cs`, flagged to him.
       ⏸️ His eyes: a farmhouse with field painted under it.
+    - 🔨 **being built on `art`: the windmill's sails turn while it is worked** — Joe, relayed by the systems lane: *"windmill
+      definitely needs to animate, but only when it is being worked"*. Read like A139's fires: a miller at work there.
+    - 🔨 **being built on `art`: the chimney smoke darker, with more of the watercolour in it** — Joe, relayed: *"smoke from
+      chimnies needs a bit more watercolor touch and a bit darker"* (A139's look B).
     - ✅ **The 18 fps** — measured: the village log re-trimming itself every frame while its window is collapsed. Already fixed
       on `slice/morale` (D807); his fps waits on that merge.
   - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
