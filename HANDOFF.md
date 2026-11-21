@@ -10741,7 +10741,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   people no longer alive through `VillageMap.People.cs` / `PersonPainter.cs`. ✅ *The villager animations those files
   carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
   ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); ✅ **Joe, 2026-11-21: *"5b, the walk out"*** — ✅ 5b
-  built (D809), `main` merged in first. **⏸️ Left: his play of W2 against `morale.md §15`, then the slice's merge at his word.**
+  built (D809), `main` merged in first. ✅ **Played, 2026-11-21: *"yep they walked away and faded"*** — on a posed save of his
+  Larkspur (Year 22: the Masons, a couple, held two years by a cold winter and the fire out, 40 ticks before a turn;
+  `saves/larkspur-heron-flax-99/test-leaving-next-season.save`, and `test-warned-next-season.save` for the warning; built by
+  a throwaway harness, each re-opened and played past the turn first). **⏸️ Left: the slice's merge at his word** — `main`
+  has moved since (art A141–A144), so the merge meets `VillageMap.People.cs` (the cloak dye beside the walk-out hooks).
   **His first play, 2026-11-21: *"its actually hard to make people leave haha i didnt get it done in my last save"*.** His
   `larkspur-heron-flax-99`, read: at autosave-3 (tick 16,320, 30 alive) he had set **woodcutters, foresters and foragers to
   0**. Only Penret Croft was ready to leave (8 seasons, the cold winter and the fire out), and Penret was held by a

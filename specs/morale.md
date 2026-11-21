@@ -5,7 +5,7 @@
 > season's read, saved, not hashed, nothing acting on it (D801); ✅ step 3 built — the card's *Content / Unsettled* and its
 > sentence (D802); ✅ step 4 built — an unsettled couple waits twice the interval, contentment hashed, eight goldens re-taken
 > (D804); ✅ step 5a built — warned after a year, gone after two, the card and the log (D806); ✅ step 6's guards and golden
-> (D808); ✅ step 5b built — leavers walk out to the edge (D809). ⏸️ Joe's play (§15).**
+> (D808); ✅ step 5b built — leavers walk out to the edge (D809), ✅ played: *"yep they walked away and faded"* (2026-11-21).**
 > *(Read "▶️ 5b, the walk out" at D806–D808.)*
 > *(Read "▶️ step 5, leaving" at D804–D805, "▶️ step 4, fewer children" at D802–D803, "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
