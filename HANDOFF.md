@@ -10627,8 +10627,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     into a store goes in by its door for its tick there — drop-offs, fetches, the market, the post. On `art`, not merged.
     ⏸️ His eyes: `.\run.bat` in the art folder, watch a hauler at the granary — and at 4×, whether it reads as a blink.**
   - **JOE'S NOTES, 2026-11-21 (A142, his: *"Yes, as proposed"*):**
-    - ✍️ **Cloaks dyed by household** — mocked (`D:\Projects\brushes\villagers\cloaks\`), ⏸️ **his calls,
-      `villager-art.md §9`**: by household or by person; the seven dyes; the cloak off in summer or not.
+    - 🔨 **Cloaks dyed by household — built (A143, *"Yes, as recommended"*, `villager-art.md §9a`)**: seven dyes in founding
+      order, worn whenever owned. ⏸️ His eyes: `.\run.bat` in the art folder; render `D:\Projects\brushes\villagers\cloaks\cloaks_built.png`.
     - ➡️ **No building, field or pasture on steep ground** — a sim rule, sent to the systems session (`slice/morale`'s). Not
       the art lane's.
     - 🔨 **A field stops at a building** — built (A142, `building-yards.md §7b`); ⚠️ one line of `VillageMap.cs`, flagged to him.

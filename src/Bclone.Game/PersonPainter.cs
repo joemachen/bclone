@@ -51,9 +51,10 @@ internal enum FigureHold
 /// Joe's play; walking, 1 is the other step; talking, 1 is the palm lowered; at work with a tool
 /// that swings, 1 is the tool raised and 2 the stroke.
 /// </param>
+/// <param name="Dye">The cloak's dye, the household's (A143, <see cref="PersonPainter.CloakDyes"/>).</param>
 internal readonly record struct FigureKey(
     int Id, LifeStage Stage, JobKind? Trade, FigurePose Pose, bool Flip, FigureHold Hold, bool Walking, bool ToolOut,
-    Goods? Good, bool Coat, bool Cart, bool Cold, int Beat = 0);
+    Goods? Good, bool Coat, bool Cart, bool Cold, int Beat = 0, int Dye = 0);
 
 /// <summary>A painted person: straight RGBA bytes, and where on them the feet stand.</summary>
 internal sealed record PaintedFigure(int Width, int Height, byte[] Rgba, float FeetX, float FeetY);
@@ -110,7 +111,16 @@ internal static class PersonPainter
     internal static readonly Rgb Ink = Rgb.Hex("#2e221a");
     private static readonly Rgb Vermilion = Rgb.Hex("#c4432c");
     private static readonly Rgb Linen = Rgb.Hex("#f0ebdf");
-    private static readonly Rgb Coat = Rgb.Hex("#56703f");
+    /// <summary>
+    /// ⭐ The cloak's dyes (A143, <c>specs/villager-art.md §9</c>; Joe: <i>"clothes should be available in different colors so
+    /// villagers aren't all green"</i> → <i>"Yes, as recommended"</i>): seven a valley could make, muted to sit in the wash —
+    /// madder, woad, weld, moss (A93's one cloak), a dull purple, walnut, undyed — in this order so that households founded one
+    /// after another never share a dye (<see cref="VillageMap.CloakDyeOf"/>).
+    /// </summary>
+    internal static readonly Rgb[] CloakDyes = Hexes("#9a4a3c", "#4a6488", "#b8a050", "#56703f", "#6c5070", "#6e5238", "#9a948a");
+
+    /// <summary>A dye's cloak colour; any number wraps round the seven.</summary>
+    internal static Rgb CloakOf(int dye) => CloakDyes[((dye % CloakDyes.Length) + CloakDyes.Length) % CloakDyes.Length];
     private static readonly Rgb Fur = Rgb.Hex("#ece4d0");
     private static readonly Rgb ElderHood = Rgb.Hex("#7a5a40");
     private static readonly Rgb Shoe = Rgb.Hex("#26201c");
@@ -238,6 +248,9 @@ internal static class PersonPainter
         internal Rgb? Apron, Hood;
         internal float K = 1f, HeadK = 1f, Stoop, Sway;
         internal bool CoatOn, CartOn, Cold, Elder;
+
+        /// <summary>The cloak's colour — the household's dye (A143).</summary>
+        internal Rgb Cloak;
         internal Goods? Good;
 
         internal Who(FigureKey f)
@@ -293,6 +306,7 @@ internal static class PersonPainter
             }
 
             CoatOn = f.Coat;
+            Cloak = CloakOf(f.Dye);
             CartOn = f.Cart;
             Cold = f.Cold;
             Good = f.Good;
@@ -617,11 +631,11 @@ internal static class PersonPainter
 
         if (pose == FigurePose.Side)
         {
-            c.Poly(new[] { (-0.02f, -0.76f), (0.06f, -0.76f), (0.02f, -0.26f), (-0.22f, -0.22f), (-0.17f, -0.58f) }, Coat.Shade(0.85f));
+            c.Poly(new[] { (-0.02f, -0.76f), (0.06f, -0.76f), (0.02f, -0.26f), (-0.22f, -0.22f), (-0.17f, -0.58f) }, w.Cloak.Shade(0.85f));
         }
         else
         {
-            c.Poly(new[] { (-0.18f, -0.76f), (0.18f, -0.76f), (0.25f, -0.22f), (-0.25f, -0.22f) }, pose == FigurePose.Front ? Coat.Shade(0.85f) : Coat);
+            c.Poly(new[] { (-0.18f, -0.76f), (0.18f, -0.76f), (0.25f, -0.22f), (-0.25f, -0.22f) }, pose == FigurePose.Front ? w.Cloak.Shade(0.85f) : w.Cloak);
         }
     }
 
@@ -634,24 +648,24 @@ internal static class PersonPainter
 
         if (pose == FigurePose.Front)
         {
-            c.Poly(new[] { (-0.19f, top - 0.01f), (-0.04f, top - 0.01f), (-0.08f, -0.23f), (-0.25f, -0.23f) }, Coat);
-            c.Poly(new[] { (0.04f, top - 0.01f), (0.19f, top - 0.01f), (0.25f, -0.23f), (0.08f, -0.23f) }, Coat);
+            c.Poly(new[] { (-0.19f, top - 0.01f), (-0.04f, top - 0.01f), (-0.08f, -0.23f), (-0.25f, -0.23f) }, w.Cloak);
+            c.Poly(new[] { (0.04f, top - 0.01f), (0.19f, top - 0.01f), (0.25f, -0.23f), (0.08f, -0.23f) }, w.Cloak);
             c.Poly(new[] { (-0.18f, top - 0.04f), (0.18f, top - 0.04f), (0.14f, top + 0.07f), (-0.14f, top + 0.07f) }, Fur);
         }
         else if (pose == FigurePose.Back)
         {
-            c.Poly(new[] { (-0.19f, top - 0.01f), (0.19f, top - 0.01f), (0.25f, -0.22f), (-0.25f, -0.22f) }, Coat);
+            c.Poly(new[] { (-0.19f, top - 0.01f), (0.19f, top - 0.01f), (0.25f, -0.22f), (-0.25f, -0.22f) }, w.Cloak);
             c.Poly(new[] { (-0.17f, top - 0.04f), (0.17f, top - 0.04f), (0.15f, top + 0.04f), (-0.15f, top + 0.04f) }, Fur);
         }
         else
         {
-            c.Poly(new[] { (-0.13f, top - 0.01f), (0.08f, top - 0.01f), (0.04f, -0.27f), (-0.22f, -0.23f) }, Coat);
+            c.Poly(new[] { (-0.13f, top - 0.01f), (0.08f, top - 0.01f), (0.04f, -0.27f), (-0.22f, -0.23f) }, w.Cloak);
             c.Poly(new[] { (-0.13f, top - 0.04f), (0.09f, top - 0.04f), (0.07f, top + 0.05f), (-0.12f, top + 0.05f) }, Fur);
         }
 
         if (c.Detail)
         {
-            Rgb dark = Coat.Shade(0.65f);
+            Rgb dark = w.Cloak.Shade(0.65f);
             if (pose == FigurePose.Front)
             {
                 c.Stroke((-0.17f, top + 0.1f), (-0.20f, -0.25f), dark, 0.010f);

@@ -266,3 +266,18 @@ tunic pigments; by mid-game nearly everyone owns a coat and the village is green
 **⏸️ His calls:** (1) by household (recommended) or by person; (2) the seven dyes, or others; (3) the cloak drawn only in the cold
 seasons, or whenever owned as today (recommended: as today — the sim says nothing about wearing it).
 
+## 9a. 🔨 As built (A143) — Joe: *"Yes, as recommended"*
+
+By household; the seven dyes; worn whenever owned, as today.
+
+- `PersonPainter.CloakDyes` (madder, woad, weld, moss, a dull purple, walnut, undyed — ordered so neighbours contrast) and
+  `CloakOf(dye)`; `FigureKey.Dye`; `Who.Cloak` paints every panel of the cloak and its fold lines. No more paintings: the key
+  already holds the person.
+- `VillageMap.CloakDyeOf(householdId)` — the founding order round the seven (ids are handed out one past the highest): the first
+  seven households all differ, and a family keeps its dye for life.
+- Seen on his Ravenscar Y33: `D:\Projects\brushes\villagers\cloaks\cloaks_built.png`.
+- Probe `painted villagers:` — the seven dyes named here; founding order; two dyes differ; the coatless untouched; a woad cloak
+  keeps no moss pixel from the front, side or back. Red-check 7 mutants, 6 red; ⚠️ one zero written down (the household never
+  asked — a living village's; the render is its evidence). The first run found a gap (one panel left moss passed) — closed by
+  the no-moss check.
+
