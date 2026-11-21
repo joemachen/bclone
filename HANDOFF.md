@@ -21,6 +21,19 @@
 > wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
 > re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
 > a child). ▶️ STEP 5: leaving.**
+> **✅ STEP 5b BUILT (D809, Joe: *"5b, the walk out"*) — W2 IS BUILT.** `main` merged into the slice first (`93db715`: the
+> animations, indoors, smoke), re-imported. Leavers walk the sim's own routes from where each stood to their household's
+> edge, the chevron above, fading over the last second; view only, no hold (`VillageMap.WalkOut.cs`). Suite 2173 / 0 / 5 of 2178 in 20m49 (twelve view mutant builds and probes ran beside it; no sim code changed);
+> probe 173 lines, 134 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, walk out ✅, done.. ⏸️ JOE PLAYS W2 against `morale.md §15`.**
+> - **⛔ TRAP (D809): someone gone from the sim is skipped by every `Alive` loop in the view — the draw, the click, and
+>   the prune that forgets their motion.** A leaver drawn without being added to the frame's `stillAlive` loses their
+>   walk's bookkeeping every frame (`_walked`, `_lastPersonKey`, `_tiles` are pruned by it) and slides in one pose. The
+>   walk out adds them there (`AddTheLeavers`); anything new drawn for the not-alive must do the same.
+> - **⛔ TRAP (D809): a probe that poses a LIVING person as the thing it guards never touches the not-alive path.** The
+>   first `walk out:` line was green and never asked how a real leaver is drawn; a villager made gone and put back is
+>   what scores the draw, the keep and the click. ⚠️ The shell's watch's own call scores ZERO headless: the probe's
+>   world is new, at tick 0, and a departure is stamped before the tick a look sees. Joe's play is its check. And a
+>   pose on a tile's exact centre cannot tell 'from where they stood' from 'from the tile' — pose off it.
 > **✅ STEP 6 BUILT (D808, Joe: *"Step 6 first"*): the anti-vacuity pair and the gate's golden.** A village that ignores
 > contentment loses people (`AVillageThatIgnoresContentmentLosesPeople`, 4 adults in 12 valleys by Year 15); a kept one
 > loses nobody with a roof (`AKeptVillageLosesNobodyItKeeps`, fifty years); `TheGoldenThatSeesADeparture` (seed 9, Year
@@ -10727,7 +10740,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing
   people no longer alive through `VillageMap.People.cs` / `PersonPainter.cs`. ✅ *The villager animations those files
   carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
-  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); **5b next**, then his play (`morale.md §15`).
+  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); ✅ **Joe, 2026-11-21: *"5b, the walk out"*** — ✅ 5b
+  built (D809), `main` merged in first. **⏸️ Left: his play of W2 against `morale.md §15`, then the slice's merge at his word.**
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**

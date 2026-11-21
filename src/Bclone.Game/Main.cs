@@ -588,6 +588,7 @@ public partial class Main : Control
         GD.Print(_map.ACartIsSeen());
         GD.Print(VillageMap.DashesEnd());
         GD.Print(_map.TheNomadsWalkInFromTheEdge());
+        GD.Print(_map.TheLeaversWalkOutToTheEdge());
         GD.Print(FrameWatch.SelfCheck());
         GD.Print(ZoneOutline.SelfCheck());
         GD.Print(ZoneOutline.AVillageSizedFillIsQuick());

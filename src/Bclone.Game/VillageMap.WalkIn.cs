@@ -91,8 +91,9 @@ public partial class VillageMap
     }
 
     /// <summary>
-    /// Look for arrivals since the last look and begin their walk-in. Called by the shell <b>before</b> it shows any
-    /// moment — the map's own draw runs after the moment panel would already be up. Returns whether a walk began.
+    /// Look for arrivals since the last look and begin their walk-in — and for departures in the same window, and begin
+    /// their walk out (5b). Called by the shell <b>before</b> it shows any moment — the map's own draw runs after the
+    /// moment panel would already be up. Returns whether a walk-in began (a walk out holds nothing, so it is not said).
     /// </summary>
     public bool WatchForArrivals(SimWorld world)
     {
@@ -102,6 +103,7 @@ public partial class VillageMap
             _watchedWorld = world;
             _arrivalsSeenThroughTick = world.Tick;
             _walkIns.Clear();
+            _walkOuts.Clear();
             return false;
         }
 
@@ -113,7 +115,13 @@ public partial class VillageMap
         // [since, now) — every tick computed since the last look — so a skip that steps a year in one frame still
         // catches the knock inside it.
         List<int> ids = ArrivalsSince(world.Villagers, _arrivalsSeenThroughTick, world.Tick);
+        List<int> leavers = DeparturesSince(world.Villagers, _arrivalsSeenThroughTick, world.Tick);
         _arrivalsSeenThroughTick = world.Tick;
+        if (leavers.Count > 0)
+        {
+            BeginWalkOuts(world, leavers);
+        }
+
         return ids.Count > 0 && BeginWalkIn(world, ids);
     }
 
@@ -146,11 +154,12 @@ public partial class VillageMap
     }
 
     /// <summary>
-    /// The tile on the valley's edge that the one cost field reaches most cheaply from the camp, or null when no edge
-    /// tile reaches it at all (an island). Ties go to the first in a fixed sweep: the top row, the bottom row, then
-    /// the two sides.
+    /// The tile on the valley's edge that the one cost field reaches most cheaply from <paramref name="camp"/> — the
+    /// band's camp for a walk-in, the first of a household leaving for a walk out (5b) — or null when no edge tile
+    /// reaches it at all (an island). Ties go to the first in a fixed sweep: the top row, the bottom row, then the two
+    /// sides. One field, the one to <paramref name="camp"/>: a trip costs the same both ways.
     /// </summary>
-    internal static GridPos? EdgeNearestTheCamp(SimWorld world, GridPos camp)
+    internal static GridPos? EdgeNearest(SimWorld world, GridPos camp)
     {
         GeneratedMap map = world.Map;
         int maxX = map.MinX + map.Width - 1;
@@ -193,7 +202,7 @@ public partial class VillageMap
     {
         GridPos camp = world.BandCamp.ToTile();
         var route = new List<GridPos>();
-        if (EdgeNearestTheCamp(world, camp) is not GridPos edge)
+        if (EdgeNearest(world, camp) is not GridPos edge)
         {
             return route;
         }
@@ -371,9 +380,12 @@ public partial class VillageMap
     }
 
     /// <summary>A small chevron above a nomad walking in, bobbing, fading as they reach the camp.</summary>
-    private void DrawTheArrivalMark(Vector2 centre, float radius, float progress)
+    private void DrawTheArrivalMark(Vector2 centre, float radius, float progress) =>
+        DrawTheChevron(centre, radius, ArrivalMarkLeft(progress));
+
+    /// <summary>The chevron itself, <paramref name="left"/> of it showing — a nomad's walking in, a leaver's walking out (5b).</summary>
+    private void DrawTheChevron(Vector2 centre, float radius, float left)
     {
-        float left = ArrivalMarkLeft(progress);
         if (left <= 0f)
         {
             return;
@@ -432,7 +444,7 @@ public partial class VillageMap
 
         // (a) The edge, against a brute-force pick over the same perimeter.
         GridPos camp = world.BandCamp.ToTile();
-        GridPos? edge = EdgeNearestTheCamp(world, camp);
+        GridPos? edge = EdgeNearest(world, camp);
         GeneratedMap map = world.Map;
         int maxX = map.MinX + map.Width - 1;
         int maxY = map.MinY + map.Height - 1;

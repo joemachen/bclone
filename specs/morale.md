@@ -5,7 +5,8 @@
 > season's read, saved, not hashed, nothing acting on it (D801); ✅ step 3 built — the card's *Content / Unsettled* and its
 > sentence (D802); ✅ step 4 built — an unsettled couple waits twice the interval, contentment hashed, eight goldens re-taken
 > (D804); ✅ step 5a built — warned after a year, gone after two, the card and the log (D806); ✅ step 6's guards and golden
-> (D808); ▶️ 5b, the walk out, then Joe's play (§15).**
+> (D808); ✅ step 5b built — leavers walk out to the edge (D809). ⏸️ Joe's play (§15).**
+> *(Read "▶️ 5b, the walk out" at D806–D808.)*
 > *(Read "▶️ step 5, leaving" at D804–D805, "▶️ step 4, fewer children" at D802–D803, "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
@@ -287,7 +288,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 2. ✅ **The causes as rows, the read once a season** (D801) — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.ContentmentCauses` (the season's read, a bit a cause), `SeasonsUnsettled`, `ColdDaysThisWinter` (the per-winter tally `Cold` cannot give) *(named `Villager.Contentment` and `WintersCold` here until D802 — the plan's names, not the code's)*; saved; ⛔ **not hashed until step 4**, when something first reads them — so the goldens move once (§8). Nothing acts on it yet (`NothingActsOnItYet`). ⚠️ *No roof* is read at the season's turn, not on any day of it as D799 counted. *(Read "hashed sparsely … whether the tally alone moves a golden is measured" until D801: nothing hashed, nothing moved.)*
 3. ✅ **The card** (D802) — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*. Built: an adult's pill only; *Unsettled* in amber; the tooltip says what the last season's read found, the causes in the data file's order, grief naming who was lost; *"… is content here."* with nothing held.
 4. ✅ **Fewer children** (D804) — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated. Built: `contentment_birth_interval_percent` 200, either partner; *"Not ready for another child — Otto is unsettled."* on the household's status; the eight fields hashed; eight goldens re-taken (six by the hash alone, Phase-5's two by the births as well).
-5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; ~~save format bumped~~ *(the format stays 13 — §13.2 item 8)*. Goldens move once more. **Two commits (§13.2):** ✅ **5a** the sim, the card and the log (D806); **5b** the walk out, view only, as D573's walk-in is.
+5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; ~~save format bumped~~ *(the format stays 13 — §13.2 item 8)*. Goldens move once more. **Two commits (§13.2):** ✅ **5a** the sim, the card and the log (D806); ✅ **5b** the walk out, view only, as D573's walk-in is (D809).
 6. ✅ **The guards and the gate** (D808) — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play. Built: `AVillageThatIgnoresContentmentLosesPeople` (the unattended fixture, seeds 1–12, fifteen years — 4 adults gone, each with two causes held two years); `AKeptVillageLosesNobodyItKeeps` (the water answered, fifty years — nobody with a roof leaves); `TheGoldenThatSeesADeparture` (seed 9, Year 15, four gone in Year 13). ⛔ Not the no-house pose: it is a death test (all twelve froze out, nobody left). ⚠️ The fire-out cause needs a fire to keep (`firewood_per_winter_day` > 0) — Phase 0's village of one held it from a fixture with no fuel. ⏸️ Joe's play: §15.
 
 *Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797). ✅ **Deleted (D803).**
@@ -359,9 +360,11 @@ its teeth from the causes W3 and W4 add (the tavern's absence, the dead with now
 8. **Saved and hashed:** `left_at` written only when set; `LeftAtTick` hashed sparsely (tag 20); the state is hashed already.
    ⛔ **The format stays 13**: a format-13 save has no leaver and reads as it is — the rule since D721 and D723 is that a
    format moves when an old save cannot be read, and moving it here would refuse all 439 of Joe's saves for nothing.
-9. **5b, the walk out** (view only, D573's shape reversed): the map watches for anybody who left in the frame's ticks, walks
-   them from where they stood to the edge tile the one cost field reaches most cheaply, the chevron above, and they fade at
-   the edge. Nothing in the sim waits on it.
+9. ✅ **5b, the walk out** (view only, D573's shape reversed; built D809, `VillageMap.WalkOut.cs`): the map watches for
+   anybody who left in the frame's ticks (the walk-in's window), walks them from where they stood to the edge tile the one
+   cost field reaches most cheaply — **one edge a household**, from its first member, each on their own route to it, a
+   file gap apart — the chevron above, and they fade over the last second at the edge. Nothing in the sim waits on it;
+   it holds neither the speed nor a moment, and a leaver walking out is not clicked.
 10. ✅ **5a built as above (D806)**, with what the building found: **Phase 0's village of one left at four** — no roof and
     no firewood by its fixture, two causes with no lever — so `Phase0Fixtures.Plenty` turns leaving off beside its wear and
     nomads, and `VillageFixtures.Village` puts 8 back; **no village golden moved** (nobody in a golden village has left by
@@ -389,8 +392,8 @@ In his own village from the main checkout (`.\run.bat`), at 4× or a skip of a f
 2. A household holding off a child: its card's status ends *"Not ready for another child — Otto is unsettled."*
 3. A year unsettled: **one** amber line in the village log — *"… is thinking of leaving the valley — …"* — and the
    card's sentence says *thinking of leaving*.
-4. Two years: one line *"… have left the valley …"* naming them and why; they are gone from the map (5b will walk them
-   to the edge), the roster and the professions; their house stands empty for the next couple.
+4. Two years: one line *"… have left the valley …"* naming them and why; they walk out to the valley's edge, the chevron
+   above, and fade there (5b); gone from the roster and the professions at once; their house stands empty for the next couple.
 5. A couple where one is ready and one is not: the ready one's card says *"… would leave, but … is staying"*.
 6. Answering a cause (a well, a house, firewood): the pill goes back to **Content** within a season or two.
 7. The log reads the departure; **no `ERROR`** in the run's log (gate item 5).
