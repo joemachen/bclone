@@ -126,7 +126,7 @@ Each row: what it is in a sentence, where the ask comes from, whether a spec exi
 
 From the tracker and the catalogues; **none needs a new mechanism**, only rows and art:
 
-- **Crops:** a second crop and up to eleven more (barley, oats, rye, corn, squash, potatoes, turnips, carrots, onions,
+- **Crops:** a second crop and up to eleven more (barley is W7's, D821; oats, rye, corn, squash, potatoes, turnips, carrots, onions,
   cabbage, peas, beans — the crop id has been data since `crops-and-orchards.md §4`); orchards (cherry, apple, pear).
 - **Animals:** pigs and chickens (D44: *"winter is eventually a herding and slaughtering season"*), goats, ducks, geese,
   yaks, alpacas, bees, silkworms; draught animals and the ox cart (D690, *Heavy Haulage*).
@@ -177,11 +177,11 @@ one `slice/`, spec first, his calls before code, played before merge — as ever
 |---|---|---|---|---|---|
 | **W1** | **The batch trade as a row** — one walk-and-work shape for every input→output trade, the mill, bakery, tailor and carpenter moved onto it; **no golden moves**, proven | enabler | M | before beer, wool and herbs, each of which would otherwise be a fifth, sixth and seventh hand-written copy across ~16 files | nothing |
 | **W2** | **Morale** (`morale.md`) — causes the village already has: home tier, a lit hearth, days cold, a dry jar, ~~a varied diet~~ *(health's, W6 — one cause, one system, D797)*, the walk to work, the dead with nowhere to lie (with W4, D797), a death in the family; departures and fewer children | A | L | Joe's order (D750); the nomads it pairs with are built | a *leaving* state and its walk off the map |
-| **W3** | **Beer and the tavern** — wheat → beer at a brewery (W1's row), drunk at a tavern; **morale's first building** | B for A | M | D656: beer waits on morale; a morale with no lever to pull is §1.1's invisible weather | brewery, tavern, ale; *brewing*, *at the tavern* |
+| **W3** | **Beer and the tavern** — **barley** → beer at a brewery (W1's row; barley from W7, which now comes first — D821, *"Yes, barley first"*), drunk at a tavern; **morale's first building** | B for A | M | D656: beer waits on morale; a morale with no lever to pull is §1.1's invisible weather | brewery, tavern, ale; *brewing*, *at the tavern* |
 | **W4** | **The cemetery and the gravedigger** (D395 as Joe called it) | A | M | a death is the village's commonest story (§1.4); *"every cemetery full"* is a morale cause | cemetery (painted), graves, gravedigger; *digging*, *burying* |
 | **W5** | **Skill for the seven trades, and their techniques** — a row each; a technique each for the trades with a master's craft, **including Joe's crop that stands into winter** | A (finishes §2.1/§2.7) | M | the pillars' own claim is false for seven of eighteen trades; independent of everything else, so it can move | nothing (lines on cards) |
 | **W6** | **Health — diet first** (food groups, an immunity a one-food diet erodes, said before it bites), **then sickness, the herbalist and the infirmary**, specced against D207's refusals | A | L | its blocker is answered (§4.1); before drought, whose answer reads health | herbalist's hut, infirmary, herbs, remedy; *gathering herbs*, *sick in bed*, *tending* |
-| **W7** | **A second crop** — a `CropRow` and a *"grow…"* control on the farm (which crop is Joe's) | B for A | S–M | blight's answer and diet's second grain or vegetable | the crop in four stages, sown and ripe |
+| **W7** | **A second crop** — a `CropRow` and a *"grow…"* control on the farm — **barley, Joe's pick (D821)**: eaten like wheat, and the brewery's grain | B for A | S–M | blight's answer and diet's second grain or vegetable | the crop in four stages, sown and ripe |
 | **W8** | **Drought, then fire and blight** — each foretold, on the map, answerable (the well, a firebreak, rotation and the second crop) | A | M + M | last of the pressures (§0.1 admits a pressure once its answer exists); gate item 6 | dry ground, a burning building and its ruin, a blighted field |
 | **W9** | **Paving** — the player paints over an emerged path to pave it in stone (gravel, then cobble), cheaper than packed earth and fossilised (§2.6); auto-pave stays a later policy | A | M | the last unbuilt §2 mechanic; the art lane is waiting for it | gravel and cobble paths; *paving* |
 | **W10** | **Warm clothing** — sheep a second herd on the barn and pasture, shearing, wool, the wool coat at the tailor (no chill outdoors, none under a fireless roof; children still coatless, D659) | A | L | D776's default; after W1, so the coat is a row | sheep, fleece, wool, wool coat; *shearing* |
@@ -197,7 +197,7 @@ horizon or taken off the map (§6 call 2).
 
 **⭐ The whole of it, honestly sized:** thirteen pieces and the gate — roughly **six to eight weeks** at the pace of the last
 two months (one M every two to three days, one L a week, his plays between). **W5 and W9 depend on nothing and can move
-anywhere in the list**; W1 must come before W3, W6 and W10; W8 after W6 and W7; W13 last.
+anywhere in the list**; W1 must come before W3, W6 and W10; **W7 before W3** (D821, barley is beer's grain); W8 after W6 and W7; W13 last.
 
 ### 5.2 What moves to Phase 7 — "mods and content" (§3's kind B)
 

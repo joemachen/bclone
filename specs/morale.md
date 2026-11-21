@@ -139,7 +139,7 @@ has two effects through two systems, and *"why did Otto leave?"* and *"why is Ot
 - **W2 ships the causes that exist today** (home, hearth, cold winters, the walk, the jar, a death in the family); the
   cemetery's two arrive with W4 and the tavern with W3, each in its own slice's spec, each a row in the data file.
 - ⚠️ **W2 ships with no building that raises it**, only causes that lower it and are already in the player's hands
-  (build homes and raise their tier, keep the woodpile, place work near homes). The tavern is W3, next — the review's
+  (build homes and raise their tier, keep the woodpile, place work near homes). The tavern is W3, after W7's barley (D821) — the review's
   reason for the order (`systems-complete.md §5.1`).
 - **The cemetery's two causes are one rule with two cases**: *the village's dead have a place.* None at all once the
   cemetery is learnable, or every one full — the same sentence on the card either way (*"the Ashfords have buried
@@ -195,7 +195,7 @@ nothing**, so the marker and the panel cannot disagree.
 | **Departure** | ⛔ **Nothing in the game removes a living villager.** The dead stay in `Villagers` with `Alive` false and a `CauseOfDeath`. Leaving is the one genuinely new mechanism: a fate beside death (alive, gone), a walk to the map's edge — **the nomads' walk-in reversed** (D573) — and the household's house, goods and seats let go |
 | **Arrivals / nomads** | ✅ Built, played and merged (D563–D584) — **the valve has its other end** (§10's old call 2, answered) |
 | **The cemetery** | ⛔ W4 (D395). Its two causes ride with it (§4.1) |
-| **The tavern, ale** | ⛔ W3, next. Contentment's first lever |
+| **The tavern, ale** | ⛔ W3, after W7's barley (D821). Contentment's first lever |
 | **The town hall** | ✅ Slice 1 (the gift). The distribution view (§3.1) is W13, the hall's tabs |
 
 ---
