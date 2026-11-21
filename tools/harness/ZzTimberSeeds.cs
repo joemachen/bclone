@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Logging;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 /// <summary>
 /// D804's measure (copied into tests/ to run, deleted before any commit, D420): `WoodTests.TimberGatesGrowthWithoutStoppingIt`'s

@@ -1,0 +1,2185 @@
+using Kith.Sim.Core;
+
+namespace Kith.Sim.World;
+
+/// <summary>
+/// How many hands the village wants on each kind of work, this year.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is the half of labour demand that a single workplace cannot know.
+/// <see cref="Workplace.Capacity"/> says how many people fit at the berry patch;
+/// this says how many the <em>village</em> wants foraging at all. Conflating the two
+/// is the mistake <c>specs/labour-allocation.md §3</c> is a record of — four
+/// different values of one workplace field, each of which broke the village in a
+/// different way, because no value of a local field can express a global constraint.
+/// </para>
+/// <para>
+/// <b>The whole policy, in one sentence: a village short of hands feeds itself before
+/// it builds.</b> That sentence is the test of whether this is legible, and it is the
+/// only thing the quota decides.
+/// </para>
+/// <para>
+/// Derived, never tuned — the same discipline as <see cref="VillageEconomy"/> (D16).
+/// Every number below comes from a count of people, so a village that grows changes
+/// its own mind about what it needs without anyone touching a config file.
+/// </para>
+/// </remarks>
+public readonly record struct LabourQuota
+{
+    /// <remarks>
+    /// Internal rather than private so tests can pose a quota the village would not
+    /// currently produce — "what happens when the village suddenly wants one fewer
+    /// forager?" is otherwise only reachable by killing the right person.
+    /// </remarks>
+    internal LabourQuota(
+        int hands,
+        int mouths,
+        int foragersToFeedEveryone,
+        int foragers,
+        int foresters,
+        int woodcutters,
+        int marketers = 0,
+        int builders = 0,
+        int farmers = 0,
+        int slots = 0,
+        int[]? needed = null,
+        int fishers = 0,
+        int hunters = 0,
+        int smiths = 0,
+        int quarriers = 0,
+        int miners = 0,
+        int herdsmen = 0,
+        int merchants = 0,
+        int teachers = 0,
+        int[]? batch = null)
+    {
+        Hands = hands;
+        Mouths = mouths;
+        ForagersToFeedEveryone = foragersToFeedEveryone;
+
+        // ⭐ INDEXED BY JOB ID, WITH THE NAMED READERS KEPT OVER IT (D218) — exactly the shape
+        // `Stockpile` settled on: readers read as English at the call site and cannot go stale,
+        // because there is one array underneath them. A seventh trade has a slot here the day a
+        // modder adds one, where six named fields could never grow.
+        int size = slots < BuiltIn ? BuiltIn : slots;
+        _byJob = new int[batch is not null && batch.Length > size ? batch.Length : size];
+        _byJob[(int)JobKind.Forager] = foragers;
+        _byJob[(int)JobKind.Forester] = foresters;
+        _byJob[(int)JobKind.Woodcutter] = woodcutters;
+        _byJob[(int)JobKind.Marketer] = marketers;
+        _byJob[(int)JobKind.Builder] = builders;
+        _byJob[(int)JobKind.Farmer] = farmers;
+        _byJob[(int)JobKind.Fisher] = fishers;
+        _byJob[(int)JobKind.Hunter] = hunters;
+        _byJob[(int)JobKind.Smith] = smiths;
+        _byJob[(int)JobKind.Quarrier] = quarriers;
+        _byJob[(int)JobKind.Miner] = miners;
+        _byJob[(int)JobKind.Herdsman] = herdsmen;
+        _byJob[(int)JobKind.Merchant] = merchants;
+        _byJob[(int)JobKind.Teacher] = teachers;
+
+        // ⭐ THE BATCH TRADES BY THEIR ROWS (`batch-trade.md §4`, W1) — the mill, the oven, the tailor's shop, the workshop
+        // and whatever a modder adds, a slot each by job id rather than a named parameter each.
+        if (batch is not null)
+        {
+            for (int j = 0; j < batch.Length; j++)
+            {
+                if (batch[j] != 0)
+                {
+                    _byJob[j] = batch[j];
+                }
+            }
+        }
+
+        // ⭐ WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE. Defaults to what it settled on, so
+        // a quota posed by a test without one reads as "it got what it needed" rather than as a
+        // shortfall it never had.
+        _neededByJob = needed ?? _byJob;
+    }
+
+    /// <summary>Villagers able to do a day's work.</summary>
+    public int Hands { get; }
+
+    /// <summary>Villagers who eat — which is everyone, children included.</summary>
+    public int Mouths { get; }
+
+    /// <summary>
+    /// Foragers the village must have before anyone is spared for timber.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="VillageEconomy.RequiredDependants"/> is what one adult can carry at
+    /// their weakest, so dividing the mouths by it gives the hands that guarantee
+    /// everyone eats even in the worst case. Rounded up, and never below one: a
+    /// village with anyone left in it needs feeding.
+    /// </remarks>
+    public int ForagersToFeedEveryone { get; }
+
+    /// <summary>How many trades the enum has — the floor a quota is never smaller than.</summary>
+    private static readonly int BuiltIn = Enum.GetValues<JobKind>().Length;
+
+    /// <summary>
+    /// What the village wants on each trade, by job id.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ ONE ARRAY, WITH THE NAMED READERS KEPT OVER IT</b> (D218) — the shape
+    /// <see cref="Stockpile"/> settled on, and for the reason recorded there: the readers read as
+    /// English at the call site and <em>cannot go stale</em>, because there is a single source
+    /// underneath them. <b>Six named fields could never grow; this has a slot for a seventh trade
+    /// the day a modder adds one.</b>
+    /// </remarks>
+    private readonly int[] _byJob;
+
+    /// <summary>
+    /// What each trade would want <b>if there were seats for it</b>, by job id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE HALF THAT MAKES A SEAT CAP HONEST, AND WITHOUT IT THE CAP IS A SILENT
+    /// SHORTAGE.</b> Joe, 2026-09-01: *"I want 2 seats at a woodcutter. Players have to build
+    /// another building if they want more woodcutters."* ⛔ **That answer only works if the
+    /// player is told.** <see cref="For(JobKind)"/> is capped by <c>TotalCapacityFor</c>, so a village
+    /// needing three woodcutters and holding two seats reported *"village wants 2"* — perfectly
+    /// true, and it hides the very fact the player has to act on.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It is the same shape as <see cref="ForagersToFeedEveryone"/></b>, which has always
+    /// stayed honest beside a capped <c>Foragers</c> for exactly this reason — generalised to
+    /// every trade now that every trade is capped.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Captured BEFORE the food floor zeroes anything</b> (`foodComesFirst`), deliberately.
+    /// A hungry village still needs its firewood; what it does not have is the hands to spare
+    /// this minute. *"You need another woodcutter's hut"* stays true through a hard winter, and
+    /// is most worth saying then.
+    /// </para>
+    /// </remarks>
+    private readonly int[] _neededByJob;
+
+    /// <summary>What this trade would want if there were seats for it.</summary>
+    public int Needed(JobKind kind)
+    {
+        int id = (int)kind;
+        return id >= 0 && id < _neededByJob.Length ? _neededByJob[id] : 0;
+    }
+
+    /// <summary>Hands the village wants foraging.</summary>
+    public int Foragers => _byJob[(int)JobKind.Forager];
+
+    /// <summary>Hands the village wants felling trees.</summary>
+    public int Foresters => _byJob[(int)JobKind.Forester];
+
+    /// <summary>Hands the village wants splitting logs into firewood.</summary>
+    public int Woodcutters => _byJob[(int)JobKind.Woodcutter];
+
+    /// <summary>Hands the village wants working the market (D14).</summary>
+    public int Marketers => _byJob[(int)JobKind.Marketer];
+
+    /// <summary>Hands the village wants forging tools (D391).</summary>
+    public int Smiths => _byJob[(int)JobKind.Smith];
+
+    /// <summary>Tailors the village wants (D659).</summary>
+    public int Tailors => _byJob[(int)JobKind.Tailor];
+
+    /// <summary>Carpenters the village wants (D678).</summary>
+    public int Carpenters => _byJob[(int)JobKind.Carpenter];
+
+    /// <summary>Millers the village wants (D522).</summary>
+    public int Millers => _byJob[(int)JobKind.Miller];
+
+    /// <summary>Bakers the village wants (D522).</summary>
+    public int Bakers => _byJob[(int)JobKind.Baker];
+
+    /// <summary>Herdsmen the village keeps (D593).</summary>
+    public int Herdsmen => _byJob[(int)JobKind.Herdsman];
+
+    /// <summary>Merchants the village keeps at its trading posts (D594).</summary>
+    public int Merchants => _byJob[(int)JobKind.Merchant];
+
+    /// <summary>Quarriers the village wants (D434).</summary>
+    public int Quarriers => _byJob[(int)JobKind.Quarrier];
+
+    /// <summary>Miners the village wants (D449).</summary>
+    public int Miners => _byJob[(int)JobKind.Miner];
+
+    /// <summary>Hands the village wants raising what the player marked out (D43).</summary>
+    public int Builders => _byJob[(int)JobKind.Builder];
+
+    /// <summary>
+    /// Hands the village wants sowing and reaping (`crops-and-orchards.md`, D161).
+    /// </summary>
+    /// <remarks>
+    /// <b>⛔ The arm with teeth.</b> See <see cref="Core.SimWorld.FarmerSeatsWithGroundToWork"/>
+    /// for why this must actively <em>want</em> people when the fields are standing:
+    /// <c>SetStaffing</c> is a ceiling and not a summons (D146), so a farm nobody is wanted at
+    /// is a harvest that rots while every guard blames the crop system.
+    /// </remarks>
+    public int Farmers => _byJob[(int)JobKind.Farmer];
+
+    /// <summary>How many trades this quota has an opinion about.</summary>
+    public int Slots => _byJob.Length;
+
+    /// <summary>The quota for one kind of work.</summary>
+    /// <remarks>
+    /// <para>
+    /// An index rather than six arms naming six trades (D218). <b>The out-of-range answer stays
+    /// zero</b> — <em>the village wants nobody on a trade it has never heard of</em> — which is
+    /// what the old default arm said and is still right for a job id with no row.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Converting these six from stored fields to readers over the array is where this change
+    /// nearly went wrong.</b> One was left as an auto-property after the constructor stopped
+    /// assigning it, so it read <b>zero for ever</b> — a village that wanted no farmers,
+    /// <em>compiling perfectly</em>. <b>A property the compiler is happy to default is one that can
+    /// go silently missing in a refactor.</b>
+    /// </para>
+    /// <para>
+    /// ⭐ <b>The guards catch it, and that was measured rather than hoped:</b> reintroducing the
+    /// zero turns <c>TheVillageWantsFarmersWhileTheYearHasFieldWorkInIt</c> and
+    /// <c>AMetFoodLimitStopsTheSowingAndNotTheReaping</c> red — D146's guard doing precisely the
+    /// job it was written for. <em>The compiler is blind here; the suite is not.</em>
+    /// </para>
+    /// </remarks>
+    public int For(JobKind kind)
+    {
+        int index = (int)kind;
+        return index >= 0 && index < _byJob.Length ? _byJob[index] : 0;
+    }
+
+    /// <summary>
+    /// Work out what this village needs, from the people currently in it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Food first, then timber, then food again.</b> The order is the policy:
+    /// </para>
+    /// <list type="number">
+    ///   <item>
+    ///     Staff <see cref="ForagersToFeedEveryone"/> before anything else. Below this
+    ///     line the village is not feeding itself, and nothing else is worth doing.
+    ///   </item>
+    ///   <item>
+    ///     Spare what is left over for timber, up to what the stands can physically
+    ///     hold — <b>but only if no household in the village is going hungry</b>. In a
+    ///     lean year that is nobody, and the village stops growing until it has its
+    ///     stores back, which is the <em>point</em>: a consequence the player can
+    ///     watch rather than a rule they must be told.
+    ///   </item>
+    ///   <item>
+    ///     Everyone still spare goes back to foraging.
+    ///   </item>
+    /// </list>
+    /// <para>
+    /// <b>That third step is a deliberate departure from the spec as written</b>
+    /// (§4a proposed <c>foragers = ceil(mouths / RequiredDependants)</c> as a hard
+    /// ceiling). A ceiling leaves able adults idle, and food is stored
+    /// <em>per household</em> (D14) — so an idle adult is not a spare resource, they
+    /// are a household producing nothing and living on its neighbours' charity. That
+    /// is attempt #2 in the spec's own table of failures: "mathematically sufficient
+    /// and still fatal". The floor gets the priority the ceiling was reaching for
+    /// without re-running the failure the same document records.
+    /// </para>
+    /// <para>
+    /// So the quota binds on <em>timber</em>, not on food. A villager turned away from
+    /// the tree stand is being told something true and specific: the village needs
+    /// its hands eating first.
+    /// </para>
+    /// </remarks>
+    public static LabourQuota For(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int hands = 0;
+        int mouths = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive)
+            {
+                continue;
+            }
+
+            mouths++;
+
+            // A pupil eats and does not work (D754): a mouth, never a hand.
+            if (villager.CanTakeAJob)
+            {
+                hands++;
+            }
+        }
+
+        int toFeedEveryone = CeilingDivide(mouths, VillageEconomy.MouthsFedByOneAdult(world.Config));
+        if (toFeedEveryone < 1)
+        {
+            toFeedEveryone = 1;
+        }
+
+        // THE CHAIN, WORKED BACKWARDS (D29). Homes need heating, so the village wants
+        // woodcutters; woodcutters eat logs, so it wants foresters — for the firewood
+        // as well as for the houses. Demand propagates back down the chain rather
+        // than each workplace guessing at its own, which is the same lesson the
+        // forager quota is a record of, one link further along.
+        int woodcutters = WoodcuttersWanted(world);
+        int forestersForHuts = LoggersToFeedTheHuts(world);
+        int forestersForHouses = ForestersWanted(world);
+        int marketersWanted = MarketersWanted(world);
+        int buildersWanted = BuildersWanted(world);
+        int smithsWanted = SmithsWanted(world);
+        int quarriersWanted = QuarriersWanted(world);
+        int minersWanted = MinersWanted(world);
+
+        // ⭐ THE BATCH TRADES, EACH BY ITS ROW'S HANDS RULE (`batch-trade.md §3–§4`, W1) — so a new batch trade is a row.
+        int slots = world.JobsCatalog.Count > BuiltIn ? world.JobsCatalog.Count : BuiltIn;
+        var batchWanted = new int[slots];
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchWanted[(int)row.Trade] = BatchHandsWanted(world, row);
+        }
+
+        // ⭐ SNAPSHOT OF WHAT THE VILLAGE WOULD WANT IF SEATS WERE FREE, taken here because
+        // here is the last moment it is unqualified — before the food floor zeroes four trades
+        // and before every one of them is capped by the seats that exist. See `_neededByJob`:
+        // it is what lets a panel say *"you need another woodcutter's hut"* instead of quietly
+        // reporting the two seats as if two were the answer.
+        var needed = new int[slots];
+        needed[(int)JobKind.Woodcutter] = woodcutters;
+        needed[(int)JobKind.Forester] = forestersForHuts + forestersForHouses;
+        needed[(int)JobKind.Marketer] = marketersWanted;
+        needed[(int)JobKind.Smith] = smithsWanted;
+        needed[(int)JobKind.Quarrier] = quarriersWanted;
+        needed[(int)JobKind.Miner] = minersWanted;
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            needed[(int)row.Trade] = batchWanted[(int)row.Trade];
+        }
+
+        needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
+        needed[(int)JobKind.Merchant] = MerchantsWanted(world);
+
+        // ⭐ The village never asks for a teacher by itself (D754): a school is the player's decision, so the want is
+        // nobody and only the number he types stands — the merchant's shape without a want of its own.
+        needed[(int)JobKind.Teacher] = 0;
+        // ⛔⛔ THE UNCAPPED WANT, NOT THE SEAT-CAPPED ONE (D322). This was `buildersWanted`, which
+        // is `anythingToBuild ? seats : 0` — so with no builder's hut it is 0, so `Needed > seats`
+        // is `0 > 0`, so **the "⚠ needs 1, build a builder's hut" line could never fire.** It was
+        // structurally dead for the one trade whose demand is defined as its own seat count, while
+        // every other trade got the sentence — Forager and Fisher both show it in Joe's screenshot.
+        // ⭐ `needed` is documented three lines up as "what the village would want IF SEATS WERE
+        // FREE". Builder was the one row not honouring its own comment.
+        needed[(int)JobKind.Builder] =
+            SomethingIsMarkedAndNobodyCanRaiseIt(world) ? 1 : buildersWanted;
+        needed[(int)JobKind.Farmer] = world.FarmerSeatsWithGroundToWork();
+
+        // ⛔⛔ THE FOOD TRADES' "NEEDED" IS STAMPED BELOW, AFTER THE LADDER — NOT `toFeedEveryone`
+        // HERE (D375). It was: a raw *mouths ÷ what one gatherer feeds*, ignoring the food in
+        // store and every other trade that feeds people, so Joe's village with 2,006 food and a
+        // farm read *"needs 3, build another forager's hut"* and, later, *"needs 5, build another
+        // fishing hut"* beside 3,121 meat. *"wtf? i have tons of food."* See the stamps below.
+
+        // WHILE THERE IS FOOD TO GATHER AND THE VILLAGE IS SHORT OF IT, EVERY HAND
+        // GATHERS. Timber, fuel, building and the market all yield — a marketer most
+        // readily of anything, since they produce nothing at all. That is §4a's
+        // one-sentence policy: a village short of hands feeds itself before it builds.
+        //
+        // Each clause was measured, and each cost a long run:
+        //
+        //   ACROSS THE WHOLE VILLAGE, not per household. "Is any household below its
+        //   sharing floor?" is true almost all the time — they dip and are topped back
+        //   up every season, by design — so gating on it meant no timber was ever cut,
+        //   no houses built, no households formed, and the village aged out and died
+        //   without one villager starving.
+        //
+        //   ONLY WHILE THERE IS FOOD TO GATHER. Pulling hands back onto the berries in
+        //   winter is not caution, it is waste: the larder always dips then and there
+        //   is nothing out there to pick, so they simply stood idle. Trees do not stop
+        //   in winter, which is most of why the job is worth holding (D17).
+        //
+        //   AND THE FUEL CHAIN YIELDS TOO, which was got wrong in both directions.
+        //   Exempting fuel put two of the founding four on firewood with an empty
+        //   larder, and they starved. Funding fuel only from what was left after the
+        //   food floor drained the woodpile a little every year until four households
+        //   froze in one winter, with a full larder and a yard full of logs.
+        bool foodComesFirst =
+            SeasonRules.IsGatherable(world.Clock.Season) && VillageIsShortOfFood(world);
+
+        if (foodComesFirst)
+        {
+            woodcutters = 0;
+            forestersForHuts = 0;
+            forestersForHouses = 0;
+            marketersWanted = 0;
+            buildersWanted = 0;
+            smithsWanted = 0;
+            quarriersWanted = 0;
+            minersWanted = 0;
+
+            // A batch trade by its row (W1): the tailor stands down, the carpenter, the miller and the baker do not —
+            // as shipped (`batch-trade.md §7`, found and kept).
+            foreach (BatchRow row in world.Batches.Rows)
+            {
+                if (row.StandsDownInFamine)
+                {
+                    batchWanted[(int)row.Trade] = 0;
+                }
+            }
+        }
+
+        // The herd (D593): its hay is cut from what the food floor leaves spare (`livestock.md §10`), so while food
+        // comes first only a cull is asked for — that is meat.
+        int herdsmenWanted = HerdsmenWanted(world, foodComesFirst);
+
+        // Trade waits while food comes first (D594), as every trade that is not food does.
+        int merchantsWanted = foodComesFirst ? 0 : MerchantsWanted(world);
+
+        // ---- Survival first, in the order things kill you -------------
+        //
+        // Firewood is a SURVIVAL resource now, not a surplus one, and treating it as
+        // spare-hands work was fatal. Measured: the village funded timber out of
+        // whatever was left after feeding everyone, the feeding floor took four hands
+        // in five, and so the woodpile drained a little every year until the fourth
+        // decade, when four households froze in a single winter with a full larder and
+        // a yard full of logs. Nothing was wrong with the chain; it was never staffed.
+        //
+        // So heating is a floor alongside eating, and only house-building is funded
+        // from what is left. Food comes first of the two because hunger kills in six days
+        // and an unheated house in twenty-five (D45) — if the village can only afford one,
+        // it should buy the one that kills soonest.
+        int free = hands;
+
+        // NOTHING CAN BE PICKED IN WINTER, so the village does not staff a berry patch
+        // then — not even the food floor (D44).
+        //
+        // This was the shape of the idle winter: the floor was taken first regardless
+        // of season, every hand left over was dumped into foraging by the last line of
+        // this method, and BehaviorSystem then sent all of them home because
+        // FoodSource.IsGatherable is false. A quarter of the working year, spent
+        // resting, by whoever held the commonest job in the village — and no reshuffle
+        // ever noticed, because the allocator had never heard of seasons.
+        bool canGather = SeasonRules.IsGatherable(world.Clock.Season);
+
+        // ---- The player's ceiling, applied on top of the derivation (D62) ----
+        //
+        // A limit does not replace any of the demand worked out above; it caps it. So the
+        // village goes on knowing what it needs, and simply stops once the player has as
+        // much as they asked for — which is what makes "nobody is splitting logs because
+        // you asked for 200 firewood and the village has 214" a sentence the game can say.
+        //
+        // EACH LIMIT READS THE SAME SUPPLY ITS DEMAND FUNCTION READS, and that is not a
+        // detail. WoodcuttersWanted counts firewood IN THE WAREHOUSE, deliberately: a pile in
+        // somebody else's home is not supply because no errand reaches it. A limit counting
+        // firewood everywhere would disagree with the demand it caps, and D29 is the record
+        // of what that costs — the village believed itself stocked, staffed one woodcutter,
+        // and froze to extinction with a hundred and eighty firewood in homes and an empty
+        // warehouse. Reading the wrong total here would be that bug with the player's own number
+        // on it.
+        StockLimits limits = world.StockLimits;
+
+        if (world.LimitIsMet(Goods.Firewood))
+        {
+            woodcutters = 0;
+        }
+
+        if (world.LimitIsMet(Goods.Logs))
+        {
+            // ⭐ A MET LOG LIMIT STOPS THE FELLING, NOT THE PROFESSION (Joe, D146). *"A capped
+            // hut can replant. Priority should be replant → extra-hands labour. It just
+            // shouldn't fell if it has met its cap."*
+            //
+            // ⛔ ZEROING BOTH ARMS MADE THAT IMPOSSIBLE, AND IT TOOK A MEASUREMENT TO SEE IT.
+            // `SimWorld.MayFell` sends a capped forester to bare ground instead of to a tree —
+            // but the hut had **nobody standing in it to send**: the quota wanted zero
+            // foresters, so the allocator emptied the building, and the replanting could never
+            // happen however the behaviour branch was written. `SetStaffing` is a ceiling, not
+            // a summons. Measured on a hut with 88 bare tiles and a limit of 0: *most hands
+            // ever at the hut 0 of 2, quota wants 0 foresters.*
+            //
+            // So the demand becomes the PLANTING demand — the seats at huts that still own
+            // ground to put back — which is derived rather than typed (D16) and falls to zero
+            // by itself once every painted tile is wooded again. That is Joe's ordering exactly:
+            // replant until the painted area is maxed out, then be spare hands.
+            //
+            // ⚠️ AND NEVER OVER THE FOOD GATE ABOVE. This is an assignment rather than a
+            // reduction, so on its own it would hand foresters back to a village that had just
+            // zeroed every non-food job because its larders were empty — planting outranking
+            // eating, which is §4a exactly backwards. Replanting is the least urgent thing in
+            // the game: it feeds nobody this year or next.
+            forestersForHuts = foodComesFirst ? 0 : world.ForesterSeatsWithGroundToPlant();
+
+            // The discretionary half stays zero: logs for houses is felling by another name.
+            forestersForHouses = 0;
+        }
+
+        // Food is the one that can cost lives, and it is still obeyed. §3 of the spec: a
+        // game that refuses the player's number argues with them, and one that obeys it
+        // silently has killed them without saying so. The saying-so happens once, when the
+        // limit is set (SimWorld.SetStockLimit) — not once a tick, which is the nag D42
+        // deliberately avoided.
+        // What the village holds, not only what is in the granaries (D161): a player's food
+        // limit is about the village's stock, and a farm's buffer is part of it.
+        //
+        // ⭐ D409: PER TRADE, NOT ONE FOOD TOTAL. Joe: *"i dont think it makes sense to have a
+        // 'food' overall limit + individual limits for each sub category."* Each food trade is
+        // stood down by its own row (the good its `limited_by` names) and nothing else — and the
+        // chain below cascades on its own: a lodge stood down by the meat limit feeds nobody, so
+        // `afterHunting` leaves those mouths to the fishers and the patches.
+        bool meatIsEnough = StoppedByItsOwnLimit(world, JobKind.Hunter);
+        bool fishIsEnough = StoppedByItsOwnLimit(world, JobKind.Fisher);
+        bool forageIsEnough = StoppedByItsOwnLimit(world, JobKind.Forager);
+
+        // ⛔⛔ BOUNDED BY THE SEATS THAT ACTUALLY EXIST (D262). Taking more hands than the huts
+        // can seat books them for a job with no room and **leaves them idle**, because they are
+        // spent from `free` before farming, timber or the market is asked. With a seven-seat hut
+        // that could not happen; with two it happens the moment a village grows.
+        //
+        // ⚠️ IT BOUNDS WHAT IS TAKEN, NEVER WHAT IS WANTED — `ForagersToFeedEveryone` stays the
+        // honest need, so the panel can still say *"the village wants five"* while two sit down.
+        // **That sentence is what tells the player to build another hut.**
+        // ⭐⭐ FISHING FIRST, BECAUSE IT IS THE BETTER SOURCE (Joe, 2026-09-02: *"a step up from
+        // foraging in terms of food per worker — **foraging is bottom of the totem pole**"*).
+        //
+        // ⛔ THE ORDER IS THE RANKING. Both trades answer the same need, so whichever is asked
+        // first gets the hands — and a cast is worth 100 against a forager's 77. A village that
+        // has built a fishery should man it before it sends anybody to the berries.
+        //
+        // ⚠️ AND IT IS NOT GATED ON `canGather`. Nothing can be picked in winter (D44) and a
+        // river does not stop, which is the whole reason a fishery outranks a patch — it is the
+        // one food source that works in the season the village is most at risk in.
+        // ⭐⭐ HUNTING FIRST OF ALL THREE, BECAUSE THE ORDER IS THE RANKING (Joe).
+        // *"Hunting ultimately yields more food… foraging is bottom of the totem pole."* All
+        // three trades answer the same need, so whichever is asked first gets the hands, and a
+        // village that has built a lodge should man it before it mans anything else.
+        //
+        // ⚠️ NOT GATED ON `canGather` either, and for a stronger reason than the fishery: game
+        // does not stop for winter, and D3057 chose hunting over livestock precisely for *"year
+        // -round outdoor work for the 86%-idle winter."* **A lodge is what winter is for.**
+        int lodgeSeats = TotalCapacityFor(world, JobKind.Hunter);
+        int huntable = toFeedEveryone < lodgeSeats ? toFeedEveryone : lodgeSeats;
+
+        // ⭐⭐ A MET LIMIT STANDS THE HUNTER DOWN — UNLESS A LODGE IS SWOLLEN, WHEN EVERY SEAT OF IT
+        // IS KEPT FOR THE CARRYING (D683, Joe: *"Hunters carry it in"*). Until D683 a met limit zeroed
+        // the seats outright and the lodge's buffer was the MARKETER'S alone (D370). The one-seat version
+        // — D146's shape, *a met limit stops the felling and not the forester* — had been built and
+        // measured twice at zero (D362's starvation guard; six played openings over fifty years), dropped,
+        // and left here as *"if a played village ever shows a lodge draining too slowly under a met limit,
+        // that seat is the lever."* Joe's Hollowmere did (Year 25: 2,184 meat in the lodge and 636 on the
+        // shelves met the 2,500 row by themselves — `HeldAgainstItsLimit` counts every buffer, D420 — one
+        // hunter of three seated, two laborers idle, the lodge drained an armful a trip over years). The
+        // stall is self-sustaining: the uncollected meat keeps the limit met, and the met limit keeps the
+        // hunters off. So while any lodge is swollen (`BufferIsSwollen`, D394 — food at or above half its
+        // room) the quota asks for every seat of it, and the seated hunters carry instead of hunting
+        // (`TryClearOwnBuffer` under a met limit takes every armful, and `EveryHandMayCarry` lets them all
+        // go at once); below half the seats fall to zero as before and the marketer takes the rest.
+        // `SimWorld.SeatsKeptToDrainSwollenBuffers` says why every seat and not the seats held now.
+        //
+        // ⛔ THE CARRIERS ARE TAKEN AT THE MARKETER'S RANK, NOT HERE (`carriers`, below the builders).
+        // Taken here, at the hunter's rank — first of every trade — they outranked the firewood and the
+        // houses: on the harness's four-founder re-foundings beside a full lodge, three of the four were
+        // seated to carry meat the village already had and nobody built a roof, and the band froze in its
+        // first winter (frozen 4 → 16 in nearly every valley of the `every` arm). The meat is caught and
+        // the village has its limit of it; carrying it in is the marketer's errand (D370: *"when they have
+        // nothing more pressing"*), so it ranks where the marketer does.
+        int hunters = meatIsEnough ? 0 : Take(ref free, huntable);
+
+        int afterHunting = toFeedEveryone - hunters;
+        if (afterHunting < 0)
+        {
+            afterHunting = 0;
+        }
+
+        int fishSeats = TotalCapacityFor(world, JobKind.Fisher);
+        int fishable = afterHunting < fishSeats ? afterHunting : fishSeats;
+        int fishers = fishIsEnough ? 0 : Take(ref free, fishable);
+
+        // What the fishers could not cover, the berry patches answer for — so a village with a
+        // fishery big enough needs no foragers at all, which is the ranking arriving as a
+        // consequence rather than as a rule.
+        int stillToFeed = afterHunting - fishers;
+        if (stillToFeed < 0)
+        {
+            stillToFeed = 0;
+        }
+
+        // ⭐⭐ WHAT THE FOOD TRADES WOULD WANT IF SEATS WERE FREE — THE SHORTFALL, NOT THE HEADCOUNT
+        // (D375). Nothing, when the village holds the food it needs: the same question the forager
+        // asks before walking to the berry patch (`WhyTheVillageWantsNoMoreFood` — *"the village has
+        // the 760 food it needs — 2,006 held"*), so the panel and the villager agree. Otherwise
+        // each rung wants the mouths the rungs above it have not fed: a hunter every mouth, a
+        // fisher what the lodges leave, a forager what the lodges and the huts leave — the order
+        // the seats are taken in, three lines up. ⚠️ `toFeedEveryone` alone stayed in `Needed`
+        // for the forager and the fisher from D148 to D374 and nobody caught it, because a young
+        // village is always short and a fed one had been told to build another hut so often that
+        // the sentence read as noise (Joe, 2026-09-15). The seats themselves are unchanged.
+        // ⭐ D409: each rung asks after its own good, the question its villagers ask
+        // (`SimWorld.WantsMoreOf`) — identical to `TheVillageWantsMoreFood` with no limits set.
+        // ⭐ D683: under a met limit the hunters the village wants are the carriers a swollen lodge keeps —
+        // the number `hunters` took above, so the panel and the seats agree.
+        // ⭐ D708: and the seats kept for the hides, the same number the carriers' line takes below.
+        needed[(int)JobKind.Hunter] = world.WantsMoreOf(Goods.Meat) ? toFeedEveryone : HuntersKeptUnderAMetMeatLimit(world, lodgeSeats);
+        needed[(int)JobKind.Fisher] = world.WantsMoreOf(Goods.Fish) ? afterHunting : 0;
+        needed[(int)JobKind.Forager] = world.WantsMoreOf(Goods.Produce) ? stillToFeed : 0;
+
+        int seats = world.GatheringSeats();
+        int seatable = stillToFeed < seats ? stillToFeed : seats;
+        int foragers = canGather && !forageIsEnough ? Take(ref free, seatable) : 0;
+
+        // ⭐ THE FARM, AND IT SITS HERE FOR A STATED REASON (`crops-and-orchards.md`, D161).
+        //
+        // Immediately after the foraging floor and ahead of timber, because **farming is food**
+        // — the same class of work as gathering, and unlike a log, a standing crop is on a
+        // clock. A field sown in spring and not reaped in autumn is taken by winter (Joe, *use
+        // it or lose it*), so hands spared from the harvest are not deferred, they are spent.
+        //
+        // ⛔⛔ AND IT IS NOT ZEROED BY `foodComesFirst` ABOVE, deliberately: that gate exists to
+        // put every hand on FOOD when the village is short of it, and this IS the hand on food.
+        // Zeroing it would be the gate arguing with its own purpose.
+        //
+        // ⚠️ NOR IS IT ZEROED BY A MET FOOD LIMIT, and that is not an oversight either — the cap
+        // is folded in one level down, by `SimWorld.MaySow`, which stops the SOWING and leaves
+        // the REAPING alone. A capped village still brings its harvest in and simply does not
+        // commit next year's ground; leaving a standing crop to rot on a number the player set
+        // for another reason would spend a year of their work to obey them. (D146's *"a capped
+        // hut can replant"* one job over.)
+        //
+        // Bounded by what the year has work for, which is what makes it safe to place this
+        // high: `FarmerSeatsWithGroundToWork` is zero when nothing is sown and nothing is
+        // standing, so a village with no farm — or a farm in winter — spends nothing here.
+        int farmers = Take(
+            ref free,
+            Cap(world.FarmerSeatsWithGroundToWork(), TotalCapacityFor(world, JobKind.Farmer)));
+
+        woodcutters = Take(ref free, Cap(woodcutters, TotalCapacityFor(world, JobKind.Woodcutter)));
+        int foresters = Take(ref free, Cap(forestersForHuts, TotalCapacityFor(world, JobKind.Forester)));
+
+        // Only now the discretionary half: logs for the homes the village wants to
+        // build. This is the one that yields when times are hard.
+        foresters += Take(ref free, Cap(forestersForHouses, TotalCapacityFor(world, JobKind.Forester) - foresters));
+
+        // Tools, after the fuel chain and before building (D391): a tool is upside on every
+        // trade, so it is discretionary like the market — but it feeds the food and fuel hands
+        // above, which is why it is asked before the builders and the stall.
+        int smiths = Take(ref free, Cap(smithsWanted, TotalCapacityFor(world, JobKind.Smith)));
+
+        // ⭐ THE TOOLS BAND OF BATCH TRADES, IN THEIR ROWS' ORDER (`batch-trade.md §4`, W1). Coats, after tools (D659,
+        // `clothing.md §3.5`): discretionary like the smith's, and the adults it dresses are every hand above — a coat is
+        // upside on every winter errand, as a tool is on every action. Then handcarts, before stone (Joe, D675 call 4;
+        // `workshop-and-the-carpenter.md §4.4`): a convenience of the coat's kind, and a finite one — one a household and a
+        // spare — so he is wanted in a burst when a workshop first stands and rarely after.
+        var batchTaken = new int[slots];
+        TakeTheBand(world, QuotaBand.AfterTools, batchWanted, batchTaken, ref free);
+
+        // Stone, after tools and before building (D434): discretionary like the smith's, and the
+        // builders it feeds come next — a quarry the village cannot spare hands for is a quarry
+        // whose sites wait, which the site's own note says (D237).
+        int quarriers = Take(ref free, Cap(quarriersWanted, TotalCapacityFor(world, JobKind.Quarrier)));
+
+        // Iron, after stone (D449): the mine's twin of the quarry's reasoning, one rung on.
+        int miners = Take(ref free, Cap(minersWanted, TotalCapacityFor(world, JobKind.Miner)));
+
+        // ⭐ THE STONE BAND OF BATCH TRADES, IN THEIR ROWS' ORDER (W1). The mill and the oven, after the face trades and
+        // before the market (D522): bread is upside above the floor (`food-chain.md §6`), discretionary like the smith's —
+        // and the mill only ever wants hands while the village is fed (`SimWorld.WhyTheBatchWaits`).
+        TakeTheBand(world, QuotaBand.AfterStone, batchWanted, batchTaken, ref free);
+        int herdsmen = Take(ref free, Cap(herdsmenWanted, TotalCapacityFor(world, JobKind.Herdsman)));
+        int merchants = Take(ref free, Cap(merchantsWanted, TotalCapacityFor(world, JobKind.Merchant)));
+        int teachers = 0;
+
+        // And the market, last of all, out of hands nobody else needs (D14).
+        //
+        // Deliberately the LOWEST priority of every job, which is the mechanical form
+        // of the promise in spec §14.4: a marketer moves goods that already exist, so
+        // a village that cannot spare anyone loses convenience rather than lives.
+        // Funding it any higher would make the market the cliff that fetching was
+        // designed to avoid.
+        // Building, out of what is left after the village has fed and warmed itself.
+        //
+        // Deliberately discretionary, alongside cutting logs for houses: a village
+        // short of hands feeds itself before it builds (§4a), and a granary half-raised
+        // through a hard winter is a better outcome than a finished one nobody lived to
+        // use. It is also what makes marking six buildings at once a real decision
+        // rather than six purchases — they compete with the berry patch.
+        //
+        // AND IT MAY NEVER TAKE MORE THAN HALF THE HANDS THAT ARE LEFT. Without that
+        // cap, "how many builders does the village want?" answers with every seat at
+        // every site the player has marked — mark four buildings and the answer is
+        // twelve, which is the whole settlement. Food production drops to its bare
+        // floor for as long as the work lasts, and the village dies with the buildings
+        // finished. Measured: four buildings marked in year 15, two granaries and two
+        // warehouses standing, nobody alive a century later.
+        //
+        // Half is the same margin FuelBudgetInHands uses and for the same reason: the
+        // floor is what the village must not fall below, not what it should live on.
+        //
+        // ⚠️ AND IT IS WHY BUILDING IS SO SLOW — MEASURED, NOT FIXED HERE (D103). `free / 2`
+        // is integer division, so a village with ONE hand spare wants ZERO builders, and a
+        // four-adult founding has exactly one hand spare for most of the year. On Joe's own
+        // opening the builder quota is zero for the whole of autumn and goes to one the tick
+        // winter stops the foraging — which is what he watched: "they built one house at the
+        // very last minute, even though they had all of fall to build it, and then never
+        // built the 2nd."
+        //
+        // Narrowing it to "never round a willing hand down to nobody" was tried and reverted:
+        // it fixes the founding outright (both houses up by t300 against t403 and t900) and
+        // then KILLS SEED 11 OF ELEVEN — a village that peaks at 32 and ages out to nothing
+        // by year 160, with zero starved and zero frozen and four sites it never builds.
+        // D93 tried the same narrowing once before and it killed the village then too.
+        //
+        // ⭐ The measurement that matters for whoever takes this next: builders got 0.1% of
+        // all adult ticks in that run, WITH the cap widened and twenty-four adults standing
+        // about. So `free / 2` is not the only gate — `VillageIsShortOfFood` above zeroes
+        // `buildersWanted` outright for three seasons in four once the stocking target scales
+        // with population, and that is `specs/cold-start.md §7.1b`'s gate showing up in the
+        // steady state rather than at the founding. Both have to move together, and the
+        // seed-11 arm is the guard that says whether they moved correctly.
+        int buildersAfforded = Math.Min(buildersWanted, free / 2);
+
+        // ⭐ EXCEPT THAT ONE SPARE HAND FINISHES A SITE ALREADY BEGUN AND PAID FOR (D453). Not
+        // D103's narrowing, which kept a builder for any marked site and fetched for the head
+        // for ever: a begun site with everything delivered owes only its work, so this hand costs
+        // that and goes back. Never over the food gate — `buildersWanted` is zero when food
+        // comes first. Measured: a fed four-hand village left a warehouse at 43 of 45 for two years.
+        // ⭐ AND A REPAIR WHOSE LOGS ARE IN STORE IS THE SAME SMALL JOB (`building-condition.md §4.3`, D555). Measured
+        // in the fixture's market-off village: at two people, `free / 2` rounded to nobody for thirty years while eleven
+        // repair sites waited with sixty logs in store, and the last two froze in their fallen-in house fifteen years
+        // before they would have aged out. A repair owes a tenth of a hut; one spare hand mends it and goes back.
+        if (buildersAfforded == 0 && buildersWanted > 0 && free > 0
+            && (world.BegunSiteWithWhatItNeeds() is not null || world.AServableRepairSite() is not null))
+        {
+            buildersAfforded = 1;
+        }
+
+        int builders = Take(ref free, Cap(buildersAfforded, TotalCapacityFor(world, JobKind.Builder)));
+
+        // ⭐ AND A LOG LIMIT SET ABOVE WHAT THE VILLAGE SPENDS IS AN AMBITION (D130). Joe:
+        // *"the village should want timber it isn't spending if the user sets a limit above
+        // what the village uses — that is a stockpile/growth play tool for the user."*
+        //
+        // **Every other reason to fell was demand-driven**, and that is the trap this fixes:
+        // foresters were wanted only to feed the fuel chain and the houses already marked, so
+        // the village could never save up for anything — it cut exactly what it was about to
+        // burn. Measured, and the measurement is the whole argument: making fuel cheaper made
+        // the shortage WORSE. `firewood_per_split` 7 → 50 dropped fuel from 60% of all timber
+        // to 41%, and total production fell 365 → 174 logs with the village holding 78 at the
+        // end instead of 137. A cheaper habit is not a woodpile. Nothing was ASKING.
+        //
+        // So an unmet log limit asks. It is the instruction a stock limit has always been —
+        // *how much to keep* — read in the direction nobody had built yet: a met limit stops
+        // the work, and now an unmet one starts it.
+        //
+        // ⚠️ AND IT MAY NEVER TAKE MORE THAN HALF THE HANDS THAT ARE LEFT, which cost a run to
+        // learn. Taken uncapped it filled every forester seat in the village, and the "free"
+        // hands it drank were never idle — they are the labourers who carry food to the
+        // larders and firewood to the homes. Twelve years at a 200-log ambition: the woodpile
+        // worked, 174 → 266 logs produced and 242 held, and **the population fell from ten to
+        // four**. A village that hauls nothing starves beside full warehouses, which is D29's
+        // lesson arriving through the player's own number.
+        //
+        // Half is the margin building already uses (above) and for the same reason. Placed
+        // after building too, because a stockpile is the most discretionary want in the
+        // village: houses the player marked are a plan, and a number in a box is a wish.
+        if (limits.For(Goods.Logs) is int wantedInStore && world.HeldAgainstItsLimit(Goods.Logs) < wantedInStore)
+        {
+            foresters += Take(
+                ref free,
+                Cap(free / 2, TotalCapacityFor(world, JobKind.Forester) - foresters));
+        }
+
+        // ⭐ THE CARRIERS A SWOLLEN LODGE KEEPS UNDER A MET MEAT LIMIT (D683) — the hunter's own seats, asked
+        // at the marketer's rank because the errand is the marketer's (the hunters' comment above says why
+        // not at the hunter's). Out of the hands nothing more pressing wants, never zeroed by the food floor:
+        // what they carry is food on its way to a shelf.
+        //
+        // ⭐ AND THE HUNTERS OUT FOR THE HIDES (D708, Joe: *"if meat limit is met, keep hunters there for leather"*): while
+        // leather is under its row, every seat of the lodges — taken HERE, at the carriers' rank, for D683's reason: at the
+        // hunter's rank they would outrank the houses and the firewood for a good the village is not short of to live.
+        int carriers = meatIsEnough
+            ? Take(ref free, HuntersKeptUnderAMetMeatLimit(world, lodgeSeats))
+            : 0;
+        hunters += carriers;
+
+        int marketers = Take(ref free, Cap(marketersWanted, TotalCapacityFor(world, JobKind.Marketer)));
+
+        // Everyone still spare forages. Berries keep, and a hand that gathers nothing
+        // still eats.
+        //
+        // IN WINTER, NOTHING IS ADDED HERE — a hand the village has no work for is left
+        // without one, and the sentence LabourAllocator writes for them says so.
+        //
+        // The first version sent every spare winter hand to the woods, bounded by the
+        // stands' seats and by "is any warehouse not yet full?" — which bounds the WAREHOUSE, not
+        // the work. Demand for timber is answered twice further up this method and funded
+        // before this point, so every hand the fill added was cutting logs nothing wanted.
+        // It packed the warehouses, crowded out the firewood the birth gate reads, and cost the
+        // village a third of its population. D52 has the measurements.
+        //
+        // So the idle winter is narrowed rather than filled. Removing the food floor still
+        // gives the woodcutters and foresters the village DOES want first call on every
+        // hand, which is the half of D44 that was a real bug. The half that is left —
+        // hands with genuinely nothing to do between the last harvest and the first — is
+        // not a gap to paper over with make-work: it is D44's own forward note, and it
+        // wants herding and slaughtering (D39's roadmap) to answer it honestly.
+        // A stock limit stops this too, and it has to: leaving the spare hands here would
+        // cap the quota and then hand every freed body straight back to the berry patch,
+        // so the granary would sail past the number the player asked for and the control
+        // would appear broken while working perfectly.
+        // ⛔ AND ONLY AS MANY AS CAN SIT DOWN (D262). Handing every spare body to the berry
+        // patch was free while a hut seated seven; with two, the surplus is booked for a seat
+        // that does not exist and **does nothing at all** — no farming, no timber, no market.
+        // *The village's answer to "we are hungry" must stop at the doors it actually has.*
+        if (canGather && !forageIsEnough)
+        {
+            int room = seats - foragers;
+            int spare = free < room ? free : room;
+            if (spare > 0)
+            {
+                foragers += spare;
+                free -= spare;
+            }
+        }
+
+        // ⭐ AND THEN THE PLAYER HAS THE LAST WORD (D106). Everything above is the village
+        // deciding for itself; a profession target replaces its answer for that one kind.
+        //
+        // APPLIED AT THE END, DELIBERATELY, and it is the difference between a control and a
+        // suggestion. Folding a target into the middle would let the food floor and the
+        // `free / 2` building cap quietly overrule it — and overruling it is precisely what
+        // the player is reaching for the panel to stop. D103 is the case: building is funded
+        // from what is left, and measured, what is left is nothing for most of the year. The
+        // village cannot fix that for itself without killing some valleys (tried twice); a
+        // player who can say "two builders" fixes the one in front of them.
+        //
+        // STILL BOUNDED BY WHAT EXISTS — capacity, and the number of able adults. You may ask
+        // for six woodcutters; you may not conjure the seats or the people. That bound is not
+        // the game arguing back, it is the game not lying about what it did with your number.
+        foragers = Asked(world, JobKind.Forager, foragers, hands);
+        foresters = Asked(world, JobKind.Forester, foresters, hands);
+        woodcutters = Asked(world, JobKind.Woodcutter, woodcutters, hands);
+        marketers = Asked(world, JobKind.Marketer, marketers, hands);
+        builders = Asked(world, JobKind.Builder, builders, hands);
+        farmers = Asked(world, JobKind.Farmer, farmers, hands);
+        fishers = Asked(world, JobKind.Fisher, fishers, hands);
+        hunters = Asked(world, JobKind.Hunter, hunters, hands);
+        smiths = Asked(world, JobKind.Smith, smiths, hands);
+        quarriers = Asked(world, JobKind.Quarrier, quarriers, hands);
+        miners = Asked(world, JobKind.Miner, miners, hands);
+        herdsmen = Asked(world, JobKind.Herdsman, herdsmen, hands);
+        merchants = Asked(world, JobKind.Merchant, merchants, hands);
+        teachers = Asked(world, JobKind.Teacher, teachers, hands);
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchTaken[(int)row.Trade] = Asked(world, row.Trade, batchTaken[(int)row.Trade], hands);
+        }
+
+        // ⭐⭐ AND A PIN IS A FLOOR, APPLIED LAST — after `Asked`, so it cannot be argued down.
+        //
+        // ⛔ WITHOUT THIS THE TWO CONTROLS FIGHT AND THE VILLAGE OSCILLATES. `ShedSurplus` refuses
+        // to shed a pinned villager; if the quota still said *"the village wants nought foragers"*
+        // then every slack pass would try to release somebody it cannot release, and
+        // `ExplainTheIdle` would narrate a shortfall the player had themselves created and cannot
+        // see. **The quota has to know what the player has already spent.**
+        //
+        // ⚠️ A FLOOR, NOT A SETTING. It only ever raises the number, and only to the count of
+        // people actually pinned to that trade — so pinning three foragers in a village that
+        // wanted five changes nothing at all, which is the common case.
+        foragers = AtLeastPinned(world, JobKind.Forager, foragers);
+        foresters = AtLeastPinned(world, JobKind.Forester, foresters);
+        woodcutters = AtLeastPinned(world, JobKind.Woodcutter, woodcutters);
+        marketers = AtLeastPinned(world, JobKind.Marketer, marketers);
+        builders = AtLeastPinned(world, JobKind.Builder, builders);
+        farmers = AtLeastPinned(world, JobKind.Farmer, farmers);
+        fishers = AtLeastPinned(world, JobKind.Fisher, fishers);
+        hunters = AtLeastPinned(world, JobKind.Hunter, hunters);
+        smiths = AtLeastPinned(world, JobKind.Smith, smiths);
+        quarriers = AtLeastPinned(world, JobKind.Quarrier, quarriers);
+        miners = AtLeastPinned(world, JobKind.Miner, miners);
+        herdsmen = AtLeastPinned(world, JobKind.Herdsman, herdsmen);
+        merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
+        teachers = AtLeastPinned(world, JobKind.Teacher, teachers);
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            batchTaken[(int)row.Trade] = AtLeastPinned(world, row.Trade, batchTaken[(int)row.Trade]);
+        }
+
+        return new LabourQuota(
+            hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
+            farmers, slots: slots, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
+            quarriers: quarriers, miners: miners, herdsmen: herdsmen, merchants: merchants, teachers: teachers,
+            batch: batchTaken);
+    }
+
+    /// <summary>Never fewer than the people the player has kept on this trade.</summary>
+    /// <remarks>
+    /// <b>Counts the living and able only</b>, so a pin on somebody who has died or grown too old
+    /// stops counting on its own rather than holding a seat open for a ghost — the same reason
+    /// <c>KnowledgeSystem</c> derives its state from who is alive instead of banking a flag.
+    /// <para>
+    /// ⭐ <b>Returns <paramref name="decided"/> untouched when nobody is pinned</b>, which is what
+    /// keeps every existing golden byte-identical: an unpinned village never reaches the max.
+    /// </para>
+    /// </remarks>
+    private static int AtLeastPinned(SimWorld world, JobKind kind, int decided)
+    {
+        int pinned = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.CanWork && villager.PinnedTrade == kind)
+            {
+                pinned++;
+            }
+        }
+
+        return pinned > decided ? pinned : decided;
+    }
+
+    /// <summary>What the player asked for on this kind of work, or what the village decided.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Bounded by the seats that exist, the people who exist, and — since D128 — by a
+    /// stock limit that has been reached.</b> It is still deliberately allowed to exceed what
+    /// the village would have chosen, which is the whole reason the control exists, and still
+    /// allowed to be zero, which is how a player turns a profession's hands into laborers.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ THE STOCK LIMIT WAS BEING IGNORED, AND IT IS D127's CHANGE THAT EXPOSED IT.</b>
+    /// A limit works by zeroing the village's own figure above; the player's number was then
+    /// applied over the top, bounded only by seats and hands. That was harmless while every
+    /// profession defaulted to <em>"village decides"</em> and this method returned
+    /// <c>decided</c> — and the moment the tick came off the panel, every profession carried
+    /// an explicit number from the first frame and **no stock limit could stop any work
+    /// again**. Joe, playing: *"they are ignoring the limits for firewood. 452 at a limit of
+    /// 50 and they keep cutting more."*
+    /// </para>
+    /// <para>
+    /// <b>And it was two bugs wearing one coat.</b> Woodcutters that never stop turn every
+    /// log into firewood, so the same run had **452 firewood and 8 logs**, and no granary or
+    /// warehouse could ever be afforded — *"even when they clear half a forest every year, there
+    /// aren't enough logs to build."*
+    /// </para>
+    /// <para>
+    /// <b>A stock limit is a stop, not a preference</b>, which is what the panel says it is:
+    /// <em>how much to keep before the work stops</em>. ⛔⛔ <b>THAT WAS ENFORCED HERE UNTIL
+    /// 2026-09-01 AND IT WAS ENFORCED IN THE WRONG PLACE.</b> The clause read
+    /// <c>if (decided == 0 &amp;&amp; StoppedByAStockLimit(world, kind)) return 0;</c> — so a met limit
+    /// did not merely stop the work, it <b>took the job away</b>, and the allocator then emptied
+    /// the building.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ JOE, 2026-09-01, ON A FORESTER'S HUT READING "nobody working of 2 seats · asked 1
+    /// · village wants 0":</b> *"It **IS** staffed and somebody **DOES** work there, even if there
+    /// is presently no demand … the only time a building should say it is not staffed is if there
+    /// are 0 villagers assigned to work there."* And the rule behind it: *"a villager's #1
+    /// priority is still their user-assigned role. If no work is required in that role, then the
+    /// villager focus on laborer-work … **Hunger has nothing to do with whether or not they are
+    /// assigned a job.**"*
+    /// </para>
+    /// <para>
+    /// ⭐ <b>THIS IS D238 FINISHED RATHER THAN REVERSED.</b> D238 is Joe's own earlier call —
+    /// *"a met stock limit stops the job and LEAVES THE TRADE … the seat is kept rather than cut,
+    /// because proficiency accrues per trade"* — and it was only ever built in
+    /// <c>BehaviorSystem</c>. **The quota went on cutting the seat the whole time.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>AND REMOVING IT DOES NOT BRING BACK THE BUG IT WAS WRITTEN FOR, WHICH WAS MEASURED
+    /// RATHER THAN ASSUMED.</b> Every capped trade already stops where the work happens:
+    /// <c>BehaviorSystem</c> for the woodcutter (D139) and the forager (D238),
+    /// <see cref="SimWorld.MayFell"/> for the forester (D146), <see cref="SimWorld.MayReap"/> for
+    /// the farmer (on the HARVEST since D300, not the sowing). Red-checked by disabling the woodcutter's gate: firewood ran to **489 against
+    /// a limit of 40**, which is Joe's original report (*"452 at a limit of 50"*) reproduced —
+    /// so the gate is what holds the limit and this clause was holding nothing.
+    /// **The whole suite passed with it gone and not one golden moved.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It also settles the food floor without touching it.</b> `foodComesFirst` above still
+    /// zeroes <c>decided</c> for four trades, and this method now ignores <c>decided</c> entirely
+    /// whenever the player has set a number — which the professions panel does for every trade
+    /// from the first frame. So *"hunger has nothing to do with whether you are assigned a job"*
+    /// falls out of D106's ordering rather than needing §4a to be dismantled. **§4a still governs
+    /// any trade left unset, which is how the fixtures run.**
+    /// </para>
+    /// </remarks>
+    private static int Asked(SimWorld world, JobKind kind, int decided, int hands)
+    {
+        if (world.JobLimits.For(kind) is not int asked)
+        {
+            return decided;
+        }
+
+        int seats = TotalCapacityFor(world, kind);
+        int bounded = asked < seats ? asked : seats;
+        return bounded < hands ? bounded : hands;
+    }
+
+    /// <summary>Whether this kind of work is one a reached stock limit puts a stop to.</summary>
+    /// <remarks>
+    /// Every trade whose job names a good (<c>limited_by</c>). ⚠️ Since D409 that includes the
+    /// forager, on the forage row: D79's worry — *stopping the food chain dead is how a village
+    /// starves* — was about ONE food limit standing every food trade down at once, and there is
+    /// no such limit any more; the forage row stops the patches and nothing else.
+    /// </remarks>
+    private static bool StoppedByAStockLimit(SimWorld world, JobKind kind) => kind switch
+    {
+        JobKind.Woodcutter => world.LimitIsMet(Goods.Firewood),
+
+        // ⭐ AND A FORESTER IS ONLY STOPPED WHEN THERE IS NOTHING TO PUT BACK EITHER (D146).
+        // A met log limit stops the felling; a hut with bare ground of its own still has work,
+        // so a professions number the player typed must not be overruled while it does.
+        JobKind.Forester => world.LimitIsMet(Goods.Logs)
+            && world.ForesterSeatsWithGroundToPlant() == 0,
+
+        // ⭐ AND A FARMER ONLY WHEN THERE IS NOTHING LEFT TO BRING IN. Exactly the forester's
+        // shape: a met food limit stops the sowing (`SimWorld.MaySow`), and a farm with a crop
+        // still standing has work a cap has no business cancelling — so a professions number
+        // the player typed must not be overruled while it does.
+        JobKind.Farmer => StoppedByItsOwnLimit(world, kind)
+            && world.FarmerSeatsWithGroundToWork() == 0,
+
+        // ⭐ AND A HUNTER ONLY WHILE NO LODGE IS SWOLLEN (D683). The forester's and the farmer's shape a
+        // third time: a met meat limit stops the hunting, and a lodge the hands cannot keep up with still
+        // has work — the carrying — so the trade is not reported as capped while it does.
+        JobKind.Hunter => StoppedByItsOwnLimit(world, kind)
+            && world.SeatsKeptToDrainSwollenBuffers(kind) == 0
+            && !world.KeptWorkingForItsSecondGood(kind),
+
+        // ⭐ AND A SMITH BY WHAT THE SMITHIES ARE SET TO FORGE (`tools-and-the-smith.md §9.3`).
+        // The row's `limited_by` is the stone tool, and a met stone limit says nothing to a smithy
+        // the player set to iron.
+        JobKind.Smith => EverySmithyIsAtItsLimit(world),
+
+        // ⭐ ANYTHING ELSE — INCLUDING A TRADE A MOD ADDED — IS STOPPED BY ITS ROW'S LIMIT IF IT
+        // NAMES ONE, AND NEVER OTHERWISE (D218). This arm used to be a flat `false`, which meant
+        // a trade the sim had not been taught about could not be capped at all: the player sets a
+        // limit and the work carries on, silently.
+        //
+        // ⚠️ THE THREE ARMS ABOVE ARE NOT REDUNDANT WITH IT, and that is why they stay. Each
+        // carries an escape clause that is real per-trade reasoning rather than data — a met log
+        // limit does not stop a forester who still has bare ground to plant (D146), and a met food
+        // limit does not stop a farmer with a crop still standing. `jobs-catalog.md §2.1` records
+        // this as the second exemption beside the idle note: **the good is data; knowing when the
+        // cap has no business applying is not.**
+        _ => StoppedByItsOwnLimit(world, kind),
+    };
+
+    /// <summary>
+    /// The hunters a met meat row still keeps: the carriers a swollen lodge needs (D683), or every lodge seat while the
+    /// hides are wanted (D708) — whichever is more, so the panel, the seats and the plan agree.
+    /// </summary>
+    private static int HuntersKeptUnderAMetMeatLimit(SimWorld world, int lodgeSeats)
+    {
+        int carriers = world.SeatsKeptToDrainSwollenBuffers(JobKind.Hunter);
+        int forTheHides = world.KeptWorkingForItsSecondGood(JobKind.Hunter) ? lodgeSeats : 0;
+        return carriers > forTheHides ? carriers : forTheHides;
+    }
+
+    /// <summary>
+    /// Whether the good this trade makes (its <c>limited_by</c>) has a limit set and met — against
+    /// <see cref="SimWorld.HeldAgainstItsLimit"/>, the one number per good (D409).
+    /// </summary>
+    private static bool StoppedByItsOwnLimit(SimWorld world, JobKind kind) =>
+        world.JobsCatalog.LimitedBy(kind) is Goods limited && world.LimitIsMet(limited);
+
+    /// <summary>
+    /// Whether every standing smithy's chosen kind is at its limit — the row's limit when none
+    /// stands yet (§9.3).
+    /// </summary>
+    private static bool EverySmithyIsAtItsLimit(SimWorld world)
+    {
+        bool anyStanding = false;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace smithy = world.Workplaces[i];
+            if (smithy.Kind != JobKind.Smith || smithy.IsSite)
+            {
+                continue;
+            }
+
+            anyStanding = true;
+            if (!world.LimitIsMet(smithy.ForgeGood))
+            {
+                return false;
+            }
+        }
+
+        return anyStanding || StoppedByItsOwnLimit(world, JobKind.Smith);
+    }
+
+    /// <summary>
+    /// The good a trade's limit is read against, for the sentence that names it: the row's
+    /// <c>limited_by</c>, except a smith's, which is what the first standing smithy is set to (§9.3).
+    /// </summary>
+    public static Goods? GoodTheTradeMakes(SimWorld world, JobKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        if (kind == JobKind.Smith)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                if (world.Workplaces[i] is { Kind: JobKind.Smith, IsSite: false } smithy)
+                {
+                    return smithy.ForgeGood;
+                }
+            }
+        }
+
+        return world.JobsCatalog.LimitedBy(kind);
+    }
+
+    /// <summary>
+    /// Why the village is asking for nobody on this work — <b>a clause, not a sentence</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ JOE, 2026-08-30, FROM PLAY:</b> *"i dont like that because the village 'wants' 0 of
+    /// a type of work, the workplace shows as unstaffed … can we update the inspector panel to
+    /// show 'X works here, but there is no need for this work at this time because of X, Y, Z'?
+    /// they are inconsistent now and i want them to be aligned."* He was looking at a forester's
+    /// hut reading **"nobody working of 2 seats · asked 1 · village wants 0"** in one panel and
+    /// **"Nobody works here. Room for 2."** in the other — two true sentences, neither of which
+    /// says the thing he needed, which is *why*.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>IT LIVES HERE BECAUSE THE DECISION DOES.</b> Every clause below is read off the same
+    /// state the arithmetic above reads, in the same order, and <see cref="StoppedByAStockLimit"/>
+    /// is called rather than re-stated. **A second opinion about why the village decided something
+    /// is a second opinion that will one day disagree with it** — which is exactly D139 and D195,
+    /// and is why the at-risk line and the village log share one method too.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>IT RETURNS NULL RATHER THAN GUESSING.</b> A village wants nobody on a trade for
+    /// plenty of ordinary reasons that have no remedy and no name — there is simply other work.
+    /// Naming a cause that is not the cause is worse than naming none, and the caller has a plain
+    /// fallback. *This method's job is to be right, not to always answer.*
+    /// </para>
+    /// </remarks>
+    public static string? WhyTheVillageWantsNone(SimWorld world, JobKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        // 1. The player's own stop outranks everything, and it is not a complaint (D136).
+        if (world.JobLimits.For(kind) == 0)
+        {
+            return "you have asked the village for none on this work";
+        }
+
+        // 2. Nothing can be picked in winter (D44), so the village does not staff a patch then.
+        if (kind == JobKind.Forager && !SeasonRules.IsGatherable(world.Clock.Season))
+        {
+            return "nothing can be gathered in winter";
+        }
+
+        // 3. §4a's one-sentence policy: a village short of hands feeds itself before it builds.
+        //    The same four trades this zeroes in `For`, named the same way round.
+        if (SeasonRules.IsGatherable(world.Clock.Season)
+            && VillageIsShortOfFood(world)
+            && kind is JobKind.Woodcutter or JobKind.Forester or JobKind.Marketer or JobKind.Builder)
+        {
+            return "every hand is on food until the village is fed";
+        }
+
+        // 4. A limit the player set, met. ⭐ Asked of the same method the quota asks, so a
+        //    forester with bare ground to plant is correctly NOT reported as capped (D146).
+        if (StoppedByAStockLimit(world, kind)
+            && GoodTheTradeMakes(world, kind) is Goods limited)
+        {
+            string good = world.GoodsCatalog.NameOf(limited);
+            return world.StockLimits.For(limited) is int stop
+                ? $"the {good} limit of {stop} is met"
+                : $"the village has all the {good} it wants";
+        }
+
+        // 5. And the two whose demand is simply an errand count.
+        // ⛔⛔ TWO CAUSES, TWO SENTENCES — AND CONFLATING THEM COST A VILLAGE (D322). This read
+        // `BuildersWanted(world) == 0` and reported "there is nothing marked to build" for BOTH
+        // reasons that expression can be zero. Joe marked six longhouses across two runs, was told
+        // nothing was marked, went looking for a placement bug, and his village starved while the
+        // real answer — build a builder's hut — was sitting in the village log all along.
+        if (kind == JobKind.Builder)
+        {
+            if (SomethingIsMarkedAndNobodyCanRaiseIt(world))
+            {
+                return "there is no builder's hut — one costs nothing but the ground it stands on";
+            }
+
+            if (BuildersWanted(world) == 0)
+            {
+                return "there is nothing marked to build";
+            }
+        }
+
+        if (kind == JobKind.Marketer && MarketersWanted(world) == 0)
+        {
+            return "there is nothing worth moving between the stores";
+        }
+
+        return null;
+    }
+
+    /// <summary>Draw up to <paramref name="wanted"/> hands from those still free.</summary>
+    /// <summary>
+    /// One band's batch trades, in their rows' order — ⛔ at exactly the place the named takes stood before W1, so
+    /// <see cref="Take"/> is called in the same order with the same numbers (`batch-trade.md §4–§5`).
+    /// </summary>
+    private static void TakeTheBand(SimWorld world, QuotaBand band, int[] wanted, int[] taken, ref int free)
+    {
+        foreach (BatchRow row in world.Batches.Rows)
+        {
+            if (row.QuotaBand == band)
+            {
+                taken[(int)row.Trade] = Take(ref free, Cap(wanted[(int)row.Trade], TotalCapacityFor(world, row.Trade)));
+            }
+        }
+    }
+
+    private static int Take(ref int free, int wanted)
+    {
+        int taken = wanted > free ? free : wanted;
+        if (taken < 0)
+        {
+            taken = 0;
+        }
+
+        free -= taken;
+        return taken;
+    }
+
+    private static int Cap(int wanted, int ceiling)
+    {
+        if (ceiling < 0)
+        {
+            ceiling = 0;
+        }
+
+        return wanted > ceiling ? ceiling : wanted;
+    }
+
+    /// <summary>
+    /// How many foresters the village has a use for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Asked the same way as the forager quota: what is this work FOR, and how much
+    /// of it does the village actually need?</b> For foraging the answer comes from
+    /// mouths. For timber it comes from houses — right now the only thing wood is
+    /// spent on is a home for a couple who have grown up and want one, so the honest
+    /// measure is the couples currently waiting, less the timber already in store.
+    /// </para>
+    /// <para>
+    /// Deriving it mattered more than expected. The first version simply spared every
+    /// hand not needed for food, which for a founding village of four adults meant
+    /// <em>two foresters</em> — and one cutter produces enough timber for several
+    /// houses a year, so the village was putting half its labour into a resource it
+    /// could not spend while the other half tried to feed everyone. It oscillated for
+    /// a century and died. Wood is simply much cheaper than food, and the quota had no
+    /// way of knowing that until it was asked what the wood was for.
+    /// </para>
+    /// <para>
+    /// <b>This will need revisiting when wood does more.</b> D17 gives it two more
+    /// jobs — winter fuel and tools — and each is another term in this sum. The shape
+    /// of the question stays the same; only the demand side grows.
+    /// </para>
+    /// </remarks>
+    public static int ForestersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int waiting = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (Systems.HouseholdSystem.IsSeekingAHome(world.Villagers[i], world.Config))
+            {
+                waiting++;
+            }
+        }
+
+        // Two people make one household — but rounded UP, not down. Rounding down
+        // meant a single young person waiting for a partner counted as no house at
+        // all, so the village cut nothing, they never got a home, births stopped, and
+        // the settlement aged out and died with its last generation. One person
+        // waiting is a house coming.
+        //
+        // Plus one more: THE VILLAGE KEEPS A WOODPILE. Cutting only what the couples
+        // in front of you need turns timber from a job into an errand — a hand is put
+        // on the stand at the new year, cuts thirty logs by midspring, and is taken
+        // off again, which is not a livelihood anyone holds and not something the
+        // player can watch someone do. Keeping enough for the next home as well means
+        // somebody is usually at the stand, and it is what any village that has been
+        // through a winter would actually do.
+        int housesWanted = CeilingDivide(waiting, 2) + 1;
+
+        // A FAMILY WITH NO HOUSE WANTS ONE, and this had to be said out loud (D72).
+        //
+        // "Waiting for a home" was counted only as UNPAIRED adults, because until the cold
+        // start the only way to want a house was to grow up and find somebody. The founders
+        // are already paired and already a household — they simply have no roof — so they
+        // were invisible here. Measured by Joe playing it: the tree stand read "the village
+        // wants 0 on this kind of work" while four people stood in the open, and they froze
+        // in winter 1 without a log being cut.
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (!household.HasHome && world.LivingMembersOf(household) > 0)
+            {
+                housesWanted++;
+            }
+        }
+
+        // Timber standing ANYWHERE in the village — the warehouse, a workplace buffer, or
+        // in somebody's arms on the way there.
+        //
+        // Counting only household piles was right until goods moved into buildings
+        // (D30), and then silently wrong: logs go to the warehouse now, so every household
+        // read zero, the village believed it had no timber at all, and it put half its
+        // hands on the tree stand forever. It finished a century with five thousand
+        // firewood, six people ever born, and nobody left alive — no starvation, no
+        // cold, just a settlement that spent its whole life cutting wood it already
+        // had instead of raising children.
+        int stored = world.TotalLogs();
+
+        int shortfall = (housesWanted * world.Config.LogsPerHouse) - stored;
+        if (shortfall <= 0)
+        {
+            return 0;
+        }
+
+        return CeilingDivide(shortfall, VillageEconomy.WoodCutPerYearAtWorst(world.Config));
+    }
+
+    /// <summary>
+    /// How many woodcutters the village has a use for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Asked the same way as every other quota: what is this work <em>for</em>? For
+    /// firewood the answer is winter — every occupied home has to be heated through
+    /// it, less whatever is already stacked against the wall.
+    /// </para>
+    /// <para>
+    /// <b>Demand is counted per home and supply only from the warehouses</b> — see the comment
+    /// in the body for the village that froze proving why. This used to say the opposite,
+    /// on the grounds that "the sharing policy moves it around anyway"; that policy was
+    /// deleted by D30 and the reading it justified outlived it by several slices.
+    /// </para>
+    /// </remarks>
+    /// <summary>The firewood the homes want and the sheds do not hold — what the chain works back from.</summary>
+    public static int FirewoodShortfall(SimWorld world) => Shortfall(world, schools: true);
+
+    /// <summary>
+    /// ⭐ The homes' shortfall alone (D764, `school-and-education.md §12.6`): what a school's stove asks before it is kept —
+    /// the homes come first. <see cref="FirewoodShortfall"/> is this and every staffed school's winter.
+    /// </summary>
+    public static int HomesFirewoodShortfall(SimWorld world) => Shortfall(world, schools: false);
+
+    private static int Shortfall(SimWorld world, bool schools)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        // ---- Demand is per home; supply is the warehouse, and only the warehouse ----
+        //
+        // This used to compare two village-wide totals: all the firewood anywhere,
+        // against what every home together wanted. The stated reason was that "the
+        // sharing policy moves it around anyway" — and that policy was deleted by
+        // storage slice 3, so the justification went with it and the reading did not.
+        //
+        // <b>A household can only fetch firewood from the SHED.</b> Firewood stacked in
+        // somebody else's home is not supply; there is no errand that reaches it. Adding
+        // it in let a surplus in one house cancel a shortage in another, and the village
+        // believed itself stocked. Measured: it froze to extinction over four years with
+        // a hundred and eighty firewood sitting in homes, an empty warehouse, and the quota
+        // reading 191 against a need of 210 — so it staffed one woodcutter for a village
+        // that needed every hand it had. The right stuff in the wrong place, which is
+        // the shape nearly every goods bug here has had.
+        //
+        // So the two halves are asked separately, and the direction matters:
+        //   demand — what homes are short of, counted per home so surpluses never
+        //            cancel shortages, plus the winter the village is about to burn;
+        //   supply — what is in the warehouse, because that is what a fetch can reach.
+        //
+        // Cutting MORE firewood is only the answer when the warehouse cannot cover the
+        // demand. If it can, the wood already exists and what those homes need is a
+        // trip, not a woodcutter — and staffing one anyway is not harmless: the warehouse
+        // holds logs and firewood in the same room, so firewood nobody needs crowds
+        // out the logs the village builds with. Measured that too, in the other
+        // direction: the warehouse packed to six hundred firewood, logs could not be
+        // deposited, no house was ever raised again and the village dwindled to three
+        // people without a single soul freezing.
+        int demand = 0;
+        int homes = 0;
+        int winters = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (world.LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            homes++;
+            winters += world.WinterFirewoodOf(household);
+
+            int wanted = world.FirewoodWantedFor(household);
+            int missing = wanted - household.Stockpile.Firewood;
+            if (missing > 0)
+            {
+                demand += missing;
+            }
+        }
+
+        // Plus the winter about to be burned. Asking only "is anyone below target?" is
+        // a thermostat that switches on after the house is already cold: every store
+        // sits exactly at target, the quota reads no shortfall and staffs nobody,
+        // winter burns through it, and the hut is staffed again a season after people
+        // started freezing. Measured across several runs — the village held twenty-five
+        // people with its firewood exactly at target and no buffer, and one winter took
+        // twenty-eight of them. Including the burn makes this proportional control
+        // rather than a switch, which is what a woodpile IS.
+        // Each house's own winter (D719): a village of cottages wants half the woodcutting. For cabins it is
+        // homes × FirewoodPerHouseholdPerWinter, as it always was.
+        demand += winters;
+
+        // ⭐ AND EACH STAFFED SCHOOL'S WINTER (D764): the woodcutters cut for the school's stove, rather than it living off
+        // whatever the homes leave. No school, nothing added.
+        if (schools && world.Config.SchoolWinterFirewood > 0)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                Workplace school = world.Workplaces[i];
+                if (school.Kind == JobKind.Teacher && !school.IsSite && school.WorkerIds.Count > 0)
+                {
+                    demand += world.Config.SchoolWinterFirewood;
+                }
+            }
+        }
+
+        // Across every warehouse (D38): a household can fetch from any of them, so all of
+        // them are supply. Reading one would have had the village cutting wood it
+        // already had the moment somebody built a second warehouse — the same shape as the
+        // bug where this counted firewood stranded in homes.
+        // ⛔⛔ THE HEAPS COUNT ONLY WHILE THEY CAN BE CARRIED IN (D407, measured three ways). A heap
+        // beside the hut is firewood the haulers bring to a shelf — while some store has room.
+        // Never counted, the woodcutter split onto the ground below the want and the heap arrived
+        // after (373 in the stores against a want of 346). Always counted, a village whose stores
+        // were packed with logs (2,493 by year 34) froze beside 339 firewood on the ground: the
+        // heap said "enough", nobody split, and nobody could fetch it. With no room anywhere the
+        // heap is stranded and is not supply, so a split goes ahead — and it frees six logs' room.
+        int heaps = world.SomewhereToPut(Goods.Firewood) ? world.FirewoodOnTheGround() : 0;
+        int shortfall = demand - world.FirewoodInWarehouses() - heaps;
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    public static int WoodcuttersWanted(SimWorld world) =>
+        CeilingDivide(FirewoodShortfall(world), VillageEconomy.FirewoodMadePerYearAtWorst(world.Config));
+
+    /// <summary>
+    /// Tools the village is short of: one in every working pair of hands that uses one, and one
+    /// on the shelf for each against the year's wear, less what the stores and the hands hold
+    /// (D391, `tools-and-the-smith.md §3.8`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One on the shelf per hand is the year's cover</b> — the woodpile's *winter and a bit ahead*
+    /// (`WinterBufferPercent`), one good over, without a second percentage to tune. ⚠️ Not "a year of one pair of hands"
+    /// as this said: §6 measured a stone tool at about three years a hand (D391) and a later count about five times slower
+    /// (D430), never reconciled — so a spare a hand is at least a year's cover, which is what the rule needs (D617).
+    /// </para>
+    /// <para>
+    /// <b>The hands count, not the seats</b>: a seat nobody sits in wears nothing. And a tool in
+    /// somebody's hands is held, whatever is left in it — a hand with a tool will not fetch one.
+    /// </para>
+    /// </remarks>
+    public static int ToolShortfall(SimWorld world)
+    {
+        int hands = 0;
+        int inHands = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive || !villager.CanWork)
+            {
+                continue;
+            }
+
+            if (world.FindWorkplace(villager.WorkplaceId) is Workplace job
+                && world.JobsCatalog.UsesTool(job.Kind))
+            {
+                hands++;
+            }
+
+            if (villager.ToolUses > 0)
+            {
+                inHands++;
+            }
+        }
+
+        // Every kind on the shelves (`tools-and-the-smith.md §9.3`): a hand takes whichever is best.
+        int onShelves = 0;
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; i < tools.Count; i++)
+        {
+            onShelves += world.InStores(tools[i]);
+        }
+
+        int shortfall = (hands * 2) - onShelves - inHands;
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>Every tool in every store, all kinds.</summary>
+    public static int ToolsOnTheShelves(SimWorld world)
+    {
+        int onShelves = 0;
+        IReadOnlyList<Goods> tools = world.GoodsCatalog.ToolsBestFirst;
+        for (int i = 0; i < tools.Count; i++)
+        {
+            onShelves += world.InStores(tools[i]);
+        }
+
+        return onShelves;
+    }
+
+    /// <summary>
+    /// ⭐ The coats the village is short of (`clothing.md §3.5`, D659) — <see cref="ToolShortfall"/>'s shape one good
+    /// over: what the shelves should hold (<see cref="ClothingWanted"/>) less what they do. The tailors are hired
+    /// against it, and the chip goes amber on it.
+    /// </summary>
+    public static int ClothingShortfall(SimWorld world)
+    {
+        int shortfall = ClothingWanted(world) - CoatsOnTheShelves(world);
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>
+    /// What the shelves should hold: every adult without a coat, plus a year's wear. With no clothing limit of the
+    /// player's, this is what the tailor sews toward (§3.5) — the derived default under the player's ceiling (D62).
+    /// </summary>
+    /// <remarks>
+    /// <b>Every adult counts</b> (Joe, D659) — working-age and elders, carriers too, because walking is outdoors (D53);
+    /// a child stays by the hearth and counts for nothing. <b>A year's wear</b> is the adults over the winters the
+    /// longest-lasting coat lasts, rounded up: a coat wears a day every winter day, so that many are worn through a
+    /// year, and the demand is a steady share of the village — a livelihood, not an errand (D22).
+    /// </remarks>
+    public static int ClothingWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int adults = 0;
+        int coated = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive || villager.AgeYears < world.Config.CoatAge)
+            {
+                continue;
+            }
+
+            adults++;
+            if (villager.CoatDays > 0)
+            {
+                coated++;
+            }
+        }
+
+        int winters = 0;
+        IReadOnlyList<Goods> coats = world.GoodsCatalog.CoatsBestFirst;
+        for (int i = 0; i < coats.Count; i++)
+        {
+            int lasts = world.GoodsCatalog[coats[i]].CoatWinters;
+            winters = lasts > winters ? lasts : winters;
+        }
+
+        int aYearsWear = winters > 0 ? CeilingDivide(adults, winters) : 0;
+        return (adults - coated) + aYearsWear;
+    }
+
+    /// <summary>Every coat in every store, all kinds.</summary>
+    public static int CoatsOnTheShelves(SimWorld world)
+    {
+        int onShelves = 0;
+        IReadOnlyList<Goods> coats = world.GoodsCatalog.CoatsBestFirst;
+        for (int i = 0; i < coats.Count; i++)
+        {
+            onShelves += world.InStores(coats[i]);
+        }
+
+        return onShelves;
+    }
+
+    /// <summary>
+    /// The handcart the shelves hold for the next household (`workshop-and-the-carpenter.md §4.4`, D678) — <b>one</b>,
+    /// so a new household fetches without waiting a stint. The tailor's *year's wear* has no analogue: carts wear by the
+    /// trip (Slice H), and until H nothing wears. ⏳ Measured in H, typed then.
+    /// </summary>
+    public const int HandcartSpare = 1;
+
+    /// <summary>
+    /// ⭐ The handcarts the village wants (`workshop-and-the-carpenter.md §4.4`, D678): <b>the households with a home,
+    /// less the households that own a cart</b> (<see cref="Household.HandcartUses"/> above nought — Slice H,
+    /// `handcart.md §3`), <b>and a standing market or trading post without one</b> (`handcart.md §13.2`; Joe, 2026-11-05:
+    /// <i>"one more owner of the same good"</i>), so the carpenter stops and the professions panel stays honest once the
+    /// households and the trades are carted.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <i>Households</i>, not adults and not homes: a cart serves the larder, which is the household's (Joe, D672
+    /// call 1); an empty house wants none, and a family with no roof has no larder to serve. A count over the
+    /// households list — the same cost as <see cref="ClothingWanted"/>'s over the villagers — read where the work is
+    /// decided and when the quota runs, never per tick.
+    /// </remarks>
+    public static int HandcartsWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int wanting = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (household.HasHome && household.HandcartUses <= 0 && world.LivingMembersOf(household) > 0)
+            {
+                wanting++;
+            }
+        }
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.IsACartOwner && workplace.HandcartUses <= 0)
+            {
+                wanting++;
+            }
+        }
+
+        return wanting;
+    }
+
+    /// <summary>Every handcart in every store (D678).</summary>
+    public static int HandcartsOnTheShelves(SimWorld world) => world.InStores(Goods.Handcart);
+
+    /// <summary>
+    /// ⭐ The handcarts the village is short of (`workshop-and-the-carpenter.md §4.4`, D678) — <see cref="ClothingShortfall"/>'s
+    /// shape one good over: what the shelves should hold (<see cref="HandcartsWanted"/> and the <see cref="HandcartSpare"/>)
+    /// less what they do. The carpenters are hired against it, and the chip goes amber on it. ⚠️ The spare is in the
+    /// shortfall so the hiring and the bench's stop (<c>SimWorld.WhyTheBatchWaits</c>) agree to the cart.
+    /// </summary>
+    public static int HandcartsShortfall(SimWorld world)
+    {
+        int shortfall = HandcartsWanted(world) + HandcartSpare - HandcartsOnTheShelves(world);
+        return shortfall <= 0 ? 0 : shortfall;
+    }
+
+    /// <summary>
+    /// ⭐ The tools a laborer may take — what the stores hold past the trades' year of cover, one for every working pair
+    /// of hands in a tool trade (D617, Joe: trades first; `tools-and-the-smith.md §10.3`). The cover is the spare a hand
+    /// <see cref="ToolShortfall"/> keeps, so the smiths go on forging for the trades and the laborers have what is over.
+    /// </summary>
+    /// <remarks>Asked when a laborer with empty hands decides — a walk of the living, never kept per tick.</remarks>
+    public static int ToolsTheTradesCanSpare(SimWorld world)
+    {
+        int onShelves = ToolsOnTheShelves(world);
+        if (onShelves == 0)
+        {
+            return 0;
+        }
+
+        int hands = 0;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.CanWork && world.FindWorkplace(villager.WorkplaceId) is Workplace job
+                && world.JobsCatalog.UsesTool(job.Kind))
+            {
+                hands++;
+            }
+        }
+
+        int spare = onShelves - hands;
+        return spare <= 0 ? 0 : spare;
+    }
+
+    /// <summary>
+    /// Quarriers the village wants (D434, `quarry.md §3.6`): every seat at a quarry that has rock
+    /// painted, while the stone limit is not met — none otherwise.
+    /// </summary>
+    /// <remarks>
+    /// The player's limit is the ceiling (D62) and the seats are the player's staffing (D109); a
+    /// quarry with no rock painted wants nobody, because there is nothing for a hand to cut.
+    /// </remarks>
+    public static int QuarriersWanted(SimWorld world) => FaceSeatsWanted(world, JobKind.Quarrier);
+
+    /// <summary>
+    /// Miners the village wants (D449, `iron-mine.md §3.3`): every seat at a mine that has iron
+    /// painted, while the iron limit is not met — the quarry's rule on iron.
+    /// </summary>
+    public static int MinersWanted(SimWorld world) => FaceSeatsWanted(world, JobKind.Miner);
+
+    /// <summary>
+    /// Every seat of every standing workplace of a face trade that has ground painted, while the
+    /// limit on the good its face gives up is not met (D434, D449) — one rule for the quarry and
+    /// the mine.
+    /// </summary>
+    private static int FaceSeatsWanted(SimWorld world, JobKind trade)
+    {
+        if (world.JobsCatalog.FaceOf(trade) is not Terrain face
+            || TerrainRules.Yields(face) is not Goods good
+            || world.LimitIsMet(good))
+        {
+            return 0;
+        }
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == trade
+                && workplace.Construction is null or { IsFinished: true }
+                && world.Zones.WorkGroundTiles(workplace.Id) > 0)
+            {
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>
+    /// The hands a batch trade is wanted for, by its row's rule (`batch-trade.md §3`, W1): <b>every seat with work</b> —
+    /// every seat of every standing hut with work to do, the face trades' shape (the mill and the oven, D522) — or <b>the
+    /// shortfall over a year</b>: what the row's stop says the village is short of over what one hand makes in a year,
+    /// the smith's shape, and never more than the seats with work, so nobody is hired into a hut that
+    /// <see cref="SimWorld.WhyTheBatchWaits"/> says must wait (the tailor and the carpenter, D659, D678). "Work to do" is
+    /// <c>WhyTheBatchWaits</c>, the one copy of the reasons.
+    /// </summary>
+    public static int BatchHandsWanted(SimWorld world, BatchRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        // No hut, or a hut with nothing to do, is no seats — and so nobody (one branch, not two: D661's red-check found an
+        // early return the cap below already did the work of).
+        int seats = BatchSeatsWanted(world, row.Trade);
+        if (row.Hands == BatchHands.EverySeatWithWork)
+        {
+            return seats;
+        }
+
+        int aYear = VillageEconomy.BatchesPerYearAtWorst(world.Config, row) * row.OutputPerBatch;
+        int wanted = CeilingDivide(BatchShortfall(world, row), aYear);
+        return wanted < seats ? wanted : seats;
+    }
+
+    /// <summary>What a shortfall-hired batch trade's stop says the village is short of — its demand rule's own method.</summary>
+    private static int BatchShortfall(SimWorld world, BatchRow row) =>
+        (row.Stop & BatchStop.EveryoneClothed) != 0 ? ClothingShortfall(world)
+        : (row.Stop & BatchStop.EveryHouseholdCarted) != 0 ? HandcartsShortfall(world)
+        : throw new InvalidOperationException(
+            $"The {row.Trade} row is hired by its shortfall and its stop names none — `SimConfig` refuses this at load.");
+
+    /// <summary>The hands one batch trade is wanted for, by its trade — the named readers' way in (D218).</summary>
+    private static int BatchHandsWanted(SimWorld world, JobKind trade) =>
+        BatchHandsWanted(world, world.Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade"));
+
+    /// <summary>Millers the village wants — every seat of every standing mill with work to do (D522), by the row.</summary>
+    public static int MillersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Miller);
+
+    /// <summary>Bakers the village wants — every seat of every standing bakery with work to do (D522), by the row.</summary>
+    public static int BakersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Baker);
+
+    /// <summary>
+    /// ⭐ Merchants the posts want (D594, `trade.md §4.5`): one a standing post while there is something to carry — a good
+    /// above its keep with room at the post, or something at the post nobody means to sell. The reasons are
+    /// <c>SimWorld.GoodToSell</c> and <c>SimWorld.GoodToBringHome</c>, the merchant's own, so the quota cannot ask for
+    /// a hand the merchant would find no errand for.
+    /// </summary>
+    public static int MerchantsWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace post = world.Workplaces[i];
+            if (post.Kind == JobKind.Merchant && !post.IsSite && post.Places > 0
+                && world.PostStoreOf(post) is StoreBuilding store
+                && (world.GoodToBringHome(store) is not null || world.GoodToSell(store) is not null))
+            {
+                wanted++;
+            }
+        }
+
+        return wanted;
+    }
+
+    /// <summary>
+    /// ⭐ Herdsmen the herds want (D593, `livestock.md §0.1`) — only where a herd stands: one a barn through winter
+    /// while there is hay to feed out; in the growing seasons, while the winter's hay is short, as many as the pasture's
+    /// full herd needs (<c>VillageEconomy.HeadOneHerdsmanKeeps</c>) up to the barn's seats; at least one when a cull is
+    /// owed. While food comes first, only the cull (it is meat).
+    /// </summary>
+    public static int HerdsmenWanted(SimWorld world, bool foodComesFirst)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        int keeps = VillageEconomy.HeadOneHerdsmanKeeps(world.Config);
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace barn = world.Workplaces[i];
+            if (barn.Kind != JobKind.Herdsman || barn.IsSite || barn.Places <= 0 || barn.HerdHead <= 0)
+            {
+                continue;
+            }
+
+            int want = world.CullIsOwed(barn) ? 1 : 0;
+            if (!foodComesFirst)
+            {
+                if (world.Clock.IsWinter)
+                {
+                    bool hayToFeed = barn.HayPutOut > 0 || (world.BarnStoreOf(barn)?.Store[Goods.Hay] ?? 0) > 0;
+                    want = Math.Max(want, hayToFeed ? 1 : 0);
+                }
+                else if (world.HayIsShort(barn))
+                {
+                    want = Math.Max(want, keeps <= 0 ? 1 : Math.Max(1, CeilingDivide(world.PastureFor(barn), keeps)));
+                }
+            }
+
+            wanted += Math.Min(want, barn.Places);
+        }
+
+        return wanted;
+    }
+
+    private static int BatchSeatsWanted(SimWorld world, JobKind trade)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Kind == trade && !workplace.IsSite && world.WhyTheBatchWaits(workplace) is null)
+            {
+                seats += workplace.Capacity;
+            }
+        }
+
+        return seats;
+    }
+
+    /// <summary>
+    /// The flour the mill grinds toward when the player has set no flour limit (`food-chain.md §6`):
+    /// two stints' baking for every oven seat — and at least one stint of the mill's own, so the first
+    /// flour can be ground before any bakery stands (the bakery is learned from it).
+    /// </summary>
+    public static int FlourWantedForTheOvens(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        Config.SimConfig config = world.Config;
+        int ovenSeats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i] is { Kind: JobKind.Baker, IsSite: false } bakery)
+            {
+                ovenSeats += bakery.Capacity;
+            }
+        }
+
+        int forTheOvens = ovenSeats * config.FlourPerBake * config.BakesPerStint * 2;
+        int aStint = config.FlourPerGrind * config.GrindsPerStint;
+        return forTheOvens > aStint ? forTheOvens : aStint;
+    }
+
+    public static int SmithsWanted(SimWorld world) =>
+        CeilingDivide(ToolShortfall(world), VillageEconomy.ToolsForgedPerYearAtWorst(world.Config));
+
+    /// <summary>Tailors wanted (`clothing.md §3.5`, D659): the coats the village is short of over a tailor's year, by the row.</summary>
+    public static int TailorsWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Tailor);
+
+    /// <summary>Carpenters wanted (`workshop-and-the-carpenter.md §4.4`, D678): the handcarts short over a carpenter's year, by the row.</summary>
+    public static int CarpentersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Carpenter);
+
+    /// <summary>
+    /// Extra foresters needed to keep the huts in logs.
+    /// </summary>
+    /// <remarks>
+    /// The back-propagation step. Without it the village staffs its huts, burns
+    /// through the woodpile that was cut for houses, and then both stop — the chain
+    /// starving in the middle, which is the failure mode processing introduces.
+    /// </remarks>
+    private static int LoggersToFeedTheHuts(SimWorld world)
+    {
+        // ⛔ THE LOGS THE SHORTFALL TAKES, NOT THE LOGS THE WOODCUTTERS COULD EAT (D384). This
+        // was `woodcutters × LogsConsumedPerYearAtWorst` — a capacity, and one woodcutter's
+        // year was about the shortfall while a split cost a walk home. With the stint at the
+        // block one woodcutter splits 2.7× as much, so a hut wanting one hand would have asked
+        // for three loggers to feed it. `VillageEconomy.RequiredForesterSeats` made the same
+        // correction.
+        int shortfall = FirewoodShortfall(world);
+        if (shortfall <= 0)
+        {
+            return 0;
+        }
+
+        Config.SimConfig config = world.Config;
+        int perFirewood = config.FirewoodPerSplit < 1 ? 1 : config.FirewoodPerSplit;
+        int logs = CeilingDivide(shortfall * config.LogsPerSplit, perFirewood);
+
+        // ⛔⛔ LESS THE LOGS ALREADY IN THE STORES (D407). This hired loggers for every log the
+        // firewood shortfall would take, as if the woodyard were empty — and while the woodcutter
+        // split without asking (see `SimWorld.TheVillageWantsMoreFirewood`) the shortfall was
+        // nearly always nil, so it never showed. Once splitting answered the homes, a winter's
+        // shortfall hired foresters to fell for a yard holding 2,000 logs, the stores filled with
+        // timber to the roof, and the room food needed went with it. Felling for the huts is for
+        // the logs the huts do not already have.
+        logs -= world.LogsInWarehouses();
+        if (logs <= 0)
+        {
+            return 0;
+        }
+
+        return CeilingDivide(logs, VillageEconomy.WoodCutPerYearAtWorst(config));
+    }
+
+    /// <summary>
+    /// Hands the village wants raising the buildings the player has marked out (D43).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Every seat at every builder's hut, and none at all when there is nothing marked
+    /// out</b> (D108). It used to count the seats at every unfinished <em>site</em>, because
+    /// a site was where builders worked; sites are errands now and the hut is the workplace,
+    /// so the seats are the hut's and the demand is whether there is anything to do.
+    /// </para>
+    /// <para>
+    /// Unlike the other quotas this is still not derived from a need the village worked out
+    /// for itself — <b>it is the player's intent, counted</b>, in two halves now: how many
+    /// hands they put in the hut, and whether they have marked anything.
+    /// </para>
+    /// <para>
+    /// <b>Two questions in one pass</b>, because this is asked on every labour pass and
+    /// <see cref="SimWorld.BuildQueue"/> sorts.
+    /// </para>
+    /// </remarks>
+    public static int BuildersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int seats = 0;
+        bool anythingToBuild = false;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Construction is { IsFinished: false })
+            {
+                anythingToBuild = true;
+            }
+            else if (workplace.Kind == JobKind.Builder)
+            {
+                seats += workplace.Places;
+            }
+        }
+
+        // NOTHING MARKED, NOBODY BUILDING. A hut is a livelihood somebody holds and there
+        // will be work at it again next spring — but staffing it while there is nothing to
+        // raise takes a hand off the berries for no yield at all, which is the make-work D52
+        // measured as costing the village a third of its population.
+        return anythingToBuild ? seats : 0;
+    }
+
+    /// <summary>
+    /// ⛔ Is there something marked that nobody can raise? — the half <c>BuildersWanted</c> hides.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS EXISTS BECAUSE ONE ZERO WAS DOING TWO JOBS AND IT COST A VILLAGE (D322).</b>
+    /// <c>BuildersWanted</c> returns <c>anythingToBuild ? seats : 0</c>, so it is zero both when
+    /// nothing is marked <em>and</em> when plenty is marked and there is nowhere to build from —
+    /// and every consumer reported the first. Joe marked six longhouses across two runs, was told
+    /// *"there is nothing marked to build"*, and his village starved.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A number that is true can still be evidence for the wrong claim</b> — D182 said exactly
+    /// this about a headcount read as availability. *The fix is never to make the number lie less;
+    /// it is to stop asking one number two questions.*
+    /// </para>
+    /// </remarks>
+    public static bool SomethingIsMarkedAndNobodyCanRaiseIt(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        bool anythingToBuild = false;
+        int seats = 0;
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace workplace = world.Workplaces[i];
+            if (workplace.Construction is { IsFinished: false })
+            {
+                anythingToBuild = true;
+            }
+            else if (workplace.Kind == JobKind.Builder)
+            {
+                seats += workplace.Places;
+            }
+        }
+
+        return anythingToBuild && seats == 0;
+    }
+
+    /// <summary>
+    /// Hands the village wants working the market.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Stated as a count of errands, not a share of the population:</b> a counter short of a
+    /// good it can be stocked with, a house with nobody in it and a larder still full, a
+    /// producer's buffer that can no longer take a load. That is literally the work available,
+    /// so a village where everything is already where it should be staffs nobody.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>A household below its target is NOT an errand any more</b> (D372, Joe: *"deliveries
+    /// go"*). It was the first arm here from D14 to D371 and it is what a marketer used to walk
+    /// for; the household walks to the counter for itself now. Each arm asks the world the same
+    /// question the marketer's plan asks — <see cref="SimWorld.CounterWantsStocking"/>,
+    /// <see cref="SimWorld.BufferWorthClearing"/> — because a leg the quota did not count never
+    /// ran (D185).
+    /// </para>
+    /// </remarks>
+    public static int MarketersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int errands = 0;
+
+        // ⭐ THE COUNTER FIRST (D372): a market short of a good, under its limit, with a
+        // storehouse holding some — the restock leg was never counted here, so a village with a
+        // bare counter and content households staffed nobody to fill it.
+        for (int i = 0; i < world.StoreBuildings.Count; i++)
+        {
+            if (world.CounterWantsStocking(world.StoreBuildings[i]))
+            {
+                errands++;
+            }
+        }
+
+        // A house whose family has died: its larder is stranded, and the marketer is the only
+        // one who can reach it (D34, spec §14.3).
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            Household household = world.Households[i];
+            if (world.LivingMembersOf(household) == 0
+                && world.FoodIn(household.Stockpile) + household.Stockpile.Firewood > 0)
+            {
+                errands++;
+            }
+        }
+
+        // ⭐⭐ AND A WORKPLACE BUFFER THAT NEEDS EMPTYING IS AN ERRAND TOO (D185, Joe).
+        //
+        // ⛔ THIS ARM WAS MISSING AND THE COST WAS THE WHOLE OF D171. `PlanMarketErrand` has had
+        // a leg since then that clears a farm's buffer — written precisely so that
+        // `crops-and-orchards.md §3.2`'s *"running it dry is the market's job"* would finally be
+        // true — but this method counted errands from HOUSEHOLDS and nothing else. **So the
+        // village never staffed a marketer because a farm needed emptying.** With every
+        // household content the quota was zero, nobody worked the market, and the leg could not
+        // run however full the farm stood.
+        //
+        // **The behaviour existed and the demand did not.** That is D36's own rule — *bounded
+        // by errands and never by spare hands* — held for two of three leg types and quietly
+        // dropped for the third, which is the shape D148 records one control over: two places
+        // that must agree, and only one of them told.
+        //
+        // ⚠️ IT IS STILL BOUNDED BY ERRANDS THAT EXIST, which is the half §5.1 of
+        // `stock-limits-and-laborers.md` warns about by name: D52 deleted a winter labour fill
+        // bounded by *"is any warehouse not yet full?"* and it cost the village a third of its
+        // population for a century. A farm with room in its buffer asks for nobody.
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.BufferWorthClearing(world.Workplaces[i]))
+            {
+                errands++;
+            }
+        }
+
+        return errands;
+    }
+
+    /// <summary>
+    /// Whether the village, taken together, is short of food.
+    /// </summary>
+    /// <remarks>
+    /// "Short" is <see cref="Config.SimConfig.SharingNeedPercent"/> of what every
+    /// occupied household in it is aiming to store — the same line at which a
+    /// neighbour would step in and give someone something. One definition of being
+    /// short, used both by the thing that feeds people and by the thing that decides
+    /// whether anyone can be spared from feeding them.
+    /// </remarks>
+    public static bool VillageIsShortOfFood(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        // A HUNGER LINE, NOT A STOCKING TARGET (D73, Joe's (1)).
+        //
+        // This used to compare against the sum of TargetFoodFor(household) — which is
+        // stockpile_target per member, a winter's eating PLUS the winter buffer, and the
+        // number the village aims to have banked. Asking "do we have everything we would
+        // like?" and calling the answer "short of food" is a category error, and it had
+        // one consequence in every world and a fatal one in the newest:
+        //
+        //   In an established village it is nearly always false, because the granary
+        //   starts full and stays there — so nobody noticed the question was wrong.
+        //
+        //   In a cold start it is true from the first week and never stops being true.
+        //   The founders' cart holds less than two households' aspiration, so every hand
+        //   foraged, no timber was ever felled, a marked woodcutter's hut sat at 0 of 25
+        //   logs, and everybody froze. Joe watched it happen twice, and no amount of food
+        //   in the cart could fix it: the target scales with members, so filling the cart
+        //   raises the bar with it.
+        //
+        // So the line is what the village must EAT to get through the season it cannot
+        // gather in — the bare ration, without the buffer. The buffer is what a village
+        // wants; this is what it needs. Falling below the buffer is a village that should
+        // work harder at food; falling below the ration is a village that should drop
+        // everything, and only the second is what this question was ever asked for.
+        int mouths = 0;
+        for (int i = 0; i < world.Households.Count; i++)
+        {
+            mouths += world.LivingMembersOf(world.Households[i]);
+        }
+
+        int ration = VillageEconomy.WinterRationPerHead(world.Config) * mouths;
+
+        // Food anywhere, granary included. A village with a full granary is not short
+        // of food, however thin the individual larders happen to be at this instant —
+        // and reading only the larders would send everyone foraging past a full store.
+        return world.TotalFood() < ration;
+    }
+
+    /// <summary>Every seat at every workplace of one kind.</summary>
+    /// <remarks>
+    /// <b>A construction site is not one of them</b> (D108). It has no seats and nobody is
+    /// ever assigned to it, and its <see cref="Workplace.Capacity"/> of zero already says so
+    /// — but the player can set a staffing number on anything, and a site counted here would
+    /// let a number typed at a footprint raise the ceiling on hands that can only ever sit in
+    /// a hut. Belt and braces, which is what the zero and this skip are together.
+    /// </remarks>
+    public static int TotalCapacityFor(SimWorld world, JobKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+
+        int total = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            if (world.Workplaces[i].Kind == kind && !world.Workplaces[i].IsSite)
+            {
+                total += world.Workplaces[i].Places;
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>Integer division rounding up — <see cref="VillageEconomy.CeilingDivide"/>.</summary>
+    private static int CeilingDivide(int numerator, int denominator) =>
+        VillageEconomy.CeilingDivide(numerator, denominator);
+
+    /// <summary>A one-line summary, for logs and for the sentence shown to the player.</summary>
+    public override string ToString() =>
+        $"{Hands} hands for {Mouths} mouths: {Foragers} foraging " +
+        $"(at least {ForagersToFeedEveryone} to feed everyone), {Foresters} cutting.";
+}

@@ -1,0 +1,244 @@
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Kith.Sim.Tests;
+
+/// <summary>
+/// The year happening to a field — <c>specs/crops-and-orchards.md §5</c> (D161).
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>This is the half of the slice that makes the seasons mechanically distinct</b>, which is
+/// what <c>environment-and-seasons.md §5.1</c> set out to do with three multipliers on foraging
+/// and could only have done invisibly. Sowing and reaping are a farmer's work and land with the
+/// farm; **the turning of the year is the calendar's**, and it happens whether or not anybody is
+/// there to watch — a field left behind by a dead village still rots.
+/// </para>
+/// <para>
+/// Nobody sows yet. These pose the states directly, which is D146's lesson: a test that waits
+/// for the village to happen to do something is at the mercy of what it wants that season.
+/// </para>
+/// </remarks>
+public sealed class CropCalendarTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public CropCalendarTests(ITestOutputHelper output) => _output = output;
+
+    private static SimConfig Config => VillageFixtures.Village;
+
+    private static SimLoop Build() => SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+
+    /// <summary>Which season a thing may be done in, asked of the season (D159's pattern).</summary>
+    [Fact]
+    public void TheCalendarKnowsWhenToSowAndWhenToReap()
+    {
+        Assert.True(SeasonRules.IsSowing(Season.Spring));
+        Assert.False(SeasonRules.IsSowing(Season.Summer));
+        Assert.False(SeasonRules.IsSowing(Season.Fall));
+        Assert.False(SeasonRules.IsSowing(Season.Winter));
+
+        Assert.True(SeasonRules.IsReaping(Season.Fall));
+        Assert.False(SeasonRules.IsReaping(Season.Spring));
+        Assert.False(SeasonRules.IsReaping(Season.Summer));
+        Assert.False(SeasonRules.IsReaping(Season.Winter));
+
+        // The one that already existed, unchanged — foraging still stops in winter.
+        Assert.False(SeasonRules.IsGatherable(Season.Winter));
+    }
+
+    /// <summary>⭐ A sown field stands ripe when autumn comes.</summary>
+    [Fact]
+    public void AutumnRipensWhatWasSown()
+    {
+        SimLoop loop = Build();
+        SimWorld world = loop.World;
+        GridPos tile = SowOneTile(world);
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+
+        _output.WriteLine(
+            $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
+
+        Assert.Equal(Terrain.Ripe, world.Map.TerrainAt(tile));
+
+        // The field remembers what it grows, so next spring knows what to sow (§4).
+        Assert.Equal(1, world.Map.CropAt(tile));
+    }
+
+    /// <summary>It does not ripen early — summer is a field still growing.</summary>
+    /// <remarks>
+    /// Anti-vacuity for the guard above (D7): a rule that ripened everything on any season turn
+    /// would pass that test and be wrong about three-quarters of the year.
+    /// </remarks>
+    [Fact]
+    public void SummerLeavesTheCropStanding()
+    {
+        SimLoop loop = Build();
+        SimWorld world = loop.World;
+        GridPos tile = SowOneTile(world);
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Summer);
+
+        _output.WriteLine(
+            $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
+        Assert.Equal(Terrain.Sown, world.Map.TerrainAt(tile));
+    }
+
+    /// <summary>⭐⭐ Use it or lose it: a ripe field nobody reaped rots when winter comes.</summary>
+    /// <remarks>
+    /// Joe's ruling. The point of a calendar is that autumn is not optional — a harvest that
+    /// waited would make the year shapeless.
+    /// </remarks>
+    [Fact]
+    public void WinterTakesAHarvestNobodyReaped()
+    {
+        SimLoop loop = Build();
+        SimWorld world = loop.World;
+        GridPos tile = SowOneTile(world);
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        Assert.Equal(Terrain.Ripe, world.Map.TerrainAt(tile));
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+
+        _output.WriteLine(
+            $"{world.Clock.SeasonAndYear()}: the tile is {world.Map.TerrainAt(tile)}");
+
+        Assert.Equal(Terrain.Field, world.Map.TerrainAt(tile));
+        Assert.Equal(1, world.Map.CropAt(tile));
+    }
+
+    /// <summary>⭐ And it says so — once for the loss, not once per tile.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The half that matters is the warning, and the half that must not be missing is this
+    /// one.</b> This project has shipped goods silently leaving the world twice — D96 put 17,451
+    /// food into a full granary and out of existence, D144 destroyed firewood once the woodyard
+    /// filled — and both were found by Joe playing rather than by the suite. A rotting harvest
+    /// is that shape on purpose, so it is the one case that has to say so out loud.
+    /// </para>
+    /// <para>
+    /// <b>One line, not one per tile</b>: the village log is the story (D8/D9), and a receipt
+    /// roll is what Phase 1's QA checklist rules out by name.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void TheLostHarvestIsMournedOnceAndNotPerTile()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config, sink);
+        SimWorld world = loop.World;
+
+        GridPos site = world.Map.FoundingSite;
+        for (int dx = 0; dx < 6; dx++)
+        {
+            var tile = new GridPos(site.X + dx, site.Y + 3);
+            world.Map.SetTerrain(tile, Terrain.Sown);
+            world.Map.SetCrop(tile, 1);
+        }
+
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+
+        int lines = 0;
+        foreach (LogEntry entry in sink.Entries)
+        {
+            if (entry.Message.Contains("rotted", System.StringComparison.OrdinalIgnoreCase)
+                || entry.Message.Contains("unreaped", System.StringComparison.OrdinalIgnoreCase))
+            {
+                lines++;
+                _output.WriteLine($"t{entry.Tick} [{entry.Level}] {entry.Message}");
+            }
+        }
+
+        Assert.Equal(1, lines);
+    }
+
+    /// <summary>A village with no fields pays nothing and says nothing.</summary>
+    /// <remarks>
+    /// The same restraint every layer in this game gets: a feature nobody has switched on costs
+    /// nothing at all. Here that means no log line on a season turn in a village that has never
+    /// sown, which is what stops the village log filling with weather.
+    /// </remarks>
+    [Fact]
+    public void AVillageWithNoFieldsIsNeverToldAboutThem()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config, sink);
+
+        loop.Step(Config.TicksPerYear);
+
+        foreach (LogEntry entry in sink.Entries)
+        {
+            Assert.DoesNotContain("rotted", entry.Message, System.StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("field", entry.Message, System.StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>⭐ Building over a standing crop is allowed, and the village says what it costs.</summary>
+    /// <remarks>
+    /// Joe's ruling — warn and allow, not refuse. Refusing would let a field permanently block
+    /// the village from housing itself, and D42 already settled that the player picks the
+    /// neighbourhood. D43's pattern: a decision with a consequence, stated.
+    /// </remarks>
+    [Theory]
+    [InlineData(Terrain.Sown, "sown")]
+    [InlineData(Terrain.Ripe, "ripe")]
+    public void BuildingOverAStandingCropIsAllowedAndWarned(Terrain standing, string expected)
+    {
+        SimWorld world = Build().World;
+
+        // +5, +5: a granary is 2×2 and grows north-west of the tile it is put on (D382), and
+        // +3, +3 is where the founding's market stands since D383's lanes.
+        var tile = new GridPos(world.Map.FoundingSite.X + 5, world.Map.FoundingSite.Y + 5);
+
+        world.Map.SetTerrain(tile, standing);
+        world.Map.SetCrop(tile, 1);
+
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, tile);
+        _output.WriteLine($"on {standing}: allowed={verdict.Allowed} warning=\"{verdict.Warning}\"");
+
+        Assert.True(verdict.Allowed, "A standing crop must not refuse a building (Joe's call).");
+        Assert.Contains(expected, verdict.Warning, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Ploughed-and-empty ground says nothing, because nothing is lost.</summary>
+    /// <remarks>
+    /// The anti-vacuity companion (D7): a warning that fired on any field terrain would pass
+    /// the guard above while being the always-on alert D42 and D123 deleted.
+    /// </remarks>
+    [Fact]
+    public void ABareFieldIsNotWorthAWarning()
+    {
+        SimWorld world = Build().World;
+
+        // +5, +5: a granary is 2×2 and grows north-west of the tile it is put on (D382); at
+        // +2, +2 it met the founding's market, and at +3, +3 it meets the market where D383's
+        // lanes put it.
+        var tile = new GridPos(world.Map.FoundingSite.X + 5, world.Map.FoundingSite.Y + 5);
+
+        world.Map.SetTerrain(tile, Terrain.Field);
+
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, tile);
+        _output.WriteLine($"on bare Field: allowed={verdict.Allowed} warning=\"{verdict.Warning}\"");
+
+        Assert.True(verdict.Allowed);
+        Assert.Empty(verdict.Warning);
+    }
+
+    // ---------------------------------------------------------------
+
+    /// <summary>Put one sown tile on the map, without waiting for a farmer to exist.</summary>
+    private static GridPos SowOneTile(SimWorld world)
+    {
+        var tile = new GridPos(world.Map.FoundingSite.X + 3, world.Map.FoundingSite.Y + 3);
+        world.Map.SetTerrain(tile, Terrain.Sown);
+        world.Map.SetCrop(tile, 1);
+        return tile;
+    }
+}

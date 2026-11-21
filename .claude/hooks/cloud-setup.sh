@@ -10,7 +10,7 @@
 # installed is printed, and the session says so instead of claiming a verification it did not run.
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || exit 0
 
-GODOT_VERSION="4.7.1"   # must match Godot.NET.Sdk in src/Bclone.Game/Bclone.Game.csproj
+GODOT_VERSION="4.7.1"   # must match Godot.NET.Sdk in src/Kith.Game/Kith.Game.csproj
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 ENVF="${CLAUDE_ENV_FILE:-/dev/null}"
 say() { echo "[cloud-setup] $*"; }
@@ -59,8 +59,8 @@ fi
 
 # ---- restore ----
 if command -v dotnet >/dev/null; then
-  (cd "$ROOT" && dotnet restore bclone.sln -v q >/tmp/restore.log 2>&1 \
-    && dotnet restore src/Bclone.Game/Bclone.Game.csproj -v q >>/tmp/restore.log 2>&1) \
+  (cd "$ROOT" && dotnet restore Kith.sln -v q >/tmp/restore.log 2>&1 \
+    && dotnet restore src/Kith.Game/Kith.Game.csproj -v q >>/tmp/restore.log 2>&1) \
     || say "⛔ NuGet restore FAILED (see /tmp/restore.log) — is api.nuget.org allowed?"
 fi
 

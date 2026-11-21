@@ -1,17 +1,17 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ THE SKIP'S MEASUREMENT (D525; D402/D403's open item, Joe 2026-10-06: "there are definitely still skips.
-// frequently."). Kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there.
+// frequently."). Kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there.
 //
-//   cp tools/harness/ZzSkip.cs tests/Bclone.Sim.Tests/
-//   dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzSkip --logger "console;verbosity=detailed"
-//   rm tests/Bclone.Sim.Tests/ZzSkip.cs
+//   cp tools/harness/ZzSkip.cs tests/Kith.Sim.Tests/
+//   dotnet test tests/Kith.Sim.Tests -c Release --filter ZzSkip --logger "console;verbosity=detailed"
+//   rm tests/Kith.Sim.Tests/ZzSkip.cs
 //
 // What the eye sees, measured in the sim, per villager per tick:
 //  - SNAP: the position moved more than √2 tiles — `VillageMap.DrawnCentre` stops gliding and teleports.
@@ -41,7 +41,7 @@ public sealed class ZzSkip
     public void Measure(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
         if (arm == "every")

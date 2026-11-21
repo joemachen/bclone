@@ -215,7 +215,7 @@ between the first delivery and the last — 45 per 100 ticks**, against §6's 47
 walk out and the unfinished last trip; that guard asserts the face, not the rate. *(Counted as
 deliveries into the store — trap 136.)*
 
-## 7. How it is tested — `tests/Bclone.Sim.Tests/MineTests.cs`
+## 7. How it is tested — `tests/Kith.Sim.Tests/MineTests.cs`
 
 Red-checked (D326) — thirteen sim mutants run against `MineTests`, `QuarryTests` and
 `TechTreeTests`, the reds counted; **every mutant scored at least one**:

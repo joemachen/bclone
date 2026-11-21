@@ -28,7 +28,7 @@ every icon must still read at 8 px (§1.3) — the test stays stricter than the 
 - **PNG, RGBA, sRGB, straight (unpremultiplied) alpha**, transparent background unless the sheet says otherwise.
 - **Imported lossless with mipmaps and linear filtering**; the `.import` sidecar is committed beside each file (HANDOFF
   🅿️ trap 2), or the other checkout imports it with defaults.
-- **Files under `src/Bclone.Game/textures/ui/<set>/<name>.png`** — `textures/` is the art lane's. Names are lower-case
+- **Files under `src/Kith.Game/textures/ui/<set>/<name>.png`** — `textures/` is the art lane's. Names are lower-case
   with hyphens, matching the game's own word (`hunters-lodge.png`, `iron-tools.png`).
 - **The layered master** (PSD or similar) is kept outside git with the other art sources, as the ground tiles are.
 
@@ -237,7 +237,7 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 | `screens/seal.png` | 512 × 512 | **a wax seal, blank** (the name is a placeholder) — lumpy edge, a pressed ring, lit upper left |
 | *(new game)* | — | the new-game screen's sheet is `chrome/sheet-large.png` (A114: the modal with its roll is retired) |
 | `screens/tech-card-known.png` · `-fogged.png` · `-locked.png` | 9-patch 352 × 320, margins 24 | the tech tree's cards: known in its building's colour wash, fogged as a grey silhouette (`tech-tree-map.md §3.6`), locked inked only |
-| `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Bclone.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
+| `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Kith.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
 | `screens/splash.png` | 1920 × 1080 | the boot splash on parchment (today Godot's) — `project.godot`'s `boot_splash` |
 
 ## 6. Later, each its own mock first (not specced here)

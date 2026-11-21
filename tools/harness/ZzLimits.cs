@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D611's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from
+// ⛔ D611's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from
 // there before any commit (D420). What Joe's starting stock limits (D608) do to a village, before they ship.
 //
 // Arms (ZZ_LIMITS): "old" — the limits shipped before D611, typed here so the arm does not move with the file; "new" —
@@ -20,7 +20,7 @@ namespace Bclone.Sim.Tests;
 // the arm (D612 measured two builds of the market on the same limits: label each "old" / "new"). One ZZL a run, with
 // the marketers' ticks carrying stock to a counter and what the counters held a year.
 //
-// Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLimits --logger "console;verbosity=detailed"`
+// Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzLimits --logger "console;verbosity=detailed"`
 // with each ZZ_LIMITS × ZZ_OPEN; delete; then `python tools/harness/limits.py <outputs>`.
 public sealed class ZzLimits
 {
@@ -65,7 +65,7 @@ public sealed class ZzLimits
             StartingStockLimits = limits,
         };
 
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         if (open is "played" or "every")
         {

@@ -1,14 +1,14 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D579's MEASUREMENT HARNESS for the paths' gridding (Joe's note 1, `specs/path-shapes.md`) — kept in tools/harness/,
-// COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
+// COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
 //
 // Opens each save in ZZ_SAVES (⚠️ a COPY of Joe's folder — SaveFile.Open keeps a damaged file as .bad beside it), runs it
 // ZZ_YEARS more years (default 10) under the arm, and prints one ZZP line: how grid-like the worn ground is, in the
@@ -58,7 +58,7 @@ public sealed class ZzPathShape
             data = data with { PathShortcutGrassAllowance = int.Parse(arm[5..], System.Globalization.CultureInfo.InvariantCulture) };
         }
 
-        SaveOpened opened = SaveFile.Open(save, data, new Bclone.Sim.Logging.InMemoryLogSink());
+        SaveOpened opened = SaveFile.Open(save, data, new Kith.Sim.Logging.InMemoryLogSink());
         Assert.True(opened.Loop is not null, opened.Detail);
         SimLoop loop = opened.Loop!;
         SimWorld world = loop.World;

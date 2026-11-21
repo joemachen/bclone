@@ -114,7 +114,7 @@ by an exception to this line.
   or a diff reads cleanly.
 - **No floats anywhere** — the scale is a whole percent and a place is whole logical pixels. (The sim
   library's public API is float-free, guarded by `FloatBanTests`, and this record lives beside
-  `NewGame` in `Bclone.Sim.Config`.)
+  `NewGame` in `Kith.Sim.Config`.)
 - **Written atomically**: to `settings.json.tmp`, then moved over `settings.json`. A crash mid-write
   leaves the old file, never half of a new one.
 - **Written on each change, never per frame**: a tick, the size dial, Routes, a roster sort button, Paths, a window's tick or
@@ -139,7 +139,7 @@ an INFO line *"Settings read from …"* — the audit trail is where a player's 
 
 ## 7. ⛔ The probe never reads the player's file
 
-The probe (`BCLONE_PROBE_WIDTHS`) asserts the **defaults**: `bar height 151` is the bar at 75 %, the
+The probe (`KITH_PROBE_WIDTHS`) asserts the **defaults**: `bar height 151` is the bar at 75 %, the
 `windows` line requires *Stock limits* to start hidden and *Professions* open, the `map toggles` line
 reads every tick. **If the probe read Joe's own file, his UI size would move the bar height and his
 ticks would redden the probe on his machine and not on anybody else's.** So under the probe the settings
@@ -170,7 +170,7 @@ file it deletes.
 ## 9. Order of work
 
 1. ✅ **This spec** (D504).
-2. ✅ **The sim half** (D505) — `PlayerSettings`, `PlayerSettingsFile` (`Bclone.Sim/Config/PlayerSettings.cs`),
+2. ✅ **The sim half** (D505) — `PlayerSettings`, `PlayerSettingsFile` (`Kith.Sim/Config/PlayerSettings.cs`),
    `NewGame.Remembered`; `PlayerSettingsTests`, two cases in `NewGameScreenTests`. **10 of 10 mutants red
    (15 reds)** — one first failed to build (an unused `using`) and was re-posed so it reached the tests.
 3. ✅ **The view** (D505, `Main.Settings.cs`) — read before the new-game screen, applied after the panels

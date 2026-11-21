@@ -196,7 +196,7 @@ deliberate and recorded.
 
 ## 8. How it is tested
 
-`tests/Bclone.Sim.Tests/FishingTests.cs`:
+`tests/Kith.Sim.Tests/FishingTests.cs`:
 
 | Guard | What it holds |
 |---|---|

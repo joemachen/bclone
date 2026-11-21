@@ -371,7 +371,7 @@ most likely a footprint over a seam cleared under D498's rule.)*
   the village ended between 100 and 199 stone** (83 of 100 in the first arm, 0 of 100 in the second):
   the hashed `ShownTheTechTree`, raised by the moment (D442).
 
-## 7. How it is tested — `tests/Bclone.Sim.Tests/QuarryTests.cs`, `SeamsTests.cs`
+## 7. How it is tested — `tests/Kith.Sim.Tests/QuarryTests.cs`, `SeamsTests.cs`
 
 Red-checked (D326), the reds counted against each break:
 

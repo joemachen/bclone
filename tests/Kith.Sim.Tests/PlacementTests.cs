@@ -1,0 +1,519 @@
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Kith.Sim.Tests;
+
+/// <summary>
+/// The player marks a building and the village raises it —
+/// <c>specs/building-placement.md</c> (D43), slice 2, sim half.
+/// </summary>
+/// <remarks>
+/// <b>The first system in the game that answers to somebody.</b> Everything until now
+/// happened to the player: the village founded itself, staffed itself and grew or died
+/// on constants. These tests are the other side of that — an intention, expressed, and
+/// a village that acts on it with the hands it can spare.
+/// </remarks>
+public sealed class PlacementTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public PlacementTests(ITestOutputHelper output) => _output = output;
+
+    private static SimConfig Config => VillageFixtures.Village;
+
+    private static SimLoop Build(SimConfig config, ulong? seed = null) =>
+        SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+
+    /// <summary>Somewhere legal to build, a few tiles from the village.</summary>
+    private static GridPos SomewhereBuildable(SimWorld world, BuildingKind kind)
+    {
+        GridPos village = world.Households[0].Home();
+
+        for (int radius = 1; radius < 12; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (System.Math.Abs(dx) + System.Math.Abs(dy) != radius)
+                    {
+                        continue;
+                    }
+
+                    var candidate = new GridPos(village.X + dx, village.Y + dy);
+                    if (world.CanBuildAt(kind, candidate).Allowed)
+                    {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        throw new System.InvalidOperationException("Nowhere legal to build near the village.");
+    }
+
+    // ---------------------------------------------------------------
+    //  Refusals — the legibility standard, applied to placement
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void WaterIsRefusedInWords()
+    {
+        SimWorld world = Build(Config, 1UL).World;
+
+        GridPos wet = default;
+        bool found = false;
+        foreach (Terrain _ in world.Map.Tiles)
+        {
+            // Scan for any water tile; the first is enough.
+            for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height && !found; y++)
+            {
+                for (int x = world.Map.MinX; x < world.Map.MinX + world.Map.Width && !found; x++)
+                {
+                    var here = new GridPos(x, y);
+                    if (world.Map.TerrainAt(here) == Terrain.Water)
+                    {
+                        wet = here;
+                        found = true;
+                    }
+                }
+            }
+
+            break;
+        }
+
+        Assert.True(found, "This seed has no water, so the guard is vacuous (D7).");
+
+        PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, wet);
+        _output.WriteLine($"{wet}: {verdict.Reason}");
+
+        Assert.False(verdict.Allowed);
+        Assert.Contains("water", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OccupiedGroundIsRefusedInWords()
+    {
+        SimWorld world = Build(Config).World;
+
+        PlacementVerdict verdict = world.CanBuildAt(
+            BuildingKind.Warehouse, world.AnyStoreOf(StoreKind.Granary).Position);
+
+        _output.WriteLine(verdict.Reason);
+        Assert.False(verdict.Allowed);
+        Assert.Contains("already stands", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void SomebodysHouseIsGroundToo()
+    {
+        // A real bug, and it survived because the question was asked twice. CanBuildAt
+        // used SimWorld.SomethingStandsAt, which checked workplaces and stores;
+        // Household.ChooseSite used its own copy, which also checked homes. Two rules,
+        // one of them wrong — and the wrong one was the one facing the player, so a
+        // granary could be marked out on top of a family's house.
+        SimWorld world = Build(Config).World;
+
+        PlacementVerdict verdict = world.CanBuildAt(
+            BuildingKind.Granary, world.Households[0].Home());
+
+        _output.WriteLine(verdict.Reason);
+        Assert.False(verdict.Allowed,
+            "A granary was allowed on a tile with somebody's home on it.");
+        Assert.Contains("already stands", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OutsideTheValleyIsRefusedInWords()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        PlacementVerdict verdict = world.CanBuildAt(
+            BuildingKind.Granary, new GridPos(config.MapMaxX + 5, 0));
+
+        Assert.False(verdict.Allowed);
+        Assert.Contains("outside the valley", verdict.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// ⛔⛔ A distant site is allowed and <b>says nothing at all</b> — the warning is gone.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-09-02: *"remove the distance warning altogether."*</b> It had said *"that is
+    /// 11 tiles from the village; it budgets 8"*, and one day earlier it was rewritten to state
+    /// the cost instead (D272). **A day of play settled it anyway: a warning that fires on most of
+    /// the map is not a warning, it is a status bar.** `MaxHomeToWorkTiles` is 8 in a valley 120
+    /// tiles across.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The fishing hut is what made it undeniable</b> — the river is 2.5% of the valley
+    /// and always at the periphery, so a fishery could never be placed *without* the warning. The
+    /// game was nagging about the one spot it had just told the player to build on.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>This guard is the anti-creep half.</b> D43's *"legal, but perhaps unwise"* line is
+    /// still there for crops and for a farm far from its store — so the temptation to add distance
+    /// back to it is real, and this says out loud that it was removed on purpose.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void ADistantSiteIsAllowedAndSaysNothingAboutTheDistance()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+        GridPos village = world.Households[0].Home();
+
+        int checked_ = 0;
+        for (int distance = 9; distance < 40; distance++)
+        {
+            var far = new GridPos(village.X + distance, village.Y);
+            PlacementVerdict verdict = world.CanBuildAt(BuildingKind.Granary, far);
+            if (!verdict.Allowed)
+            {
+                continue;
+            }
+
+            checked_++;
+            Assert.False(
+                verdict.HasWarning
+                    && verdict.Warning.Contains("tiles", System.StringComparison.OrdinalIgnoreCase),
+                $"A granary {distance} tiles out was warned about: \"{verdict.Warning}\"");
+        }
+
+        _output.WriteLine($"{checked_} distant sites offered, none warned about for distance");
+        Assert.True(checked_ > 0, "Nowhere distant was buildable, so this guard proves nothing.");
+    }
+
+    /// <summary>
+    /// ⭐ And the fact did not vanish — <b>it moved to the villager who walks it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>This is why removing the warning is a deletion rather than a regression.</b>
+    /// `LabourAllocator.DescribeTheCommute` puts the same arithmetic on the PERSON — *"it is 19
+    /// tiles to the forester's hut, so they bring back about a third of what a pair of hands at
+    /// the door would"* — which is the moment it is true of somebody rather than of a tile.
+    /// `SimWorld.ShareOfTheDayThatIsWork` is still the one copy of the sum.
+    /// </remarks>
+    [Fact]
+    public void TheCostOfALongWalkIsToldToWhoeverWalksIt()
+    {
+        SimConfig config = Config;
+        SimWorld world = Build(config).World;
+
+        int budget = VillageEconomy.MaxHomeToWorkTiles(config);
+        int atTheDoor = world.ShareOfTheDayThatIsWork(0);
+        int farOut = world.ShareOfTheDayThatIsWork(budget * 3 * TravelCostField.BaseTileCost);
+
+        _output.WriteLine($"a pair of hands at the door works {atTheDoor}% of the day; "
+            + $"{budget * 3} tiles out, {farOut}%");
+
+        Assert.True(
+            farOut < atTheDoor,
+            "A long walk costs nothing, so the sentence the villager is told means nothing.");
+    }
+
+    // ---------------------------------------------------------------
+    //  Building it
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void AMarkedBuildingIsNotYetABuilding()
+    {
+        // The heart of D43: marking is an intention, not a purchase. Until somebody
+        // carries the logs over and does the work, there is nothing there.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+
+        int granariesBefore = CountStores(world, StoreKind.Granary);
+        GridPos spot = SomewhereBuildable(world, BuildingKind.Granary);
+
+        Assert.True(world.Mark(BuildingKind.Granary, spot).Allowed);
+
+        Assert.Equal(granariesBefore, CountStores(world, StoreKind.Granary));
+
+        // ⚠️ `IsSite`, not `Kind == JobKind.Builder` (D108). That was the same question
+        // while a site was the only Builder workplace there was; the builder's hut is one
+        // too now, so the old spelling asks "does the village have a hut?" — which is true
+        // of every village and would make this guard vacuous.
+        Assert.Contains(world.Workplaces, w => w.IsSite);
+    }
+
+    [Fact]
+    public void TheVillageRaisesWhatThePlayerMarksOut()
+    {
+        // End to end, with nobody's hand on the scales: mark a granary, let the village
+        // get on with it, and it stands.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+
+        // ⭐ A GRANARY COSTS STONE NOW (D213), and stone comes from nowhere but the brush —
+        // so painting a seam is part of asking for a granary, exactly as it is in the game.
+        // Without it this stops being a test about building and becomes a second copy of
+        // `StoneCostsTests.AStoreWithNoStoneWaitsRatherThanKillingTheVillage`.
+        SeamFixtures.PaintStoneForBuilding(world);
+
+        // Let them get established first — a village with an empty larder puts every
+        // hand on food, and rightly so (§4a).
+        loop.Step(config.TicksPerYear * 12);
+
+        int before = CountStores(world, StoreKind.Granary);
+        GridPos spot = SomewhereBuildable(world, BuildingKind.Granary);
+        Assert.True(world.Mark(BuildingKind.Granary, spot).Allowed);
+
+        int builtInYear = 0;
+        for (int year = 1; year <= 25; year++)
+        {
+            loop.Step(config.TicksPerYear);
+            if (CountStores(world, StoreKind.Granary) > before)
+            {
+                builtInYear = year;
+                break;
+            }
+        }
+
+        _output.WriteLine(builtInYear > 0
+            ? $"The second granary was finished {builtInYear} years after it was marked."
+            : "It was never built.");
+
+        Assert.True(builtInYear > 0, "The village never raised the granary it was asked for.");
+
+        // The site is gone — and only the site. The hut it was raised from stands (D108).
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite);
+    }
+
+    [Fact]
+    public void ABuildingCostsTheLogsItSaidItWould()
+    {
+        // Conservation across the new movement. Logs leave a warehouse, arrive at a site,
+        // and become a building — none of them invented, none quietly lost.
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+        SimWorld world = loop.World;
+
+        // A warehouse costs stone as well as timber now (D213) — see the granary test above.
+        SeamFixtures.PaintStoneForBuilding(world);
+        loop.Step(config.TicksPerYear * 12);
+
+        GridPos spot = SomewhereBuildable(world, BuildingKind.Warehouse);
+        int logsBefore = world.LogsInWarehouses();
+        world.Mark(BuildingKind.Warehouse, spot);
+
+        int before = CountStores(world, StoreKind.Warehouse);
+        for (int year = 1; year <= 25 && CountStores(world, StoreKind.Warehouse) == before; year++)
+        {
+            loop.Step(config.TicksPerYear);
+        }
+
+        Assert.True(CountStores(world, StoreKind.Warehouse) > before, "The warehouse was never built.");
+        _output.WriteLine(
+            $"{logsBefore} logs in store before, {world.LogsInWarehouses()} after; " +
+            $"a warehouse costs {config.WarehouseLogs}.");
+
+        Assert.True(world.TotalLogs() <= world.LifetimeLogsFelled(),
+            "Building is creating logs out of nothing.");
+    }
+
+    [Fact]
+    public void BuildingYieldsToFeedingPeople()
+    {
+        // §4a's policy, applied to the newest job. A village with an empty larder and
+        // berries to pick cannot afford to have anybody raising a granary — the first
+        // winter would take them, and a half-built store is a better outcome than a
+        // finished one nobody lived to use.
+        SimLoop loop = Build(Config);
+        // ⛔ THE EMPTY LARDER IS POSED NOW, BECAUSE IT USED TO BE FREE (D262). A warm start
+        // never spent `cart_food`, so a founding with its buildings already up woke with zero
+        // food anywhere and *"the village is short of food"* was true without anybody arranging
+        // it. ⭐ That was a bug, and a fixture that depends on a bug is testing the bug.
+        for (int i = 0; i < loop.World.StoreBuildings.Count; i++)
+        {
+            loop.World.StoreBuildings[i].Store.TakeAll(Goods.Produce);
+        }
+
+        loop.StepOnce();
+
+        SimWorld world = loop.World;
+        world.Mark(BuildingKind.Granary, SomewhereBuildable(world, BuildingKind.Granary));
+
+        Assert.True(LabourQuota.VillageIsShortOfFood(world));
+        Assert.Equal(0, LabourQuota.For(world).Builders);
+    }
+
+    [Fact]
+    public void ADemolishedStoreLosesWhatWasInsideIt()
+    {
+        // The consequence D43 asked for, and it must be LOUD. Goods vanishing with no
+        // line in the log is exactly the untraceable outcome §1.1 forbids.
+        SimConfig config = Config;
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(config, sink);
+        loop.Step(config.TicksPerYear * 10);
+
+        // ⚠️ ON, UNTIL IT HOLDS SOMETHING (D780). A spring's granary swings between nought and five hundred from one year to the
+        // next with nobody starving — measured over ten years with the founders' jars full and empty — and this read one tick:
+        // the full jars' Year 10 happened to land on an empty one. Within the year the village fills it again on its own.
+        SimWorld world = loop.World;
+        for (int t = 0; t < config.TicksPerYear && world.AnyStoreOf(StoreKind.Granary).Store.Held == 0; t++)
+        {
+            loop.StepOnce();
+        }
+
+        StoreBuilding granary = world.AnyStoreOf(StoreKind.Granary);
+        int inside = granary.Store.Held;
+        Assert.True(inside > 0, "The granary was empty, so this proves nothing (D7).");
+
+        world.Demolish(granary);
+
+        Assert.Equal(0, CountStores(world, StoreKind.Granary));
+
+        bool narrated = false;
+        foreach (LogEntry entry in sink.Entries)
+        {
+            if (entry.Message.Contains("pulled down", System.StringComparison.Ordinal)
+                && entry.Message.Contains("lost", System.StringComparison.Ordinal))
+            {
+                narrated = true;
+                _output.WriteLine(entry.Message);
+            }
+        }
+
+        Assert.True(narrated, "The village lost a granary's worth of food and said nothing.");
+    }
+
+    [Fact]
+    public void AnAbandonedSiteGivesItsLogsBack()
+    {
+        SimConfig config = Config;
+        SimLoop loop = Build(config);
+        loop.Step(config.TicksPerYear * 12);
+        SimWorld world = loop.World;
+
+        world.Mark(BuildingKind.Granary, SomewhereBuildable(world, BuildingKind.Granary));
+
+        // Let some materials arrive before changing our mind.
+        for (int i = 0; i < config.TicksPerYear * 3; i++)
+        {
+            loop.StepOnce();
+        }
+
+        Workplace? site = null;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            // The SITE, not any Builder workplace — the hut is one of those now (D108),
+            // and picking it up here dereferenced a null Construction. And not a repair: twelve
+            // years in, the founders' huts are worn and the builders' mending them (D555).
+            if (workplace.IsSite && !SimWorld.IsARepairSite(workplace))
+            {
+                site = workplace;
+            }
+        }
+
+        if (site is null)
+        {
+            // It finished already — nothing to abandon, and that is not a failure.
+            return;
+        }
+
+        int delivered = site.Construction!.LogsDelivered;
+        int before = world.LogsInWarehouses();
+        world.CancelConstruction(site);
+
+        _output.WriteLine($"{delivered} logs were on site; store went {before} -> {world.LogsInWarehouses()}.");
+        Assert.Equal(before + delivered, world.LogsInWarehouses());
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite && !SimWorld.IsARepairSite(w));
+    }
+
+    [Fact]
+    public void PlacementIsDeterministic()
+    {
+        SimConfig config = Config;
+        SimLoop a = Build(config);
+        SimLoop b = Build(config);
+
+        a.Step(config.TicksPerYear * 12);
+        b.Step(config.TicksPerYear * 12);
+
+        GridPos spot = SomewhereBuildable(a.World, BuildingKind.Granary);
+        a.World.Mark(BuildingKind.Granary, spot);
+        b.World.Mark(BuildingKind.Granary, spot);
+
+        a.Step(config.TicksPerYear * 30);
+        b.Step(config.TicksPerYear * 30);
+
+        Assert.Equal(StateHash.Compute(a.World), StateHash.Compute(b.World));
+    }
+
+    [Fact]
+    public void AVillageThatIsAskedForNothingBehavesExactlyAsBefore()
+    {
+        // The guard that keeps this slice honest: placement exists, and a village nobody asks
+        // anything of runs precisely as it did.
+        //
+        // ⚠️ ASKED IN D143's CURRENCY SINCE D399, AND THE OLD BAR WAS PASSING ON LUCK. It read
+        // *"at least the founding population still alive at year 200"* — but **an unattended
+        // village is supposed to die out** (D143), which is why `TheVillageSurvivesWithTheMarketS
+        // witchedOff` was re-posed this way at D385. A village with no granary ever marked ages
+        // out; what this guard is actually for is that placement changed nothing for a village
+        // that places nothing. So: it GROWS from its founders, and its dead die of old age.
+        // ⚠️ Nomads off (D572): bands settle unattended since D572 and starve in a village nobody paints for; the
+        // claim here is the derived economy's and the arrivals' cost is the harness's (`nomads.md §8.6`).
+        SimConfig config = Config with { NomadsEnabled = false };
+        SimLoop loop = Build(config);
+
+        int peak = 0;
+        for (int year = 0; year < 150; year++)
+        {
+            loop.Step(config.TicksPerYear);
+            peak = System.Math.Max(peak, loop.World.Population);
+        }
+
+        int old = 0;
+        int starved = 0;
+        foreach (Villager villager in loop.World.Villagers)
+        {
+            if (villager.Alive)
+            {
+                continue;
+            }
+
+            if (villager.CauseOfDeath == CauseOfDeath.OldAge)
+            {
+                old++;
+            }
+            else if (villager.CauseOfDeath == CauseOfDeath.Starvation)
+            {
+                starved++;
+            }
+        }
+
+        _output.WriteLine(
+            $"nothing ever marked: peaked at {peak} from {config.StartingPopulation} founders, "
+            + $"{loop.World.Population} alive at year 150, {old} died of old age and {starved} starved.");
+        Assert.True(peak > config.StartingPopulation, $"the village never grew past its {config.StartingPopulation} founders");
+        Assert.True(old > starved, $"{starved} starved against {old} of old age — the village did not live its life out");
+        Assert.Equal(0, LabourQuota.For(loop.World).Builders);
+    }
+
+    private static int CountStores(SimWorld world, StoreKind kind)
+    {
+        int count = 0;
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            if (store.Kind == kind)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+}

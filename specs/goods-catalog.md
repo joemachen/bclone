@@ -252,7 +252,7 @@ caught it — *the kind of bug that would have read as a filter forgetting itsel
 
 ### ✅ Slice 2 — prove a modder can
 
-**Done: `tests/Bclone.Sim.Tests/ModdedGoodTests.cs`, 11 guards.** A seventh good (*pitch*) is
+**Done: `tests/Kith.Sim.Tests/ModdedGoodTests.cs`, 11 guards.** A seventh good (*pitch*) is
 defined **in real JSON**, parsed by `SimConfigLoader`, and driven through **storing, acceptance,
 stock limits and the state hash**. ⛔ **Nothing ships into the game** — the good exists only inside
 the tests, because adding one to the shipped catalogue would be inventing content under cover of an
@@ -317,7 +317,7 @@ comparing entries to find a position that `(int)goods` gives directly. **The sam
      drift METHODOLOGY §3 warns about — the gap that produced D48, D49 and D50. **The discoverability
      complaint stands** (a modder reading the data file sees no goods and no skills); *the fix is a
      comment pointing at the defaults, not a second copy of them.*
-3. ✅ No `switch` on a good by name anywhere in `Bclone.Sim`. ✅ **And the three comparisons that remained are gone (D211)** — they were the villager's carried load, which is an indexed stockpile now. See §4.0.
+3. ✅ No `switch` on a good by name anywhere in `Kith.Sim`. ✅ **And the three comparisons that remained are gone (D211)** — they were the villager's carried load, which is an indexed stockpile now. See §4.0.
 4. ✅ `HeldOf` deleted; the indexer used.
 5. Unit tests passing; **determinism test green; both fifty-year goldens byte-identical** — ✅ true for slices 1, 1b and 2. ⚠️ **D211 moved five goldens deliberately**, and its own §4.0 records the measurement that says the village underneath them did not move.
 6. ✅ Slice 2's data-defined-good test passing — 11 guards, red-checked.

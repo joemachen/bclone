@@ -1,17 +1,17 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ DO THE FOUNDERS STOP ON THE SAME TICK? (D528; Joe 2026-10-07: "all 4 founders skip at the same time it seems").
-// Kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there.
+// Kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there.
 //
-//   cp tools/harness/ZzLockstep.cs tests/Bclone.Sim.Tests/
-//   dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLockstep --logger "console;verbosity=detailed"
-//   rm tests/Bclone.Sim.Tests/ZzLockstep.cs
+//   cp tools/harness/ZzLockstep.cs tests/Kith.Sim.Tests/
+//   dotnet test tests/Kith.Sim.Tests -c Release --filter ZzLockstep --logger "console;verbosity=detailed"
+//   rm tests/Kith.Sim.Tests/ZzLockstep.cs
 //
 // The view glides each villager from last tick's position to this tick's, linearly, over the tick
 // (`VillageMap.DrawnCentre`), so a dot's on-screen speed is the tick's move and it changes only at a tick boundary —
@@ -19,7 +19,7 @@ namespace Bclone.Sim.Tests;
 // STOP TOGETHER. A STALL is a walker who moved more than half a tile last tick, moved nothing this tick and is still
 // on the same errand (D525's stutter); a tick is counted by how many villagers stalled on it, and how many of the
 // stalls were a meal (`Villager.JustAte`, a meal on the road costs a tick by design — D10).
-// Arms: `played` (`ColdStartTests.PlayTheOpening`) and `unattended` (nothing marked: what `BCLONE_FRAME_SAMPLE`
+// Arms: `played` (`ColdStartTests.PlayTheOpening`) and `unattended` (nothing marked: what `KITH_FRAME_SAMPLE`
 // founds). ZZ_ARMS, ZZ_SEEDS, ZZ_DAYS (default 120), ZZ_TABLE (ticks to print, default 48; a `*` is a meal).
 public sealed class ZzLockstep
 {
@@ -32,7 +32,7 @@ public sealed class ZzLockstep
     public void Measure(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         if (arm.StartsWith("played", StringComparison.Ordinal))
         {

@@ -1,14 +1,14 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D664's MEASUREMENT — Joe's own village run on from his save. Kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit.
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit.
 //
 //   ZZ_SAVE=<path to a .save>  ZZ_YEARS=2  dotnet test ... --filter FullyQualifiedName~ZzJoesSave
 //

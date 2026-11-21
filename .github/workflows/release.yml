@@ -24,7 +24,7 @@ jobs:
 
       # Never ship a release that cannot pass its own determinism test.
       - name: Run tests
-        run: dotnet test bclone.sln --configuration Release
+        run: dotnet test Kith.sln --configuration Release
 
       - name: Setup Godot
         uses: chickensoft-games/setup-godot@v2
@@ -43,20 +43,20 @@ jobs:
       # Godot needs its export templates and a one-time import pass before
       # a headless export will succeed.
       - name: Import project
-        run: godot --headless --path src/Bclone.Game --import
+        run: godot --headless --path src/Kith.Game --import
 
       - name: Export Windows build
         run: |
           mkdir dist
-          godot --headless --path src/Bclone.Game --export-release "Windows Desktop" ../../dist/bclone.exe
+          godot --headless --path src/Kith.Game --export-release "Windows Desktop" ../../dist/Kith.exe
 
       - name: Package
-        run: Compress-Archive -Path dist\* -DestinationPath bclone-${{ github.ref_name }}-windows.zip
+        run: Compress-Archive -Path dist\* -DestinationPath Kith-${{ github.ref_name }}-windows.zip
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: bclone-${{ github.ref_name }}-windows.zip
+          files: Kith-${{ github.ref_name }}-windows.zip
           body_path: CHANGELOG.md   # or a script that extracts just this version's section
           draft: false
           prerelease: false
@@ -67,7 +67,7 @@ jobs:
 #  had been false for months.
 #
 #  ✅ VERIFIED as far as a machine without export templates allows:
-#     `src/Bclone.Game/export_presets.cfg` is committed and Godot 4.7.1
+#     `src/Kith.Game/export_presets.cfg` is committed and Godot 4.7.1
 #     accepts it — running the exact `--export-release "Windows Desktop"`
 #     line above locally gets past preset lookup and parsing and stops
 #     only at the missing templates. So the two things that could be

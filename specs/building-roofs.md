@@ -60,7 +60,7 @@ Each finished building is drawn, in its own turned frame, as:
 rebuild, bridges (the founders' cart is drawn since A87, `building-yards.md §3.4`), the stock chips on a store, the full-store, idle and library rings, the
 card's picture, the minimap, the bar's glyphs. **With the tick off nothing changes.**
 
-## 3. Materials (`src/Bclone.Game/textures/buildings/roof_<material>.png`)
+## 3. Materials (`src/Kith.Game/textures/buildings/roof_<material>.png`)
 
 Seven tone maps, 384 × 128 (x along the eave −1.5 … 1.5 tiles, y up the slope 0 … 1 tile, 128 px a tile), lossless and
 mipmapped, drawn `LinearWithMipmaps`. Each holds a material's pattern — courses, strands, tiles — and the watercolour:

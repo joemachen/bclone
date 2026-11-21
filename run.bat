@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 REM =============================================================
-REM  run.bat - build and launch bclone locally
+REM  run.bat - build and launch Kith locally
 REM  Captures a timestamped log to logs\ AND shows output live.
 REM
 REM  Godot lives outside the repo, so its path comes from the
@@ -24,21 +24,21 @@ if not exist "!GODOT!" (
 )
 
 REM ---- Build the VIEW explicitly, every time ----------------------
-REM bclone.sln deliberately excludes src\Bclone.Game (D11), so a
+REM Kith.sln deliberately excludes src\Kith.Game (D11), so a
 REM solution build compiles the sim and the tests and leaves the
 REM game's assembly untouched. Skipping this is how a build menu was
 REM written, wired up, and silently never appeared: Godot ran a
 REM day-old DLL. This is not optional and it is why run.bat exists
 REM rather than a bare godot command.
 echo Building the view...
-dotnet build src\Bclone.Game\Bclone.Game.csproj --nologo -v q
+dotnet build src\Kith.Game\Kith.Game.csproj --nologo -v q
 if not "!ERRORLEVEL!"=="0" (
   echo  ** The view did not build - not launching a stale assembly. **
   pause
   exit /b 1
 )
 
-set CMD=^& '!GODOT!' --path src/Bclone.Game
+set CMD=^& '!GODOT!' --path src/Kith.Game
 
 REM `.\run.bat grass` opens the seasonal grass lab instead of the game
 REM (specs\seasonal-grass.md section 5).
@@ -46,7 +46,7 @@ if /i "%~1"=="grass" set CMD=!CMD! res://GrassLab.tscn
 REM --------------------------------------------------------------
 
 echo ================================================================
-echo  bclone - RUN
+echo  Kith - RUN
 echo  Godot: !GODOT!
 echo  Log: !LOGFILE!
 echo ================================================================

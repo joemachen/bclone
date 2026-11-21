@@ -131,7 +131,7 @@ it: *"snowing for the player, not the village"*). A see-through layer over the m
 `snowfall:` line), `shaders/snowfall.gdshader`. Changed: `valley_terrain.gdshader` (the snow block: frost and drifts, four
 uniforms), `VillageMap.Watercolour.cs` (the snow handed over from the schedule; the fields by the snow lying; the flakes'
 clock stepped and their layer hidden with the tick; the uniform list), `ValleyWatercolourLook.cs` with
-`looks/valley_watercolour.tres` (16 values), `Main.cs` (the probe's print). Nothing in `Bclone.Sim`, `tests/` or `data/`.
+`looks/valley_watercolour.tres` (16 values), `Main.cs` (the probe's print). Nothing in `Kith.Sim`, `tests/` or `data/`.
 
 **As the mock, with one difference:** the flakes' clock is capped at twice real time (the mock had no game speed).
 
@@ -139,7 +139,7 @@ clock stepped and their layer hidden with the tick; the uniform list), `ValleyWa
 masked). Renders through a winter beside the mock, and a snowfall in motion (`D:\Projects\brushes\snow\snow_built.jpg`,
 `snowfall_built.gif`). Probe 118 ✅ 0 ⛔, `snowfall:` ✅, bar 151, tile centres and new game ✅, `done.`. View build 0 warnings.
 **Four checks:** suite 2024 passed / 0 failed / 5 skipped in 17m42; view build 0 warnings; the probe as above; goldens 418
-lines, `src/Bclone.Sim`, `data` and `tests` identical to `main` (no golden moved).
+lines, `src/Kith.Sim`, `data` and `tests` identical to `main` (no golden moved).
 
 **Cost** (RTX 3070, 4K SubViewport, his Hollowmere winter, paired): the ground +0.2–0.5 ms against the build before; the
 flakes while falling +0.1–0.5 ms at the opening zoom, nothing measurable zoomed out (they fade there).
@@ -160,7 +160,7 @@ the banks shedding, the painted drift edge and its pool, the land's relief on th
 uniforms); `VillageMap.Snowfall.cs` (`FlakeValues`, one list for the hand-over and the probe; the life check);
 `VillageMap.Watercolour.cs` (the uniform list); `ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (18
 `Snowflake*` values for A76's 8; `SnowLand`, `SnowRelief`; `SnowDrift`, `SnowDust`, `SnowShadowStrength` retuned). Nothing in
-`Bclone.Sim`, `tests/` or `data/`.
+`Kith.Sim`, `tests/` or `data/`.
 
 **Verified.** Probe 118 ✅ 0 ⛔, `snowfall:` ✅, bar 151, tile centres and new game ✅, `done.`; view build 0 warnings. Tick off
 byte-identical to A76 at four zooms, spring and winter. Renders on his Hollowmere (`D:\Projects\brushes\snow\snow_settles.jpg`,

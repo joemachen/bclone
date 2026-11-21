@@ -17,7 +17,7 @@ import sys
 import numpy as np
 
 HERE = pathlib.Path(__file__).resolve().parent
-GAME = HERE.parent.parent / "src" / "Bclone.Game"
+GAME = HERE.parent.parent / "src" / "Kith.Game"
 GROUND = json.loads((HERE / "ground.json").read_text(encoding="utf-8"))
 
 # ---- The inventory: where each colour is drawn ------------------------------------------------------------------

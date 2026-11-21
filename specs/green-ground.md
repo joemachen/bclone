@@ -109,7 +109,7 @@ parchment panels (A65: after the map).
 and bank removed, its lip kept), `VillageMap.Watercolour.cs` (`HillCrest`, `HillHachures`, the field now three floats a
 texel, the values handed over, the probe's `green ground:` line), `VillageMap.Meshes.cs` (the crowns' tint),
 `ValleyWatercolourLook.cs` with `looks/valley_watercolour.tres` (36 new values, three deleted), `Main.cs` (the probe's
-print). Nothing in `Bclone.Sim`, `tests/` or `data/`.
+print). Nothing in `Kith.Sim`, `tests/` or `data/`.
 
 **What changed from the mock Joe picked, and why:**
 - **Lighter than the mock.** The mock's hollows were about L\* 47 (the reference's own), under §5's floor. The palette
@@ -124,7 +124,7 @@ print). Nothing in `Bclone.Sim`, `tests/` or `data/`.
 
 **Verified.** Watercolour off byte-identical to the build before at four zooms (four different shots). Probe 114 ✅
 0 ⛔, `bar height` 151, `tile centres` and `new game` ✅, `done.`; no `SHADER ERROR`. View build 0 warnings. `tests`,
-`src/Bclone.Sim` and `data` identical to `main` (no golden moved; 418 lines). Renders: `D:/Projects/brushes/hills/a68_in_game.jpg`.
+`src/Kith.Sim` and `data` identical to `main` (no golden moved; 418 lines). Renders: `D:/Projects/brushes/hills/a68_in_game.jpg`.
 **Four checks:** suite 2018 passed / 0 failed / 5 skipped in 18 m 40 s (at Joe's word, *"Run it, commit"*); view build 0 warnings; the probe as above, run again after the suite; the goldens' 418 lines identical before and after.
 
 **Cost** (RTX 3070, 4K, `measure4k.gd`, tick on, this build then the build before then this build again, one sitting):

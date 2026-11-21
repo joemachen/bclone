@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D678's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from
+// ⛔ D678's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from
 // there before any commit (D420). `workshop-and-the-carpenter.md §10`: what a workshop costs a village before any cart
 // does anything — the logs it takes out of the roofs' timber, measured before the recipe's numbers are typed.
 //
@@ -17,7 +17,7 @@ namespace Bclone.Sim.Tests;
 // born, the year the workshop stood (−1 never), carts made and held, carpenter seat-years, logs held at 50, the roofs
 // (house sites) that waited on logs, in site-ticks, and every site's log-wait.
 //
-// Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzWorkshop --logger "console;verbosity=detailed"`
+// Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzWorkshop --logger "console;verbosity=detailed"`
 // per arm; delete.
 public sealed class ZzWorkshop
 {
@@ -36,7 +36,7 @@ public sealed class ZzWorkshop
         string arm = Environment.GetEnvironmentVariable("ZZ_LABEL") ?? (workshop ? $"w{logs}x{makes}" : "base");
 
         SimConfig config = ShippedConfig.Load() with { Seed = seed, LogsPerHandcart = logs, MakesPerStint = makes };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
 

@@ -275,7 +275,7 @@ nothing about wear directly except `Tread` and the seasonal system. The view (§
 
 ## 7. How it is tested
 
-`tests/Bclone.Sim.Tests/DesirePathTests.cs` — the eight named above, and D414's five (the ceiling
+`tests/Kith.Sim.Tests/DesirePathTests.cs` — the eight named above, and D414's five (the ceiling
 two, validation, the two in §3.6). Red checks recorded in D358 and D414 (rule off → 2 reds; ceiling
 off → 2; validation off → 1).
 The clock: `VillagerPointTests` keeps `FirstGatherAtPace1 = 20` and `FirstGatherAtPace3 = 41`

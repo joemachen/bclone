@@ -1,0 +1,1249 @@
+using System.Text;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Kith.Sim.Tests;
+
+/// <summary>
+/// The valley is generated from the seed — <c>specs/seeded-map-generation.md</c> (D18).
+/// </summary>
+public sealed class MapGenerationTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public MapGenerationTests(ITestOutputHelper output) => _output = output;
+
+    private static SimConfig Config => VillageFixtures.Village;
+
+    private static GeneratedMap Generate(SimConfig config, ulong seed) =>
+        MapGenerator.Generate(config, seed);
+
+    [Fact]
+    public void SameSeedGivesTheSameValley()
+    {
+        ulong hashA = StateHash.MixMap(0UL, Generate(Config, 12345UL));
+        ulong hashB = StateHash.MixMap(0UL, Generate(Config, 12345UL));
+
+        Assert.Equal(hashA, hashB);
+    }
+
+    [Fact]
+    public void DifferentSeedsGiveDifferentValleys()
+    {
+        // Anti-vacuity (D7). Without this the test above passes just as happily over a
+        // generator that ignores its seed and returns the same valley every time —
+        // which would be the most expensive kind of green.
+        ulong hashA = StateHash.MixMap(0UL, Generate(Config, 1UL));
+        ulong hashB = StateHash.MixMap(0UL, Generate(Config, 2UL));
+
+        Assert.NotEqual(hashA, hashB);
+    }
+
+    [Fact]
+    public void TheWorldIsGeneratedFromTheRunsOwnSeed()
+    {
+        // The point of D18: quoting one number reproduces an entire run, world
+        // included. Two worlds built from the same seed must agree about the valley
+        // before anybody has taken a step.
+        SimWorld a = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
+        SimWorld b = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 777UL).World;
+        SimWorld c = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), seedOverride: 778UL).World;
+
+        Assert.Equal(StateHash.MixMap(0UL, a.Map), StateHash.MixMap(0UL, b.Map));
+        Assert.NotEqual(StateHash.MixMap(0UL, a.Map), StateHash.MixMap(0UL, c.Map));
+    }
+
+    [Fact]
+    public void DrawOrderIsTheContract()
+    {
+        // A golden hash, and the failure it exists for is silent: reordering the
+        // generator's draws shifts every subsequent value, so every seed anybody has
+        // written down stops reproducing its world. That is a save-breaking change
+        // wearing the clothes of a tidy-up, so it should fail the build.
+        //
+        // If this breaks and the change was DELIBERATE, update the constant and say so
+        // in the commit. If it broke by accident, that is the bug.
+        ulong actual = StateHash.MixMap(0UL, Generate(Config, 12345UL));
+        _output.WriteLine($"golden map hash for seed 12345: {actual}UL");
+
+        Assert.Equal(GoldenMapHash, actual);
+    }
+
+    /// <summary>Seed 12345 on the village config. See <see cref="DrawOrderIsTheContract"/>.</summary>
+    // RE-TAKEN ONCE, DELIBERATELY (D91): the valley has stone and iron in it now, so its
+    // fingerprint changes. That is the golden working, not breaking.
+    //
+    // What it does NOT mean is that the draw order moved — the seams are APPENDED after
+    // every existing draw, and SeamsTests.TheSeamsWereAppendedToTheDrawOrder proves it by
+    // generating the same seed with the seam counts set to zero and asserting the founding
+    // site, the forage sites, the tree stands and the soil are all identical. Only the new
+    // tiles differ.
+    //
+    // RE-TAKEN AGAIN, DELIBERATELY (`forests-and-gathering.md` slice 1): the valley is wooded
+    // now — about 28% of it, against the two stands it had before — so its fingerprint changes.
+    //
+    // And again this does NOT mean the draw order moved. The woodland is APPENDED after every
+    // existing draw, exactly as the seams were, and TheWoodlandWasAppendedToTheDrawOrder proves
+    // it by generating the same seed with the coverage set to zero and asserting the founding
+    // site, the forage sites, the tree stands and the soil are all identical. Only trees differ.
+    //
+    // RE-TAKEN A THIRD TIME, DELIBERATELY (D152) — and this one is the kind of change the
+    // guard exists to make somebody say out loud. **The two ring-drawn tree stands and the six
+    // ring-drawn forage sites are deleted** (step C, D124–D130): food stopped being a fact of
+    // the map and became a decision. Those two loops consumed random draws, so removing them
+    // shifts every subsequent value — the founding site, the soil, both seams and the woodland
+    // are all different now for every seed ever written down.
+    //
+    // ⚠️ UNLIKE THE PREVIOUS TWO RE-TAKES, THE DRAW ORDER GENUINELY MOVED. The seams (D91) and
+    // the woodland were APPENDED, and their own guards prove it. This is deletion from the
+    // middle, which is save-breaking by construction — taken on purpose because the sites it
+    // removes are gone from the game, and recorded here so that no later reader mistakes it
+    // for the appended kind. `MapGenerator` says the same thing at the site of the deletion.
+    //
+    //   before the seams (D91):       2208871881858546589
+    //   before the valley was wooded: 7476686338440514564
+    //   before the sites retired:     15355449050208049248
+    //
+    // ⭐ RE-TAKEN FOR SOIL BECOMING REGIONAL (D178), and this one is the APPENDED kind rather
+    // than the deletion above — in fact it is gentler still. **Not one tile of terrain moved.**
+    // Soil is drawn at step 5 and the reshaping into regions consumes NO draws, so the river,
+    // the woodland, both seams and the founding site are byte-identical for every seed ever
+    // written down; only the soil bytes differ, and `MixMap` hashes them.
+    //
+    // ⚠️ THAT CLAIM IS GUARDED RATHER THAN ASSERTED —
+    // `MapGenerationTests.EachSeedsTerrainIsWhatItWas` pins terrain
+    // fingerprints taken from `main` BEFORE the change, across three seeds. **That guard is
+    // what licenses this hash to move alone.**
+    //
+    //   before ground was worth going to: 3589830841205379371
+    // RE-TAKEN, DELIBERATELY (D344) — **the valley's shapes changed and nothing else did.**
+    // Joe, from play: *"river looks great! Let's widen it by ~50% with some variation"*, and the
+    // forest clumps were still `PaintForest`'s Manhattan diamonds. River 2 → 3 tiles with a
+    // wandering width, and a clump is a wobbling circle instead of a lozenge.
+    //
+    // ⭐⭐ **BOTH CHANGES TAKE NO RANDOM DRAWS, AND THAT IS WHY THIS IS THE ONLY KIND OF
+    // RE-TAKE IT IS.** Draw order is the seed contract (§1 of `MapGenerator`): the river's
+    // width and the clumps' outlines are hashed from the column and the clump's own centre, so
+    // **every seed keeps its founding site, its soil and its seams** and only the shapes move.
+    // *A first attempt drew for both and shifted the whole stream — which put the SHIPPED
+    // valley on ground where the village stores no food in ten years and dies when asked to
+    // build. Twenty-seven tests went red; this way it is nine goldens and no behaviour.*
+    //
+    // ⚠️ **And the clump COUNT had to follow the clump SHAPE.** A disc of radius 4 is
+    // ~50 tiles where the diamond was 41, so `ClumpArea` was corrected in the same commit —
+    // without it the same number of clumps would have laid a fifth more woodland in every valley,
+    // which is a balance change hiding inside a worldgen change. **Measured: forest 2662 →
+    // 2667 on the shipped seed.** Water is the honest mover: 240 → 420.
+    //
+    // RE-TAKEN ONCE, DELIBERATELY (D434, `quarry.md §3.1`): eight more stone seams and two more
+    // iron seams placed by hash, and every iron seam grown until it holds 50. No draw was added —
+    // `TheQuarrysSeamsMovedNoForest` says the woods and the soil are where they were. Was
+    // 10984246327142560906.
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Was 8294284479965600006.
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. Was 6546559622498121930.
+    // RE-TAKEN (D543) — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Was 4985353537107002683.
+    private const ulong GoldenMapHash = 6993585647478989079UL;
+
+    /// <summary>
+    /// ⭐ Each shipped seed's terrain, fingerprinted and counted by kind — <b>terrain only</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="GoldenMapHash"/> says only <em>"the map changed"</em>. These say <b>which</b> of
+    /// a valley's tiles did: a change that moves only trees moves the forest count and the print
+    /// but not the water, stone or iron. It licensed D178's soil regions to move the map golden
+    /// alone (no tile of terrain moved), and it is the guard that says so for any change that
+    /// claims to touch one kind of ground.
+    /// </para>
+    /// <para>
+    /// Moved here from <c>PerSiteYieldTests</c> when ground quality was removed (D395, built in
+    /// D470) — it was always a map guard, kept beside the soil it was written to clear.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    // RE-TAKEN (D344): the river is wider and the forest clumps are round rather than
+    // Manhattan diamonds. Shapes only — both changes are draw-neutral, so every seed
+    // keeps its founding site, soil and seams. See `GoldenMapHash`.
+    // RE-TAKEN (D434): the quarry's seams (`quarry.md §3.1`, D434): eight more stone seams and two more iron seams placed by hash, never nearer the village than their ring, and every iron seam grown until it holds 50 — no draw added, the woods and the soil unmoved (`TheQuarrysSeamsMovedNoForest`). Water holds; forest falls only by the tiles the new rock took; iron 10 / 10 / 4 → 52 / 52 / 43. Were 15952633197866446646 / 2161594585396026524 / 17795302869166625743.
+    // RE-TAKEN (D473) — per-stage seeds (`seeded-map-generation.md §13`, D473): each stage of the valley draws on a stream of its own, seeded from the run's seed through splitmix64, so every valley is generated anew — and the soil is no longer drawn or hashed (D470). Every kind moves, as it should. Were 9492872349874793864 (420 / 2640 / 141 / 52), 17624964258198066199 (410 / 2673 / 150 / 52), 9190696535150768213 (425 / 2626 / 127 / 43).
+    // RE-TAKEN (D475) — the seams are found, not placed (D475, Joe: "stone and iron nodes look planned and symmetrical"): each seam drawn into a sector of its ring with a drawn phase, angle, reach and size, painted as an outcrop, not a diamond — the stone and iron stages only, and the woods that grow round them. ⭐ Water holds on all three — the river is another stage. Were 17700436842626828916 (410 / 2489 / 143 / 45), 9700739267172670076 (415 / 2722 / 156 / 52), 1092681087056102210 (410 / 2650 / 141 / 51).
+    // RE-TAKEN (D543) ALL THREE — stone and iron across the whole valley (`seams-revisited.md`, Joe: "more variety, more frequency across the whole valley", "wider range", shapes "all of the above", iron "a little closer"): the near seams draw a shape and heading each (so the rings' later seams lie elsewhere), the iron ring comes in 26 -> 22, and valley-wide seams are laid after them on the same stages. Water is unchanged in every valley. Proven by the parent (c4c772b + b4db88c, docs only) holding the old value with the suite green. Water holds to the tile; forest gives up 0.6-2.5 % to the new seams; stone rises about two-thirds and iron about doubles. Was 12345: 10571714027248664497, 410, 2523, 134, 40 / 2: 12027232115351811171, 415, 2729, 127, 59 / 42: 13978094359002128344, 410, 2651, 121, 45.
+    [InlineData(12345UL, 17187169797415403285UL, 410, 2509, 214, 88)]
+    [InlineData(2UL, 17209291963455288967UL, 415, 2672, 231, 69)]
+    [InlineData(42UL, 1133243648252987032UL, 410, 2584, 185, 69)]
+    public void EachSeedsTerrainIsWhatItWas(
+        ulong seed, ulong terrainPrint, int water, int forest, int stone, int iron)
+    {
+        GeneratedMap map = SimFactory.CreatePhase0(
+            ShippedConfig.Established() with { Seed = seed }, new InMemoryLogSink()).World.Map;
+
+        ulong actual = 1469598103934665603UL;
+        int sawWater = 0;
+        int sawForest = 0;
+        int sawStone = 0;
+        int sawIron = 0;
+
+        for (int i = 0; i < map.Tiles.Count; i++)
+        {
+            actual = (actual ^ (byte)map.Tiles[i]) * 1099511628211UL;
+            switch (map.Tiles[i])
+            {
+                case Terrain.Water: sawWater++; break;
+                case Terrain.Forest: sawForest++; break;
+                case Terrain.Rock: sawStone++; break;
+                case Terrain.IronDeposit: sawIron++; break;
+                default: break;
+            }
+        }
+
+        _output.WriteLine(
+            $"seed {seed}: terrain {actual}, water {sawWater}, forest {sawForest}, "
+            + $"stone {sawStone}, iron {sawIron}");
+
+        Assert.Equal(terrainPrint, actual);
+        Assert.Equal(water, sawWater);
+        Assert.Equal(forest, sawForest);
+        Assert.Equal(stone, sawStone);
+        Assert.Equal(iron, sawIron);
+    }
+
+    // ---------------------------------------------------------------
+    //  Woodland — `specs/forests-and-gathering.md`
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ The valley is actually wooded, and the coverage is measured rather than assumed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The arithmetic cannot tell you this.</b> `ForestClumpCount` derives how many clumps a
+    /// stated coverage takes, but they are dropped independently and overlap, and none may fall
+    /// on water or a seam — so the target is a target and the achieved coverage is lower. The
+    /// config comment says so; this is what makes that claim checkable.
+    /// </para>
+    /// <para>
+    /// <b>A band, not a number</b>, and deliberately wide. The point of the guard is that the
+    /// valley is neither bare (which is the game before this change — two stands, about fifty
+    /// tiles) nor solid forest (which leaves nowhere to build). Tightening it to a single
+    /// figure would make it a golden by the back door, and it would fail for a jitter change
+    /// nobody cares about.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(7UL)]
+    [InlineData(12345UL)]
+    public void TheValleyIsActuallyWooded(ulong seed)
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+        GeneratedMap map = world.Map;
+
+        int forest = 0;
+        for (int y = 0; y < map.Height; y++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                if (map.TerrainAt(new GridPos(map.MinX + x, map.MinY + y)) == Terrain.Forest)
+                {
+                    forest++;
+                }
+            }
+        }
+
+        int percent = forest * 100 / (map.Width * map.Height);
+        _output.WriteLine($"seed {seed}: {forest} wooded tiles, {percent}% of the valley, "
+            + $"from {MapGenerator.ForestClumpCount(config)} clumps targeting "
+            + $"{config.ForestCoveragePercent}%");
+
+        Assert.True(percent >= 15, $"The valley is barely wooded ({percent}%) — a gatherer's "
+            + "hut would have nowhere to stand.");
+        Assert.True(percent <= 50, $"The valley is {percent}% forest — there is nowhere to "
+            + "build and every site would wait on a clearing.");
+    }
+
+    /// <summary>
+    /// ⭐ The woodland changes nothing but trees: with none at all, every other tile of the
+    /// valley and its founding site are where they were.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The woodland is the last stage and paints over open grass only, so a bare valley and a
+    /// wooded one differ by grass that became forest and nothing else. Under per-stage seeds
+    /// (D473) its stream is its own; this guard is what says it also paints nothing it should
+    /// not — over the river, over a seam, over the founders' glade's neighbours' rock.
+    /// </para>
+    /// <para>
+    /// It was <c>TheWoodlandWasAppendedToTheDrawOrder</c> under one shared stream, and asserted
+    /// the founding site and the soil; the soil is gone (D470), and this asks every tile.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1UL)]
+    [InlineData(12345UL)]
+    public void TheWoodlandChangesNothingButTrees(ulong seed)
+    {
+        SimConfig config = Config;
+
+        GeneratedMap wooded = Generate(config, seed);
+        GeneratedMap bare = Generate(config with { ForestCoveragePercent = 0 }, seed);
+
+        Assert.Equal(bare.FoundingSite, wooded.FoundingSite);
+
+        int grew = 0;
+        for (int i = 0; i < wooded.Tiles.Count; i++)
+        {
+            if (wooded.Tiles[i] == bare.Tiles[i])
+            {
+                continue;
+            }
+
+            Assert.True(
+                bare.Tiles[i] == Terrain.Grass && wooded.Tiles[i] == Terrain.Forest,
+                $"Seed {seed}, tile {i}: the woodland turned {bare.Tiles[i]} into {wooded.Tiles[i]}.");
+            grew++;
+        }
+
+        Assert.True(grew > 0, "The woodland grew nothing, so this guard proves nothing.");
+    }
+
+    /// <summary>
+    /// ⭐ Every stage has a seed of its own, and none of them is the run's seed (D473).
+    /// </summary>
+    /// <remarks>
+    /// Two stages on one seed draw the same numbers — the river's wander and the founding
+    /// jitter in lockstep — which is D435's defect by another route; a stage on the run's own
+    /// seed draws what the village's <c>Rng</c> draws. Asked across a spread of seeds including
+    /// the small ones, where D344 found <c>DeterministicRandom</c>'s stream parameter failing.
+    /// </remarks>
+    [Fact]
+    public void EveryStageHasASeedOfItsOwn()
+    {
+        foreach (ulong seed in new ulong[] { 0, 1, 2, 3, 42, 12345, ulong.MaxValue })
+        {
+            var seen = new HashSet<ulong> { seed };
+            foreach (MapGenerator.Stage stage in Enum.GetValues<MapGenerator.Stage>())
+            {
+                ulong stageSeed = MapGenerator.StageSeed(seed, stage);
+                Assert.True(seen.Add(stageSeed), $"Seed {seed}: the {stage} stage shares a seed.");
+            }
+        }
+    }
+
+    /// <summary>Woodland never takes the stone and iron back out of the valley.</summary>
+    /// <remarks>
+    /// It is drawn <em>after</em> the seams — it had to be, to keep the draw order — so unlike
+    /// the tree stands it paints over open grass only. Without that rule this slice would have
+    /// been a balance change hiding inside a worldgen change, which is the trap `PaintSeams`
+    /// already documents from the other direction.
+    /// </remarks>
+    [Fact]
+    public void WoodlandDoesNotSwallowTheSeams()
+    {
+        SimConfig config = Config;
+
+        int withWoods = CountSeams(SimFactory.CreatePhase0(config, new InMemoryLogSink(), 1UL).World);
+        int without = CountSeams(SimFactory.CreatePhase0(
+            config with { ForestCoveragePercent = 0 }, new InMemoryLogSink(), 1UL).World);
+
+        _output.WriteLine($"seam tiles: {without} bare, {withWoods} wooded");
+
+        Assert.True(without > 0, "This valley has no seams at all, so nothing was tested.");
+        Assert.Equal(without, withWoods);
+    }
+
+    private static int CountSeams(SimWorld world)
+    {
+        GeneratedMap map = world.Map;
+        int seams = 0;
+        for (int y = 0; y < map.Height; y++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                Terrain terrain = map.TerrainAt(new GridPos(map.MinX + x, map.MinY + y));
+                if (terrain is Terrain.Rock or Terrain.IronDeposit)
+                {
+                    seams++;
+                }
+            }
+        }
+
+        return seams;
+    }
+
+    [Fact]
+    public void NoTwoPlacesInTheValleyShareAName()
+    {
+        // Joe read the original bug off his own screen: "Nobody is working the berry patch,
+        // the southern western thicket, the southern eastern thicket, the southern eastern
+        // thicket" — the same phrase twice, because a bearing has eight values and that
+        // village had six forage sites. Every one of these names ends up inside a sentence
+        // about why somebody walks the way they do, and a name that points at two places
+        // answers nothing. That is §1.1, not tidiness.
+        //
+        // ⭐ THE PROPERTY SURVIVED ITS MECHANISM. Bearings are gone with the thickets, and
+        // D124 replaced them with a counter — *gatherer's hut 1, gatherer's hut 2* — until
+        // the player can rename them. So the collision this guards can no longer be produced
+        // by a seed, and the fifty-seed sweep it used to do proved nothing: with generated
+        // sites retired, a founding valley has almost no names in it to collide.
+        //
+        // It watches the counter instead. **The player is the one who makes duplicates now**
+        // — marking the same kind of building over and over is the ordinary way to play —
+        // so that is what the fixture does.
+        //
+        // Still stated as ONE NAME, ONE PLACE rather than one name per building, because of
+        // D36's seam: the market is deliberately both a store and a workplace at a single
+        // position, so those two sharing "the market" is the model being right rather than a
+        // collision. Two names at two different tiles is the thing that cannot happen.
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 12345UL).World;
+
+        int marked = 0;
+        foreach (BuildingKind kind in new[]
+                 {
+                     BuildingKind.GathererHut, BuildingKind.GathererHut, BuildingKind.GathererHut,
+                     BuildingKind.WoodcutterHut, BuildingKind.WoodcutterHut,
+                     BuildingKind.Granary, BuildingKind.Granary,
+                 })
+        {
+            if (world.Mark(kind, SomewhereFree(world, kind)).Allowed)
+            {
+                marked++;
+            }
+        }
+
+        var places = new Dictionary<string, GridPos>();
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            Check(places, workplace.Name, workplace.Tile);
+        }
+
+        foreach (StoreBuilding store in world.StoreBuildings)
+        {
+            Check(places, store.Name, store.Tile);
+        }
+
+        _output.WriteLine($"{marked} marked, {places.Count} distinct names: "
+            + string.Join(", ", places.Keys));
+
+        // Anti-vacuity (D7): if the marking did not take, this checks a valley with one
+        // building in it and the counter is never asked to disambiguate anything.
+        Assert.True(marked >= 5,
+            $"Only {marked} of seven buildings could be marked, so nothing here has a "
+            + "twin and the numbering is never exercised.");
+
+        static void Check(Dictionary<string, GridPos> places, string name, GridPos at)
+        {
+            if (places.TryGetValue(name, out GridPos already))
+            {
+                Assert.True(already == at,
+                    $"\"{name}\" names both {already} and {at}. Nothing the village "
+                    + "says about either place can be acted on.");
+                return;
+            }
+
+            places[name] = at;
+        }
+    }
+
+    /// <summary>Somewhere clear of what is already down to put something else.</summary>
+    private static GridPos SomewhereFree(SimWorld world, BuildingKind kind)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 1; radius < 20; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    if (world.CanBuildAt(kind, at).Allowed)
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException($"Nowhere to put a {kind}.");
+    }
+
+    [Fact]
+    public void NothingIsGeneratedOutsideTheValley()
+    {
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(Config, seed);
+
+            // The forage sites and the tree stands were checked here too. They are retired,
+            // and the founding site is the one generated position left — which makes this
+            // guard narrower and no less load-bearing: a founding site off the map is a
+            // valley nobody can live in.
+            Assert.True(map.Contains(map.FoundingSite), $"Seed {seed}: founding site is off the map.");
+        }
+    }
+
+    [Fact]
+    public void TheVillageIsNeverFoundedInTheRiver()
+    {
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(Config, seed);
+            Assert.NotEqual(Terrain.Water, map.TerrainAt(map.FoundingSite));
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Woodland reaches every side of the village — <b>D24's guarantee, re-pointed</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This was <c>ForageSitesStaySpread</c>, and D24 is a record of what happens when food
+    /// is not spread: the extra patches all went out to the map edges, every home near the
+    /// middle competed for the one original patch, and the outskirts had nothing in reach.
+    /// </para>
+    /// <para>
+    /// <b>The patches are retired and the guarantee still matters</b>, because food still
+    /// comes from trees — it just comes from a hut the player sites in them. A valley whose
+    /// woodland is all on one side is a valley with one place worth living, which is D24's
+    /// failure wearing the new system's clothes. So the question moves from *where are the
+    /// six sites* to *is there wood on every side of the founding site*.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void WoodlandReachesEverySideOfTheVillage()
+    {
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(config, seed);
+
+            int east = 0, west = 0, north = 0, south = 0;
+            for (int y = map.MinY; y < map.MinY + map.Height; y++)
+            {
+                for (int x = map.MinX; x < map.MinX + map.Width; x++)
+                {
+                    if (map.TerrainAt(new GridPos(x, y)) != Terrain.Forest)
+                    {
+                        continue;
+                    }
+
+                    if (x > map.FoundingSite.X) east++;
+                    if (x < map.FoundingSite.X) west++;
+                    if (y > map.FoundingSite.Y) south++;
+                    if (y < map.FoundingSite.Y) north++;
+                }
+            }
+
+            Assert.True(east > 0 && west > 0, $"Seed {seed}: wood is all on one side ({west}W/{east}E).");
+            Assert.True(north > 0 && south > 0, $"Seed {seed}: wood is all on one side ({north}N/{south}S).");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The founders settle on dry ground: no water inside their starter zone's diamond (D472).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Spec §10.1: until bridges exist the generator must not cut the village off from its
+    /// work.</b> The founding used to be the nearest tile on the biggest land mass to a jittered
+    /// spot, which on a valley whose river runs near the middle is the river bank — half the
+    /// starter zone across water nobody can cross. Found by the per-stage reshuffle (seeds 99 and
+    /// 24); present on the old generator too, where moving the founding off the bank took D420's
+    /// 55 villages 429 → 495 alive and 100 shipped seeds 450 → 487.
+    /// </para>
+    /// <para>
+    /// Asked of the fixture and the shipped valley over fifty seeds each — the radius is the
+    /// starter zone's, and the shipped game paints its own, but the bank is the bank either way.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void TheFoundersSettleOnDryGround(bool shipped)
+    {
+        SimConfig config = shipped ? ShippedConfig.Load() : Config;
+        int dry = config.StartingResidentialRadius;
+        Assert.True(dry > 0, "No starter zone, so nothing to keep dry.");
+
+        for (ulong seed = 1; seed <= 50; seed++)
+        {
+            GeneratedMap map = Generate(config, seed);
+            GridPos f = map.FoundingSite;
+
+            for (int dy = -dry; dy <= dry; dy++)
+            {
+                for (int dx = -dry; dx <= dry; dx++)
+                {
+                    int away = Math.Abs(dx) + Math.Abs(dy);
+                    var at = new GridPos(f.X + dx, f.Y + dy);
+                    if (away <= dry && map.Contains(at) && map.TerrainAt(at) == Terrain.Water)
+                    {
+                        Assert.Fail(
+                            $"Seed {seed}: water {away} tiles from the founding site {f}, inside the "
+                            + $"starter zone's {dry} — the founders settled on the river bank.");
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Every valley leaves the village inside the walk its economy budgets for.
+    /// </summary>
+    /// <remarks>
+    /// <b>The subject changed and the guarantee did not.</b> It measured each home against
+    /// the nearest generated forage site; there are none, so it measures against the nearest
+    /// place anyone actually gathers — which in a warm start is the gatherer's hut. Same
+    /// question, asked of the thing that answers it now.
+    /// <para>
+    /// ⚠️ The budget is a budget rather than a fence since `forests-and-gathering.md §3.2`,
+    /// so this is no longer enforced by `ChooseSite` refusing. **That makes it worth
+    /// asserting more, not less**: nothing else would notice a valley where the founding
+    /// layout quietly puts every family beyond what the food economy pays for.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryValleyMeetsTheEconomysDistanceBudget()
+    {
+        SimConfig config = Config;
+        // ⚠️ THE RING AND THE LANE (D386). A home is a house in a plot behind its lane now, so the
+        // tile a walk is measured from stands a tile further out than a house dropped on the
+        // nearest painted tile did — measured across these thirty valleys, +1 typical, never
+        // more than +2 — and the economy carries that tile on every home leg
+        // (`VillageEconomy.PlotLaneTiles`). The budget the generator is held to is the same walk
+        // the yield is derived against.
+        // ⭐ AND THE DOOR (D623): the walk the yield is derived against goes out of the house's door and in at the hut's
+        // (`VillageEconomy.DoorTiles`), so the walk the generator is held to does too.
+        int budget = VillageEconomy.MaxHomeToWorkTiles(config) + VillageEconomy.PlotLaneTiles + VillageEconomy.DoorTiles;
+
+        int seedsBeyond = 0;
+        int seedsWithin = 0;
+        int worstAnywhere = 0;
+        const int Seeds = 30;
+
+        for (ulong seed = 1; seed <= Seeds; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+
+            var walks = new List<int>();
+            foreach (Household household in world.Households)
+            {
+                int nearest = int.MaxValue;
+                foreach (Workplace workplace in world.Workplaces)
+                {
+                    if (workplace.Kind != JobKind.Forager || workplace.IsSite)
+                    {
+                        continue;
+                    }
+
+                    // ⭐ BY WALKING, NOT WITH A RULER, AND THIS IS THE THIRD SITE OF THAT BUG.
+                    // D111 found `ChooseSite` scoring candidate tiles on `ManhattanDistanceTo`
+                    // while every real journey goes round the river, and D121 fixed it there —
+                    // and this guard, which exists to check that method's output, went on
+                    // measuring with the ruler D121 deleted. **A home and the guard on it were
+                    // grading different worlds**, which is the failure `Household` warns about
+                    // in as many words: *"or a home's two scores measure different worlds."*
+                    int cost = world.TravelCost.Cost(household.Home(), workplace.Tile);
+                    if (cost != TravelCostField.Unreachable)
+                    {
+                        nearest = Math.Min(nearest, cost / TravelCostField.BaseTileCost);
+                    }
+                }
+
+                Assert.True(nearest != int.MaxValue,
+                    $"Seed {seed}: {household.Name} cannot walk to any gatherer's hut at all.");
+
+                walks.Add(nearest);
+                worstAnywhere = Math.Max(worstAnywhere, nearest);
+            }
+
+            Assert.NotEmpty(walks);
+            walks.Sort();
+            int typical = walks[walks.Count / 2];
+
+            if (walks[^1] > budget)
+            {
+                seedsBeyond++;
+            }
+
+            // ⭐ THE TYPICAL FAMILY, NOT EVERY FAMILY — because the fence is gone (D120) and a
+            // budget that refused would be the fence back. `forests-and-gathering.md §3.2`:
+            // *"Building beyond the budget is allowed, warned about, and genuinely costs
+            // food."* One household at nine tiles against a budget of eight is that rule
+            // working, and this guard failed seed 9 for it.
+            //
+            // **What is still worth asserting is the remark this test already carried:**
+            // *"nothing else would notice a valley where the founding layout quietly puts
+            // every family beyond what the food economy pays for."* That is a claim about the
+            // village, so it is measured on the village — the median walk — and the outliers
+            // are the design rather than the defect.
+            _output.WriteLine($"seed {seed,2}: typical {typical,2}, worst {walks[^1],2}, "
+                + $"{walks.Count} households");
+
+            if (typical <= budget)
+            {
+                seedsWithin++;
+            }
+
+            // ⭐ STRANDED, NOT ONE TILE OVER — because the fence is gone (D120) and a budget
+            // that refuses would be the fence back. `forests-and-gathering.md §3.2`:
+            // *"Building beyond the budget is allowed, warned about, and genuinely costs
+            // food."* This guard failed seed 9 for a village nine tiles from its hut against a
+            // budget of eight, which is that rule working exactly as written.
+            //
+            // **Measured before choosing the bar:** across 30 seeds the typical walk runs 2 to
+            // 9 tiles and only three seeds are over 8 — so what wants catching is a valley that
+            // put the village *miles* from its food, not one that cost it a tile.
+            // ⚠️ SEED 11 BY NAME, AT ITS MEASURED 23 — the price of doors on one hand-laid founding (D625, Joe: record the
+            // house-siting costs as measured). Its forager's hut faces the founding site, north, and the founding's own
+            // builder's hut stands on that tile, so the hut's door is at its back and every walk to it goes round: 23 against a
+            // bar of 22. The other 29 sit at 6–16. Named, not a looser bar, so any other valley that drifts goes red.
+            Assert.True(typical <= budget * 2 || (seed == 11 && typical <= 23),
+                $"Seed {seed}: the typical family walks {typical} tiles to work against a "
+                + $"budget of {budget}. That is not a long walk, it is a village the generator "
+                + "sited away from its own food.");
+
+            // And an outlier is an outlier rather than a different kind of valley.
+            Assert.True(walks[^1] <= budget * 3,
+                $"Seed {seed}: {walks[^1]} tiles to work against a budget of {budget} is not a "
+                + "long walk, it is a family the generator stranded.");
+        }
+
+        _output.WriteLine(
+            $"{Seeds} seeds, budget {budget}: {seedsWithin} sit within it, {seedsBeyond} had at "
+            + $"least one family beyond it; the longest walk anywhere was {worstAnywhere} tiles.");
+
+        // ⭐ AND THE GENERATOR AS A WHOLE STILL AIMS INSIDE THE BUDGET. One valley a tile over
+        // is the design; most valleys a tile over would mean the economy is derived against a
+        // distance the generator no longer produces, and nothing else in the suite would say
+        // so. Measured at 27 of 30 — a three-quarters bar leaves real headroom and still fires
+        // long before the derivation and the map have drifted apart.
+        //
+        // ⚠️ RE-POSED FOR FENCES (D406), AND THE DRIFT IS THE ONE THIS GUARD EXISTS TO NAME. With a
+        // fence a wall, a founder's house that faces away from the hut walks round its own yard:
+        // the typical founding walk went ~6 → ~10 tiles and this read **10 of 30**. Joe saw that
+        // number and chose it: *"let longer walks be the price of fences"* — option (a) over
+        // pricing the door's walk (`fences-as-walls.md §9.4`). The bar is a fifth (6 of 30), below
+        // the new measurement with headroom, so a generator that drifts further still fires.
+        Assert.True(seedsWithin * 5 >= Seeds,
+            $"Only {seedsWithin} of {Seeds} valleys put the typical family inside the "
+            + $"{budget}-tile budget the food economy is derived against.");
+    }
+
+    /// <summary>How long each valley is watched for. See the note in the body — this is a trade.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⏱️ SHORTENED FROM 200 ON JOE'S CALL, AND IT IS A REAL TRADE RATHER THAN A TIDY-UP.</b>
+    /// Twelve valleys × 200 years was <b>five of the suite's eleven minutes on its own</b> — the
+    /// single most expensive thing in the project — and the suite is the tax on every change.
+    /// All twelve seeds are kept, because <em>which</em> valleys are watched is what this guard
+    /// is for; what shortens is how long each is watched.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ What it costs, said plainly:</b> this guard catches changes that help eleven
+    /// valleys and kill one, and it has done so twice — D103's seed 11 aged out to nothing
+    /// <em>by year 160</em>, and D110's died by year 106. <b>The second would still be caught at
+    /// 120 years and the first might not.</b> A slow ageing-out is exactly the shape that needs
+    /// the longest horizon, so if a change is ever suspected of causing one, <b>this number is
+    /// the first thing to raise</b> — temporarily and deliberately.
+    /// </para>
+    /// </remarks>
+    private const int SeedWatchYears = 120;
+
+    /// <summary>
+    /// ⛔⛔ Most valleys support a village — <b>and "every" was never true</b> (D344).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This was <c>EverySeedProducesAValleyAVillageSurvivesIn</c>, and it asserted that all
+    /// twelve of seeds 1–12 both survive 120 years and grow past twelve people. It passed
+    /// because those twelve seeds are clean, not because the generator guarantees it.</b>
+    /// Measured on the committed generator over **48 seeds: 4 villages die out and 7 never reach
+    /// twelve.** The claim in the name was false and had been for as long as the test existed.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Joe's ruling, asked when the reshuffle exposed it: a hard roll is legitimate.</b>
+    /// The new-game screen he wants brings a preview and a re-roll — *you will be able to
+    /// throw a valley back before you live in it* — so a poor one is a roll rather than a
+    /// defect. **What a map-generation guard can honestly assert is a RATE**, and that the rate
+    /// has not got worse.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>Two things stay absolute, per seed, and must not become rates.</b> A house
+    /// nobody can walk to is a broken promise rather than a hard valley (D110, D111), and it is
+    /// asserted for every seed below. So is the sample size: **a rate measured over twelve seeds
+    /// is worth nothing**, which this slice learned the expensive way — two twelve-seed
+    /// samples said "1 in 13" for a defect that was really 1 in 4.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The floor is set below the MEASURED rate with stated headroom, not at
+    /// it.</b> A floor set at the measurement fires on noise; one set far below catches nothing.
+    /// *The number this exists to catch is a generator that collapses — D103 and D110 both
+    /// produced valleys where peaks sat barely above the founding four.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void MostSeedsProduceAValleyAVillageCanLiveIn()
+    {
+        SimConfig config = Config;
+        var results = new List<string>();
+        int liveable = 0;
+
+        for (ulong seed = 1; seed <= SeedsSampled; seed++)
+        {
+            var sink = new InMemoryLogSink();
+            SimLoop loop = SimFactory.CreatePhase0(config, sink, seed);
+
+            int lowest = int.MaxValue;
+            int peak = 0;
+            for (int year = 1; year <= SeedWatchYears; year++)
+            {
+                loop.Step(config.TicksPerYear);
+                peak = Math.Max(peak, loop.World.Population);
+                if (year >= 40)
+                {
+                    lowest = Math.Min(lowest, loop.World.Population);
+                }
+            }
+
+            results.Add($"seed {seed,2}: peak {peak,3}, low {lowest,3}, final {loop.World.Population,3}");
+
+            // ⭐ D111's PROMISE, AND IT IS STILL ABSOLUTE. `MarkHome` skips `CanBuildAt` on
+            // the written grounds that `ChooseSite` has already found reachable ground — and
+            // in seed 11 it demonstrably had not, siting a house on the far bank that no builder
+            // could ever walk to and freezing that village's whole future (D110). **A valley may
+            // be poor; it may not lie about where a house can go.**
+            foreach (LogEntry entry in sink.Entries)
+            {
+                Assert.False(
+                    entry.Level >= LogLevel.Warn
+                        && entry.Message.Contains("no route to it", StringComparison.Ordinal),
+                    $"Seed {seed} sited a house nobody can walk to: {entry.Message}");
+            }
+
+            if (loop.World.Population >= config.StartingPopulation && peak >= 12)
+            {
+                liveable++;
+            }
+        }
+
+        foreach (string line in results)
+        {
+            _output.WriteLine(line);
+        }
+
+        _output.WriteLine(
+            $"liveable valleys: {liveable} of {SeedsSampled}");
+
+        Assert.True(
+            liveable >= LiveableValleysWanted,
+            $"Only {liveable} of {SeedsSampled} valleys let a village live and grow, and the "
+            + $"generator is held to {LiveableValleysWanted}. ({string.Join("; ", results)})");
+    }
+
+    /// <summary>
+    /// How many valleys are sampled. ⚠️ <b>Twelve was not enough to measure anything</b>
+    /// — two twelve-seed samples put a one-in-four failure rate at "one in thirteen" (D344).
+    /// </summary>
+    private const int SeedsSampled = 24;
+
+    /// <summary>
+    /// ⛔ How many of those must let a village live and grow past twelve people.
+    /// </summary>
+    /// <remarks>
+    /// <b>Measured, with headroom stated.</b> Over 48 seeds the committed generator leaves
+    /// **~8% dead and ~15% short of twelve**; this generator measures the same within noise
+    /// (mean peak 17.8 against 17.5). Set at three quarters, which sits well under the measured
+    /// rate and still fires on the failure this arm has caught twice — D103 and D110, where
+    /// peaks sat barely above the founding four across the whole sample.
+    /// ⚠️ <b>Re-based at D363, and it is the economy that moved, not the generator:</b> foraging
+    /// feeds a couple now, not a family, and this village is UNATTENDED — nobody builds it a
+    /// fishery or a farm — so 5 of 24 seeds die out and 3 more never reach twelve (16 liveable,
+    /// mean peak 15.5). Half, with the same headroom under the measurement, still fires on a
+    /// collapsed generator: D103's and D110's peaks sat at four or five on every seed.
+    /// ⚠️ <b>Re-based at D406 for fences, and again it is the economy, not the generator:</b> a
+    /// fence is a wall, founding walks go round the family's own yard (~6 → ~10 tiles), and this
+    /// unattended village reads <b>9 of 24</b> (main 15; peaks 331 against 446). Joe chose it with
+    /// the number in front of him — *"let longer walks be the price of fences"* — and the shipped
+    /// game gained people (65 → 71 over six seeds, `fences-as-walls.md §6`). Seven: under the
+    /// measurement with two valleys of headroom, and still far above D103's collapse.
+    /// ⛔ <b>Re-based a third time at D407 — firewood is a factor now, and this is what it costs the
+    /// UNATTENDED village:</b> a burn takes the last logs and nobody splits what the homes do not
+    /// want, so over these 24 valleys × 120 years <b>11 freeze where none did</b>, starvation goes
+    /// 87 → 109, and liveable valleys <b>9 → 6</b>. Joe asked for firewood to stop being *"a
+    /// non-factor"*. Five. ⚠️ <b>This is the last lowering this guard can honestly take:</b> the
+    /// unattended fixture is now weak enough that the bar sits near where D103's collapse did,
+    /// and — like `CapacityIsWhatHoldsThePopulationFlat` — it wants re-posing on a village somebody
+    /// plays (an opening, a fishery) before the next economy change is measured against it.
+    /// </remarks>
+    private const int LiveableValleysWanted = 5;
+
+    // ---------------------------------------------------------------
+    //  Water you have to go round — specs/pathfinding-and-water.md (D40)
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void NobodyEverStandsOnWater()
+    {
+        // The regression this whole slice exists to prevent, asserted every tick
+        // rather than inferred from the village surviving.
+        SimConfig config = Config;
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL);
+
+        for (int i = 0; i < config.TicksPerYear * 60; i++)
+        {
+            loop.StepOnce();
+
+            foreach (Villager villager in loop.World.Villagers)
+            {
+                if (!villager.Alive)
+                {
+                    continue;
+                }
+
+                Assert.NotEqual(Terrain.Water, loop.World.Map.TerrainAt(villager.Tile));
+            }
+        }
+    }
+
+    [Fact]
+    public void NothingIsEverBuiltOnWater()
+    {
+        // Homes, workplaces and stores alike. A building in the river is unreachable
+        // by construction (TerrainCostField refuses to serve one), so this failing
+        // would show up later as a village that mysteriously cannot make firewood —
+        // which is exactly how it did show up on seed 1.
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed);
+            loop.Step(config.TicksPerYear * 60);
+            SimWorld world = loop.World;
+
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(workplace.Tile));
+            }
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(store.Tile));
+            }
+
+            foreach (Household household in world.Households)
+            {
+                // Only houses that stand. One being built is a workplace, and the loop
+                // above has already checked that none of those is in the river (D102).
+                if (household.HasHome)
+                {
+                    Assert.NotEqual(Terrain.Water, world.Map.TerrainAt(household.Home()));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void EveryVillageCanReachItsOwnBuildings()
+    {
+        // §6 of the pathfinding spec: until bridges exist (D40) the generator owes the
+        // village a valley it can live in. A warehouse on the far bank is as useless as one
+        // under water, and the difference is invisible on the map.
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 20; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            GridPos home = world.Households[0].Home();
+
+            foreach (StoreBuilding store in world.StoreBuildings)
+            {
+                Assert.True(world.TravelCost.CanReach(home, store.Tile),
+                    $"Seed {seed}: {store.Name} is cut off from the village.");
+            }
+
+            int reachableForage = 0;
+            foreach (Workplace workplace in world.Workplaces)
+            {
+                if (workplace.Kind == JobKind.Forager
+                    && world.TravelCost.CanReach(home, workplace.Tile))
+                {
+                    reachableForage++;
+                }
+            }
+
+            Assert.True(reachableForage > 0, $"Seed {seed}: no forage site is reachable at all.");
+        }
+    }
+
+    /// <summary>⭐ Crossing the river costs more than the crow flies.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ IT USED TO PIN SEED 1 AND HOPE, AND THE HOPE RAN OUT.</b> It measured every
+    /// workplace from one home and demanded that at least one route detour — which was true of
+    /// seed 1 while the generator happened to put a building across the water, and stopped
+    /// being true when the thickets retired and every workplace became something the player
+    /// sites. The guard then reported *"either the terrain is not being read, or this seed has
+    /// no water in the way"*, and it was the second — **a true statement about seed 1's layout
+    /// wearing the costume of a broken cost field.**
+    /// </para>
+    /// <para>
+    /// <b>So it constructs the crossing instead of shopping for one.</b> Find a run of water
+    /// with dry land on both banks and walk between those two tiles: that is the claim — *water
+    /// is impassable and every journey goes round it* (D40) — asked directly of the cost field,
+    /// with nothing riding on where a building happened to land. Same lesson as this session's
+    /// work-ground fixture: a guard that searches for its own precondition is a guard that
+    /// reports the search.
+    /// </para>
+    /// <para>
+    /// Its anti-vacuity twin is <see cref="WithNoRiverEveryCostIsTheStraightLine"/> below —
+    /// without that, a field quietly returning Manhattan distance everywhere would pass this.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AWalkAcrossTheRiverIsLongerThanTheStraightLine()
+    {
+        SimConfig config = Config;
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+
+        Assert.True(
+            OppositeBanks(world, out GridPos west, out GridPos east),
+            "This valley has no river with dry land on both banks, so there is nothing to cross.");
+
+        int path = world.TravelCost.Cost(west, east);
+        int straight = west.ManhattanDistanceTo(east) * TravelCostField.BaseTileCost;
+
+        _output.WriteLine(
+            $"{west} to {east} across the water: "
+            + (path == TravelCostField.Unreachable ? "no way round at all" : $"costs {path}")
+            + $", against {straight} as the crow flies.");
+
+        // Unreachable counts: a river with no way round is the strongest form of the claim.
+        Assert.True(path == TravelCostField.Unreachable || path > straight,
+            $"Walking from {west} to {east} straight through the river cost {path}, the same as "
+            + "the crow flies — the terrain is not being read.");
+    }
+
+    /// <summary>Two dry tiles with a run of water between them, on one row.</summary>
+    private static bool OppositeBanks(SimWorld world, out GridPos west, out GridPos east)
+    {
+        for (int y = world.Map.MinY; y < world.Map.MinY + world.Map.Height; y++)
+        {
+            for (int x = world.Map.MinX + 1; x < world.Map.MinX + world.Map.Width - 1; x++)
+            {
+                if (world.Map.TerrainAt(new GridPos(x, y)) != Terrain.Water
+                    || world.Map.TerrainAt(new GridPos(x - 1, y)) == Terrain.Water)
+                {
+                    continue;
+                }
+
+                int end = x;
+                while (end < world.Map.MinX + world.Map.Width - 1
+                    && world.Map.TerrainAt(new GridPos(end, y)) == Terrain.Water)
+                {
+                    end++;
+                }
+
+                if (world.Map.TerrainAt(new GridPos(end, y)) == Terrain.Water)
+                {
+                    continue;
+                }
+
+                west = new GridPos(x - 1, y);
+                east = new GridPos(end, y);
+                return true;
+            }
+        }
+
+        west = default;
+        east = default;
+        return false;
+    }
+
+    [Fact]
+    public void WithNoRiverEveryCostIsTheStraightLine()
+    {
+        // The anti-vacuity twin (D7). If the field were broken in the other direction —
+        // always going the long way round, or always reporting unreachable — the test
+        // above would still pass. This pins the other end: with nothing in the way, a
+        // real path and plain distance must agree exactly.
+        SimConfig config = Config with { RiverWidthTiles = 0 };
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seedOverride: 1UL).World;
+
+        GridPos from = world.Households[0].Home();
+
+        // ⚠️ BUILDING TO BUILDING, NOT TILE TO TILE (D386). A house is two tiles wide now, and a
+        // walk between two buildings is the walk between their nearest tiles — the field leaves
+        // from and arrives at a footprint, not an anchor — so *the straight line* is the shortest
+        // Manhattan distance between any tile of the house and any tile of the workplace. Read
+        // 40 against 50 the day the founders' houses grew a second tile.
+        List<GridPos> houseTiles = world.HomeFootprintOf(world.Households[0])!.Value.CoveredTiles();
+
+        // ⚠️ AND "NOTHING IN THE WAY" HAS MEANT "NO WATER" SINCE D383 MADE BUILDINGS OBSTACLES:
+        // the founding's own stores and the other founders' houses stand between a home and
+        // some of its workplaces, and a walk round one costs a tile or two (D383 prices one a
+        // leg). Every walk is at least the straight line, at most two tiles over it, and at
+        // least one is the straight line exactly — which is still the claim: the field neither
+        // always goes the long way round nor ever says unreachable on dry land.
+        int exact = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            int path = world.TravelCost.Cost(from, workplace.Tile);
+            int nearest = int.MaxValue;
+            foreach (GridPos mine in houseTiles)
+            {
+                foreach (GridPos theirs in workplace.Footprint.CoveredTiles())
+                {
+                    nearest = Math.Min(nearest, mine.ManhattanDistanceTo(theirs));
+                }
+            }
+
+            int straight = nearest * TravelCostField.BaseTileCost;
+            _output.WriteLine($"{workplace.Name}: {path} against {straight} as the crow flies");
+            // ⚠️ AND SINCE D404 A FENCE IS A WALL: a house's own yard can stand between its door and
+            // the work, and the walk goes round it — up to a yard's depth more. Read 110 against 70
+            // (the builder's hut behind the founder's yard) the day fences became walls.
+            // D412: the deepest yard a hash can give, in whole rows behind the house — and its
+            // widest, because a yard turned toward its path can stand side-on to the work, and the
+            // walk goes round its width as well as its depth (read 140 against 70).
+            int deepest = 1 + (config.HomeYardBackQuarters.Max() / 4);
+            int widest = 2 + ((config.HomeYardSideQuarters.Max() + config.HomeYardOtherSideQuarters.Max() + 3) / 4);
+            Assert.InRange(path, straight, straight + ((2 + deepest + widest) * TravelCostField.BaseTileCost));
+            if (path == straight)
+            {
+                exact++;
+            }
+        }
+
+        // ⚠️ AND THE "EXACTLY STRAIGHT" HALF IS ASKED OF OPEN GROUND (D475). It was asked of the
+        // founders' walks, and needed one of them to leave a house facing its work — on seed 1's valley
+        // once the seams were scattered, the house faces away from all five and every walk goes round
+        // its own fenced yard, inside the bound above and never exact. The claim was always that the
+        // field does not go the long way round where nothing is in the way, so it is asked where
+        // nothing is: a run of open tiles along a row, end to end.
+        if (exact == 0)
+        {
+            (GridPos a, GridPos b) = AnOpenRun(world, 8);
+            int open = world.TravelCost.Cost(a, b);
+            _output.WriteLine($"open ground {a} to {b}: {open} against {a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost}");
+            Assert.Equal(a.ManhattanDistanceTo(b) * TravelCostField.BaseTileCost, open);
+        }
+    }
+
+    /// <summary>The first row run of <paramref name="length"/> + 1 tiles with nothing standing on it and no water.</summary>
+    private static (GridPos From, GridPos To) AnOpenRun(SimWorld world, int length)
+    {
+        GeneratedMap map = world.Map;
+        for (int y = map.MinY; y < map.MinY + map.Height; y++)
+        {
+            for (int x = map.MinX; x + length < map.MinX + map.Width; x++)
+            {
+                bool clear = true;
+                for (int k = 0; k <= length && clear; k++)
+                {
+                    var at = new GridPos(x + k, y);
+                    clear = map.TerrainAt(at) != Terrain.Water && !world.SomethingStandsAt(at)
+                        && world.Zones.WallsOn(at) == 0;
+                }
+
+                if (clear)
+                {
+                    return (new GridPos(x, y), new GridPos(x + length, y));
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("No open run of ground anywhere in the valley.");
+    }
+
+    [Fact]
+    public void AreTheseValleysWorthPlayingTwice()
+    {
+        // Not an assertion — a contact sheet. The one question about generated worlds
+        // that no test can answer is whether they are interesting, and the honest
+        // thing is to put them where a human will look rather than declare it done on
+        // the strength of the property tests passing (spec §9).
+        SimConfig config = Config;
+
+        for (ulong seed = 1; seed <= 3; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink(), seed).World;
+            _output.WriteLine($"---- seed {seed} ----");
+            _output.WriteLine(Draw(world, radius: 14));
+            _output.WriteLine(string.Empty);
+        }
+    }
+
+    /// <summary>A small ASCII window on the valley around the settlement.</summary>
+    private static string Draw(SimWorld world, int radius)
+    {
+        GridPos centre = world.Map.FoundingSite;
+        var text = new StringBuilder();
+
+        for (int y = centre.Y - radius; y <= centre.Y + radius; y++)
+        {
+            for (int x = centre.X - radius * 2; x <= centre.X + radius * 2; x++)
+            {
+                var here = new GridPos(x, y);
+                text.Append(SymbolAt(world, here));
+            }
+
+            text.AppendLine();
+        }
+
+        text.AppendLine("  . grass   ~ water   \" forest   F forage   T stand   h home   G granary   S warehouse   M market");
+        return text.ToString();
+    }
+
+    private static char SymbolAt(SimWorld world, GridPos here)
+    {
+        foreach (StoreBuilding building in world.StoreBuildings)
+        {
+            if (building.Tile == here)
+            {
+                return building.Kind switch
+                {
+                    StoreKind.Granary => 'G',
+                    StoreKind.Warehouse => 'S',
+                    _ => 'M',
+                };
+            }
+        }
+
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Tile == here)
+            {
+                return workplace.Kind switch
+                {
+                    JobKind.Forager => 'F',
+                    JobKind.Forester => 'T',
+                    JobKind.Woodcutter => 'W',
+                    _ => 'M',
+                };
+            }
+        }
+
+        foreach (Household household in world.Households)
+        {
+            if (household.Home() == here)
+            {
+                return 'h';
+            }
+        }
+
+        return world.Map.TerrainAt(here) switch
+        {
+            Terrain.Water => '~',
+            Terrain.Forest => '"',
+            _ => '.',
+        };
+    }
+}

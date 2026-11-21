@@ -72,9 +72,9 @@ when it is not needed.
 
 ## 4. ⛔ The shape is ONE function, and that is the point of this slice
 
-`BrushStroke.TilesUnder(centre, radius, shape)` in `src/Bclone.Sim/World/BrushStroke.cs`. Pure,
+`BrushStroke.TilesUnder(centre, radius, shape)` in `src/Kith.Sim/World/BrushStroke.cs`. Pure,
 integer-only, Godot-free, and **in the library that has tests** — `tests/` has no project
-referencing `Bclone.Game` at all, so a shape predicate left in the view is untestable by
+referencing `Kith.Game` at all, so a shape predicate left in the view is untestable by
 construction. Precedent: `HarvestBrush` is a brush concept that already lives in the sim.
 
 **Both loops call it and neither keeps a `for`:**

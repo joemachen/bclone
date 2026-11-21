@@ -197,13 +197,13 @@ the hole this spec closes.
 ⚠️ **The view has no automated verification of any kind** (D11, D160). That is a known, accepted
 hole. What exists instead:
 
-1. **`dotnet build src/Bclone.Game/Bclone.Game.csproj`** — the only build that compiles the view.
+1. **`dotnet build src/Kith.Game/Kith.Game.csproj`** — the only build that compiles the view.
    ⛔ A green root `dotnet build` says nothing about it (`METHODOLOGY §116`).
-2. **`BCLONE_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Bclone.Game`** — the only thing that
+2. **`KITH_PROBE_WIDTHS=1 "$GODOT" --headless --path src/Kith.Game`** — the only thing that
    catches a view throw. A `ProfessionName` crash once fired **3,609 times** while the suite was
    green. Extended per §5.3.
 3. **`dotnet test`** — **927 / 0 / 2 of 929, unchanged.** Every file this spec touches is in
-   `Bclone.Game`, which is not in the solution. **Any test movement means the change leaked.**
+   `Kith.Game`, which is not in the solution. **Any test movement means the change leaked.**
 4. **Joe's eyes**, which is the actual test.
 
 ---
@@ -226,7 +226,7 @@ hole. What exists instead:
 ## 8. Open
 
 0. ⚠️ **THE BAR HAS NEVER BEEN MEASURED OR SEEN.** §6's checks 1 and 3 are green in CI; **check 2,
-   the width probe, needs a Godot install and CI has none** (`ci.yml`: *"Bclone.Sim is deliberately
+   the width probe, needs a Godot install and CI has none** (`ci.yml`: *"Kith.Sim is deliberately
    engine-free, so CI needs no Godot install"*). So the strip's width and the mark-inside-a-button
    geometry are still guesses.
 1. ~~**Move and Empty's tabs**~~ ✅ **CLOSED 2026-09-06 — his word now, see §3.1.**

@@ -17,7 +17,7 @@ holds the tailor, the mine, the workshop and the carts). Joe's verdict covers wh
 ## How to walk it
 
 - **Start:** `.\run.bat` in PowerShell. The game writes its own log the moment it opens — nothing to switch on. When you
-  are done, just quit the game normally; Claude reads the newest logs in `src/Bclone.Game/logs/` and `logs/`.
+  are done, just quit the game normally; Claude reads the newest logs in `src/Kith.Game/logs/` and `logs/`.
 - **Two runs cover everything.** **Run A** is a new game you play forward from the founding (sections 1–4). **Run B**
   is a late save for what takes decades to reach (sections 5–6): **your Hollowmere's `year-66.save`** (`hollowmere-rook-hare-85`
   — it has already learned the cottage and the manor and builds cottages, so every house-tiers switch is there), played on

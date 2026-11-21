@@ -1,17 +1,17 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // House tiers piece 1 (`specs/house-tiers.md §10` arm B, §14.1, D718): the family-tree gates' timing. Per valley, the year
 // each generation is first born, and the year the village first holds 15 / 20 / 25 / 30 / 45 people, over ZZ_YEARS (100).
 // The opening played as `ColdStartTests` does, a granary and a warehouse marked at Year 3, then unattended — ⚠️ a harness is
 // not a player (D447) and no harness village grows the way Joe's do, so the populations are read off his saves as well
 // (§4.4's table); the generations are what this measures.
-// Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzGenerations --logger "console;verbosity=detailed"`; delete.
+// Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzGenerations --logger "console;verbosity=detailed"`; delete.
 public sealed class ZzGenerations
 {
     private static readonly int[] Sizes = { 15, 20, 25, 30, 45 };
@@ -29,7 +29,7 @@ public sealed class ZzGenerations
         string arm = fixture ? "fixture" : "shipped";
 
         SimConfig config = (fixture ? VillageFixtures.Village : ShippedConfig.Load()) with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
 

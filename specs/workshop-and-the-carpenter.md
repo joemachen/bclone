@@ -14,7 +14,7 @@ refused, never half-loaded), D660 (a typed starting limit is hashed and moves ev
 **Status:** ✅ **BUILT (D678, 2026-11-01) ON `claude/slice-workshop-2083f6` — SIM, DATA, TESTS, VIEW AND DOCS IN ONE COMMIT; ✅ PLAYED BY JOE (2026-11-04, Hollowmere: the workshop lit at 2,511 logs in Summer,
 Year 34, a carpenter made carts, every household carted plus a spare, the idle sentence right — *"everything else works properly
 for the workshop"*); THE UNLOCK LOWERED TO 1,500 AT HIS SECOND CALL (D682: *"it took me too long for the workshop. bring it down
-to 1500"*), WHICH THE FOUR FIFTY-YEAR GOLDENS CROSS — EACH MOVED ONCE, PROVED AND RE-PINNED (§4.1b); MERGED INTO `main` (D684, 2026-11-04).** `tests/Bclone.Sim.Tests/WorkshopTests.cs` holds §9's guards (20 facts), each red-checked and counted (§9 *as built*);
+to 1500"*), WHICH THE FOUR FIFTY-YEAR GOLDENS CROSS — EACH MOVED ONCE, PROVED AND RE-PINNED (§4.1b); MERGED INTO `main` (D684, 2026-11-04).** `tests/Kith.Sim.Tests/WorkshopTests.cs` holds §9's guards (20 facts), each red-checked and counted (§9 *as built*);
 §10's table was filled on the harness **before** a number was typed into `data/sim.config.json`, and every proposal stood
 (a workshop at Year 5 costs the roofs nothing a seed can see); the four checks are green, bar 151, `done.`; **392 goldens, every
 value unchanged but four — the farm-and-clear pair, which fells 3,180 logs in twenty years and learns the
@@ -81,7 +81,7 @@ they were.
 | A skill row | `SkillRow` 9 *tailoring*; safe to add since `founding_trades` is a stated list (D392) | row 10, *carpentry* |
 | A learned-by-doing unlock | `quarry_unlock_stone` 200 / `smithy_unlock_iron` 50 / `mill_unlock_wheat` 5000 / `tailor_unlock_leather` 50 / `bridge_unlock_population` 10 / `stone_bridge_unlock_crossings` 150; a `WhyNotYet` arm, a `TechNodeRow` with a `TechCondition`, `TechTree.ProgressOf`, `TechTreeView.HowFar`'s sentence, `LearnedByDoing` (the log line and the map's first showing), the bar's `RefreshALearnedButton` | `workshop_unlock_logs` against `SimWorld.LogsEverFelled` (§4.1a) |
 | The wood counter | `SimWorld.LogsEverFelled`, counted at the stump (D382), saved as `logs_ever_felled`, **not hashed** — *"statistics, not state: nothing in the sim reads them"*; `StoneEverDug` beside it says what must change the day something does | sets a learned flag where it moves; the flag is the state and is hashed (§4.1a, §7) |
-| The view | the smithy's button under *Works* (`BuildCategory.Works`), `BuildingGlyph` / `TradeGlyph` colours under the three-band rule (D637, `tools/legibility/check.py`), the idle sentence (`Main.cs` ~3769), the probe (`BCLONE_PROBE_WIDTHS`) | §6 |
+| The view | the smithy's button under *Works* (`BuildCategory.Works`), `BuildingGlyph` / `TradeGlyph` colours under the three-band rule (D637, `tools/legibility/check.py`), the idle sentence (`Main.cs` ~3769), the probe (`KITH_PROBE_WIDTHS`) | §6 |
 | Save and load | `SaveGame.Format` 9; `SaveLoadTests.Fields` names every field or fails (`EveryFieldIsSavedOrNamed`); a missing key throws (D510) | §7 |
 
 ⚠️ **Found while tracing: `tools-and-the-smith.md §3.6` and its §4 table say `smithy_stone` 12; the shipped config says 36**
@@ -333,7 +333,7 @@ households list, the same cost as `ClothingWanted`'s over the villagers.
 ### 4.5 Every switch the tailor joined, the carpenter joins
 
 The tailor's slice recorded *"every Miller/Baker switch gains Tailor"* (`clothing.md §8` item 3). The grep to run on
-the day: `JobKind.Tailor` in `src/Bclone.Sim` — `SimConfig.cs` (the rows), `SimWorld.cs` (`BatchFor`, the batch
+the day: `JobKind.Tailor` in `src/Kith.Sim` — `SimConfig.cs` (the rows), `SimWorld.cs` (`BatchFor`, the batch
 trades' `WorkTicksFor` arm at ~2445, the standing-shop list at ~3989), `BehaviorSystem.cs` (state → trade, ~5392),
 `LabourAllocator.cs` (`KindsInOrder`), `LabourQuota.cs` (`Asked`, `AtLeastPinned`, the stood-down-by-limit switch at
 ~963). Each gains Carpenter; a guard holds the list (§9).
@@ -451,7 +451,7 @@ D553 call 6 owed *"the builder's hut growing into a workshop with a carpenter tr
 - `building-condition.md §4.6` already points here (*"its shape, redefined, is sketched in `handcart.md §5`"*); it
   gains this spec's name when this slice is built, in that commit.
 
-## 9. How it is tested — `tests/Bclone.Sim.Tests/WorkshopTests.cs`
+## 9. How it is tested — `tests/Kith.Sim.Tests/WorkshopTests.cs`
 
 TDD, red first, each red-checked by a mutant and the reds counted (D326); a zero is written down, never hidden.
 

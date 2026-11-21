@@ -21,7 +21,7 @@ marks just inside each bank that follow its turns, a few loose ripple arcs out i
 middle than at the edges. This spec draws those three things and sets the ripples moving downstream while the game runs.
 
 - **Behind the watercolour tick**, like every §7 piece. With the tick off the map is byte for byte what it is today.
-- **Rendering only.** `git diff main -- src/Bclone.Sim data tests` stays empty; no golden can move.
+- **Rendering only.** `git diff main -- src/Kith.Sim data tests` stays empty; no golden can move.
 - **Not in this spec:** relief (§7 piece 5, though §3's table is built so it can reuse it); calmer ground (piece 2);
   fish, boats, the fishing hut's water; a frozen river — **the river never freezes** (`fishing.md §10.3`), so the
   ripples run all year and stay off A41's icy rim.

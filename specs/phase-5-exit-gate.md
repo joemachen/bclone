@@ -151,7 +151,7 @@ and the walk are different items). His walk is also item 5's played run (§7) an
 
 - **The four checks** (CLAUDE.md) on the merged tree, at the merge.
 - **The played run:** Joe's QA walk, long enough to reach the content on the checklist. The game writes its own log to
-  `src/Bclone.Game/logs/bclone-<date>-<time>.log` (every level, `ERROR` spelt in capitals); `run.bat` writes Godot's to
+  `src/Kith.Game/logs/Kith-<date>-<time>.log` (every level, `ERROR` spelt in capitals); `run.bat` writes Godot's to
   `logs/run_<date>_<time>.log` (UTF-16). Both are scanned for `ERROR` after the walk.
 - **Baseline, measured 2026-11-14 before anything else:** Joe's eight longest sessions since 2026-11-01 (7,400–153,000
   lines, the longest 14 MB) hold **0 `ERROR` and 0 `WARN`** in the game's log; `run.bat`'s six largest hold **0 `ERROR`**,
@@ -165,5 +165,5 @@ and the walk are different items). His walk is also item 5's played run (§7) an
   thread inside `GD.Load<ValleyWatercolourLook>` while the finalizer disposed an earlier wrapper; the look is loaded once
   and held — **0 of 6 runs reached `done.` before, 8 of 8 after.**
 - ✅ **Joe's walk, the played run (D745):** `year-66.save` played on to about Year 86 on D744's build —
-  `bclone-20261114-122034.log`, 85,317 lines, **0 `ERROR`, 0 `WARN`**; `run_20261114_121945.log` 0 `ERROR`. ⏸️ His checklist
+  `Kith-20261114-122034.log`, 85,317 lines, **0 `ERROR`, 0 `WARN`**; `run_20261114_121945.log` 0 `ERROR`. ⏸️ His checklist
   verdicts close item 3.

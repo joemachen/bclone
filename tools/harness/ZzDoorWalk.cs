@@ -1,20 +1,20 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Logging;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D623's MEASUREMENT — what a door's in-and-out costs a walk, so the economy can price it (`doors.md §5`). Kept in
-// tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit (D420).
+// tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit (D420).
 // Twenty fixture villages (the village fixture and the established warm start, seeds 1–10, ten years each); in each, the
 // same walks priced twice — through the doors, and with `DoorsOnEverySide` (D383's any side) — and the difference in tiles:
 //   ZZW passage — a free reached tile within 6 of a doored building, to it: one way in.
 //   ZZW leg     — one doored building to another: a way out and a way in.
 //   ZZW haul    — a farm's field tile to its farmhouse and back (the village fixture with a farm raised at Year 0).
-// Run: cp in, `dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzDoorWalk" --logger
+// Run: cp in, `dotnet test tests/Kith.Sim.Tests -c Release --filter "FullyQualifiedName~ZzDoorWalk" --logger
 // "console;verbosity=detailed"`, delete.
 public sealed class ZzDoorWalk
 {

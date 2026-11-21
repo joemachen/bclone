@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ THE HERD'S MEASUREMENT HARNESS — commit 0 of `specs/trade.md §11` (D588), the numbers `specs/livestock.md §10`
-// asks for before anything is typed. Kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED
+// asks for before anything is typed. Kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED
 // from there before any commit. Never committed under tests/.
 //
 //   ZZK — Cold (once): the shipped exposure numbers as ticks — how long outdoors before a villager breaks off for a
@@ -37,7 +37,7 @@ public sealed class ZzHerd
     public void Cold()
     {
         SimConfig config = ShippedConfig.Load();
-        SimLoop loop = SimFactory.CreatePhase0(config with { Seed = 12345 }, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config with { Seed = 12345 }, new Kith.Sim.Logging.InMemoryLogSink());
         int perTick = config.ExposurePerTickOutdoors;
         int threshold = config.ExposureThreshold;
         int breakOff = perTick == 0 ? -1 : threshold * config.SeekShelterPercent / 100 / perTick;
@@ -60,7 +60,7 @@ public sealed class ZzHerd
         int aTile = new GoodsCatalog(config.GoodsCatalog).YieldPerTileOf(Goods.Stone);
         int extraRock = (stoneTheyCost + aTile - 1) / aTile;
 
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         foreach ((string name, int limit) in config.StartingStockLimits)
         {

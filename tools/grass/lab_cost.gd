@@ -1,7 +1,7 @@
 # The grass look's GPU cost (`specs/grass-look.md` §5, D632) — a tool, never part of the game. Re-run it whenever the
 # terrain shader gains a layer, and put the new table beside the old.
 #
-#   "$GODOT" --path src/Bclone.Game -s "$(pwd -W)/tools/grass/lab_cost.gd"
+#   "$GODOT" --path src/Kith.Game -s "$(pwd -W)/tools/grass/lab_cost.gd"
 # (PowerShell: -s "$PWD\tools\grass\lab_cost.gd". The path must be absolute: a relative one is read as res://.)
 #
 # ⭐ THE METHOD, AND WHY (D631's first pass was noise — "all three" cheaper than mixing alone):

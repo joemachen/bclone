@@ -1,18 +1,18 @@
 using System.Diagnostics;
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D507's MEASUREMENT — what a replay save would cost to load: the founding plus fifty shipped years,
-// timed. Kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before
+// timed. Kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before
 // any commit. Run: cp, then
-//   dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzReplay" --logger "console;verbosity=detailed"
+//   dotnet test tests/Kith.Sim.Tests -c Release --filter "FullyQualifiedName~ZzReplay" --logger "console;verbosity=detailed"
 // Four arms: "unattended" (founded and left), "played" (ColdStartTests' opening, a granary and a
 // warehouse at year 3 — ZzBase's shape), "every" (played, plus a lodge, a fishery and a farm — ZzBase's
 // "every") and "established" (the warm founding, ShippedConfig.Established). One ZZR line per run: founding ms, fifty-year ms, ticks/sec,
@@ -31,7 +31,7 @@ public sealed class ZzReplay
         SimConfig config = (arm == "established" ? ShippedConfig.Established() : ShippedConfig.Load()) with { Seed = seed };
 
         var found = Stopwatch.StartNew();
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         found.Stop();
 

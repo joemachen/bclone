@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 HERE = pathlib.Path(__file__).resolve().parent
-LOOK = HERE.parent.parent / "src" / "Bclone.Game" / "looks" / "grass_approved.tres"
+LOOK = HERE.parent.parent / "src" / "Kith.Game" / "looks" / "grass_approved.tres"
 sys.path.insert(0, str(HERE))
 import grass_antitile_ref as ref  # noqa: E402
 

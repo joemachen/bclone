@@ -96,7 +96,7 @@ place played again.* The screen is where that becomes something the player does.
 
 ## 4. The seed
 
-`SeedText.ToSeed(string text) → ulong`, in `Bclone.Sim` (pure, pinned by tests — a seed somebody
+`SeedText.ToSeed(string text) → ulong`, in `Kith.Sim` (pure, pinned by tests — a seed somebody
 wrote on a forum must give the same valley forever):
 
 1. **Normalised:** trimmed; runs of whitespace become one space; lower-cased (invariant culture).

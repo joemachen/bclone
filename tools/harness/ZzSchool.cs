@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D756's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there
+// ⛔ D756's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there
 // before any commit (D420). `school-and-education.md §12` step 3: what a school costs a village and what A and B return,
 // measured before its sizes are typed. WALK — the able adults' years walking and carrying (D761: what fuller loads return).
 //
@@ -26,7 +26,7 @@ namespace Bclone.Sim.Tests;
 // SHELTER — villager-days going in to get warm (the winter's lost work); adult work-years (able, not a pupil); and the
 // same weighted by vigour — the work a village's strength is actually worth (A's real return: a 33-year-old is ~96 % strong).
 //
-// Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzSchool --logger "console;verbosity=detailed"` per
+// Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzSchool --logger "console;verbosity=detailed"` per
 // arm; delete.
 public sealed class ZzSchool
 {
@@ -53,7 +53,7 @@ public sealed class ZzSchool
         {
             Seed = seed, SchoolOldAgePercent = oldAge, SchoolCarryPercent = carry, SchoolHeedPercent = heed, SchoolStartingAge = start, SchoolLeavingAge = leave,
         };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
 

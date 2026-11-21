@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 REM =============================================================
-REM  test.bat - run the bclone test suite locally
+REM  test.bat - run the Kith test suite locally
 REM  Includes unit tests + the determinism test (see METHODOLOGY.md).
 REM =============================================================
 
@@ -13,11 +13,11 @@ set LOGFILE=logs\test_!STAMP!.log
 REM ---- Stack: C# / .NET 8 + Godot 4 (DESIGN.md decision D1) ----
 REM Runs the whole solution, which is the sim library and its tests.
 REM The determinism suite is part of this run - see METHODOLOGY.md §3.
-set CMD=dotnet test bclone.sln --nologo
+set CMD=dotnet test Kith.sln --nologo
 REM --------------------------------------------------------------
 
 echo ================================================================
-echo  bclone - TEST
+echo  Kith - TEST
 echo  Log: !LOGFILE!
 echo ================================================================
 echo.

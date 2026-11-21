@@ -206,7 +206,7 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
 
 ## 8. Where it lives
 
-- **`Bclone.Sim/Persistence/`, pure and tested** (as built, D509): `SaveGame` (the header record, `Capture`,
+- **`Kith.Sim/Persistence/`, pure and tested** (as built, D509): `SaveGame` (the header record, `Capture`,
   `HeaderOf`, `ConfigFor` — today's data with the save's share code, through `NewGame.TryRead` and
   `NewGame.Apply` — and `Load`), `SaveFile` (gzip, the atomic write, the autosave rotation, and **`Open`,
   the one door a save comes in by**, which never throws for anything in the file) and `SaveData`
