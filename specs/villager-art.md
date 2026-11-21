@@ -248,3 +248,36 @@ map asking as if housed; resting never indoors).
   it is painted once on its own and drawn under them, so they can step and lean above it (`villager-animation.md §8`).*
 - **Renders of the build** on Joe's saves: `D:\Projects\brushes\villagers\built_people.jpg` (the game's own drawing, 2×).
 - **The four checks** (A93): the suite 2048 passed, 0 failed, 5 skipped, 17 m 10 s; the view build 0 warnings, 0 errors; the probe every line ✅ (no ⛔ anywhere), bar height 151, tile centres ✅, new game ✅, `done.`; the goldens 418 lines, and no change in `src/Bclone.Sim`, `tests/` or `data/`.
+
+## 9. ✍️ Cloaks dyed by household — mocked (A142), ⏸️ Joe's calls
+
+Joe, 2026-11-21: *"clothes should be available in different colors so villagers aren't all green. maybe. what do you think?"*
+Today every coat is one moss cloak (`PersonPainter.Coat`, `#56703f`), drawn whenever `CoatDays > 0` — summer too — over the eight
+tunic pigments; by mid-game nearly everyone owns a coat and the village is green.
+
+- **Proposed:** the cloak dyed **by household**, from seven muted dyes a valley could make — madder `#9a4a3c`, woad `#4a6488`,
+  weld `#b8a050`, walnut `#6e5238`, undyed `#9a948a`, moss `#56703f`, a dull purple `#6c5070` — so a family reads at a glance
+  (Non-Negotiable 4: people, not a spreadsheet). View only.
+- **Mocked** on his Ravenscar Y33 with a scratch hack (reverted): `D:\Projects\brushes\villagers\cloaks\cloaks_today_vs_household.png`
+  — today above, dyed below.
+- **To build:** the dye goes on `FigureKey` (a pose is painted once per key, A93), picked in founding order so neighbours differ
+  rather than by a hash (nine households and seven dyes collide by chance in the mock).
+
+**⏸️ His calls:** (1) by household (recommended) or by person; (2) the seven dyes, or others; (3) the cloak drawn only in the cold
+seasons, or whenever owned as today (recommended: as today — the sim says nothing about wearing it).
+
+## 9a. 🔨 As built (A143) — Joe: *"Yes, as recommended"*
+
+By household; the seven dyes; worn whenever owned, as today.
+
+- `PersonPainter.CloakDyes` (madder, woad, weld, moss, a dull purple, walnut, undyed — ordered so neighbours contrast) and
+  `CloakOf(dye)`; `FigureKey.Dye`; `Who.Cloak` paints every panel of the cloak and its fold lines. No more paintings: the key
+  already holds the person.
+- `VillageMap.CloakDyeOf(householdId)` — the founding order round the seven (ids are handed out one past the highest): the first
+  seven households all differ, and a family keeps its dye for life.
+- Seen on his Ravenscar Y33: `D:\Projects\brushes\villagers\cloaks\cloaks_built.png`.
+- Probe `painted villagers:` — the seven dyes named here; founding order; two dyes differ; the coatless untouched; a woad cloak
+  keeps no moss pixel from the front, side or back. Red-check 7 mutants, 6 red; ⚠️ one zero written down (the household never
+  asked — a living village's; the render is its evidence). The first run found a gap (one panel left moss passed) — closed by
+  the no-moss check.
+

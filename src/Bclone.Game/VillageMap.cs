@@ -4869,7 +4869,7 @@ public partial class VillageMap : Control
                 foreach (Vector2I cell in byOwner[owners[i]])
                 {
                     GridPos tile = new SubTile(cell.X, cell.Y).Tile;
-                    switch (_world.Map.TerrainAt(tile))
+                    switch (FieldStageDrawn(_world.Map.TerrainAt(tile), _world.StandsOn(tile)))
                     {
                         case Terrain.Field: field.Add(cell); break;
                         case Terrain.Sown: field.Add(cell); CropCells(sown, _world.Map.CropAt(tile)).Add(cell); break;
