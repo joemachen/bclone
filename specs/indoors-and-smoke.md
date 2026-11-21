@@ -1,7 +1,7 @@
 # People going indoors, and chimney smoke
 
 > **Status: ✍️ specced and mocked (A138, 2026-11-20); ✅ his five calls answered — *"1. Smoke B please. 2. okay 3. okay 4. instant 5. permission granted"* — and 🔨 BUILT on `art`
-> (A139, §7), not merged — ⏸️ his eyes, then his word.** Claimed on `art` (A137).
+> (A139, §7); ✅ MERGED INTO `main` at his word (A140, *"Looks right, merge"*, `976212f`); not pushed.** Claimed on `art` (A137).
 > Joe, from play, 2026-11-20: *"if they dont already, villagers should go inside buildings not just appear on them (like
 > when they are cold)"* and *"buildings burning firewood should have smoke plums coming from their chimnies as long as
 > they are burning firewood"*. His order, A137: these two first. **View only** — it reads the sim and writes nothing.
