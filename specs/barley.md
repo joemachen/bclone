@@ -1,8 +1,9 @@
 # Spec: A second crop — barley (W7)
 
 > Status: **📝 SPECCED (D822, 2026-11-21) on `slice/w7-barley`; ✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as
-> recommended"*); ⏸️ CALL 1 REOPENED BY JOE — barley learned from the wild, by foraging (§9.1). Nothing built.**
-> *(Read "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
+> recommended"*); ✅ CALL 1: BARLEY IS FOUND WILD BY A FORAGER (D824, *"Yes, the forager's find"*, §9.1) —
+> every call answered; 🔨 the build (§10), the gate's number measured before it is typed.** *(Read "⏸️ call 1 reopened" at D823,
+> "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
 > Phase 6, W7 of the workplan (`systems-complete.md §5.1`), moved ahead of W3 at Joe's word (D821, *"Yes, barley first"*).
 >
 > Neighbours: `crops-and-orchards.md` (the farm, the field, the calendar — D161/D162), D348 (a crop is a `CropRow`),
@@ -133,7 +134,7 @@ stalks in barley's colour (§6) — never drawn as nothing. Also: barley's colou
 
 **✅ Calls 2–5 as recommended (D823, 2026-11-21, *"I like all as recommended"*). ⏸️ Call 1 reopened by him — §9.1.**
 
-1. **Can a new village grow barley from the start, or does it have to learn it?** *Recommended: from the start.* It is a
+1. ✅ **Superseded by §9.1 (D824): learned when a forager finds it wild.** ~~**Can a new village grow barley from the start, or does it have to learn it?** *Recommended: from the start.*~~ It is a
    field choice, not a new building, and it is the answer to a blight W8 will bring — a gate in front of an answer is a
    pressure with no answer yet. (The alternative: learned by doing, e.g. after some wheat is reaped.)
 2. **Does barley give the same harvest as wheat — same yield, same sowing and reaping seasons?** *Recommended: yes, the
@@ -148,7 +149,7 @@ stalks in barley's colour (§6) — never drawn as nothing. Also: barley's colou
 5. **The mill grinds wheat only — no barley flour, and barley does not count toward learning the mill?** *Recommended:
    yes.* Wheat's chain stays wheat's (bread), barley's is beer (W3). That is D821's whole reason for barley.
 
-### 9.1 ⏸️ Call 1, reopened — barley found wild by a forager (Joe, D823)
+### 9.1 ✅ Call 1 — barley found wild by a forager (Joe, D823; answered D824, *"Yes, the forager's find"*)
 
 Joe: *"if barley is available from the start, then beer should be available from the start, and bars/pubs, brewers? it
 feels like a lot and should be unlocked somehow … is there wild barley? could a forager "discover" barley after X forage
@@ -174,7 +175,11 @@ units harvested"*.
 - **Goldens:** the unattended villages forage, so they will learn barley; the learned flag is hashed, so goldens move
   once, each proven by ablation (the gate set out of reach reproduces today's).
 
-*Recommended now: the forager's find* (his idea), over barley from the founding.
+*Recommended: the forager's find* (his idea), over barley from the founding. ✅ **Taken (D824).** Shape: a
+`BarleyLearned` latch, hashed as a tag byte when set and saved as `barley_learned`; `ForageEverGathered` an unhashed,
+saved statistic beside it — the workshop's shape exactly (D676/D678), because every village forages from day one and
+hashing the counter would move every golden for a difference below the gate that nothing reads. A tech node `barley`
+(`TechCondition.ForageGathered`) shows the road in *Lore*; the moment is a learned-by-doing stop (D442).
 
 ## 10. How it is built and tested, once the calls are in
 

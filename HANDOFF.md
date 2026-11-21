@@ -2,8 +2,8 @@
 
 > **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
 > (`specs/barley.md`), Joe's calls before code. The only systems branch open; `art` is the other.**
-> **✅ CALLS 2–5 AS RECOMMENDED (D823). ⏸️ CALL 1 REOPENED BY JOE: barley learned when a forager finds it wild
-> (`barley.md §9.1`). Nothing built.** *(Read "📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S" at D822.)*
+> **✅ EVERY CALL ANSWERED: 2–5 AS RECOMMENDED (D823), 1 THE FORAGER'S FIND (D824, *"Yes, the forager's find"*). 🔨 THE
+> BUILD, `barley.md §10`; the gate's number measured before it is typed.** *(Read "⏸️ CALL 1 REOPENED" at D823.)* *(Read "📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S" at D822.)*
 > **📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S (`barley.md §9`); nothing built. The art lane's barley paintings are a
 > ⏸️ request in the open list.**
 > - **⛔ TRAP (D822): a farm's stock limit is the TRADE's, not the farm's.** `SimWorld.MayReap()` asks the farmer row's
@@ -10836,7 +10836,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   (4) a starting limit of 2000 and the three neighbours growing 500 each — wheat's numbers; (5) the mill grinds wheat only
   and learns from wheat only. Nothing built until he answers.
   **✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as recommended"*). ⏸️ CALL 1 REOPENED BY HIM** — a forager finds
-  barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. His word.
+  barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. ✅ **HIS WORD
+  (D824, *"Yes, the forager's find"*). 🔨 Building.**
 
 - ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
   `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
