@@ -617,6 +617,7 @@ public sealed class Household
             if (!world.Map.Contains(tile)
                 || world.Map.TerrainAt(tile) == Terrain.Water
                 || TerrainRules.IsSeam(world.Map.TerrainAt(tile))
+                || world.TooSteepToBuild(tile)
                 || !world.Zones.WholeResidentialTiles.Contains(tile)
                 || world.SomethingStandsAt(tile)
                 || world.BesideAWell(tile)
