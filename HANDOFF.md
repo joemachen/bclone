@@ -21,6 +21,17 @@
 > wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
 > re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
 > a child). ▶️ STEP 5: leaving.**
+> **✅ JOE'S P0, THE VILLAGE LOG'S CRASH (D807, its own commit on this slice; his play notes, relayed by the art lane with
+> his *"All of that yes"*).** `Main.AppendNewLogLines` trimmed at 800 WRAPPED lines and kept 400 ENTRIES; entries that
+> wrap three a line are 1,200 lines, so it trimmed again every frame — `Clear()` + 400 entries re-parsed, ~30 ms a
+> refresh — and his Ravenscar died in one of those `Clear()`s after an hour and a half of it. Counts paragraphs now (one
+> an entry). Suite 2169 / 0 / 5 of 2174 in 16m48; probe 170 lines, 131 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, log trim ✅, done.. ⏸️ Joe plays it.
+> - **⛔ TRAP (D807): `RichTextLabel.GetLineCount()` counts WRAPPED lines, so it depends on the panel's width.** A limit
+>   in wrapped lines against a trim that keeps entries can sit permanently over itself. Count entries
+>   (`GetParagraphCount()`) for anything kept or trimmed — and a trim must leave the count well under what trips it.
+> - **⛔ TRAP (D807): a frame log's steady `refresh` floor is a per-frame rebuild until shown otherwise.** Joe's
+>   `refresh` sat at ~30 ms from tick ~1,500 for an hour and a half before the crash, and nothing reported it: the
+>   long-frame lines were there the whole time. A throwaway stress through the game's own refresh found it in one run.
 > **✅ STEP 5a BUILT (D806, Joe: *"No, go on to step 5"* — the first child does not wait, as built): warned after a year
 > unsettled (one `Warning` line, the card's *thinking of leaving*), gone after two at a season's turn — a couple only when
 > both are ready, the children with a couple or the last adult; `VillagerState.Left`, `LeftAtTick`, `GoneAtTick` for the
@@ -10669,10 +10680,19 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
-  log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only). It draws
-  people who are no longer alive, through `VillageMap.People.cs` / `PersonPainter.cs` — which the art lane's unmerged
-  villager animations (A131–A133 on `art`, 868 lines there) are changing. **His to call:** build 5b now on this slice
-  (a merge to settle when `art` lands), or go on to step 6's guards first and build 5b after the animations merge.
+  log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing
+  people no longer alive through `VillageMap.People.cs` / `PersonPainter.cs`. ✅ *The villager animations those files
+  carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
+  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — step 6's guards next, then 5b.
+
+- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
+  yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
+  (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
+  spare hands…"* into a tooltip on *Laborers: n*, beside *Able adults: n*; (4) the village roster's sort headers jump and
+  shift the panel; (5) the top bar drops the labourer count (it is in Professions) — maybe children / in school once
+  schools are the player's; (6) the tech tree renamed **Lore** — the words he sees, ⚠️ not the JSON keys or save fields
+  (renaming those breaks old saves and mods; he answered the art lane's recommendation *"All of that yes"*). The first
+  commit for each claims it here.
 
 - ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
   SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,

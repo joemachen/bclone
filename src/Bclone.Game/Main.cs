@@ -24,7 +24,11 @@ namespace Bclone.Game;
 /// </remarks>
 public partial class Main : Control
 {
+    /// <summary>The ENTRIES the village log keeps when it trims; it trims at twice this many (D807 — entries, not wrapped lines).</summary>
     private const int MaxLogLines = 400;
+
+    /// <summary>How many times the village log has trimmed itself — the probe's count (D807).</summary>
+    private int _logTrims;
 
     /// <summary>
     /// How many idle workplaces to name before falling back to a count.
@@ -671,6 +675,9 @@ public partial class Main : Control
 
         // The grass lab (D629) is its own scene; posed here, freed at once, and the grass textures' import read back.
         GD.Print(GrassLab.SelfCheck(this));
+
+        // Last of the lines, because it floods the village log (D807).
+        GD.Print(TheLogTrimsOnceNotEveryFrame());
         ProbeTheErrorBoundary();
         GD.Print("[widths] done.");
         GetTree().Quit();
@@ -3980,6 +3987,60 @@ public partial class Main : Control
         _ => kind.ToString().ToLowerInvariant(),
     };
 
+    /// <summary>
+    /// ⭐ D807's guard (Joe's crash): the village log, filled past its limit with entries that wrap, trims ONCE and then
+    /// not at all on frames with nothing new — where it used to trim on every frame for ever. Non-vacuous only if the kept
+    /// entries wrap past twice <see cref="MaxLogLines"/> lines, which is what the old count tripped on; said if not.
+    /// </summary>
+    private string TheLogTrimsOnceNotEveryFrame()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        int before = _logTrims;
+        int flood = (MaxLogLines * 2) + 50;
+        for (int i = 0; i < flood; i++)
+        {
+            world.Narrate(
+                $"A long sentence the probe writes, number {i}, so that one entry wraps to two or three lines in the log's "
+                + "column, as the village's own departures and deaths do.",
+                LogCategory.Life);
+        }
+
+        AppendNewLogLines();
+        int onTheFlood = _logTrims - before;
+        for (int frame = 0; frame < 5; frame++)
+        {
+            AppendNewLogLines();
+        }
+
+        int whileIdle = _logTrims - before - onTheFlood;
+        int lines = _villageLog.GetLineCount();
+        int paragraphs = _villageLog.GetParagraphCount();
+        if (onTheFlood != 1)
+        {
+            faults.Add($"{flood} entries trimmed {onTheFlood} times, not once");
+        }
+
+        if (whileIdle != 0)
+        {
+            faults.Add($"five frames with nothing new trimmed {whileIdle} more times — the every-frame loop");
+        }
+
+        if (!_villageLog.GetParsedText().Contains($"number {flood - 1},", StringComparison.Ordinal))
+        {
+            faults.Add("the newest entry is not in the log after the trim");
+        }
+
+        if (lines <= MaxLogLines * 2)
+        {
+            faults.Add($"vacuous: the kept {paragraphs} entries wrap to {lines} lines, under the {MaxLogLines * 2} the old count tripped on");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] log trim: ✅ {flood} entries trim once to {paragraphs} paragraphs ({lines} wrapped lines, past the {MaxLogLines * 2} the old count looped on), and five idle frames trim none"
+            : $"[widths] log trim: ⛔ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Append only entries not yet drawn; rebuilding would reset scroll.</summary>
     private void AppendNewLogLines()
     {
@@ -3995,8 +4056,16 @@ public partial class Main : Control
 
         _renderedLogEntries = entries.Count;
 
-        if (_villageLog.GetLineCount() > MaxLogLines * 2)
+        // ⛔⛔ COUNTED IN PARAGRAPHS — ONE AN ENTRY — NEVER IN WRAPPED LINES (D807, Joe's crash, 2026-11-20). This asked
+        // `GetLineCount()`, which counts the lines each entry WRAPS to, against keeping `MaxLogLines` ENTRIES: once the
+        // kept entries wrapped past twice that many lines (three a line in a narrow column: 400 entries, 1,200 lines), the
+        // trim fired again on the very next frame, and on every frame after it — `Clear()` and 400 entries of BBCode
+        // re-parsed, ~30 ms a refresh with nothing new, for as long as the game ran. Joe's Ravenscar ran so for an hour
+        // and a half and died inside one of those `Clear()`s (a native 0xC0000005). A paragraph is an entry and is
+        // counted without laying anything out; the trim now comes once per 400 entries.
+        if (_villageLog.GetParagraphCount() > MaxLogLines * 2)
         {
+            _logTrims++;
             _villageLog.Clear();
             _villageLog.AppendText("(earlier entries trimmed)\n");
             for (int i = entries.Count - MaxLogLines; i < entries.Count; i++)
