@@ -10742,6 +10742,15 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
   ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); ✅ **Joe, 2026-11-21: *"5b, the walk out"*** — ✅ 5b
   built (D809), `main` merged in first. **⏸️ Left: his play of W2 against `morale.md §15`, then the slice's merge at his word.**
+  **His first play, 2026-11-21: *"its actually hard to make people leave haha i didnt get it done in my last save"*.** His
+  `larkspur-heron-flax-99`, read: at autosave-3 (tick 16,320, 30 alive) he had set **woodcutters, foresters and foragers to
+  0**. Only Penret Croft was ready to leave (8 seasons, the cold winter and the fire out), and Penret was held by a
+  partner who was not unsettled, which is checklist item 5 working as built. **All 30 then died of the cold within 25
+  ticks** (autosave-2, tick 16,800). Nobody left. **The neglect killed before it unsettled**: the same thing D808 found
+  with the no-house pose. ⏸️ **His to call (a design tension, not a bug):** whether people who are freezing should leave
+  before they die rather than after two years. And for now, whether to see 5b with the leaving keys shortened for a
+  test play (`data/sim.config.json`: `contentment_thinking_of_leaving_seasons` 4 → 1, `contentment_leaving_seasons`
+  8 → 2, put back after).
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
