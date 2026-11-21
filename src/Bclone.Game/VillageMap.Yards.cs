@@ -268,6 +268,17 @@ public partial class VillageMap
         public float Turn => YardAlong.Angle();
     }
 
+    /// <summary>
+    /// ⭐ Pure: the stage a farm's tile is drawn in its field — none where a building stands (A142; Joe: <i>"if a farm field is
+    /// placed under a farmhouse, the field shouldnt be seen where the farmhouse yard exists. it presently looks like it is a
+    /// visible layer below"</i>). A yard is its building's own ground (§3: the roof drawn smaller, the yard the rest of the
+    /// footprint), washed at half strength over whatever is under it — so a field painted under a farmhouse showed through
+    /// its yard. Whatever stands on the tile owns it; the field stops at the building. Asked of <c>SimWorld.StandsOn</c>, the
+    /// standing index, and the fields are re-traced when it moves (<c>StandingGeneration</c>).
+    /// </summary>
+    internal static Terrain FieldStageDrawn(Terrain ground, bool standing) =>
+        !standing && ground is Terrain.Field or Terrain.Sown or Terrain.Ripe ? ground : Terrain.Grass;
+
     /// <summary>The drawn share of the extent a kind's roof had in A85 (the ground is the extent).</summary>
     internal static float GroundShareOf(YardKind yard) => yard switch { YardKind.TownHall => 0.95f, YardKind.Well => 0.7f, _ => 0.8f };
 

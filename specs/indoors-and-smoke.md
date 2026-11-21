@@ -1,7 +1,7 @@
 # People going indoors, and chimney smoke
 
 > **Status: ✍️ specced and mocked (A138, 2026-11-20); ✅ his five calls answered — *"1. Smoke B please. 2. okay 3. okay 4. instant 5. permission granted"* — and 🔨 BUILT on `art`
-> (A139, §7); ✅ MERGED INTO `main` at his word (A140, *"Looks right, merge"*, `976212f`); not pushed.** Claimed on `art` (A137).
+> (A139, §7); ✅ MERGED INTO `main` at his word (A140, *"Looks right, merge"*, `976212f`); not pushed. ✅ **Errands into a store go in too (A141, §7a), merged into `main` at his word (A144, `31a6682`); not pushed.** Claimed on `art` (A137).
 > Joe, from play, 2026-11-20: *"if they dont already, villagers should go inside buildings not just appear on them (like
 > when they are cold)"* and *"buildings burning firewood should have smoke plums coming from their chimnies as long as
 > they are burning firewood"*. His order, A137: these two first. **View only** — it reads the sim and writes nothing.
@@ -113,3 +113,23 @@ fade** (gone on reaching the door), and `VillageMap.cs`.
   within a step, a home smoking only in winter, lived in, with firewood; on and off over a second and held while paused;
   a puff rising and swelling from nothing; two chimneys out of step; flues 1 / 1 / 2 / 0 (smithy, school, manor,
   forager's hut). **Red-check: 12 mutants, 8 red.** ⚠️ **Four score zero, written down:** the fisher kept off the hut's door, the forge's fire (`NoteTheFires`), the glide bent to the door, and the painted step kept — each needs a living village, which the probe's new game does not have; the last two were seen working in the render of his save, the first two were not.
+
+## 7a. 🔨 Errands into a store go in (A141)
+
+Joe, after playing A140: *"they still dont go inside the granary or the warehouse. is that intentional?"* It was — §3.4
+had a person dropping goods off **stand at the door** — and his answer was *"Yes, step inside"*.
+
+- **The moment is the sim's own.** A walk that reaches its tile mid-tick arrives on the next (`BehaviorSystem.Travel`), so a
+  hauler stands one tick on the store's tile before the load goes in; that tick is drawn inside.
+- **`GoesInByTheDoor(state)`** — one list, asked by the pure `Indoors` and by the villager's own answer (`ShownOnTheMap`):
+  A139's three (warming by a fire, the forge, the batch trades) and every errand into a building — `HaulingToStore`,
+  `HaulingToFarm`, `StockingTheMarket`, `StockingThePost`, `FetchingFromStore`, `FetchingMaterials`, `FetchingATool`,
+  `FetchingACoat`, `FetchingAHandcart`, `FetchingHay`, `FetchingFromThePost`, `CollectingForMarket`, `CollectingForThePost`,
+  `ClearingAStore`, `WalkingToTheMarket`.
+- **Only with a door.** A pile, the well, a barn and a farmhouse have none (D624): the same errands stand there in the open.
+- **Seen** in a traced render of his Ravenscar (1×, ~75 s): 9 haulers, 2 fetches, 5 market stockers and a marketer's
+  collection went in at a door, each gone about a tick, then out of the same door.
+- **Probe** (`indoors and smoke:`): a hauler, a fetch, a builder's materials and the market's stocking in at a door; a hauler on
+  the road or at a pile seen; drawing water, walking home and cutting never in. **Red-check 5 mutants, 4 red; one zero written
+  down** — the villager's own answer keeping the old three needs a living village; the traced render is its evidence.
+- ⚠️ At 4× the tick inside is a third of a second: whether that reads as a blink is his eye's.

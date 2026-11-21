@@ -142,6 +142,67 @@ public partial class VillageMap
                 faults.Add($"the same key painted twice the same {first.AsSpan().SequenceEqual(again)}, another person different {!first.AsSpan().SequenceEqual(someoneElse)} (want true, true)");
             }
 
+            // ⭐ Cloaks dyed by household (A143, villager-art.md §9) — the seven named from the spec, not read back from the painter.
+            string[] dyes = { "#9a4a3c", "#4a6488", "#b8a050", "#56703f", "#6c5070", "#6e5238", "#9a948a" };
+            for (int d = 0; d < dyes.Length; d++)
+            {
+                PersonPainter.Rgb want = PersonPainter.Rgb.Hex(dyes[d]);
+                PersonPainter.Rgb got = PersonPainter.CloakOf(d);
+                if (got.R != want.R || got.G != want.G || got.B != want.B)
+                {
+                    faults.Add($"dye {d} is not {dyes[d]}");
+                }
+            }
+
+            var founding = new HashSet<int>();
+            for (int h = 1; h <= 7; h++)
+            {
+                founding.Add(CloakDyeOf(h));
+            }
+
+            if (founding.Count != 7 || CloakDyeOf(8) != CloakDyeOf(1) || CloakDyeOf(1) != 0)
+            {
+                faults.Add($"seven households in founding order share dyes ({founding.Count} of 7), or the eighth is not the first's again");
+            }
+
+            byte[] cloakA = PersonPainter.Paint(one).Rgba, cloakB = PersonPainter.Paint(one with { Dye = 1 }).Rgba;
+            var bare = one with { Coat = false };
+            byte[] bareA = PersonPainter.Paint(bare).Rgba, bareB = PersonPainter.Paint(bare with { Dye = 1 }).Rgba;
+            if (cloakA.AsSpan().SequenceEqual(cloakB) || !bareA.AsSpan().SequenceEqual(bareB))
+            {
+                faults.Add($"two dyes paint the same cloak {cloakA.AsSpan().SequenceEqual(cloakB)}, or the dye changes someone with no coat {!bareA.AsSpan().SequenceEqual(bareB)} (want false, false)");
+            }
+
+            // ⚠️ And every part of the cloak takes the dye (A143's red-check: one panel left moss scored zero against the whole
+            // picture differing). A woad cloak, seen from the front, the side and the back, keeps no pixel of A93's moss or its shades.
+            PersonPainter.Rgb moss = PersonPainter.Rgb.Hex("#56703f");
+            foreach (FigurePose cloakPose in new[] { FigurePose.Front, FigurePose.Side, FigurePose.Back })
+            {
+                byte[] woad = PersonPainter.Paint(one with { Dye = 1, Pose = cloakPose }).Rgba;
+                int mossy = 0;
+                for (int px = 0; px + 3 < woad.Length; px += 4)
+                {
+                    if (woad[px + 3] < 200)
+                    {
+                        continue;
+                    }
+
+                    foreach (float k in new[] { 1f, 0.85f, 0.65f })
+                    {
+                        if (Mathf.Abs(woad[px] - (moss.R * k)) < 5 && Mathf.Abs(woad[px + 1] - (moss.G * k)) < 5 && Mathf.Abs(woad[px + 2] - (moss.B * k)) < 5)
+                        {
+                            mossy++;
+                            break;
+                        }
+                    }
+                }
+
+                if (mossy > 0)
+                {
+                    faults.Add($"a woad cloak from the {cloakPose} keeps {mossy} moss pixels (want none)");
+                }
+            }
+
             // A child stands 0.62 of an adult; mirrored for the left, the person's weight sits on the other side of the feet.
             // ⚠️ Each from its own feet: a child is painted on a smaller canvas (the first version of this check measured the
             // child from an adult's feet and scored zero when the child was made 0.8 — A93's red-check).
@@ -197,7 +258,7 @@ public partial class VillageMap
 
             string moving = ThePeopleMoveHold() + "\n" + TheDoorsAndTheSmokeHold();
             return faults.Count == 0
-                ? $"[widths] painted villagers: ✅ painted only with the tick; resting at home, at school and teaching indoors and not drawn, resting in the open before the first house on the map (a founder asked); toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
+                ? $"[widths] painted villagers: ✅ painted only with the tick; cloaks in seven dyes by household, in founding order, none on the coatless (A143); resting at home, at school and teaching indoors and not drawn, resting in the open before the first house on the map (a founder asked); toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
                 : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}\n{moving}";
         }
         catch (System.Exception e)

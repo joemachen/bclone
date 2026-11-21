@@ -77,13 +77,21 @@ public partial class VillageMap
         or VillagerState.TravelingToABatch;
 
     /// <summary>
+    /// ⭐ Pure: a household's cloak dye (A143, <c>villager-art.md §9</c>) — its place in the founding order round the seven, so
+    /// households founded one after another never share one. Household ids are handed out in order (one past the highest), so
+    /// the id is the founding order; a household keeps its dye for life, whoever else comes and goes.
+    /// </summary>
+    internal static int CloakDyeOf(int householdId) =>
+        (((householdId - 1) % PersonPainter.CloakDyes.Length) + PersonPainter.CloakDyes.Length) % PersonPainter.CloakDyes.Length;
+
+    /// <summary>
     /// What a villager's picture depends on this frame. Pure: it reads the villager and their heading and changes nothing.
     /// ⭐ <paramref name="heading"/> is the way their drawn point is moving, zero when they stand (A132): someone in a work
     /// state who is moving — a labourer clearing tile to tile, a builder round the site — walks, tool in hand; standing
     /// at it, they face us and work.
     /// </summary>
     internal static FigureKey PersonKeyOf(int id, LifeStage stage, JobKind? trade, VillagerState state, Vector2 heading,
-        Goods? good, bool coat, bool cart)
+        Goods? good, bool coat, bool cart, int dye = 0)
     {
         bool working = AtWork(state);
         bool moving = heading.LengthSquared() > 1e-6f;
@@ -111,7 +119,7 @@ public partial class VillageMap
             : talking && pose == FigurePose.Front ? FigureHold.Talk
             : FigureHold.None;
         bool toolOut = (hold == FigureHold.Tool) || (stage == LifeStage.Elder && hold == FigureHold.None);
-        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold);
+        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold, Dye: dye);
     }
 
     private FigureKey PersonKeyOf(Villager villager, SimWorld world, Vector2 heading)
@@ -130,7 +138,8 @@ public partial class VillageMap
         }
 
         bool cart = villager.PushingACart && !world.TheWorksCartSleepsWith(villager);
-        return PersonKeyOf(villager.Id, villager.LifeStage, trade, villager.State, heading, most, villager.CoatDays > 0, cart);
+        return PersonKeyOf(villager.Id, villager.LifeStage, trade, villager.State, heading, most, villager.CoatDays > 0, cart,
+            CloakDyeOf(villager.HouseholdId));
     }
 
     /// <summary>An adult's height on screen at this zoom.</summary>
