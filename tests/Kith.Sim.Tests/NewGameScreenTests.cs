@@ -517,6 +517,92 @@ public class NewGameScreenTests(ITestOutputHelper output)
         Assert.Equal(MapGenerator.CourseOf(any, 12345UL), NewGame.Summarise(any, MapGenerator.Generate(any, 12345UL)).Course);
     }
 
+    // ---- The restyle (A147, §12) ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ The strip says what the valley has, in words (§12.4): a river the player chose is named plainly; one left
+    /// to the seed names the way it went and says it was the seed's; a valley with none says so.
+    /// </summary>
+    [Fact]
+    public void TheStripSaysWhatTheValleyHas()
+    {
+        var summary = new ValleySummary(29, 12, 80, 4, 30, "swne");
+
+        Assert.Equal(
+            "Wooded 29% of the land · Stone 12 seams, 80 tiles · Iron 4 seams, 30 tiles · River 3 wide, south-west to north-east",
+            NewGame.Describe(Shipped with { RiverWidthTiles = 3, RiverCourse = "swne" }, summary));
+        Assert.Equal(
+            "Wooded 29% of the land · Stone 12 seams, 80 tiles · Iron 4 seams, 30 tiles · River 3 wide, south-west to north-east (the seed's choice)",
+            NewGame.Describe(Shipped with { RiverWidthTiles = 3, RiverCourse = "any" }, summary));
+        Assert.EndsWith(" · No river", NewGame.Describe(Shipped with { RiverWidthTiles = 0 }, summary));
+    }
+
+    /// <summary>Under <c>any</c>, the strip names the course the generator actually carved, read off the valley.</summary>
+    [Fact]
+    public void UnderAnyTheStripNamesTheSeedsCourse()
+    {
+        SimConfig any = Shipped with { RiverCourse = "any" };
+        foreach (ulong seed in new[] { 1UL, 2UL, 3UL, 4UL, 5UL, 6UL, 7UL, 8UL })
+        {
+            SimConfig config = any with { Seed = seed };
+            string chosen = MapGenerator.CourseOf(config, seed);
+            string said = NewGame.Describe(config, NewGame.Summarise(config, MapGenerator.Generate(config, seed)));
+            string words = chosen switch
+            {
+                "ns" => "north to south",
+                "nwse" => "north-west to south-east",
+                "swne" => "south-west to north-east",
+                _ => "west to east",
+            };
+            Assert.EndsWith($", {words} (the seed's choice)", said);
+        }
+    }
+
+    /// <summary>
+    /// The shipped rows gather under three headings in the share code's own order (§12.2), so the screen reads top to
+    /// bottom in the order a code is written.
+    /// </summary>
+    [Fact]
+    public void TheRowsGatherUnderTheirHeadingsInTheShareCodesOrder()
+    {
+        Assert.Equal(
+            new[]
+            {
+                "The land:river", "The land:flow", "The land:hills",
+                "Its riches:woods", "Its riches:stone", "Its riches:iron",
+                "Its people:nomads",
+            },
+            Shipped.NewGameOptions.Select(r => $"{r.Group}:{r.Id}"));
+    }
+
+    /// <summary>
+    /// ⛔ <b>A code written down before the restyle still names its valley</b> (§12.1): this text is pinned as the
+    /// screen wrote it on 2026-11-21, and the map it names is pinned with it. If the hash moves, the generator moved —
+    /// not the screen; if the read fails, the code's format moved.
+    /// </summary>
+    [Fact]
+    public void AShareCodeFromBeforeTheRestyleStillNamesItsValley()
+    {
+        const string code = "flax-oak-93#river=6,flow=any,hills=hilly,woods=45,stone=sparse,iron=rich,nomads=on";
+        SimConfig config = Shipped;
+
+        Assert.True(NewGame.TryRead(config, code, NewGame.Defaults(config, "elm"), out NewGameSettings read, out string? refusal), refusal);
+        Assert.Equal(code, NewGame.ShareCode(config, read));
+
+        SimConfig applied = NewGame.Apply(config, read);
+        ulong hash = StateHash.MixMap(0UL, MapGenerator.Generate(applied, applied.Seed));
+        output.WriteLine($"old code's map hash: {hash}UL");
+        Assert.Equal(OldCodesMapHash, hash);
+
+        // The headings are display only: the same code over rows with no group names the same valley.
+        SimConfig ungrouped = config with { NewGameOptions = config.NewGameOptions.Select(r => r with { Group = string.Empty }).ToList() };
+        Assert.True(NewGame.TryRead(ungrouped, code, NewGame.Defaults(ungrouped, "elm"), out NewGameSettings plain, out _));
+        SimConfig plainApplied = NewGame.Apply(ungrouped, plain);
+        Assert.Equal(hash, StateHash.MixMap(0UL, MapGenerator.Generate(plainApplied, plainApplied.Seed)));
+    }
+
+    private const ulong OldCodesMapHash = 8961620960956505962UL;
+
     // ---- The village name ---------------------------------------------------------------------
 
     [Fact]

@@ -10714,6 +10714,43 @@ valley. Look at both frames before putting them side by side; re-run the odd one
 (65) **A long-session cost hides from a fresh load** (A142): Joe's 18 fps came from a village log that had grown for an hour;
 timing his save fresh showed 1.2 ms and nothing wrong. Read his game log's `[frame]` lines across the session before measuring,
 and run long at speed to catch what grows.
+(66) **When `art` takes the Kith rename** (D812, on `slice/kith`, merged at Joe's word — systems first): the folders become
+`src/Kith.Sim`, `src/Kith.Game`, `tests/Kith.Sim.Tests`, the solution `Kith.sln`, namespaces `Kith.*`, the probe's switch
+`KITH_PROBE_WIDTHS` — the four checks' paths change with them. **A new art file must say `namespace Kith.Game;`** once it is in.
+Keep `project.godot`'s `custom_user_dir_name="Godot/app_userdata/bclone"` (his saves do not move). After the merge delete the
+worktree's `bin/`, `obj/` and `.godot/mono/temp` (old assembly names, absolute paths); `.godot/imported` stays. The folder
+`D:\Projects\bclone`, the repo and the tracker keep the old name. The scratch scripts (`probe.sh` and the renders) name `bclone`.
+(67) **What taking the rename actually cost** (A147, merged as `39e8c79`): git moves tracked files only, so the worktree's
+ignored `src/Bclone.Game/.godot` (84 MB, the import cache) and `logs/` stayed behind in a folder git no longer knew. **Move
+`.godot` into `src/Kith.Game/` (less `mono/temp`)** rather than deleting it — then `--import` is a refresh. It still rewrote
+**200 `.import` files with LF only and left 71 untracked `.uid`s**. ⚠️ **`git diff --name-only` lists none of the 200** (the
+diff is empty once line endings are normalised) while `git status` shows them all `M` — list them with
+`git status --porcelain | grep '^ M .*\.import$'`, check out each by name, and confirm `git diff --ignore-cr-at-eol` was
+empty first. Two headless Godots on `D:/Projects/bclone/src/Kith.Game/` after the probe were the systems lane's, not
+this one's — read the command line (`Get-CimInstance Win32_Process`) before killing anything.
+(68) **One probe run in ten died in a GC finalizer** (A148): `FATAL: Condition "gchandle.is_released()"` from
+`GodotObject.Finalize`, then an NRE in `GrassLab.TerrainSelfCheck` — long after the new-game screen, exit 132. The
+next nine runs (two of them beside the suite) were clean. Not traced: the run that died had the new slider styles
+and the ink-disc `ImageTexture` (which the grass lab's sliders now wear), so **if it comes back, suspect a theme
+resource made in C# and dropped**. Re-run once before believing a red, and never report a crashed run as a pass.
+*(Found, A151: it was exactly that — `GrassLook.Approved` and `GrassLabTerrain.StartingPoint` loaded and dropped on every
+call; Joe hit it dragging the new valley's river. Now kept, as `ValleyWatercolourLook.Current` was.)*
+(69) **A C#-scripted `Resource` must be held, never re-`GD.Load`ed and dropped** (A151): the collector can take its
+wrapper while Godot's cache still names it, and the next load returns null, then the finaliser kills the game
+(`gchandle.is_released()`, exit 132). It hid for months because play loads each look once. Keep it in a static
+(`_x ??= GD.Load<T>(path)`). **A crash that needs the collector at the wrong moment is reproduced by a tight loop with
+`GC.Collect()` between steps and NOT `WaitForPendingFinalizers`** — waiting closes the window; 120 real drags never
+hit it, twenty looped previews did within seconds. And it is a race: one mutant run green, the next died.
+**Also paid for:** a reverse mutation whose text appears twice is refused (`mutate.py` counts) and the mutant stays in —
+twice today. Check `git diff --stat` after every restore, and write mutants whose *reverse* text is unique too.
+(70) **A probe that poses the screen before it looks never sees the screen as it opens** (A152): Joe's new-valley map
+was covered by a 2,433 px summary strip on every first open, and every probe pose and render re-laid it out first.
+Ask the as-opened state BEFORE the first pose. And a wrapped `Label` (autowrap) measures its minimum height at its
+*current* width — before its first layout that is 0, a letter a line: give it the width (`Size`) **and**
+`UpdateMinimumSize()` before sizing its parent; setting `Size` alone clamps to the stale minimum and keeps it.
+(71) **A loading sign over work on the main thread must be DRAWN before the work starts** (A153): raise it, let a
+frame draw, then work (count `_Process`es — two). Raised in the frame that does the work, it is never seen. And it
+cannot move: an animation freezes with the thread, so a moving one means the work off the main thread.
 
 **▶️ The terrain shader, in the lab (`specs/terrain-shader.md`; ✅ MERGED INTO `main` (D710, 2026-11-07) from `claude/nostalgic-panini-a63043`, whose worktree is removed — the art's standing worktree is `.claude/worktrees/art`, branch `art`).** Specced A1. **Built: piece 1 of 4, the fake coverage map (A2); piece 2, world-anchored grain and drag to pan (A3, at Joe's "build the grain next"); piece 3, snow (A4, at his "build snow next"); piece 4, splat blending and edge bleed (A5, at his "build piece 4"). All four are built. ⭐ He approved splat and bleed at 5.5, 0.33 and 0.30 tiles (A7, after tuning them, A6); ⭐ he approved the grain and snow at his tuning too (A8–A9: grain 0.065 tiles, under the village; snow Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles); the coverage map is the lab's fake. ⭐ The approved look's *Paper grain* is 0.12 at his word (A10; was 0.15). ⚠️ **Debt:** `art/grass/`'s nine reference JPEGs were rendered at 0.15 — `tools/grass/lab_render.gd` then `lab_check.py shots` remakes them, but `art/` and `tools/` are not the art lane's to commit without his word.** `.\run.bat grass` from the worktree; on the *Terrain* panel tick *Coverage map* and move *Coverage fade*; tick *World-anchored grain*, drag the land, move *Grain scale* and the zoom; *Grain under the village* compares the grain's place; put the left panel's *Season* on winter (3), tick *Snow*, move *Snow amount* and try the three *Snow blend*s (Lerp is the recommendation; Lighten fringes purple round bare patches), *Snow patchiness* and *Snow patch size*; with *Coverage map* on, the river stays clear. With *Coverage map* on, tick *Splat blending* and move *Splat sharpness* (48 hard, 2 a wash), tick *Edge bleed* and move *Bleed reach* and *Bleed scale* — they open at Joe's approved values, 5.5, 0.33 and 0.30 tiles (A6–A7), switches still off; his look was coverage map, world grain, splat and bleed on, snow off; the river's edge stays hard under both, by construction (A5 changed the spec: the splat no longer softens the water). **The GPU bar is 1 ms a frame at 4K for the whole stack** (A11, `terrain-shader.md §3.3`): everything on is +0.64–0.80 ms, inside it; measure again in the wired valley and bake the snow's threshold and the bleed's warp (§5) only if it goes over. ⚠️ **Merge: D700 was taken twice** — `worktree-slice-cart-home` (systems) has its own D700; whichever lands second renumbers its entries, and every `Dnnn` in its specs, HANDOFF and code comments with them. **Joe, 2026-11-07: "Systems first."** This branch waits for `worktree-slice-cart-home` to reach main, then renumbers D700–D710 (✅ done at the merge, D710: the art takes its own A-series, A1–A11) (commit messages keep the old ones), re-runs the four checks, and goes to Joe for his `--no-ff`. The session stops after each piece for his eyes. `grass_approved.tres` and `GrassLook.cs` are unchanged; the options start from `looks/terrain_lab.tres`, all switches off, and with every switch off the lab's renders are byte-identical to before the slice. **Waits for house tiers:** everything in `terrain-shader.md §5`: the bake's coverage channel, `VillageMap` drawing through the shader, the grain's overlay in the game, what happens to `Dressed`'s noise. ✍️ **House tiers merged (D724); the wiring is specced (A22, 2026-11-09): `terrain-shader.md §5` — what the valley does today (§5.1), six calls for Joe (§5.2, also the first ⏸️ line), what is settled without asking (§5.3), three pieces after his answers (§5.4). Nothing built.** The lane table's left column now also holds `VillageMap.cs` and `ValleyTexture.cs` for this slice (the banner, D724); `Main.cs` is still the systems', and call 5 asks Joe for the six lines of the switch. ✅ **Answered (A23), all as recommended — the tick in `Main.cs` at his OK, a before/after slider beside it.** 🔨 **Piece 1 built (A24):** `ValleyTexture(withWeights: true)` keeps the mix (RGBA8 grass/wood/seam/water + RG8 young/iron shares, 8 px a tile, 3.7 MB); the default bake keeps none, so the game is unchanged until piece 2's tick; the colour bake byte-identical; the probe's `valley mix:` line — 99.85 % of boundary pixels agree with the colour, water within 1 px of the bake's bank — and `logs/valley-mix.png` to look at. ⚠️ Several seams in the founding valley are one tile thin: where piece 2 checks A7's bleed first. 🔨 **Piece 2 built (A25):** `shaders/valley_terrain.gdshader` + `VillageMap.Watercolour.cs` (a layer behind the map; `_Draw` skips the Beyond, parchment and bake with the tick on) + two ticks in `Main.cs`; probe `watercolour:`; tick off byte-identical to the pre-piece-2 build in windowed renders at two zooms; 4K +1.35 / +1.73 ms. Scratch tools (not committed — `tools/` is not the lane's): `render.gd` (frame-sample door, tree paused at founding, shots), `measure4k.gd` (the game in a 4K SubViewport, alternating rounds). ⏸️ **Joe's eyes next.** ✅ **He played it (2026-11-10) and set an art direction toward the concept (A26, `terrain-shader.md §7`): five pieces — ink and pooling, calmer ground, the river drawn and flowing, winter with structure, decorative relief.** 🔨 **Ink and pooling built (A27):** a pen line where each kind's share crosses a half, constant on screen, drawn on the *unbled* edge so the wash bleeds past it (on the bled edge it came out ragged — A7's fray); pooling inside each wash; values in `looks/valley_watercolour.tres` (`ValleyWatercolourLook.cs`), none approved yet.
 
@@ -10795,6 +10832,42 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   test play (`data/sim.config.json`: `contentment_thinking_of_leaving_seasons` 4 → 1, `contentment_leaving_seasons`
   8 → 2, put back after).
 
+- ⏸️ **THE NEW-VALLEY SCREEN RESTYLED — ⭐ BUILT, PLAYED AND APPROVED ON `art` (A154, *"tested and passed. all are good."*);
+  ⏸️ THE MERGE INTO `main` IS HIS WORD (A147, 2026-11-21; Joe: *"Yes, queue it"*, *"New valley
+  first"*, *"Start it"*).** The map fills the screen, one parchment panel docked right, the settings grouped (*The land*,
+  *Its riches*, *Its people*), *Found a new village* the one red button. ✍️ **Specced as an amendment,
+  `new-game-screen.md §12`; ⏸️ his yes and three calls before any code (§12.6):** (1) the body face, from
+  `D:\Projects\brushes\ui\new-valley\fonts-16px.png` / `fonts-22px.png` (Cardo recommended); (2) the files outside the
+  lane — `NewGameScreen.cs`, `Kith.Sim/Config/NewGame.cs` + its tests (the strip's sentence, a row's group as data), one
+  line of `Main.cs`'s `new game:` probe; (3) a founding near the valley's edge — the camera stops at the edge
+  (recommended) or always centres. Step 1 is one commit, then he plays it; step 2 (the map's look: as is, map marks
+  over it, or a drawn map) is put to him after. The art piece queued after this one is *piles*, its own task.
+  ✅ **All three as recommended (A148, *"All as recommended"*). 🔨 STEP 1 BUILT on `art` (A148, `new-game-screen.md
+  §12.9`), the four checks green. ⏸️ HIS PLAY:** `.\run.bat` in the art folder → *New village*; roll, paste a code
+  with `flow=any` (the strip should say *"(the seed's choice)"*), drag the sliders, try a small window (the settings
+  scroll, the footer stays). Renders: `D:\Projects\brushes\ui\new-valley\step1-*.png`. Then step 2's choice (§12.5),
+  in plain words: keep the game's own picture, draw map marks over it (hill hatching, stone and iron signs), or a
+  separately drawn map. ⚠️ `Main.cs` took two lines, not one (the probe poses 720 high, then checks).
+  **His first play (2026-11-21):** the seed box would not take a `#` — D479's cut-to-the-seed on every keystroke;
+  🔨 **fixed (A149):** the box keeps a code while it is used, the seed on Enter or leaving it. **And his step-2 answer:**
+  *"Can the preview be watercolor painted? with trees and ore seams (doesnt need animals or forage goods)"* — the
+  game's own in-play look, not a second painter; ⏸️ the plan put to him (A149's message), nothing built.
+  ✅ **His answer: *"Yes, as recommended"* (A150). 🔨 BUILT on `art` (A150, `new-game-screen.md §12.10`):** the preview
+  is the game's own `VillageMap` in watercolour — the ground, the river, the painted trees and deposits, the hills —
+  with no people, buildings, cart, game or forage; `VillageMap.cs` gained a preview switch (`IsAPreview`, `LookAt`, at
+  his yes), off in play. ⏸️ **HIS PLAY, and the wait:** a new valley takes **2.0 s** to appear after a setting is let go
+  (the flat preview took 0.4–0.65), the screen still meanwhile. If it is too slow: the preview's ground at half detail
+  (`ValleyTexture.cs` — his OK) or the paint off the main thread, each measured first. Renders
+  `D:\Projects\brushes\ui\new-valley\step2-*.png`. ⚠️ `VillageMap.cs` is the systems lane's file: a merge meets it.
+  **`main`'s play notes (D814–D820) taken into `art` (`dc4167c`, clean):** suite 2182 / 0 / 5 of 2187 in 17 m 28 s;
+  view build 0 warnings; probe 137 ✅ 0 ⛔, bar 183, new game ✅, `done.`; goldens 448 = `main`'s 447 + the old code's
+  pin. The preview read 3.6 s beside the suite (2.0 s alone).
+  **His play: *"dragging the river width bar crashed it"*** — 🔨 **fixed (A151):** the two grass looks were loaded
+  afresh and dropped by every preview map, and the collector took one Godot still named (trap 69). ⏸️ His play again.
+  **His play: *"what is this?"*** (bare parchment over the map) — 🔨 **fixed (A152):** the summary strip, 2,433 px
+  tall on the first open, a wrapped label measured before it had a width (trap 70). ⏸️ His play again.
+  **His ask: *"some kind of on-theme loading animation"*** — 🔨 **built (A153):** *"Painting the valley…"* on a
+  paper wash over the old valley while the new one paints; still, because the paint holds the thread (trap 71).
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **ALL SEVEN BUILT (D814–D818), PLAYED, APPROVED AND MERGED INTO `main` (D819, *"Looks right, merge"*);
   not pushed** (Joe 2026-11-21: *"Then the play notes"*). ✅ *"maybe children / in school"* on the top bar (note

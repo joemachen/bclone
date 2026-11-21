@@ -12,6 +12,10 @@ AND JOE'S PLAY NOTES (D481) BUILT** — guards §8.1–8.9 red-checked; no golde
 `main` and pushed (D482, 2026-10-04); Joe replayed D481's changes and approved them all (D483,
 2026-10-04).** ⚠️ Forest cover at 0 % and 100 % founds (guarded, §8.8) but is unmeasured in play —
 information for Joe, not a gate.
+**🔨 THE RESTYLE (A147–A148, 2026-11-21, art lane) — §12: the map fills the screen, one parchment panel docked right,
+the settings grouped. Specced A147; Joe: *"All as recommended"*; STEP 1 BUILT ON `art` (A148, §12.9), ⏸️ HIS PLAY,
+then step 2's choice (§12.5).** ⭐ **STEPS 1 AND 2 AND THEIR FIXES (A148–A153) PLAYED AND APPROVED (A154, Joe: *"tested
+and passed. all are good."*); on `art`, ⏸️ the merge into `main` his word.** §3's drawing is the screen before the restyle; §12.2's is the screen now.
 Owner: Joe + Claude Code.
 
 ---
@@ -128,6 +132,7 @@ entry per row:
 |---|---|---|---|---|
 | `river` | River width | range, ends named *narrow* / *wide* | `river_width_tiles` | shipped (3) |
 | `flow` | River runs | choice | `river_course`: `we` · `ns` · `nwse` · `swne` · `any` | `we` |
+| `hills` | Hilliness | levels | `hill_scale_percent`: Gentle 50 · Rolling 100 · Hilly 200 (D735, `heights.md §5`) | Rolling = shipped |
 | `woods` | Forest cover | range, 0–100 % in 5s | `forest_coverage_percent` | shipped (35) |
 | `stone` | Stone | levels | `stone_seam_count` + `extra_stone_seams` per level: Sparse · Moderate · Rich | Moderate = shipped |
 | `iron` | Iron | levels | `iron_seam_count` + `extra_iron_seams` per level | Moderate = shipped |
@@ -275,7 +280,8 @@ against the shipped settings at fifty years:
 8. **Every row's ends validate:** each row at its min and max loads through `SimConfig.Validate`.
 9. **The probe** (D169): `new game:` — the screen's right column fits 1280 at its widest pose (the
    longest error sentence showing), the preview is baked and non-empty, and the screen is skipped
-   into a default founding so every existing probe line still runs. `bar height` stays 151.
+   into a default founding so every existing probe line still runs. `bar height` stays 151 *(183 today —
+   CLAUDE.md carries the live number, A120)*.
 
 **The reds (D478), one mutant at a time:** §8.1 no lower-casing **4**, no length fold **6**, digits
 hashed as text **5**; §8.2 a row's default from the code instead of the config **3**; §8.3 one extra
@@ -320,3 +326,267 @@ ignored **1**, the scale row ignored **1**.
 3. View builds with 0 warnings; probe green, `bar height` 151, `new game:` ✅.
 4. Joe has played it (§9.5).
 5. DESIGN §6 and §7, and `handoff.md`, updated in the same commits as the code.
+
+---
+
+## 12. The restyle — the map fills the screen, one parchment panel (A147, 2026-11-21; ✍️ proposed, ⏸️ Joe's yes)
+
+**Joe:** *"Yes, queue it"*, *"New valley first"*, *"Start it"* — a layout from a claude.ai mockup
+(`queued-new-valley/mockup.jpg`, outside git), amended with him before it reached this lane. **The mockup is
+inspiration for layout, grouping and mood, not a pixel spec; where it disagrees with the in-game look, the game
+wins.**
+
+### 12.1 What does not change (and how each is held)
+
+| Held | How |
+|---|---|
+| Every setting, its options, defaults and ranges | the rows are `new_game_options` exactly as today (§5); the screen lays them out and nothing else |
+| World generation and determinism | no file under `src/Kith.Sim/World/` is touched; the goldens grep is identical before and after |
+| The share code (an old code loads the same valley) | the code is still the rows in their order (§5) — grouping is display only; §8.7's round trip stays green and gains a case for an old code from before the restyle |
+| Roll, Copy, Back, Defaults, Found | the same handlers; *Default settings* only changes its words to **Defaults** |
+| The preview's picture | step 1 changes where the bake is drawn, not the bake: `ValleyTexture` untouched, 8 px a tile, 0.12 s after the last change |
+
+### 12.2 What the player sees (step 1)
+
+```
+┌──────────────────────────────────────────────────────────┬─────────────────────────┐
+│                                                          │  A new valley           │
+│                                                          │  Seed                   │
+│                                                          │  [flax-oak-93    ][Roll]│
+│          the valley, as the game paints it,              │  Village name           │
+│          filling the screen behind the panel             │  [Greyford             ]│
+│                                                          │  ─────────────────────  │
+│                     ◎  ← the founding, in the middle     │  The land               │
+│                         of the room left of the panel    │  Valley      [River ▾]  │
+│                                                          │  River width ──●──      │
+│                                                          │              narrow wide│
+│                                                          │  River runs  [W–E ▾]    │
+│                                                          │  Hilliness   [Rolling ▾]│
+│                                                          │  ─────────────────────  │
+│                                                          │  Its riches  (… scrolls)│
+│ ┌──────────────────────────────────────────────────────┐ │ ═════ pinned ═════════  │
+│ │ Wooded 29% of the land · Stone 12 seams, … · River 3 │ │  Share code             │
+│ │ wide, south-west to north-east (the seed's choice)   │ │  [flax-oak-93#river…][⎘]│
+│ └──────────────────────────────────────────────────────┘ │  Back  Defaults [FOUND] │
+└──────────────────────────────────────────────────────────┴─────────────────────────┘
+```
+
+- **The map fills the screen.** The bake is drawn so the valley's full height fills the window (at 16:9 a 120 × 80
+  valley is wider than the room left of the panel, so its sides run under the panel or off the screen). Where the
+  window shows past the valley's edge, the parchment shows (the theme's paper colour), never black.
+- **The camera is offset so the founding (the red ring and dot) sits in the middle of the room left of the
+  panel, never under it** — ✅ call 3: the camera stops at the valley's edge, so the founding sits as near the
+  middle as the valley allows.
+- **One panel, docked right, full height, 28 % of the window** (inside Joe's 25–30 %), never narrower than its
+  widest row — and never past his 30 % (the probe's line): at 1280 the widest row, *River runs* with *North-west to
+  south-east*, takes it to 371 px, 29 %: the in-game window sheet (`UiLook.Panel()` — A113's painted sheet, A116/A118's inked edge, A124's
+  paper), ink words (A113), the rubric accent (`ParchmentLook.Rubric`).
+- **The rows: label left, control right**, except **Seed** and **Village name**: label above, the field the
+  panel's full width (Roll beside the seed). The refusal sentence stays under the seed, in rubric ink.
+- **Groups, a thin rule between them** (the theme's own `HSeparator`, `controls/rule-h.png`):
+  - *(no heading)* Seed + Roll, Village name
+  - **The land** — Valley, River width, River runs, Hilliness
+  - **Its riches** — Forest cover (and its %), Stone, Iron
+  - **Its people** — Nomads
+  - **Footer, pinned:** the share code + Copy; then Back, Defaults, **Found a new village**.
+
+  ⭐ That order is the rows' own order (river, flow, hills, woods, stone, iron, nomads), so the screen reads in
+  the share code's order. ✅ Call 2: a row's group is data — `NewGameRow.Group`, `"group"` in its json.
+- **A slider's named ends** (River width's *narrow* / *wide*) sit under the slider's two ends, small, instead of
+  either side of it — the panel is ~360 px at 1280, and the words beside it would leave the slider ~90 px.
+- **The sliders are skinned** in the theme (today they are Godot's grey): a thin ink groove, darker where it is set,
+  and an ink disc to hold. (The in-game bar's painted `bar-track` was tried first and read as nothing on the sheet at
+  1280.) ⚠️ This reaches the only other sliders, the grass lab's.
+- **Found a new village is the one primary button:** filled rubric, paper-coloured words, larger (20 px against the
+  panel's 16). **Back** and **Defaults** are the theme's quiet ink buttons.
+- **The share code** stays the panel's normal size and is cut with an ellipsis where it runs out — never shrunk;
+  its tooltip and *Copy* carry all of it.
+- **At 1280 × 720 the settings scroll and the footer stays pinned:** the title, then a scroll of the seed and the
+  groups, then the footer, which never scrolls.
+
+### 12.3 Type
+
+- **Grenze Gotisch (blackletter) for the title and the three group headings only.** (In the game Metamorphous is
+  the header face, A120; on this screen Joe's ask puts the blackletter on the headings.)
+- **Everything else in a face that reads clearly, dark ink on parchment** — ⏸️ call 1, his pick from a label set in
+  each candidate (`D:\Projects\brushes\ui\new-valley\fonts-16px.png`, `fonts-22px.png`). Metamorphous is decorative
+  too and is shown as a candidate, not assumed. **On this screen only**: the game's own windows keep A120's pair (a
+  new body face in the game moves the bar's measured height, 183, and is its own piece).
+
+### 12.4 The summary strip
+
+Today's line under the preview moves to a small parchment slip at the map's bottom-left (the theme's `top_box`,
+A124's long slip). **It still reports what was generated, read off the world** (`NewGame.Summarise`), never restated
+from the settings. **When River runs is *Any way (the seed's)*, it says which way the seed chose**, and that it was
+the seed's: *"River 3 wide, south-west to north-east (the seed's choice)"*. A valley with no river says *"no
+river"*.
+
+⏸️ Call 2: the sentence moves into the sim's `NewGame` (pure, beside `Summarise`) so a test can pin it.
+
+### 12.5 Step 2 — the map's look (after Joe plays step 1) — ✅ answered: the game's own map (§12.10)
+
+Put to him plainly after step 1, not before: **(a) today's painter as it is** — what you see is what you get;
+**(b) map marks over the game's own picture** — hill hachures, stone and iron glyphs, drawn over the bake, the bake
+unchanged; **(c) a hand-drawn cartographer's map** — a second painter to keep in step with the ground art as it
+changes. Whichever: stone and iron distinguishable at a glance, and every setting visibly changing the map. The bake
+is re-measured before any threading is proposed.
+
+### 12.6 ✅ Joe's calls — ALL AS RECOMMENDED (A148, 2026-11-21, *"All as recommended"*)
+
+1. **The body face** (§12.3) — from the sample sheet. *Recommended: Cardo* (a book face; plain capitals and lining
+   figures, reads at 16 px). It is in the untracked `fonts/` folder; picked, it is copied into
+   `src/Kith.Game/fonts/Cardo/` with its OFL licence, as A119–A120's were.
+2. **The files outside the art lane** (HANDOFF 🅿️ ART's table): `NewGameScreen.cs` (the screen itself — needed);
+   `src/Kith.Sim/Config/NewGame.cs` and `tests/Kith.Sim.Tests/NewGameScreenTests.cs` for the strip's sentence (§12.4)
+   and a `group` on each row — *recommended: the group is data* (a row's `"group": "The land"`, the heading's own
+   words; rows gather under their heading in the rows' order; a modder's row picks its heading in its line of json,
+   D477's *"a new row is a config key and a line of json, never a new screen"*); and **one line in `Main.cs`**, the
+   `new game:` probe calling the screen's own layout checks (§12.7). `ValleyTexture.cs` is **not** touched in step 1.
+   ⚠️ *As built it is two lines:* the probe runs at 1280 × 800 (`project.godot`), so one line poses the screen at
+   720 high (frame 5) and the other reads its checks (frame 20).
+3. **A founding near the valley's edge** — *recommended: (a)* the camera stops at the valley's edge, so no bare
+   paper ever shows; the founding then sits as near the middle as the valley allows (the probe checks its ring stays left of the panel).
+   **(b)** always the exact middle, and a band of plain parchment shows past the valley's edge when the founding
+   is off-centre.
+4. **Step 2** waits for his play of step 1 (§12.5) — nothing to answer now.
+
+### 12.7 Guards (red-checked, the reds counted — D326)
+
+- **Unit (`NewGameScreenTests`):** the strip's sentence — a W–E river, *any* resolved and named as the seed's
+  choice, no river; the shipped rows' groups in order (land: river, flow, hills; riches: woods, stone, iron;
+  people: nomads); **an old share code** (today's exact text, pinned) loads the same settings and the same map
+  hash after the restyle (its own pinned hash, `OldCodesMapHash` — the same with every group stripped, so the
+  headings are display only).
+- **Probe, `new game:`** keeps its claim (the panel ends inside the window, the longest refusal showing, a preview
+  baked) and adds (`NewGameScreen.ScreenFaults`, `LayoutFaults` until A149): at 1280 × 720 the footer's *Found* button is wholly on screen
+  with the settings scrolled to their top, and not inside the scroll; the founding's ring, under the camera the map
+  was placed with, lies wholly left of the panel; a founding at the valley's east edge would be marked left of it
+  too; and the panel is no wider than 30 % (the share code never widens it). `bar height` stays 183, `done.`
+  printed.
+
+### 12.8 Not followed from the mockup, and why
+
+- **The hand-drawn map, compass rose, hachures and stone glyphs** — step 2's choice (§12.5), not step 1's.
+- **The close-up view** — the mockup shows about a third of a valley; the whole valley's height is kept, so a
+  player judging a valley sees all its stone and iron.
+- **The strip's words** (*"Stone sparse · Iron rich · River wide"*) restate the settings; the game's strip reads the
+  generated valley (seams and tiles), as Joe asked to keep.
+- **The order inside the groups** (the mockup has River runs before River width, Forest cover last) — Joe's list,
+  which is also the share code's order.
+- **The illuminated initial on the title** and **the die on Roll** — no painted initial or die exists; plain words
+  until one is painted.
+- **The small share code** — normal size, cut with an ellipsis (Joe: never shrink it).
+- **The two-line *Default settings*** — one word, *Defaults* (Joe's rename).
+
+### 12.9 🔨 Step 1 as built (A148, 2026-11-21; Joe: *"All as recommended"*), ⭐ played and approved (A154)
+
+- **`NewGameScreen.cs`**, its layout rewritten; every handler (Roll, Copy, Back, Defaults, Found, the seed box, the
+  rows) is as it was, and every rule still the sim's. The map: the bake at 8 px a tile in a `TextureRect` placed by
+  `Camera` — the valley's height fills the window (9 px a tile at 1280 × 720), the founding moved to the middle of
+  the room left of the panel and stopped at the valley's edge. The ring is drawn under the camera the map was placed
+  with (`RingOfTheFounding`), so a camera bug cannot leave the ring on the right spot and the map on the wrong one.
+  Nothing is placed per frame: `PlaceEverything` runs on a resize and when the valley or the strip's words change.
+- **The panel:** `UiLook.Panel()`, 28 % (371 px at 1280, 29 %: *River runs* with *North-west to south-east* is the
+  widest row), a scroll between the title and the pinned footer; one label column across every group (measured once
+  the panel is in the tree — before that a label measures in the default face). The village name's placeholder (the
+  seed's own name) is inked like a caption; the theme's hint was near-invisible on the field.
+- **The sim:** `NewGameRow.Group` (`"group"`), set on the seven shipped rows; `NewGame.Describe`, the strip's
+  sentence. Display only — the share code, `Apply` and the generator are untouched.
+- **The theme (`ParchmentLook.NewValley`):** `backdrop` (the paper base `#e8dbc3`), `reading_font` (Cardo, copied
+  with its OFL into `fonts/Cardo/`), `blackletter`, the `PrimaryButton` variation (rubric fill, paper words 6.4 : 1,
+  8.5 held; 20 px), and the sliders (an ink groove, an ink disc grip). `UiLook.ReadingFace` / `Blackletter` /
+  `PrimaryButton`; on slate each is null or unnamed, so the screen falls back to today's look.
+- **`Main.cs`, two lines** (§12.6): `PoseTheSmallestWindow()` at frame 5, `ScreenFaults()` (`LayoutFaults()` until A149) read at frame 20.
+- **The bake, re-measured** (the probe, beside the suite): **408–650 ms** a bake (the spec's ~320 was with the
+  harness running). Unchanged code; it is the number step 2 starts from.
+- **Guards, red-checked (D326), one mutant at a time:**
+
+  | Mutant | Reds |
+  |---|---|
+  | the strip's *(the seed's choice)* dropped | **2** (`TheStripSaysWhatTheValleyHas`, `UnderAnyTheStripNamesTheSeedsCourse`) |
+  | the strip names the setting's course, not the valley's | **2** |
+  | *Forest cover* under *The land* | **1** (`TheRowsGatherUnderTheirHeadingsInTheShareCodesOrder`) |
+  | the share code's separator `,` → `;` | **3** (the old-code test among them, alone: 1) |
+  | *Hilly* 200 → 190 (the generator moves) | **2** (the old-code test among them, alone: 1) |
+  | probe: the footer inside the scroll | **1** line — *"Found scrolls with the settings"*, *"Found runs 743–783px in a 720px window"* |
+  | probe: the camera centres on the whole window, not the room | **1** — *"a founding at the valley's east edge is marked at 1022px, under the panel at 909"* |
+  | probe: the share code's `ClipText` removed | **0** — written down: `TrimEllipsis` alone already lets the label narrow, so the clip is belt and braces |
+  | probe: the share code's clip and ellipsis both removed | **1** — *"the panel is 805px, past 384 (30%)"* |
+
+- **Renders** (outside git): `D:\Projects\brushes\ui\new-valley\step1-1280-*.png`, `step1-1920-*.png` — the
+  shipped seed and an *Any* code, at 1280 × 720 and 1920 × 1080.
+- **⭐ A149 — the seed box keeps a code while it is used** (Joe, playing step 1: *"i dont think the seed box … will
+  take a # character? doesnt let me type it or paste more than flax-oak-93"*). Not the restyle's: since D479 the screen
+  read a code the moment the box held a `#` and cut the box to the bare seed — a typed `#` vanished at once, and a
+  pasted code set the rows but showed only its seed, which read as refused. **Now** the rows take the settings as the
+  code is read, the box keeps what was typed or pasted, and it becomes the seed on Enter or on leaving the box
+  (`CutTheCodeToItsSeed`). §5's *"Pasting a code into the seed box sets the rows"* is unchanged. **Probe** (`new
+  game:`, `ScreenFaults` — `LayoutFaults` renamed, its `Main.cs` line with it): a code typed into the box stays there,
+  sets its row, and Enter leaves the seed. **Reds:** the old cut on every keystroke put back **1** (*"became "oak"
+  while it was being typed"*); Enter doing nothing **1** (*"Enter left "oak#river=0" in the seed box"*).
+
+### 12.10 Step 2 — the preview is the game's own watercolour map (A150, 2026-11-21; ✍️ specced, Joe: *"Yes, as recommended"*)
+
+**Joe, after playing step 1:** *"Can the preview be watercolor painted? with trees and ore seams (doesnt need animals
+or forage goods)"*. Put to him with its costs, all as recommended: none of §12.5's three — not a flat bake with marks
+over it, not a second painter — but **the game's own map**, so the preview is the valley exactly as play will show it.
+
+- **What he sees:** behind the panel, the map the game draws in play, in watercolour (`VillageMap`, A25 onward) — the
+  ground and the river, the painted trees (A35), the painted stone and iron deposits (A60) — for the valley on screen,
+  in summer (year 1's start: the summer sets). **No people, no buildings, no founders' cart, no animals, no forage**:
+  just the red ring and dot where the founders will begin (§12.2's camera and ring, unchanged).
+- **One painter.** The preview is a `VillageMap` over the preview's `SimWorld`, made afresh for each valley; the flat
+  `ValleyTexture` bake leaves the screen. Whatever the ground art becomes, the preview shows it.
+- **The preview switch in `VillageMap.cs`** (the systems lane's file, at Joe's yes): `IsAPreview` — `_Draw` keeps the
+  valley, the woods (deposits among them) and the canopy, and draws nothing a village puts down or anyone who walks;
+  `_Process` polls no keys (typing a seed would otherwise pan it: WASD); `_GuiInput` takes nothing. And `LookAt`, a
+  camera set from outside without the play camera's clamps (the screen's own camera stops at the valley's edge).
+  Nothing changes in play: every line is behind the switch, off by default.
+- **The wait, measured before it is cut.** The game paints a whole valley's watercolour ground in about 1–1.5 s, once
+  per valley; so the preview repaints that long after a setting is let go (0.12 s after, as now). Built at the game's
+  own detail first and measured; only if it is too slow, the ground at half detail for the preview (a quarter of the
+  work — needs his OK for `ValleyTexture.cs`) or the paint off the main thread.
+- **Guards:** the probe's `new game:` keeps every check of §12.7 and A149, reads the paint's time, and asks the
+  preview map that it is a preview, in watercolour, and over the screen's own valley; the play map is untouched
+  (every other probe line, and `watercolour:`, stay as they were).
+- **🔨 As built (A150), ⏸️ his play:**
+  - `VillageMap.cs` (+40 lines, all behind the switch): `IsAPreview`, `LookAt`; `_Process` returns before the WASD
+    poll; `_GuiInput` returns; `_Draw` after `DrawValley` (the ground, the river, the deposits) draws the painted canopy
+    and stops. Off by default — play is untouched (the probe's `watercolour:` and every other line unchanged).
+  - `NewGameScreen.cs`: `ShowTheValley` makes a preview `VillageMap` (game and forage off, watercolour on, mouse
+    ignored) under the ring for each valley, the old one freed; `PlaceEverything` turns §12.2's camera into the map's
+    `LookAt`. The flat `ValleyTexture` bake is gone from the screen (the title's backdrop keeps its own).
+  - **The wait, measured** (the probe, nothing beside it): **2.0 s** from a valley asked for to its first frame drawn
+    (2.1 s the first time), against the flat bake's 0.4–0.65 s. The UI holds still for that long after a setting is
+    let go. More than the guess above: a new map also meshes its trees and deposits and builds its river and hills,
+    not only the ground's bake. ⏸️ **His to feel first**; then the cuts above, measured, if he wants them.
+  - **Guard:** `ScreenFaults` asks that the preview is the game's map, a preview, in watercolour — **reds:** made
+    without `IsAPreview` **1**, watercolour left off **1**. ⚠️ *"No people, buildings or cart"* and *"no keys"* have
+    no probe line — a fresh founding's founders stand at the cart, and nothing headless types into the box; held by
+    the renders (`D:\Projects\brushes\ui\new-valley\step2-*.png`) and his play.
+- **⛔ A152 — Joe's blank map** (*"what is this?"*, a screenshot: bare parchment where the map should be). The
+  summary strip (§12.4), 2,433 px tall: a wrapped label measures its height at the width it has, and the first
+  valley's words came before it had ever been laid out (width 0) — a letter a line, held until a setting was touched.
+  `PlaceTheStrip` now gives the label its width and measures it again (`UpdateMinimumSize`) before sizing the strip.
+  **Guard:** the probe asks the strip as the screen opens (frame 4, before any pose) to be no taller than its words
+  and inside the window — **red 1**; the same question after the poses scores **0** (they re-lay the strip), kept.
+- **🔨 A153 — "Painting the valley…"** (Joe: *"some kind of on-theme loading animation to show that its not
+  hanging/crashing when adjusting? it can even be a blank screen \"map loading\" text"*). A still veil: the screen's
+  paper at three-quarters over the old valley, a slip in the strip's skin centred in the room, the strip hidden. **Not
+  animated, because it cannot be:** the paint holds the main thread, and anything moving would stop with it — a moving
+  one waits on the paint off the main thread. ⛔ The paint waits for a frame with the veil drawn (two `_Process`es),
+  the first open too, so the title no longer freezes for the first paint. A refusal lowers it, the old valley kept.
+  **Guard:** a setting moved raises it, slip left of the panel; the hand stopped, the first frame paints nothing and
+  the second paints; the veil down after — reds **1 / 1 / 1**.
+- **⛔ A151 — Joe's crash, and its cause** (*"dragging the river width bar crashed it"*: `gchandle.is_released()`, then a
+  null look at `VillageMap.Watercolour.cs:1033`). `GrassLook.Approved` and `GrassLabTerrain.StartingPoint` loaded their
+  C#-scripted resource afresh on every call and kept nothing. Play builds its watercolour once, so it hardly ever
+  mattered; a preview map per valley loads both every time, and the collector could take a look Godot's cache still
+  named — the next load came back null, and the finaliser killed the game. **Fixed as `ValleyWatercolourLook.Current`
+  already was:** each loaded once and kept for the game's life (`GrassLook.cs`, `GrassLabTerrain.cs`, the art lane's).
+  Nothing writes to either; the lab's Reset reads its file by its own path. **Guard:** `new game:` makes twenty
+  previews in a row with the collector run between them and not waited for. **Reds:** with the terrain look loaded
+  and dropped again the probe **died** at `Watercolour.cs:1048`; with the grass look, green on the first run and
+  **died at 1033** (Joe's own line) on the second, so the race is a race, and a crash is the red. A weak-reference
+  check that the looks survive a collection scored **0** both times; kept, its zero in its comment. Joe's crash did
+  not reproduce by dragging (120 drags in a window); the probe's pose found it in seconds.

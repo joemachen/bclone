@@ -389,10 +389,16 @@ public partial class Main : Control
             return;
         }
 
-        if (++_newGameProbeFrames == 5)
+        if (++_newGameProbeFrames == 4)
+        {
+            _newGameAsOpened = _newGame.StripFaults(); // A152: the strip as Joe first sees it, before any pose re-lays it
+        }
+
+        if (_newGameProbeFrames == 5)
         {
             _newGame.PoseTheLongestStats();
             _newGame.PoseTheLongestRefusal();
+            _newGame.PoseTheSmallestWindow(); // A147: the footer pinned at 1280 x 720
         }
 
         if (_newGameProbeFrames < 20)
@@ -429,6 +435,9 @@ public partial class Main : Control
             faults.Add("the preview has no valley on it");
         }
 
+        faults.AddRange(_newGameAsOpened.Select(f => "as it opened, " + f));
+        faults.AddRange(_newGame.ScreenFaults()); // A148-A149: footer, ring, panel, seed box (new-game-screen.md §12.7)
+
         GD.Print(faults.Count == 0
             ? $"[widths] new game: ✅ the column wants {wants:F0}px and has {column.Size.X:F0}, the longest refusal showing; "
                 + $"the preview bakes in {settled:F0} ms ({_newGame.SlowestBakeMs:F0} the first time)"
@@ -440,6 +449,7 @@ public partial class Main : Control
     }
 
     private int _newGameProbeFrames;
+    private IReadOnlyList<string> _newGameAsOpened = [];
 
     /// <summary>
     /// ⭐ The probe's <c>title:</c> line (`title-and-pause.md §8`): the title as the probe meets it — no saves, so a

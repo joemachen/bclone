@@ -97,6 +97,18 @@ internal static class UiLook
 
     internal const string HeaderButton = "HeaderButton";
 
+    /// <summary>The theme type variation of a screen's one primary button — the new valley's <i>Found</i> (A147).</summary>
+    internal const string PrimaryButton = "PrimaryButton";
+
+    /// <summary>The face words are read in on the new-valley screen (A147, Joe's Cardo); null on slate.</summary>
+    internal static Font? ReadingFace => NamedFont("reading_font");
+
+    /// <summary>The blackletter for the new-valley screen's title and headings (A147); null on slate.</summary>
+    internal static Font? Blackletter => NamedFont("blackletter");
+
+    private static Font? NamedFont(string name) =>
+        Theme is { } theme && theme.HasFont(name, Type) ? theme.GetFont(name, Type) : null;
+
     /// <summary>
     /// Mark this label or button as a header — a window's title, a card's, a card's section head — so a look that names a
     /// header face sets it in that (A120, Joe's Metamorphous). On slate the mark names nothing and the text is as it was.

@@ -7,19 +7,25 @@ namespace Kith.Game;
 
 /// <summary>
 /// ⭐ The new-game screen — choose a valley before you found a village (D477, D479,
-/// `specs/new-game-screen.md §3`).
+/// `specs/new-game-screen.md §3`), restyled (A147, §12): the map fills the screen, one parchment panel docks right.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>Every rule is the sim's</b> (<see cref="NewGame"/>, <see cref="SeedText"/>): what a seed names, what
-/// a row sets, what a share code says, what is refused and in which words. This class lays them out
-/// and nothing else — so the screen cannot disagree with the game about which valley a code names.
+/// a row sets, what a share code says, what is refused and in which words, which heading a row sits under and what
+/// the strip says. This class lays them out and nothing else — so the screen cannot disagree with the game about
+/// which valley a code names.
 /// </para>
 /// <para>
 /// ⭐ <b>The preview is the real valley</b>: <see cref="SimWorld.Create"/> from exactly the settings on
-/// screen (about a millisecond), painted by the same <see cref="ValleyTexture"/> the game uses — one
-/// look, or the preview would lie about the valley. The stats are read off that world
-/// (<see cref="NewGame.Summarise"/>), never restated from the sliders.
+/// screen (about a millisecond), drawn by the game's own <see cref="VillageMap"/> in watercolour as a preview (A150) —
+/// one painter, or the preview would lie about the valley. The strip is read off that world
+/// (<see cref="NewGame.Summarise"/>, <see cref="NewGame.Describe"/>), never restated from the settings.
+/// </para>
+/// <para>
+/// ⭐ <b>The camera</b> (§12.2, Joe's call 3): the valley's height fills the window, and the founding sits in the
+/// middle of the room left of the panel — as near it as the valley allows, since the camera stops at the valley's
+/// edge and no bare paper shows there.
 /// </para>
 /// <para>
 /// ⚠️ <b>The dice are the view's randomness</b> (<see cref="System.Random"/>), choosing an <em>input</em>:
@@ -37,34 +43,70 @@ public sealed partial class NewGameScreen : Control
     /// <summary><i>Back</i>: the title screen (D516). Nothing is founded.</summary>
     public event Action? BackAsked;
 
-    private const float ColumnWidth = 400f;
+    /// <summary>The panel's share of the window (§12.2: Joe's 25–30 %); never narrower than its widest row.</summary>
+    private const float PanelShare = 0.28f;
+
+    /// <summary>The most the panel may take, Joe's upper end — the probe's line (§12.7).</summary>
+    private const float PanelMostShare = 0.30f;
+
+    /// <summary>The strip's distance from the window's bottom-left corner.</summary>
+    private const float StripInset = 16f;
 
     /// <summary>How long after the last change the preview waits before it bakes again, in seconds.</summary>
     private const double BakeAfter = 0.12;
 
+    /// <summary>The window's height the probe poses: the smallest the game plays at, 1280 × 720 (§12.7).</summary>
+    private const float SmallestHeight = 720f;
+
     private readonly SimConfig _config;
     private readonly System.Random _dice = new();
     /// <summary>
-    /// The preview's bake, at <see cref="PreviewPixelsPerTile"/> — the whole valley fits about 6½
-    /// pixels a tile beside the column at 1280, so 8 is sharp there at a quarter of the game's pixels.
+    /// ⭐ The preview: the game's own map in watercolour over the preview's world (A150, §12.10) — made afresh for each
+    /// valley, so whatever the ground art becomes, the preview shows it. One painter.
     /// </summary>
-    private readonly ValleyTexture _bake = new(PreviewPixelsPerTile);
+    private VillageMap? _valleyMap;
 
-    private const int PreviewPixelsPerTile = 8;
+    /// <summary>When the newest preview map was asked for (µs), until its first paint has been timed; 0 when timed.</summary>
+    private ulong _paintAsked;
+
+    private int _framesSincePaintAsked;
     private readonly Dictionary<string, Control> _rowControls = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Label> _rowReadings = new(StringComparer.Ordinal);
+    private readonly List<Label> _rowLabels = new();
 
     private NewGameSettings _settings;
     private SimWorld? _previewWorld;
 
     private LineEdit _seed = null!;
     private LineEdit _name = null!;
-    private LineEdit _code = null!;
+    private Label _code = null!;
     private Label _refusal = null!;
     private Label _stats = null!;
-    private TextureRect _preview = null!;
+    private PanelContainer _strip = null!;
+    private PanelContainer _panel = null!;
+    private ScrollContainer _scroll = null!;
+    private Control _map = null!;
     private Control _mark = null!;
     private Button _found = null!;
+
+    /// <summary>
+    /// ⭐ The wash over the map while a valley is painted (A153, Joe: *"some kind of on-theme loading animation to show
+    /// that its not hanging/crashing"*): the paper laid over the old valley, and a slip saying what is happening.
+    /// </summary>
+    private Control _veil = null!;
+
+    private PanelContainer _veilWords = null!;
+
+    /// <summary>Frames the veil has been up since the last change — the paint waits until it has been drawn once.</summary>
+    private int _veilFrames;
+
+    /// <summary>The words on the veil's slip.</summary>
+    internal const string PaintingWords = "Painting the valley…";
+
+    /// <summary>Where the valley's top-left corner is drawn, and how many screen pixels a tile is — the camera.</summary>
+    private Vector2 _origin;
+
+    private float _perTile;
 
     private bool _changed = true;
     private double _sinceChange;
@@ -88,22 +130,22 @@ public sealed partial class NewGameScreen : Control
         _settings = NewGame.Remembered(config, NewGame.Defaults(config, RollASeed()), remembered, problems);
     }
 
-    /// <summary>For the probe: the slowest preview bake so far, in milliseconds.</summary>
+    /// <summary>For the probe: the slowest preview paint so far, in milliseconds — the map made, framed and first drawn.</summary>
     internal double SlowestBakeMs { get; private set; }
 
-    /// <summary>For the probe: the last preview bake, in milliseconds — past the first's warm-up.</summary>
-    internal double LastBakeMs => _bake.LastBakeMs;
+    /// <summary>For the probe: the last preview paint timed, in milliseconds (A150: the watercolour map's first frame).</summary>
+    internal double LastBakeMs { get; private set; }
 
-    /// <summary>For the probe: bake the preview again now, as a change would.</summary>
+    /// <summary>For the probe: make the preview again now, as a change would (it paints on the next frame).</summary>
     internal void BakeAgain() => BakeThePreview();
 
     /// <summary>For the probe: the preview has a valley on it.</summary>
-    internal bool HasAPreview => _bake.Texture is not null && _preview.Texture is not null;
+    internal bool HasAPreview => _valleyMap is not null && _previewWorld is not null;
 
-    /// <summary>For the probe: the right-hand column, whose width is the one that must fit.</summary>
+    /// <summary>For the probe: the panel, whose width is the one that must fit.</summary>
     internal Control Column { get; private set; } = null!;
 
-    /// <summary>For the probe: the widest valley the stats can describe, baked now.</summary>
+    /// <summary>For the probe: the widest valley the strip can describe, baked now.</summary>
     internal void PoseTheLongestStats()
     {
         var values = new Dictionary<string, string>(_settings.Values, StringComparer.Ordinal);
@@ -135,162 +177,453 @@ public sealed partial class NewGameScreen : Control
         ShowRefusal(longest);
     }
 
+    /// <summary>For the probe: the screen at the smallest window the game plays at (§12.7) — 720 high.</summary>
+    internal void PoseTheSmallestWindow()
+    {
+        Vector2 window = GetViewportRect().Size;
+        SetAnchorsPreset(LayoutPreset.TopLeft);
+        Position = Vector2.Zero;
+        Size = new Vector2(window.X, SmallestHeight);
+    }
+
+    /// <summary>
+    /// For the probe (§12.7): what is wrong with the screen, in sentences — empty when nothing is. The footer pinned and
+    /// on screen with the settings at their top; the founding's ring left of the panel, and the marker left of it for a
+    /// founding at the valley's east edge too; the share code never widening the panel; and a share code typed into the
+    /// seed box staying there while it is typed, setting its row, and becoming its seed on Enter (A149).
+    /// </summary>
+    internal IReadOnlyList<string> ScreenFaults()
+    {
+        var faults = new List<string>();
+        float height = Size.Y;
+        float panelLeft = _panel.GlobalPosition.X;
+
+        _scroll.ScrollVertical = 0;
+        if (_scroll.IsAncestorOf(_found))
+        {
+            faults.Add("Found scrolls with the settings (the footer is not pinned)");
+        }
+
+        Rect2 found = _found.GetGlobalRect();
+        if (found.Position.Y < -0.5f || found.End.Y > GlobalPosition.Y + height + 0.5f)
+        {
+            faults.Add($"Found runs {found.Position.Y:F0}–{found.End.Y:F0}px in a {height:F0}px window");
+        }
+
+        if (_previewWorld is not null)
+        {
+            (Vector2 at, float radius) = RingOfTheFounding();
+            if (GlobalPosition.X + at.X + radius > panelLeft + 0.5f)
+            {
+                faults.Add($"the founding's ring reaches {GlobalPosition.X + at.X + radius:F0}px, under the panel at {panelLeft:F0}");
+            }
+
+            SimConfig c = _previewWorld.Config;
+            (Vector2 east, _) = Ring(c.MapMaxX - c.StartingResidentialRadius, c.MapMinY + (c.MapHeight / 2));
+            if (GlobalPosition.X + east.X > panelLeft + 0.5f)
+            {
+                faults.Add($"a founding at the valley's east edge is marked at {GlobalPosition.X + east.X:F0}px, under the panel at {panelLeft:F0}");
+            }
+        }
+
+        if (_valleyMap is null || !_valleyMap.IsAPreview || !_valleyMap.WatercolourShown)
+        {
+            faults.Add("the preview is not the game's own map in watercolour, as a preview (A150)");
+        }
+
+        // Joe's range is 25–30 % (§12.2): 28 % is the aim, and a row that cannot narrow may take the panel to 30, no further.
+        float most = Mathf.Ceil(Size.X * PanelMostShare);
+        if (_panel.Size.X > most + 0.5f)
+        {
+            faults.Add($"the panel is {_panel.Size.X:F0}px, past {most:F0} ({PanelMostShare:P0}) — something in it will not narrow");
+        }
+
+        faults.AddRange(StripFaults());
+        faults.AddRange(VeilFaults());
+        faults.AddRange(SeedBoxFaults());
+        faults.AddRange(ManyValleysFaults());
+        return faults;
+    }
+
+    /// <summary>
+    /// For the probe (A153): a setting moved raises the veil, its slip in the room left of the panel; the paint waits
+    /// for a frame with the veil drawn even when the hand has long stopped; and the veil comes down with the new valley.
+    /// </summary>
+    private List<string> VeilFaults()
+    {
+        var faults = new List<string>();
+        SimWorld? before = _previewWorld;
+        ShowTheSettings(); // as a setting moved
+        if (!_veil.Visible || !_veilWords.IsVisibleInTree())
+        {
+            faults.Add("a setting moved and the map shows no sign that it is being painted (A153)");
+        }
+
+        if (_veilWords.GetGlobalRect().End.X > _panel.GlobalPosition.X + 0.5f)
+        {
+            faults.Add($"\"{PaintingWords}\" reaches {_veilWords.GetGlobalRect().End.X:F0}px, under the panel");
+        }
+
+        _sinceChange = BakeAfter; // the hand has stopped
+        _Process(0d);
+        if (!ReferenceEquals(_previewWorld, before))
+        {
+            faults.Add("the valley was painted in the frame its veil went up, so the veil was never seen (A153)");
+        }
+
+        _Process(0d);
+        if (ReferenceEquals(_previewWorld, before))
+        {
+            faults.Add("no valley was painted the frame after its veil was drawn");
+        }
+
+        if (_veil.Visible)
+        {
+            faults.Add("the veil stays over the newly painted valley");
+        }
+
+        return faults;
+    }
+
+    /// <summary>
+    /// For the probe (A152): the summary strip no taller than its words at its width, and inside the window. Asked as
+    /// the screen opens too (<c>Main</c>, before any pose) — the moment Joe's strip covered the map.
+    /// </summary>
+    internal IReadOnlyList<string> StripFaults()
+    {
+        var faults = new List<string>();
+        float wants = _stats.GetCombinedMinimumSize().Y + _strip.GetThemeStylebox("panel").GetMinimumSize().Y;
+        if (_strip.Size.Y > wants + 0.5f || _strip.Position.Y < -0.5f)
+        {
+            faults.Add($"the summary strip is {_strip.Size.Y:F0}px tall at y {_strip.Position.Y:F0}, where its words want "
+                + $"{wants:F0} — it covers the map (A152)");
+        }
+
+        return faults;
+    }
+
+    /// <summary>
+    /// ⛔ Joe's crash (A151, *"dragging the river width bar crashed it"*): a preview map made for every valley loaded the
+    /// grass looks afresh each time and dropped them, and the collector finalised a look Godot had already freed —
+    /// <c>gchandle.is_released()</c>, then a null look. Twenty previews in a row, the collector run between each and not waited for; the probe
+    /// dies here if it comes back.
+    /// </summary>
+    private List<string> ManyValleysFaults()
+    {
+        var faults = new List<string>();
+        if (_previewWorld is not { } world)
+        {
+            return faults;
+        }
+
+        // Collected but NOT waited for: the next preview's load lands while the last look's wrapper is gone and its
+        // finaliser still pending — the window Joe's drag fell into.
+        for (int i = 0; i < 20; i++)
+        {
+            ShowTheValley(world);
+            GC.Collect();
+        }
+
+        GC.WaitForPendingFinalizers();
+
+        if (_valleyMap is null || !_valleyMap.WatercolourShown)
+        {
+            faults.Add("twenty previews in a row left no watercolour map");
+        }
+
+        // The fix itself (A151): the looks every preview loads are kept, so the collector cannot take them from Godot's
+        // cache. Held only weakly here; collected and finalised; still alive. ⚠️ This line scored ZERO red-checked (D326):
+        // with either look loaded and dropped again it stayed green — something else keeps the wrapper alive this long.
+        // The twenty previews above are what caught it: each break killed the probe at Joe's own line.
+        WeakReference[] looks = { new(GrassLook.Approved), new(GrassLabTerrain.StartingPoint) };
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        if (!looks[0].IsAlive || !looks[1].IsAlive)
+        {
+            faults.Add($"the grass look{(looks[0].IsAlive ? string.Empty : " (approved)")}{(looks[1].IsAlive ? string.Empty : " (terrain)")} was collected — the next load can come back null and the finaliser crash the game");
+        }
+
+        return faults;
+    }
+
+    /// <summary>A code typed into the seed box: kept while typed, its row set, cut to the seed on Enter. Puts the box back.</summary>
+    private List<string> SeedBoxFaults()
+    {
+        var faults = new List<string>();
+        string before = _seed.Text;
+        NewGameSettings kept = _settings;
+
+        NewGameRow row = _config.NewGameOptions[0];
+        string value = row.Kind == NewGame.LevelsKind ? row.Levels[^1].Value : row.Min.ToString(CultureInfo.InvariantCulture);
+        string typed = $"oak{SeedText.SettingsMark}{row.Id}={value}";
+        _seed.Text = typed;
+        OnSeedTyped(typed);
+        if (_seed.Text != typed)
+        {
+            faults.Add($"a share code typed into the seed box became \"{_seed.Text}\" while it was being typed");
+        }
+
+        if (_settings.Values[row.Id] != value)
+        {
+            faults.Add($"a share code typed into the seed box left {row.Id} at {_settings.Values[row.Id]}, not {value}");
+        }
+
+        CutTheCodeToItsSeed();
+        if (_seed.Text != "oak")
+        {
+            faults.Add($"Enter left \"{_seed.Text}\" in the seed box, not its seed");
+        }
+
+        _seed.Text = before;
+        _settings = kept;
+        ShowTheSettings();
+        return faults;
+    }
+
     public override void _Ready()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var backdrop = new Panel();
+        // ⭐ Joe's reading face for every word here (A147, Cardo), the blackletter put back on the title and headings below.
+        if (UiLook.ReadingFace is { } reading)
+        {
+            Theme = new Theme { DefaultFont = reading };
+        }
+
+        var backdrop = new Panel { MouseFilter = MouseFilterEnum.Ignore };
         backdrop.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
         backdrop.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(backdrop);
 
-        var margin = new MarginContainer();
-        margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        foreach (string side in new[] { "margin_left", "margin_right", "margin_top", "margin_bottom" })
-        {
-            margin.AddThemeConstantOverride(side, 24);
-        }
+        AddChild(BuildTheMap());
+        AddChild(BuildTheStrip());
+        AddChild(BuildThePanel());
+        AlignTheLabels();
 
-        AddChild(margin);
-
-        var split = new HBoxContainer();
-        split.AddThemeConstantOverride("separation", 24);
-        margin.AddChild(split);
-
-        split.AddChild(BuildThePreview());
-        split.AddChild(BuildTheColumn());
-
+        Resized += PlaceEverything;
         ShowTheSettings();
+        CallDeferred(MethodName.PlaceEverything);
     }
 
-    private Control BuildThePreview()
+    private Control BuildTheMap()
     {
-        var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        left.AddThemeConstantOverride("separation", 10);
+        _map = new Control { MouseFilter = MouseFilterEnum.Ignore, ClipContents = true };
+        _map.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        _preview = new TextureRect
-        {
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
-            TextureFilter = TextureFilterEnum.Linear,
-        };
-        left.AddChild(_preview);
-
-        // ⛔ Wrapped, with a small minimum: a bare label is a minimum WIDTH, and the longest stats line
-        // ("River 6 wide, north-west to south-east") pushed the column off the screen (D479, seen in a
-        // snapshot the probe had not posed — it poses that line now).
-        _stats = new Label
-        {
-            HorizontalAlignment = HorizontalAlignment.Center,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(120, 0),
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-        };
-        _stats.AddThemeFontSizeOverride("font_size", 15);
-        left.AddChild(_stats);
-
-        // The founders' camp, ringed on the preview: where the village will begin.
+        // The preview map goes in under the ring when a valley is made (BakeThePreview).
+        // The founders' camp, ringed: where the village will begin.
         _mark = new Control { MouseFilter = MouseFilterEnum.Ignore };
         _mark.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _mark.Draw += DrawTheFounding;
-        _preview.AddChild(_mark);
-        return left;
+        _map.AddChild(_mark);
+        _map.AddChild(BuildTheVeil());
+        return _map;
     }
 
-    private Control BuildTheColumn()
+    /// <summary>
+    /// The veil (A153): the screen's own paper, three parts opaque, over the room left of the panel, and a slip in the
+    /// strip's skin at its middle. ⚠️ Still, not moving: the paint holds the main thread for its second or two, so
+    /// anything animated would freeze with it — the slip is drawn before the paint starts and stays until it is done.
+    /// </summary>
+    private Control BuildTheVeil()
     {
-        var column = new VBoxContainer { CustomMinimumSize = new Vector2(ColumnWidth, 0) };
-        column.AddThemeConstantOverride("separation", 6);
-        Column = column;
+        _veil = new Control { MouseFilter = MouseFilterEnum.Ignore };
+        _veil.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        Color wash = UiLook.Backdrop() is StyleBoxFlat paper ? paper.BgColor with { A = 0.75f } : new Color(0f, 0f, 0f, 0.6f);
+        _veil.Draw += () => _veil.DrawRect(new Rect2(Vector2.Zero, new Vector2(Room, _veil.Size.Y)), wash);
 
-        var title = new Label { Text = "A new valley" };
-        title.AddThemeFontSizeOverride("font_size", 24);
-        column.AddChild(title);
+        _veilWords = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+        _veilWords.AddThemeStyleboxOverride("panel", UiLook.TopBox());
+        var words = new Label { Text = PaintingWords };
+        words.AddThemeFontSizeOverride("font_size", 22);
+        _veilWords.AddChild(words);
+        _veil.AddChild(_veilWords);
+        return _veil;
+    }
 
-        column.AddChild(Caption("Seed — any words, or paste a share code"));
+    /// <summary>Up goes the veil: a valley is about to be painted.</summary>
+    private void ShowTheVeil()
+    {
+        _veil.Visible = true;
+        _strip.Visible = false; // its words are the old valley's
+        _veilFrames = 0;
+    }
+
+    /// <summary>Down comes the veil: the valley is painted, or refused and the old one stays.</summary>
+    private void HideTheVeil()
+    {
+        _veil.Visible = false;
+        _strip.Visible = true;
+    }
+
+    /// <summary>The summary strip (§12.4): a slip at the map's bottom-left, what the valley has, in the sim's words.</summary>
+    private Control BuildTheStrip()
+    {
+        _strip = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+        _strip.AddThemeStyleboxOverride("panel", UiLook.TopBox());
+
+        // ⛔ Wrapped, and its width set where it is placed: a bare label is a minimum WIDTH, and the longest line
+        // ("River 6 wide, north-west to south-east (the seed's choice)") once pushed a column off the screen (D479).
+        _stats = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        _stats.AddThemeFontSizeOverride("font_size", 15);
+        _strip.AddChild(_stats);
+        return _strip;
+    }
+
+    private Control BuildThePanel()
+    {
+        _panel = new PanelContainer
+        {
+            AnchorLeft = 1f,
+            AnchorRight = 1f,
+            AnchorTop = 0f,
+            AnchorBottom = 1f,
+        };
+        _panel.AddThemeStyleboxOverride("panel", UiLook.Panel());
+        Column = _panel;
+
+        var body = new VBoxContainer();
+        body.AddThemeConstantOverride("separation", 8);
+        _panel.AddChild(body);
+
+        body.AddChild(Heading("A new valley", 30));
+
+        // The settings scroll; the title above and the footer below never do (§12.2, 1280 × 720).
+        _scroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+        };
+        body.AddChild(_scroll);
+        var settings = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        settings.AddThemeConstantOverride("separation", 6);
+        _scroll.AddChild(settings);
+
+        BuildTheSeedAndName(settings);
+        BuildTheGroups(settings);
+
+        body.AddChild(new HSeparator());
+        BuildTheFooter(body);
+        return _panel;
+    }
+
+    /// <summary>Seed and Village name: the label above, the field the panel's full width (§12.2).</summary>
+    private void BuildTheSeedAndName(VBoxContainer settings)
+    {
+        settings.AddChild(Caption("Seed — any words, or paste a share code"));
         var seedRow = new HBoxContainer();
         _seed = new LineEdit { Text = _settings.SeedText, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _seed.TextChanged += OnSeedTyped;
+        _seed.TextSubmitted += _ => CutTheCodeToItsSeed();
+        _seed.FocusExited += CutTheCodeToItsSeed;
         seedRow.AddChild(_seed);
         var dice = new Button { Text = "Roll", TooltipText = "Roll a new seed of words" };
         dice.Pressed += () => _seed.Text = RollASeed();
         dice.Pressed += () => OnSeedTyped(_seed.Text);
         seedRow.AddChild(dice);
-        column.AddChild(seedRow);
+        settings.AddChild(seedRow);
 
         _refusal = new Label
         {
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Visible = false,
+            CustomMinimumSize = new Vector2(120, 0),
         };
         UiLook.Tint(_refusal, UiLook.Refused);
-        _refusal.AddThemeFontSizeOverride("font_size", 13);
-        column.AddChild(_refusal);
+        _refusal.AddThemeFontSizeOverride("font_size", 14);
+        settings.AddChild(_refusal);
 
-        column.AddChild(Caption("Village name"));
-        _name = new LineEdit { MaxLength = NewGame.LongestVillageName };
-        column.AddChild(_name);
+        settings.AddChild(Caption("Village name"));
+        _name = new LineEdit { MaxLength = NewGame.LongestVillageName, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        // The seed's own name shows in the empty field: inked like a caption, not the theme's near-invisible hint.
+        _name.AddThemeColorOverride("font_placeholder_color", UiLook.Hint);
+        settings.AddChild(_name);
+    }
 
-        column.AddChild(Caption("Valley"));
-        var valley = new OptionButton { TooltipText = "One kind of valley for now — more will come." };
-        valley.AddItem("River valley");
-        column.AddChild(valley);
-
-        foreach (NewGameRow row in _config.NewGameOptions)
+    /// <summary>
+    /// ⭐ The rows under their headings (§12.2): each row's <see cref="NewGameRow.Group"/>, in the rows' own order — which
+    /// is the share code's — with a rule between groups; a row with no group after the last heading, unheaded. The
+    /// Valley row (one archetype for now) leads the first group.
+    /// </summary>
+    private void BuildTheGroups(VBoxContainer settings)
+    {
+        var groups = new List<(string Heading, List<NewGameRow> Rows)>();
+        foreach (NewGameRow row in _config.NewGameOptions.Where(r => r.Group.Length > 0))
         {
-            column.AddChild(BuildARow(row));
+            int at = groups.FindIndex(g => g.Heading == row.Group);
+            if (at < 0)
+            {
+                groups.Add((row.Group, new List<NewGameRow>()));
+                at = groups.Count - 1;
+            }
+
+            groups[at].Rows.Add(row);
         }
 
-        column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 8) });
-        column.AddChild(Caption("Share code — the seed and every setting"));
-        var codeRow = new HBoxContainer();
-        _code = new LineEdit { Editable = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        codeRow.AddChild(_code);
-        var copy = new Button { Text = "Copy" };
-        copy.Pressed += () => DisplayServer.ClipboardSet(_code.Text);
-        codeRow.AddChild(copy);
-        column.AddChild(codeRow);
+        List<NewGameRow> unheaded = _config.NewGameOptions.Where(r => r.Group.Length == 0).ToList();
+        if (unheaded.Count > 0 || groups.Count == 0)
+        {
+            groups.Add((string.Empty, unheaded));
+        }
 
-        column.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill });
+        for (int i = 0; i < groups.Count; i++)
+        {
+            settings.AddChild(new HSeparator());
+            if (groups[i].Heading.Length > 0)
+            {
+                settings.AddChild(Heading(groups[i].Heading, 21));
+            }
 
-        var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.End };
-        buttons.AddThemeConstantOverride("separation", 10);
+            var grid = new GridContainer { Columns = 2, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+            grid.AddThemeConstantOverride("h_separation", 12);
+            grid.AddThemeConstantOverride("v_separation", 6);
+            if (i == 0)
+            {
+                var valley = new OptionButton { TooltipText = "One kind of valley for now — more will come.", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+                valley.AddItem("River valley");
+                AddARow(grid, "Valley", valley);
+            }
 
-        // ⭐ Back to the title (D516): nothing is founded, and the rows are not remembered — they are when a
-        // village is founded (D504).
-        var back = new Button { Text = "Back", TooltipText = "Back to the title" };
-        back.Pressed += () => BackAsked?.Invoke();
-        buttons.AddChild(back);
-        buttons.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        var defaults = new Button { Text = "Default settings", TooltipText = "Every setting back to the game's own" };
-        defaults.Pressed += OnDefaults;
-        buttons.AddChild(defaults);
-        _found = new Button { Text = "Found a new village" };
-        _found.Pressed += OnFound;
-        buttons.AddChild(_found);
-        column.AddChild(buttons);
+            foreach (NewGameRow row in groups[i].Rows)
+            {
+                AddARow(grid, row.Label, BuildARow(row));
+            }
 
-        return column;
+            settings.AddChild(grid);
+        }
+    }
+
+    /// <summary>
+    /// One label column through every group, so the controls line up down the panel, heading to heading. Measured once
+    /// the panel is in the tree — before that a label measures in the default face, not the reading one.
+    /// </summary>
+    private void AlignTheLabels()
+    {
+        float widest = _rowLabels.Max(l => l.GetCombinedMinimumSize().X);
+        foreach (Label label in _rowLabels)
+        {
+            label.CustomMinimumSize = label.CustomMinimumSize with { X = widest };
+        }
+    }
+
+    private void AddARow(GridContainer grid, string text, Control control)
+    {
+        // The label sits level with the control's first line — a slider's groove, not its named ends.
+        var label = new Label { Text = text, SizeFlagsVertical = SizeFlags.ShrinkBegin, CustomMinimumSize = new Vector2(0, 28), VerticalAlignment = VerticalAlignment.Center };
+        _rowLabels.Add(label);
+        grid.AddChild(label);
+        grid.AddChild(control);
     }
 
     private Control BuildARow(NewGameRow row)
     {
-        var box = new VBoxContainer();
-        box.AddThemeConstantOverride("separation", 2);
-        var heading = new HBoxContainer();
-        Label caption = Caption(row.Label);
-        caption.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        heading.AddChild(caption);
-        var reading = new Label { HorizontalAlignment = HorizontalAlignment.Right };
-        heading.AddChild(reading);
-        _rowReadings[row.Id] = reading;
-        box.AddChild(heading);
+        var box = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        box.AddThemeConstantOverride("separation", 0);
 
         if (row.Kind == NewGame.LevelsKind)
         {
-            var choice = new OptionButton();
+            var choice = new OptionButton { SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 28) };
             foreach (NewGameLevel level in row.Levels)
             {
                 choice.AddItem(level.Label);
@@ -305,42 +638,110 @@ public sealed partial class NewGameScreen : Control
             };
             box.AddChild(choice);
             _rowControls[row.Id] = choice;
-        }
-        else
-        {
-            var slider = new HSlider
-            {
-                MinValue = row.Min,
-                MaxValue = row.Max,
-                Step = row.Step,
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            };
-            slider.ValueChanged += value =>
-            {
-                if (!_settingControls)
-                {
-                    SetRow(row.Id, ((int)value).ToString(CultureInfo.InvariantCulture));
-                }
-            };
-            if (row.HasEndLabels)
-            {
-                // The ends named, no number (D481): the share code still carries the number.
-                var span = new HBoxContainer();
-                span.AddThemeConstantOverride("separation", 8);
-                span.AddChild(Caption(row.MinLabel));
-                span.AddChild(slider);
-                span.AddChild(Caption(row.MaxLabel));
-                box.AddChild(span);
-            }
-            else
-            {
-                box.AddChild(slider);
-            }
 
-            _rowControls[row.Id] = slider;
+            // "as configured", when the file's values match no level — said under the choice, hidden otherwise.
+            Label reading = Caption(string.Empty);
+            box.AddChild(reading);
+            _rowReadings[row.Id] = reading;
+            return box;
+        }
+
+        var line = new HBoxContainer { CustomMinimumSize = new Vector2(0, 28) };
+        line.AddThemeConstantOverride("separation", 8);
+        var slider = new HSlider
+        {
+            MinValue = row.Min,
+            MaxValue = row.Max,
+            Step = row.Step,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            CustomMinimumSize = new Vector2(100, 0),
+        };
+        slider.ValueChanged += value =>
+        {
+            if (!_settingControls)
+            {
+                SetRow(row.Id, ((int)value).ToString(CultureInfo.InvariantCulture));
+            }
+        };
+        line.AddChild(slider);
+        _rowControls[row.Id] = slider;
+
+        var number = new Label { HorizontalAlignment = HorizontalAlignment.Right, CustomMinimumSize = new Vector2(40, 0), VerticalAlignment = VerticalAlignment.Center };
+        number.Visible = !row.HasEndLabels;
+        line.AddChild(number);
+        _rowReadings[row.Id] = number;
+        box.AddChild(line);
+
+        if (row.HasEndLabels)
+        {
+            // The ends named, no number (D481) — under the slider's two ends (§12.2); the share code keeps the number.
+            var ends = new HBoxContainer();
+            ends.AddChild(Caption(row.MinLabel));
+            ends.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
+            ends.AddChild(Caption(row.MaxLabel));
+            box.AddChild(ends);
         }
 
         return box;
+    }
+
+    /// <summary>The share code and Copy, then Back, Defaults and Found — pinned under the scroll (§12.2).</summary>
+    private void BuildTheFooter(VBoxContainer body)
+    {
+        body.AddChild(Caption("Share code — the seed and every setting"));
+        var codeRow = new HBoxContainer();
+
+        // ⛔ Never shrunk, never widening the panel: one line in the field's own look, cut with an ellipsis where it runs
+        // out (§12.2); the tooltip and Copy carry all of it.
+        var codeBox = new PanelContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        codeBox.AddThemeStyleboxOverride("panel", GetThemeStylebox("normal", "LineEdit"));
+        _code = new Label
+        {
+            ClipText = true,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(40, 0),
+            MouseFilter = MouseFilterEnum.Pass,
+        };
+        codeBox.AddChild(_code);
+        codeRow.AddChild(codeBox);
+        var copy = new Button { Text = "Copy", TooltipText = "Copy the share code" };
+        copy.Pressed += () => DisplayServer.ClipboardSet(_code.Text);
+        codeRow.AddChild(copy);
+        body.AddChild(codeRow);
+
+        var buttons = new HBoxContainer();
+        buttons.AddThemeConstantOverride("separation", 6);
+
+        // ⭐ Back to the title (D516): nothing is founded, and the rows are not remembered — they are when a
+        // village is founded (D504).
+        var back = new Button { Text = "Back", TooltipText = "Back to the title" };
+        back.Pressed += () => BackAsked?.Invoke();
+        buttons.AddChild(back);
+        var defaults = new Button { Text = "Defaults", TooltipText = "Every setting back to the game's own" };
+        defaults.Pressed += OnDefaults;
+        buttons.AddChild(defaults);
+        buttons.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
+
+        // The one primary button (§12.2): filled rubric and larger in the parchment look.
+        _found = new Button { Text = "Found a new village", ThemeTypeVariation = UiLook.PrimaryButton };
+        _found.Pressed += OnFound;
+        buttons.AddChild(_found);
+        body.AddChild(buttons);
+    }
+
+    /// <summary>A title or a group's heading: the blackletter, and only here (§12.3).</summary>
+    private static Label Heading(string text, int size)
+    {
+        var label = new Label { Text = text };
+        if (UiLook.Blackletter is { } blackletter)
+        {
+            label.AddThemeFontOverride("font", blackletter);
+        }
+
+        label.AddThemeFontSizeOverride("font_size", size);
+        return label;
     }
 
     private static Label Caption(string text)
@@ -371,14 +772,23 @@ public sealed partial class NewGameScreen : Control
         ShowRefusal(null);
         _settings = read with { VillageName = _settings.VillageName };
 
-        // A pasted code leaves the seed in the box and the settings on the rows.
-        if (text.Contains(SeedText.SettingsMark, StringComparison.Ordinal))
+        // ⚠️ The box keeps what was typed or pasted while it is being used (A149, Joe: "doesnt let me type it or paste more
+        // than flax-oak-93"): cutting it to the seed on every keystroke ate a typed '#' at once and made a paste look
+        // refused. The rows take the code's settings as it is read; the box is cut to the seed on Enter or on leaving it.
+        ShowTheSettings();
+    }
+
+    /// <summary>A share code in the seed box becomes its seed once the player is done with the box — Enter, or leaving it.</summary>
+    private void CutTheCodeToItsSeed()
+    {
+        if (!_seed.Text.Contains(SeedText.SettingsMark, StringComparison.Ordinal)
+            || !NewGame.TryRead(_config, _seed.Text, _settings, out NewGameSettings read, out _))
         {
-            _seed.Text = read.SeedText;
-            _seed.CaretColumn = _seed.Text.Length;
+            return;
         }
 
-        ShowTheSettings();
+        _seed.Text = read.SeedText;
+        _seed.CaretColumn = _seed.Text.Length;
     }
 
     private void SetRow(string id, string value)
@@ -429,6 +839,7 @@ public sealed partial class NewGameScreen : Control
                     int index = row.Levels.ToList().FindIndex(l => l.Value == value);
                     choice.Selected = index;
                     _rowReadings[row.Id].Text = index < 0 ? "as configured" : string.Empty;
+                    _rowReadings[row.Id].Visible = index < 0;
                     break;
                 case HSlider slider:
                     slider.Value = int.Parse(value, CultureInfo.InvariantCulture);
@@ -439,12 +850,16 @@ public sealed partial class NewGameScreen : Control
 
         _settingControls = false;
         _code.Text = NewGame.ShareCode(_config, _settings);
+        _code.TooltipText = _code.Text;
         _changed = true;
         _sinceChange = 0;
+        ShowTheVeil();
     }
 
     public override void _Process(double delta)
     {
+        TimeThePaint();
+
         if (!_changed)
         {
             return;
@@ -452,8 +867,10 @@ public sealed partial class NewGameScreen : Control
 
         // ⭐ Wait for the hand to stop: a slider dragged end to end would otherwise bake every
         // value it passes through. The first preview bakes at once.
+        // ⛔ And not before the veil has been drawn (A153): the paint holds the frame, so a veil raised in the same
+        // frame as the paint would never be seen — the first open included, which froze on the title screen.
         _sinceChange += delta;
-        if (_previewWorld is not null && _sinceChange < BakeAfter)
+        if (++_veilFrames < 2 || (_previewWorld is not null && _sinceChange < BakeAfter))
         {
             return;
         }
@@ -472,59 +889,174 @@ public sealed partial class NewGameScreen : Control
         catch (SimConfigException refused)
         {
             ShowRefusal(refused.Message);
+            HideTheVeil(); // the old valley stays, the refusal says why
             return;
         }
 
         _previewWorld = SimWorld.Create(config);
-        _bake.BakeAfresh(_previewWorld);
-        SlowestBakeMs = Math.Max(SlowestBakeMs, _bake.LastBakeMs);
-        _preview.Texture = _bake.Texture;
+        ShowTheValley(_previewWorld);
 
-        ValleySummary s = NewGame.Summarise(config, _previewWorld.Map);
-        _stats.Text = $"Wooded {s.WoodedPercent}% of the land   ·   Stone {s.StoneSeams} seams, {s.StoneTiles} tiles   ·   "
-            + $"Iron {s.IronSeams} seams, {s.IronTiles} tiles   ·   River {RiverWords(config, s.Course)}";
+        _stats.Text = NewGame.Describe(config, NewGame.Summarise(config, _previewWorld.Map));
         _name.PlaceholderText = _previewWorld.Name;
-        _mark.QueueRedraw();
+        HideTheVeil();
+        PlaceEverything();
     }
 
-    /// <summary>Ring the founding site where the texture is drawn — centred and kept to its aspect.</summary>
-    private void DrawTheFounding()
+    /// <summary>
+    /// ⭐ The valley as play will show it (A150, §12.10): a fresh <see cref="VillageMap"/> over <paramref name="world"/>, a
+    /// preview — watercolour on, no game or forage, no keys or clicks — under the founding's ring. The old one goes.
+    /// </summary>
+    private void ShowTheValley(SimWorld world)
     {
-        if (_previewWorld is null || _bake.Texture is null)
+        if (_valleyMap is not null)
+        {
+            _map.RemoveChild(_valleyMap);
+            _valleyMap.QueueFree();
+        }
+
+        _valleyMap = new VillageMap { IsAPreview = true, ClipContents = true };
+        _valleyMap.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        _map.AddChild(_valleyMap);
+        _map.MoveChild(_valleyMap, 0);
+        _valleyMap.MouseFilter = MouseFilterEnum.Ignore; // after its _Ready, which asks for the mouse
+        _valleyMap.ShowGame(false);
+        _valleyMap.ShowForage(false);
+        _valleyMap.ShowWatercolour(true);
+        PlaceEverything();
+        _valleyMap.Present(world, 0d, -1, null, MapDetail.Off);
+
+        _paintAsked = Time.GetTicksUsec();
+        _framesSincePaintAsked = 0;
+    }
+
+    /// <summary>
+    /// How long a new preview takes to appear: from the map being made to the end of the frame it is first drawn in (the
+    /// second <c>_Process</c> after — the draw is the frame between). The watercolour's whole-valley bake is most of it.
+    /// </summary>
+    private void TimeThePaint()
+    {
+        if (_paintAsked == 0 || ++_framesSincePaintAsked < 2)
         {
             return;
         }
 
-        Vector2 texture = _bake.Texture.GetSize();
-        Vector2 room = _preview.Size;
-        float scale = Mathf.Min(room.X / texture.X, room.Y / texture.Y);
-        Vector2 origin = (room - (texture * scale)) / 2f;
-        float perTile = texture.X * scale / _previewWorld.Config.MapWidth;
-
-        var site = _previewWorld.Map.FoundingSite;
-        Vector2 at = origin + new Vector2(
-            (site.X - _previewWorld.Config.MapMinX + 0.5f) * perTile,
-            (site.Y - _previewWorld.Config.MapMinY + 0.5f) * perTile);
-        float radius = Mathf.Max(6f, _previewWorld.Config.StartingResidentialRadius * perTile);
-
-        _mark.DrawArc(at, radius, 0f, Mathf.Tau, 48, UiLook.FoundingMark, 2f, true);
-        _mark.DrawCircle(at, 2.5f, UiLook.FoundingMark);
+        LastBakeMs = (Time.GetTicksUsec() - _paintAsked) / 1000d;
+        SlowestBakeMs = Math.Max(SlowestBakeMs, LastBakeMs);
+        _paintAsked = 0;
     }
 
-    private static string RiverWords(SimConfig config, string course)
+    /// <summary>
+    /// The panel's width, the strip's place and the camera — on every resize, and whenever the valley or the strip's
+    /// words change. Nothing here is per frame.
+    /// </summary>
+    private void PlaceEverything()
     {
-        if (config.RiverWidthTiles == 0)
+        if (!IsInsideTree())
         {
-            return "none";
+            return;
         }
 
-        string runs = course switch
+        Vector2 window = Size;
+        float panelWidth = Mathf.Ceil(Mathf.Max(window.X * PanelShare, _panel.GetCombinedMinimumSize().X));
+        _panel.OffsetLeft = -panelWidth;
+        _panel.OffsetRight = 0f;
+        _panel.OffsetTop = 0f;
+        _panel.OffsetBottom = 0f;
+        float room = Room;
+
+        PlaceTheStrip(room, window.Y);
+        _veilWords.ResetSize();
+        _veilWords.Position = ((new Vector2(room, window.Y) - _veilWords.Size) / 2f).Round();
+        _veil.QueueRedraw();
+
+        if (_previewWorld is null || _valleyMap is null)
         {
-            "ns" => "north to south",
-            "nwse" => "north-west to south-east",
-            "swne" => "south-west to north-east",
-            _ => "west to east",
-        };
-        return $"{config.RiverWidthTiles} wide, {runs}";
+            return;
+        }
+
+        (_origin, _perTile) = Camera(_previewWorld.Map.FoundingSite.X, _previewWorld.Map.FoundingSite.Y, room, window.Y);
+
+        // The map draws a tile's centre at (tile − centre) × px + its size ÷ 2; the valley's top-left corner, half a tile
+        // out from its first tile's centre, goes at the camera's origin.
+        SimConfig c = _previewWorld.Config;
+        var corner = new Vector2(c.MapMinX - 0.5f, c.MapMinY - 0.5f);
+        _valleyMap.LookAt(corner + (((_valleyMap.Size / 2f) - _origin) / _perTile), _perTile);
+        _mark.QueueRedraw();
+    }
+
+    private void PlaceTheStrip(float room, float height)
+    {
+        StyleBox skin = _strip.GetThemeStylebox("panel");
+        Font font = _stats.GetThemeFont("font");
+        int size = _stats.GetThemeFontSize("font_size");
+        float words = Mathf.Ceil(font.GetStringSize(_stats.Text, HorizontalAlignment.Left, -1, size).X) + 2f;
+        float most = Mathf.Max(120f, room - (2 * StripInset) - skin.GetMinimumSize().X);
+        float width = Mathf.Min(words, most);
+        _stats.CustomMinimumSize = new Vector2(width, 0f);
+
+        // ⛔ A152 (Joe's blank map, "what is this?"): a wrapped label measures its height at the width it HAS, not its
+        // minimum. As the screen opened it had none yet — every word its own line, the strip 2,433px tall over the map
+        // with its words above the window — until a setting was touched. Given its width before the strip is sized, and
+        // then measured again: setting the size checks it against the minimum taken at the OLD width, and keeps that.
+        _stats.Size = new Vector2(width, _stats.Size.Y);
+        _stats.UpdateMinimumSize();
+        _strip.ResetSize();
+        _strip.Position = new Vector2(StripInset, height - StripInset - _strip.Size.Y);
+    }
+
+    /// <summary>
+    /// ⭐ The camera for a founding at tile (<paramref name="x"/>, <paramref name="y"/>) (§12.2, call 3): the valley
+    /// scaled so its height fills the window (and at least the room's width), then moved so the founding sits in the
+    /// middle of the room left of the panel — stopped at the valley's edge, so no bare paper shows in the room.
+    /// </summary>
+    private (Vector2 Origin, float PerTile) Camera(int x, int y, float room, float height)
+    {
+        SimConfig c = _previewWorld!.Config;
+        float perTile = Mathf.Max(height / c.MapHeight, room / c.MapWidth);
+        var valley = new Vector2(c.MapWidth * perTile, c.MapHeight * perTile);
+        var site = new Vector2((x - c.MapMinX + 0.5f) * perTile, (y - c.MapMinY + 0.5f) * perTile);
+
+        return (new Vector2(Stopped((room / 2f) - site.X, room, valley.X), Stopped((height / 2f) - site.Y, height, valley.Y)), perTile);
+
+        // Wider than the room: the valley's edges stay outside it. Narrower (a tall window): kept inside it.
+        static float Stopped(float at, float span, float extent) =>
+            extent >= span ? Mathf.Clamp(at, span - extent, 0f) : Mathf.Clamp(at, 0f, span - extent);
+    }
+
+    /// <summary>The room left of the panel, in screen pixels.</summary>
+    private float Room => Size.X - _panel.Size.X;
+
+    /// <summary>
+    /// Where the ring for a founding at that tile would be drawn, in the screen's own coordinates, and its radius — the
+    /// camera worked out afresh for that founding (the probe's east-edge pose).
+    /// </summary>
+    private (Vector2 At, float Radius) Ring(int x, int y)
+    {
+        (Vector2 origin, float perTile) = Camera(x, y, Room, Size.Y);
+        return RingAt(x, y, origin, perTile);
+    }
+
+    /// <summary>The founding's ring under the camera the map was actually placed with — what the player sees.</summary>
+    private (Vector2 At, float Radius) RingOfTheFounding() =>
+        RingAt(_previewWorld!.Map.FoundingSite.X, _previewWorld.Map.FoundingSite.Y, _origin, _perTile);
+
+    private (Vector2 At, float Radius) RingAt(int x, int y, Vector2 origin, float perTile)
+    {
+        SimConfig c = _previewWorld!.Config;
+        Vector2 at = origin + new Vector2((x - c.MapMinX + 0.5f) * perTile, (y - c.MapMinY + 0.5f) * perTile);
+        return (at, Mathf.Max(6f, c.StartingResidentialRadius * perTile));
+    }
+
+    /// <summary>Ring the founding site — the red ring and dot — where the camera put it.</summary>
+    private void DrawTheFounding()
+    {
+        if (_previewWorld is null || _valleyMap is null)
+        {
+            return;
+        }
+
+        (Vector2 at, float radius) = RingOfTheFounding();
+        _mark.DrawArc(at, radius, 0f, Mathf.Tau, 64, UiLook.FoundingMark, 2.5f, true);
+        _mark.DrawCircle(at, 4f, UiLook.FoundingMark);
     }
 }
