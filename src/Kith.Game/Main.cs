@@ -557,6 +557,9 @@ public partial class Main : Control
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
+        GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
+        GD.Print(TheWindowIsFullScreenByDefault());
+        GD.Print(F5SavesAndF7SaysWhenThereIsNothing());
         GD.Print(AMetLimitIsMarkedOnTheBar());
 
         // ⭐⭐ THE TWO SELF-SCROLLING PANELS, MEASURED — because they are the two that can hold
@@ -1275,6 +1278,112 @@ public partial class Main : Control
             : $"[widths] arrived: ⛔ {string.Join("; ", faults)} — {natural}";
     }
 
+    /// <summary>
+    /// ⭐ Joe's play notes 3 and 5 (D816) — <b>a probe line</b>: Professions shows <i>Able adults: n</i> and
+    /// <i>Laborers: n</i> side by side, the laborers' sentence their tooltip and no longer a caption; the top bar counts no
+    /// laborers. Every label is asked, by its words, so a cell or caption put back under another field is still found.
+    /// </summary>
+    private string TheLaborersAreCountedWhereJoeReadsThem()
+    {
+        Refresh();
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        if (_ableAdultsReadout.Text != $"Able adults: {world.AbleAdults}" || _laborerReadout.Text != $"Laborers: {world.Laborers}")
+        {
+            faults.Add($"Professions reads '{_ableAdultsReadout.Text}' and '{_laborerReadout.Text}'");
+        }
+
+        if (_laborerReadout.TooltipText != LaborersAre || _laborerReadout.MouseFilter == MouseFilterEnum.Ignore)
+        {
+            faults.Add("the laborers' count has no tooltip a pointer can reach");
+        }
+
+        if (_ableAdultsReadout.GetParent() != _laborerReadout.GetParent() || _laborerReadout.GetParent() is not HBoxContainer)
+        {
+            faults.Add("the two counts are not side by side");
+        }
+
+        if (LabelsUnder(_professionsBody).Any(l => l.Text.Contains("spare hands", StringComparison.Ordinal)))
+        {
+            faults.Add("the spare-hands sentence is still a caption");
+        }
+
+        if (LabelsUnder(_topBar).Any(l => l.Text.Contains("laborer", StringComparison.OrdinalIgnoreCase)))
+        {
+            faults.Add("the top bar still counts laborers");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] laborers: ✅ Professions reads '{_ableAdultsReadout.Text}' beside '{_laborerReadout.Text}', the sentence its tooltip; the top bar counts none"
+            : $"[widths] laborers: ⛔ {string.Join("; ", faults)}";
+
+        static IEnumerable<Label> LabelsUnder(Node root)
+        {
+            foreach (Node child in root.GetChildren())
+            {
+                if (child is Label label)
+                {
+                    yield return label;
+                }
+
+                foreach (Label deeper in LabelsUnder(child))
+                {
+                    yield return deeper;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Joe's play note 1 (D816) — <b>a probe line</b>: Settings has a <i>full screen</i> tick, pressed at a founding with no
+    /// settings file; unticked it asks for a window, and a settings file that says off is read as off. Headless, the
+    /// display takes no window mode, so what is asked is read back, not the screen — how it looks is Joe's to play.
+    /// </summary>
+    private string TheWindowIsFullScreenByDefault()
+    {
+        var faults = new List<string>();
+        CheckBox? tick = null;
+        for (int i = 0; i < _viewToggles.Count; i++)
+        {
+            if (_viewToggles[i].Key == FullScreenToggle)
+            {
+                tick = _viewToggles[i].Box;
+            }
+        }
+
+        if (tick is null)
+        {
+            return "[widths] full screen: ⛔ Settings has no full-screen tick";
+        }
+
+        if (!tick.ButtonPressed || !_fullScreen)
+        {
+            faults.Add($"at a founding the tick is {(tick.ButtonPressed ? "pressed" : "clear")} and the window asked {(_fullScreen ? "full screen" : "windowed")}");
+        }
+
+        tick.ButtonPressed = false;
+        bool windowed = !_fullScreen;
+        tick.ButtonPressed = true;
+        if (!windowed || !_fullScreen)
+        {
+            faults.Add("the tick does not move the window between full screen and windowed");
+        }
+
+        PlayerSettings now = CaptureSettings();
+        var toggles = new Dictionary<string, bool>(now.Toggles, StringComparer.Ordinal) { [FullScreenToggle] = false };
+        ApplySettings(now with { Toggles = toggles });
+        bool readOff = !_fullScreen && !tick.ButtonPressed;
+        ApplySettings(now);
+        if (!readOff || !_fullScreen)
+        {
+            faults.Add("a settings file that says off is not read as off, or the way back is not on");
+        }
+
+        return faults.Count == 0
+            ? "[widths] full screen: ✅ the tick is pressed at a founding and asks for full screen; unticked asks for a window; a file's off is read as off"
+            : $"[widths] full screen: ⛔ {string.Join("; ", faults)}";
+    }
+
     private string TheBarsHoldTheirShape()
     {
         Refresh();
@@ -1282,7 +1391,7 @@ public partial class Main : Control
         Vector2 before = _topBar.GetCombinedMinimumSize();
         Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
 
-        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _eldersCell, _laborersCell, _onTheGround };
+        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _eldersCell, _onTheGround };
         foreach ((Goods _, Label held) in _goodsReadouts)
         {
             cells.Add(held);
@@ -2100,6 +2209,10 @@ public partial class Main : Control
             case Key.Tab: CycleDetail(); break;
             case Key.P: ToggleWear(); break;
 
+            // ⭐ F5 SAVES, F7 LOADS IT BACK (Joe's play note 2, D816) — one quicksave a village, in its own folder.
+            case Key.F5: QuickSave(); break;
+            case Key.F7: QuickLoad(); break;
+
             // ⭐ R TURNS WHAT IS IN YOUR HAND (gridless 2b, D320). Without a key, facing would be
             // a sim capability the player cannot reach — this project's fifth such feature if it
             // shipped that way, and D227's standing rule is that a sim feature is not done until
@@ -2471,6 +2584,27 @@ public partial class Main : Control
 
     private Button? _treeButton;
     private Button? _seeTheTree;
+
+    /// <summary>The id the full-screen tick is remembered by in the settings file's toggles (D816).</summary>
+    internal const string FullScreenToggle = "full_screen";
+
+    /// <summary>Whether the window was last asked to be full screen — what the tick says, read back by the probe.</summary>
+    private bool _fullScreen;
+
+    /// <summary>The window full screen or in a window (D816). Headless, the display ignores it and the wish is still kept.</summary>
+    private void SetFullScreen(bool on)
+    {
+        _fullScreen = on;
+        DisplayServer.WindowSetMode(on ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
+    }
+
+    /// <summary>
+    /// ⭐ What the player calls the tech tree: <b>Lore</b> (Joe, 2026-11-21, play note 6; D815). The words he sees only — the
+    /// data's <c>techniques</c>, the save's <c>shown_the_tech_tree</c> and the code's names keep theirs, so no save or mod
+    /// breaks. The window was <i>"Tree"</i> until then, and a settings file that remembers it is read by
+    /// <see cref="FormerTitles"/>.
+    /// </summary>
+    internal const string LoreTitle = "Lore";
     private PanelContainer _treePanel = null!;
     private TechTreeView _treeView = null!;
     private bool _treeEverOpened;
@@ -2542,7 +2676,7 @@ public partial class Main : Control
     private void BuildTheTreePanel()
     {
         VBoxContainer body = Floating(
-            Edge + DefaultPanelWidth + 16f, Edge + 40f, TreeWidth, 0f, Corner.TopLeft, "Tree", startOpen: true);
+            Edge + DefaultPanelWidth + 16f, Edge + 40f, TreeWidth, 0f, Corner.TopLeft, LoreTitle, startOpen: true);
 
         _treePanel = _panels[^1];
         _treePanel.Visible = false;
@@ -2941,7 +3075,7 @@ public partial class Main : Control
 
         // ⭐ The introduction's second door (D440): shown on the first stop after the village has
         // learned something by doing, until the tree has been opened once.
-        _seeTheTree = new Button { Text = "See the tree", Visible = false };
+        _seeTheTree = new Button { Text = "See " + LoreTitle, Visible = false };
         _seeTheTree.Pressed += () =>
         {
             DismissTheMoment();
@@ -3140,7 +3274,6 @@ public partial class Main : Control
         _adultsCell.Text = adults.ToString();
         _childrenCell.Text = children.ToString();
         _eldersCell.Text = elders.ToString();
-        _laborersCell.Text = world.Laborers.ToString();
 
         // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
         int unhoused = 0;
@@ -3338,8 +3471,8 @@ public partial class Main : Control
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
-        _laborerReadout.Text =
-            $"Able adults: {world.AbleAdults}   ·   Laborers (unassigned): {world.Laborers}";
+        _ableAdultsReadout.Text = $"Able adults: {world.AbleAdults}";
+        _laborerReadout.Text = $"Laborers: {world.Laborers}";
 
         // The two standing alerts used to be composed here every frame and shown in the
         // overview. They are narrated by the sim on their edges now and read in the village
@@ -4578,8 +4711,8 @@ public partial class Main : Control
     /// <remarks>
     /// *"17 villagers"* is the number; *"11 adults and 4 children"* is the one that tells you
     /// whether the village is growing or ageing out, which is the question a generational game
-    /// is about. The laborer count is the Professions panel's, put where it is read: a limit is
-    /// what creates laborers (D63), and this is where the player sees the limit bite. The dots
+    /// is about. ~~The laborer count is the Professions panel's, put where it is read~~ — off the bar since D816 (Joe's
+    /// play note 5: it is in Professions, beside the able adults it is one of). The dots
     /// are the map's own villager colours, so a child on the bar and a child in the valley are
     /// one fact.
     /// </remarks>
@@ -4598,7 +4731,6 @@ public partial class Main : Control
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
         _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
         _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
-        _laborersCell = AddBarCell(counts, null, "laborers", HeadcountWidth);
 
         // The valley's name is the one word that says which run you are watching — derived
         // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
@@ -4654,7 +4786,6 @@ public partial class Main : Control
     private Label _adultsCell = null!;
     private Label _childrenCell = null!;
     private Label _eldersCell = null!;
-    private Label _laborersCell = null!;
     private Label _unhousedLabel = null!;
     private CheckBox _nomadsTick = null!;
 
@@ -5381,11 +5512,17 @@ public partial class Main : Control
         // pool the other seven are drawn from.
         // ⚠️ Clipped, not wrapped: the one line whose numbers grow with the village, and a
         // wrapped line is a taller panel every time it does (D367).
+        // ⭐ Two counts side by side, the laborers' sentence their tooltip (Joe's play note 3, D816): the caption under them
+        // was a line read once and then only in the way.
+        var counts = new HBoxContainer();
+        counts.AddThemeConstantOverride("separation", 18);
+        _ableAdultsReadout = Body(string.Empty);
         _laborerReadout = Body(string.Empty);
-        _laborerReadout.ClipText = true;
-        _laborerReadout.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-        body.AddChild(_laborerReadout);
-        body.AddChild(Caption("Laborers are the spare hands: clearing ground, hauling and tidying."));
+        _laborerReadout.TooltipText = LaborersAre;
+        _laborerReadout.MouseFilter = MouseFilterEnum.Stop;
+        counts.AddChild(_ableAdultsReadout);
+        counts.AddChild(_laborerReadout);
+        body.AddChild(counts);
 
         body.AddChild(BuildProfessionsTable());
     }
@@ -5800,7 +5937,7 @@ public partial class Main : Control
 
         // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
         // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
-        _treeButton = new Button { Text = "Tree", Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
+        _treeButton = new Button { Text = LoreTitle, Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
         _treeButton.Pressed += ToggleTheTree;
         controls.AddChild(_treeButton);
 
@@ -7007,6 +7144,17 @@ public partial class Main : Control
         // should be off. it is presently on."*). ⚠️ **TWO DEFAULTS, AND THEY HAVE TO
         // MOVE TOGETHER**: this tick and `VillageMap._showGrid`. Changing one leaves the checkbox
         // lying about the map, which is worse than either state.
+        // ⭐ FULL SCREEN, ON BY DEFAULT (Joe's play note 1, D816: "a full-screen option in Settings, on by default"). The
+        // tick starts pressed and the window is set with it here — a tick pressed in its initializer never fires its handler
+        // (the watercolour's rule, below) — and a settings file that says off is applied after. Borderless full screen, not
+        // exclusive: the desktop is an Alt-Tab away, as it is in a window.
+        var fullScreen = new CheckBox { Text = "full screen", ButtonPressed = true };
+        fullScreen.AddThemeFontSizeOverride("font_size", 12);
+        fullScreen.Toggled += SetFullScreen;
+        SetFullScreen(fullScreen.ButtonPressed);
+        body.AddChild(fullScreen);
+        _viewToggles.Add((FullScreenToggle, "full screen", fullScreen, () => _fullScreen));
+
         var grid = new CheckBox { Text = "draw the tile grid" };
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
@@ -7437,7 +7585,12 @@ public partial class Main : Control
     /// <summary>The trade name's column, wide enough for "Woodcutter ⚠" and no wider for anything (D374).</summary>
     private const float ProfessionNameWidth = 110f;
 
+    private Label _ableAdultsReadout = null!;
+
     private Label _laborerReadout = null!;
+
+    /// <summary>What a laborer is — the tooltip on <i>Laborers: n</i> (D816; it was a caption under the counts).</summary>
+    internal const string LaborersAre = "Laborers are the spare hands: clearing ground, hauling and tidying, and nobody's trade yet.";
 
     /// <summary>The Professions window's contents — visible exactly when the window is unfolded (the probe asks).</summary>
     private VBoxContainer _professionsBody = null!;
@@ -8522,11 +8675,11 @@ public partial class Main : Control
         // B2 (D486): before the tree is first shown, Settings does not list it.
         if (!_loop.World.ShownTheTechTree && WindowOf(_treePanel)?.Tick is { Visible: true })
         {
-            wrong.Add("Tree is listed in Settings before the tree is shown");
+            wrong.Add($"{LoreTitle} is listed in Settings before it is shown");
         }
 
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; Tree is not in Settings until the tree is shown"
+            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; {LoreTitle} is not in Settings until it is shown"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 

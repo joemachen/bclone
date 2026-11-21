@@ -1,5 +1,15 @@
 # Handoff — Kith: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), ✅ PUSHED AT HIS WORD (D811, `origin/main` = ecbeaa0); NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS, HIS ORDER — W3 OR HIS SEVEN PLAY NOTES. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/play-notes` — JOE'S SEVEN PLAY NOTES, ALL BUILT (D814 steep ground, D815 *Lore*, D816 the five shell
+> notes). Four checks green (suite 2178 / 0 / 5 of 2183 in 20m34 (the art lane's suite built at 14:07, inside this one's 14:04–14:25); probe 176 lines, 137 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, done.). ⏸️ HIS PLAY, THEN THE MERGE AT HIS WORD.**
+> - **⛔ TRAP (D815): a window's TITLE is its key in the player's settings file.** Rename one and it forgets where he
+>   put it, folded or not. `Main.FormerTitles` maps the new title to the old for one read; add to it, never rename bare.
+> - **⛔ TRAP (D816): a Godot `Tree` column is never narrower than its title** — a mark added to the sorted column's
+>   title widens that column and the tree's minimum size, and a panel sized by its contents moves. Reserve the widest
+>   title a column can wear (`ShowTheRosterOrder`), and guard the shape across every state, not one.
+> - **⛔ TRAP (D814): a guard of a property the generator already guarantees scores zero.** No founding stood on
+>   steep ground on twelve seeds with the rule off and the ring unsmoothed — founding sites are flat by how they are
+>   chosen. Kept as a property guard, its zero written in `heights.md §13`; do not count it as a red.
 > **⭐ THE WORKING NAME IS *KITH* (D812, Joe: *"Our game's new working name is Kith"*) — MERGED INTO `main` AT HIS WORD
 > (D813, *"Yes, merge it"*, `cb9092c`), NOT PUSHED; `slice/kith` DELETED. Four checks green on the merged tree (suite
 > 2173 / 0 / 5 of 2178 in 17m40). ⏸️ PUSH AT HIS WORD; ▶️ NEXT FOR SYSTEMS, HIS SEVEN PLAY NOTES.**
@@ -10779,7 +10789,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   8 → 2, put back after).
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
-  yes"*).** 🔨 **being built on `slice/play-notes`** (all seven, Joe 2026-11-21: *"Then the play notes"*). ✅ **The P0 crash — fixed on `slice/morale` (D807)**, merged. **Six asks, claimed:**
+  yes"*).** ✅ **ALL SEVEN BUILT on `slice/play-notes` (D814–D816), the four checks green; ⏸️ his play, then the merge
+  at his word** (Joe 2026-11-21: *"Then the play notes"*). ⏸️ Open from them: *"maybe children / in school"* on the
+  top bar (note 5) — his call.
+  *(As claimed:)* ✅ **The P0 crash — fixed on `slice/morale` (D807)**, merged. **Six asks, claimed:**
   (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
   spare hands…"* into a tooltip on *Laborers: n*, beside *Able adults: n*; (4) the village roster's sort headers jump and
   shift the panel; (5) the top bar drops the labourer count (it is in Professions) — maybe children / in school once

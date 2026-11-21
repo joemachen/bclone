@@ -53,6 +53,12 @@ public partial class Main
 
     private Label _scaleReading = null!;
 
+    /// <summary>
+    /// A window's title before it was renamed, read once from an older settings file so the window keeps where the player put
+    /// it (D815: <i>Lore</i> was <i>Tree</i>); it is written under the new title from then on.
+    /// </summary>
+    private static readonly Dictionary<string, string> FormerTitles = new(StringComparer.Ordinal) { [LoreTitle] = "Tree" };
+
     /// <summary>A window with a title: its fold, the side it starts on, and what it is called in the file.</summary>
     private sealed record TitledPanel(string Title, PanelContainer Panel, Button Header, bool Right);
 
@@ -166,7 +172,8 @@ public partial class Main
             for (int i = 0; i < _titled.Count; i++)
             {
                 TitledPanel titled = _titled[i];
-                if (!settings.Windows.TryGetValue(titled.Title, out WindowPrefs? prefs))
+                if (!settings.Windows.TryGetValue(titled.Title, out WindowPrefs? prefs)
+                    && !(FormerTitles.TryGetValue(titled.Title, out string? former) && settings.Windows.TryGetValue(former, out prefs)))
                 {
                     continue;
                 }
@@ -307,6 +314,11 @@ public partial class Main
         for (int i = 0; i < _titled.Count; i++)
         {
             TitledPanel titled = _titled[i];
+            if (FormerTitles.TryGetValue(titled.Title, out string? former))
+            {
+                windows.Remove(former);
+            }
+
             windows[titled.Title] = new WindowPrefs(
                 WindowOf(titled.Panel)?.Wanted,
                 titled.Header.ButtonPressed,
@@ -499,6 +511,29 @@ public partial class Main
             faults.Add($"{_placeWhenShown.Count} shown window(s) still waiting to be placed");
         }
 
+        // ---- a renamed window keeps what its old title remembered (D815: Lore was Tree), and is written under the new ----
+        var former = new Dictionary<string, WindowPrefs>(founding.Windows, StringComparer.Ordinal);
+        former.Remove(LoreTitle);
+        bool openWas = _titled.First(t => t.Title == LoreTitle).Header.ButtonPressed;
+        former["Tree"] = new WindowPrefs(null, !openWas, null);
+
+        // ⚠️ As the file was READ, not only applied: a capture starts from the file it read (`_settings`), and a file that
+        // remembers Tree is the case that must not write Tree back. Applied alone, the drop had nothing to drop (scored zero).
+        PlayerSettings readWas = _settings;
+        _settings = founding with { Windows = former };
+        ApplySettings(_settings);
+        if (_titled.First(t => t.Title == LoreTitle).Header.ButtonPressed == openWas)
+        {
+            faults.Add($"{LoreTitle} did not take the fold its old title, Tree, remembered");
+        }
+
+        PlayerSettings renamed = CaptureSettings();
+        _settings = readWas;
+        if (renamed.Windows.ContainsKey("Tree") || !renamed.Windows.ContainsKey(LoreTitle))
+        {
+            faults.Add($"written back, the file keeps Tree ({renamed.Windows.ContainsKey("Tree")}) or lacks {LoreTitle}");
+        }
+
         // ---- and back ----
         ApplySettings(founding);
         Compare("restored", founding, CaptureSettings(), faults);
@@ -506,7 +541,8 @@ public partial class Main
 
         return faults.Count == 0
             ? $"[widths] settings: ✅ the player's file not read; {toggles.Count} toggles, {windows.Count} windows, the dial and "
-                + $"Routes and the roster's order through a file and back; {onScreen.Count} windows placed on both sides and drawn where they were put"
+                + $"Routes and the roster's order through a file and back; {onScreen.Count} windows placed on both sides and drawn where they were put; "
+                + $"{LoreTitle} reads what Tree remembered and is written as {LoreTitle}"
             : $"[widths] settings: ⛔ {string.Join("; ", faults)}";
 
         static void Compare(string where, PlayerSettings wanted, PlayerSettings got, List<string> faults)

@@ -351,3 +351,14 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
    he left it, *Load…* opens the named one, *share the work out* off survives the trip, and a hand-broken
    save is refused in words and kept as `.bad`.
 5. DESIGN §4, §6 and §7, and `HANDOFF.md`, updated in the same commits as the code.
+
+## 14. Quicksave — F5 and F7 (D816, Joe's play note 2, 2026-11-21)
+
+- **F5** saves the village as `quicksave.save` in its own folder, the last one replaced — the pause screen's named save
+  (`SaveUnderAName`), so its refusals (a village stopped on an error) and its log sentence are the same.
+- **F7** goes back to it through the pause screen's load (`LoadFromThePause`): **the village as it stands is autosaved
+  first**, so an F7 pressed by mistake costs nothing the autosaves do not keep. With no quicksave: *"There is no
+  quicksave of this village yet — F5 makes one."*, and nothing loads.
+- Both keys are ignored while the pause screen or a stopping moment is up (the keyboard is theirs then).
+- Probe line `quicksave:` — F5 writes one that reads back (into a scratch folder), F7 with none says so. ⚠️ F7 with one
+  reloads the scene, which no probe survives: that half is Joe's to play.

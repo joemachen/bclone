@@ -4148,7 +4148,8 @@ public sealed partial class SimWorld : IObstacles
         if (!ShownTheTechTree)
         {
             ShownTheTechTree = true;
-            body += " It is the first thing this village has learned by doing — the Tree shows what "
+            // The player's word is Lore (D815, Joe's play note 6); the flag and the code keep "tech tree".
+            body += " It is the first thing this village has learned by doing — Lore shows what "
                 + "else it may, and what each will take.";
         }
 

@@ -441,3 +441,13 @@ Not a slice, so no guards of its own. What it commits future slices to:
 
 Alignment, so: **this document current, and D107 in `DESIGN.md` §7.** The build order in §7 is
 the commitment; each slice's Definition of Done is its own.
+
+## Joe's play notes, 2026-11-21 (D816)
+
+- **The two counts side by side** (note 3): *Able adults: n* beside *Laborers: n*, and *"Laborers are the spare hands:
+  clearing ground, hauling and tidying, and nobody's trade yet."* is the laborers' tooltip, no longer a caption.
+- **The top bar counts no laborers** (note 5): it is here, beside what it is one of. ⏸️ *"maybe children / in school"* on
+  the bar — his to call; the bar already counts children.
+- **The village roster holds still when sorted** (note 4): each column is as wide as its title with the ▾, whichever is
+  sorted — measured before the fix, the roster's minimum width was 187 sorted by name and 174 by age or trade. Probe
+  line `roster sort:`.

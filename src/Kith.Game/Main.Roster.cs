@@ -131,11 +131,25 @@ public partial class Main
     }
 
     /// <summary>The ▾ on the column the list is sorted by, and on no other.</summary>
+    /// <remarks>
+    /// ⛔ <b>Every column is as wide as its title WITH the mark, sorted or not</b> (Joe's play note 4, D816: <i>"the village
+    /// roster's sort headers jump and shift the panel"</i>). A tree's column is never narrower than its title, so the ▾
+    /// widened whichever column wore it — measured: the roster's minimum width was 187 sorted by name and 174 by age or
+    /// trade, and the panel moved with it. Measured in both of the tree's fonts, the larger kept.
+    /// </remarks>
     private void ShowTheRosterOrder()
     {
+        StyleBox title = _roster.GetThemeStylebox("title_button_normal");
+        float padding = title.GetMargin(Side.Left) + title.GetMargin(Side.Right);
         for (int c = 0; c < RosterTitles.Length; c++)
         {
-            _roster.SetColumnTitle(c, c == (int)_rosterOrder ? $"{RosterTitles[c]} ▾" : RosterTitles[c]);
+            string marked = $"{RosterTitles[c]} ▾";
+            float wide = Mathf.Max(
+                _roster.GetThemeFont("title_button_font").GetStringSize(marked, HorizontalAlignment.Left, -1, _roster.GetThemeFontSize("title_button_font_size")).X,
+                _roster.GetThemeFont("font").GetStringSize(marked, HorizontalAlignment.Left, -1, _roster.GetThemeFontSize("font_size")).X);
+            int floor = c switch { 1 => RosterAgeWidth, 2 => RosterTradeWidth, _ => 0 };
+            _roster.SetColumnCustomMinimumWidth(c, Math.Max(floor, Mathf.CeilToInt(wide + padding)));
+            _roster.SetColumnTitle(c, c == (int)_rosterOrder ? marked : RosterTitles[c]);
         }
     }
 
@@ -328,6 +342,10 @@ public partial class Main
         RosterOrder was = _rosterOrder;
         var orders = new List<string>();
         var living = world.Villagers.Where(v => v.Alive).Select(v => v.Id).OrderBy(id => id).ToList();
+
+        // ⭐ AND NOTHING MOVES WHEN YOU SORT (Joe's play note 4, D816: "the village roster's sort headers jump and shift the
+        // panel"): the roster's minimum width and every column's width read the same whichever column wears the ▾.
+        var shapes = new List<string>();
         foreach (RosterOrder order in new[] { RosterOrder.Name, RosterOrder.Age, RosterOrder.Trade })
         {
             _roster.EmitSignal(Tree.SignalName.ColumnTitleClicked, (long)order, (long)MouseButton.Left);
@@ -372,6 +390,7 @@ public partial class Main
             }
 
             orders.Add(string.Join(",", listed));
+            shapes.Add($"{_roster.GetCombinedMinimumSize().X:F0} [{_roster.GetColumnWidth(0)}/{_roster.GetColumnWidth(1)}/{_roster.GetColumnWidth(2)}]");
 
             string? captured = CaptureSettings().RosterSort;
             if (captured != PlayerSettings.RosterSorts[(int)order])
@@ -387,10 +406,15 @@ public partial class Main
             faults.Add($"the columns are {_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide");
         }
 
+        if (shapes.Distinct().Count() != 1)
+        {
+            faults.Add($"sorting moves the roster: by name, age and trade it is {string.Join(", ", shapes)}");
+        }
+
         SortTheRoster(was);
 
         return faults.Count == 0
-            ? $"[widths] roster sort: ✅ name, age and trade against posed rows typed by hand, every tiebreak posed; the three column titles each set the order and wear the ▾, list the {living.Count} alive once in it, a name, the years and a trade in their columns ({_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide), and are captured ({orders.Distinct().Count()} distinct orders here)"
+            ? $"[widths] roster sort: ✅ one shape sorted any way ({shapes[0]}); name, age and trade against posed rows typed by hand, every tiebreak posed; the three column titles each set the order and wear the ▾, list the {living.Count} alive once in it, a name, the years and a trade in their columns ({_roster.GetColumnWidth(0)} / {_roster.GetColumnWidth(1)} / {_roster.GetColumnWidth(2)} wide), and are captured ({orders.Distinct().Count()} distinct orders here)"
             : $"[widths] roster sort: ⛔ {string.Join("; ", faults)}";
     }
 }

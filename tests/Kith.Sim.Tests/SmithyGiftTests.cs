@@ -103,7 +103,7 @@ public sealed class SmithyGiftTests
         world.Harvest(First(world, Terrain.IronDeposit));
 
         Assert.True(world.ShownTheTechTree);
-        Assert.Contains("the Tree shows", Assert.Single(world.Moments).Body, StringComparison.Ordinal);
+        Assert.Contains("Lore shows", Assert.Single(world.Moments).Body, StringComparison.Ordinal);
     }
 
     /// <summary>The gift owed is in the fingerprint, sparsely — it changes what a building costs.</summary>
