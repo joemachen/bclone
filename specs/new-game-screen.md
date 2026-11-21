@@ -15,7 +15,7 @@ information for Joe, not a gate.
 **🔨 THE RESTYLE (A147–A148, 2026-11-21, art lane) — §12: the map fills the screen, one parchment panel docked right,
 the settings grouped. Specced A147; Joe: *"All as recommended"*; STEP 1 BUILT ON `art` (A148, §12.9), ⏸️ HIS PLAY,
 then step 2's choice (§12.5).** ⭐ **STEPS 1 AND 2 AND THEIR FIXES (A148–A153) PLAYED AND APPROVED (A154, Joe: *"tested
-and passed. all are good."*); on `art`, ⏸️ the merge into `main` his word.** §3's drawing is the screen before the restyle; §12.2's is the screen now.
+and passed. all are good."*); ✅ merged into `main` at his word (A156, *"Merge it"*), not pushed.** §3's drawing is the screen before the restyle; §12.2's is the screen now.
 Owner: Joe + Claude Code.
 
 ---
