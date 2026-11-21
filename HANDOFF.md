@@ -2,6 +2,12 @@
 
 > **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
 > (`specs/barley.md`), Joe's calls before code. The only systems branch open; `art` is the other.**
+> **📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S (`barley.md §9`); nothing built. The art lane's barley paintings are a
+> ⏸️ request in the open list.**
+> - **⛔ TRAP (D822): a farm's stock limit is the TRADE's, not the farm's.** `SimWorld.MayReap()` asks the farmer row's
+>   one `limited_by` (wheat) with no farm in the question, and the sowing writes `CropsCatalog.TheOne` — *"until the farm
+>   can choose"*. A second crop row alone would sow nothing new and stop a barley farm when the WHEAT is full. The row is
+>   the easy half; every `LimitedBy(JobKind.Farmer)` and `MayReap()` caller is the work.
 
 > **📝 D821 (2026-11-21): W7 MOVES AHEAD OF W3 — THE SECOND CROP IS BARLEY AND BEER IS BREWED FROM IT** (*"Yes, barley first"*). Hops are a Phase 7 technique, not the recipe. Nothing claimed; the next systems slice is W7.
 > - **⛔ TRAP (D821): the W labels keep their numbers when the order changes** — W7 now comes before W3. Read the order from DESIGN §4's arrows, never from the numerals.
@@ -10823,6 +10829,19 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,
   and that W3's brewery takes barley (W3 is not this slice). Joe's calls before any code.
+  **📝 SPECCED (D822). ⏸️ FIVE CALLS JOE'S (`barley.md §9`), each recommended:** (1) barley from the founding, not
+  learned; (2) the same harvest and seasons as wheat; (3) one crop per farm, picked on its card, from the next spring;
+  (4) a starting limit of 2000 and the three neighbours growing 500 each — wheat's numbers; (5) the mill grinds wheat only
+  and learns from wheat only. Nothing built until he answers.
+
+- ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
+  `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
+  `painted-crops.md §4`'s shape: 1024² at 128 px a tile, seamless, rows east–west, the hue families measured as wheat's.
+  Barley reads apart from wheat by its **long bristled awns, nodding heads and a paler, silvery straw** when ripe. And a
+  colour for the carried sheaf (`PersonPainter`). ⚠️ The watercolour's bake names wheat's paintings by crop id
+  (`VillageMap.Watercolour.cs`, the `(1, "young", …)` rows) — barley's need rows of their own (id 2) when they land, or the
+  folder is never read there. Until then the systems slice draws a barley field's stalks in barley's own colour. Not
+  claimed; the art lane's to take when Joe says.
 
 - ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
   log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing
