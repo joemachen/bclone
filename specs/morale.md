@@ -4,7 +4,8 @@
 > ✅ step 1 measured (D799, §13.1), its five calls as recommended (D800, §14); ✅ step 2 built — the causes as rows and the
 > season's read, saved, not hashed, nothing acting on it (D801); ✅ step 3 built — the card's *Content / Unsettled* and its
 > sentence (D802); ✅ step 4 built — an unsettled couple waits twice the interval, contentment hashed, eight goldens re-taken
-> (D804); ▶️ step 5, leaving.** *(Read "▶️ step 4, fewer children" at D802–D803, "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
+> (D804); ✅ step 5a built — warned after a year, gone after two, the card and the log (D806); ▶️ 5b, the walk out.**
+> *(Read "▶️ step 5, leaving" at D804–D805, "▶️ step 4, fewer children" at D802–D803, "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
 > `DESIGN.md §2.1` and §0.1 · Format per `METHODOLOGY.md §2`.
@@ -205,7 +206,8 @@ nothing**, so the marker and the panel cannot disagree.
 - ⚠️ **The goldens will move once**, when departures and the longer interval begin — taken last, one commit, one stated
   reason (D152). Until then the causes and the pill are read-only and no golden moves. **✅ Step 4 (D804):** contentment
   hashed sparsely with the longer wait; eight goldens moved, six by the hash alone and the posed Phase-5 village's two by
-  the births as well — each proved by ablation. Step 5 moves them once more.
+  the births as well — each proved by ablation. Step 5 moves them once more. **Step 5a (D806) moved none:** `LeftAtTick`
+  hashed sparsely, and no golden village has a leaver by its last tick; step 6's posed golden reaches one.
 
 ---
 
@@ -243,7 +245,8 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
    and the gate's other terms untouched. *Alternative:* no child at all while either partner is unsettled.
    ✅ **Built (D804):** either partner unsettled is enough; `contentment_birth_interval_percent` 200. ⚠️ **Found in the
    building: the interval only ever counted from a child**, so a couple's *first* child does not wait on contentment —
-   built as written (*"the gate's other terms untouched"*) and put to Joe.
+   built as written (*"the gate's other terms untouched"*) and put to Joe. ✅ **Joe, 2026-11-20: *"No, go on to step 5"*** —
+   the first child does not wait (D806).
 5. ✅ **Where do they go?** **Recommended: off the map and out of the game** — they walk to the valley's edge (the way
    nomads come in) and are gone, their house left empty for the next family. ⛔ Not to one of trade's three neighbours:
    that is a second system (a neighbour's population), for no story a player sees.
@@ -283,7 +286,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 2. ✅ **The causes as rows, the read once a season** (D801) — `contentment_causes` in `data/sim.config.json`, a weight a row; `Villager.ContentmentCauses` (the season's read, a bit a cause), `SeasonsUnsettled`, `ColdDaysThisWinter` (the per-winter tally `Cold` cannot give) *(named `Villager.Contentment` and `WintersCold` here until D802 — the plan's names, not the code's)*; saved; ⛔ **not hashed until step 4**, when something first reads them — so the goldens move once (§8). Nothing acts on it yet (`NothingActsOnItYet`). ⚠️ *No roof* is read at the season's turn, not on any day of it as D799 counted. *(Read "hashed sparsely … whether the tally alone moves a golden is measured" until D801: nothing hashed, nothing moved.)*
 3. ✅ **The card** (D802) — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*. Built: an adult's pill only; *Unsettled* in amber; the tooltip says what the last season's read found, the causes in the data file's order, grief naming who was lost; *"… is content here."* with nothing held.
 4. ✅ **Fewer children** (D804) — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated. Built: `contentment_birth_interval_percent` 200, either partner; *"Not ready for another child — Otto is unsettled."* on the household's status; the eight fields hashed; eight goldens re-taken (six by the hash alone, Phase-5's two by the births as well).
-5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; save format bumped. Goldens move once more.
+5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; ~~save format bumped~~ *(the format stays 13 — §13.2 item 8)*. Goldens move once more. **Two commits (§13.2):** ✅ **5a** the sim, the card and the log (D806); **5b** the walk out, view only, as D573's walk-in is.
 6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.
 
 *Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797). ✅ **Deleted (D803).**
@@ -324,6 +327,44 @@ gone after two (D798).
 spread village and almost never in a small one. That is the cozy reading of D207 (a valve, not a pressure); the system gets
 its teeth from the causes W3 and W4 add (the tavern's absence, the dead with nowhere to lie) and the anti-vacuity guard
 (§11 item 4) is a **posed** neglected village, not the unattended harness. ⏸️ These numbers, and the cabin, are Joe's (§14).
+
+### 13.2 Step 5's rule, read against the code (2026-11-20, before a line of it)
+
+1. **Two keys:** `contentment_thinking_of_leaving_seasons` **4** and `contentment_leaving_seasons` **8** (D798 call 3: warned
+   after a year, gone after two). `leaving` 0 turns leaving off; otherwise `0 < thinking < leaving`, validated.
+2. **At the season's read, after every adult has been read** (`ContentmentSystem`, last in the tick order): an adult whose
+   `SeasonsUnsettled` has just reached `thinking` gets **one** `Warning` line — *"Otto Ashford is thinking of leaving the
+   valley — {the causes}."* — once a spell, since a settled season puts the count back to 0. An adult at `leaving` or past
+   it is **ready**.
+3. **Who goes** (call 2), household by household in id order (D15): a ready adult **with a living partner who is not
+   ready stays** (*"she stayed for him"*); a ready couple goes together; a ready adult with no living partner goes alone.
+   **The household's children go with a couple that leaves, or with the last adult to leave the house** — while an adult
+   stays, a lone leaver's children stay with them. A child never leaves alone. *(There are no parent links to read: a
+   household is a couple, their children, and grown children not yet paired — so the couple are the parents.)*
+4. **What leaving is — a fate beside death:** `Alive` false, `State` **`Left`** (a new state, last in the enum), **`LeftAtTick`**
+   set, `DiedAtTick` null and `CauseOfDeath` None — so every system that asks *"alive?"* lets them go as it lets the dead
+   go (the job and the school seat refilled, the house to the next couple or roofless family by `FindAnEmptyHome`, its
+   larder with it, as after a death), and **grief reads only the dead**. What they carry goes with them; a cart counts as
+   home, as at a death. Their last read's causes stay on them — the reason they went.
+5. **The readers that meant *died* read *gone*** (`Villager.GoneAtTick`, `DiedAtTick ?? LeftAtTick`): `MostEverAlive`'s
+   peak, `EmptiedAtTick` (the re-founding's clock), and the founders' tribute (*"… and has left the valley"* where it said
+   *"is dead at 63"*). A departure that empties the valley raises the same unstopping moment a last death does.
+6. **One line a party** (§11 item 5), `Life`, naming them and why — *"Otto Ashford has left the valley — they have no roof
+   of their own and the walk to work is a long one. Spring, Year 12."*; a couple *"Otto and Mira Ashford have left the
+   valley, taking the two children — …"*. The causes are the card's own phrases (one copy), every leaver's, in the data
+   file's order, each said once.
+7. **The card** (`ContentmentNoteFor`): from `thinking`, *"Otto is thinking of leaving — …"*; ready and held by a partner,
+   *"Otto would leave, but Mira is staying — …"*.
+8. **Saved and hashed:** `left_at` written only when set; `LeftAtTick` hashed sparsely (tag 20); the state is hashed already.
+   ⛔ **The format stays 13**: a format-13 save has no leaver and reads as it is — the rule since D721 and D723 is that a
+   format moves when an old save cannot be read, and moving it here would refuse all 439 of Joe's saves for nothing.
+9. **5b, the walk out** (view only, D573's shape reversed): the map watches for anybody who left in the frame's ticks, walks
+   them from where they stood to the edge tile the one cost field reaches most cheaply, the chevron above, and they fade at
+   the edge. Nothing in the sim waits on it.
+10. ✅ **5a built as above (D806)**, with what the building found: **Phase 0's village of one left at four** — no roof and
+    no firewood by its fixture, two causes with no lever — so `Phase0Fixtures.Plenty` turns leaving off beside its wear and
+    nomads, and `VillageFixtures.Village` puts 8 back; **no village golden moved** (nobody in a golden village has left by
+    its last tick), so step 6's posed golden is the one that shows a departure.
 
 ## 14. Joe's calls from step 1 (D799) — ✅ ALL FIVE AS RECOMMENDED (D800, *"all as recommended"*)
 

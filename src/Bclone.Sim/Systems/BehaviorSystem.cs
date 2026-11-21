@@ -114,6 +114,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.Cutting => "felling",
         VillagerState.Resting => "resting",
         VillagerState.Dead => "dead",
+        VillagerState.Left => "left",
         VillagerState.TravelingToHut => "walking to the hut",
         VillagerState.MakingFirewood => "splitting logs",
         VillagerState.HaulingToStore => "hauling to a store",

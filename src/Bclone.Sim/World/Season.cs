@@ -381,6 +381,12 @@ public enum VillagerState
 
     /// <summary>At the river bank, drawing water — <c>well_draw_ticks</c>, then home (D779).</summary>
     DrawingAtTheRiver,
+
+    /// <summary>
+    /// Gone from the valley, unsettled two years (W2 step 5, `morale.md §13.2`): a fate beside <see cref="Dead"/> — not alive, not
+    /// dead. At the end of the list, so no state already saved or hashed changes its number.
+    /// </summary>
+    Left,
 }
 
 /// <summary>

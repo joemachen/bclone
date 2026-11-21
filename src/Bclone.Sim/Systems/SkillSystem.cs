@@ -218,6 +218,7 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.SeekingShelter => false,
         VillagerState.FetchingFromStore => false,
         VillagerState.Dead => false,
+        VillagerState.Left => false,
 
         // Out on it — the walk there, the work itself, and the load home.
         VillagerState.TravelingToFood => true,

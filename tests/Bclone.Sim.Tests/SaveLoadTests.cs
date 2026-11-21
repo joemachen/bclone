@@ -375,8 +375,11 @@ public sealed class SaveLoadTests : IDisposable
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
             "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks", "BatchTrade",
 
-            // Contentment's tallies (W2, D798–D800) — saved, not yet hashed.
+            // Contentment's tallies (W2, D798–D800) — saved, and hashed since step 4 (D804).
             "ColdDaysThisWinter", "LastColdDay", "ColdWinterHeldUntil", "CommuteTiles", "ContentmentCauses", "SeasonsUnsettled",
+
+            // Gone from the valley (W2 step 5) — `left_at`, written only when set (`ContentmentTests.LeavingIsSavedAndHashed`).
+            "LeftAtTick",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 

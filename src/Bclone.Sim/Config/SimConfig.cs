@@ -3141,6 +3141,20 @@ public sealed record SimConfig
     [JsonPropertyName("contentment_birth_interval_percent")]
     public int ContentmentBirthIntervalPercent { get; init; } = 200;
 
+    /// <summary>
+    /// Seasons unsettled before the log says, once, that a person is thinking of leaving — <b>4</b>, a year (Joe, D798 call 3:
+    /// <i>never without warning</i>). The card says it from then on. Between 1 and <see cref="ContentmentLeavingSeasons"/>.
+    /// </summary>
+    [JsonPropertyName("contentment_thinking_of_leaving_seasons")]
+    public int ContentmentThinkingOfLeavingSeasons { get; init; } = 4;
+
+    /// <summary>
+    /// Seasons unsettled before a person is ready to leave the valley — <b>8</b>, two years (D798 call 3), at a season's turn
+    /// (W2 step 5, `morale.md §13.2`). A couple goes only when both are ready. 0 turns leaving, and its warning, off.
+    /// </summary>
+    [JsonPropertyName("contentment_leaving_seasons")]
+    public int ContentmentLeavingSeasons { get; init; } = 8;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -6087,6 +6101,15 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"contentment_birth_interval_percent must be at least 100 (got {ContentmentBirthIntervalPercent}) — an unsettled couple never waits less than a settled one.");
+        }
+
+        if (ContentmentLeavingSeasons < 0
+            || (ContentmentLeavingSeasons > 0
+                && (ContentmentThinkingOfLeavingSeasons <= 0 || ContentmentThinkingOfLeavingSeasons >= ContentmentLeavingSeasons)))
+        {
+            throw new SimConfigException(
+                $"contentment_leaving_seasons must be 0 (off) or above contentment_thinking_of_leaving_seasons, which must be above 0 "
+                + $"(got leaving {ContentmentLeavingSeasons}, thinking {ContentmentThinkingOfLeavingSeasons}) — nobody leaves without a warning.");
         }
 
         var contentmentSeen = new HashSet<ContentmentCause>();

@@ -10,9 +10,10 @@ namespace Bclone.Sim.Systems;
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⭐ <b>It reads and remembers; the births gate acts on it (step 4, D804) and leaving will (step 5).</b> An unsettled
-/// couple waits <c>contentment_birth_interval_percent</c> of the interval between children
-/// (<c>HouseholdSystem.BirthIntervalFor</c>). The tallies are saved, and hashed sparsely since step 4 — until then nothing
+/// ⭐ <b>It reads and remembers, and two things act on it:</b> the births gate (step 4, D804) — an unsettled couple waits
+/// <c>contentment_birth_interval_percent</c> of the interval between children (<c>HouseholdSystem.BirthIntervalFor</c>) —
+/// and leaving (step 5): a year unsettled and the log warns once, two and they go at the season's turn
+/// (<see cref="SeeWhoLeaves"/>). The tallies are saved, and hashed sparsely since step 4 — until then nothing
 /// read them, so the goldens moved once, with the first effect. <i>(Read "NOTHING ACTS ON IT YET … saved but not hashed"
 /// for steps 2–3, D801–D803.)</i>
 /// </para>
@@ -151,7 +152,15 @@ public sealed class ContentmentSystem : ISimSystem
 
             villager.ContentmentCauses = causes;
             villager.SeasonsUnsettled = weight >= config.ContentmentUnsettledAt ? villager.SeasonsUnsettled + 1 : 0;
+
+            // A year unsettled: the log says it once a spell (step 5) — a settled season puts the count back to 0.
+            if (config.ContentmentLeavingSeasons > 0 && villager.SeasonsUnsettled == config.ContentmentThinkingOfLeavingSeasons)
+            {
+                world.SayTheyAreThinkingOfLeaving(villager);
+            }
         }
+
+        SeeWhoLeaves(world, config);
 
         // The season's tallies, spent.
         for (int i = 0; i < world.Households.Count; i++)
@@ -164,6 +173,59 @@ public sealed class ContentmentSystem : ISimSystem
             for (int i = 0; i < world.Villagers.Count; i++)
             {
                 world.Villagers[i].ColdDaysThisWinter = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐ WHO GOES (step 5, `morale.md §13.2` item 3; Joe's D798 call 2), household by household in id order (D15): a ready
+    /// adult whose living partner is not ready stays (<i>"she stayed for him"</i>); a ready couple goes together; a ready adult
+    /// with no living partner goes alone. The household's children go with a couple that leaves, or with the last adult to
+    /// leave the house — while an adult stays, a lone leaver's children stay with them. A child never leaves alone.
+    /// </summary>
+    private static void SeeWhoLeaves(SimWorld world, SimConfig config)
+    {
+        int leaving = config.ContentmentLeavingSeasons;
+        if (leaving <= 0)
+        {
+            return;
+        }
+
+        for (int h = 0; h < world.Households.Count; h++)
+        {
+            Household household = world.Households[h];
+            List<Villager>? goers = null;
+            var children = new List<Villager>();
+            bool aCoupleGoes = false;
+            bool anAdultStays = false;
+            foreach (int id in household.MemberIds)
+            {
+                if (world.FindVillager(id) is not { Alive: true } member || member.HouseholdId != household.Id)
+                {
+                    continue;
+                }
+
+                if (!member.CanWork)
+                {
+                    children.Add(member);
+                    continue;
+                }
+
+                Villager? partner = world.FindVillager(member.PartnerId) is { Alive: true } p ? p : null;
+                if (member.SeasonsUnsettled >= leaving && (partner is null || partner.SeasonsUnsettled >= leaving))
+                {
+                    (goers ??= new List<Villager>()).Add(member);
+                    aCoupleGoes |= partner is not null;
+                }
+                else
+                {
+                    anAdultStays = true;
+                }
+            }
+
+            if (goers is not null)
+            {
+                world.LetThemGo(goers, aCoupleGoes || !anAdultStays ? children : Array.Empty<Villager>());
             }
         }
     }

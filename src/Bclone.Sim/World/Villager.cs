@@ -391,7 +391,7 @@ public sealed class Villager
     /// <summary>The causes held at the last season's read, one bit a <see cref="ContentmentCause"/> — what the card will say.</summary>
     public int ContentmentCauses { get; set; }
 
-    /// <summary>Seasons running this person has been unsettled — 0 when content (D798: warned at 4, gone at 8, from step 5).</summary>
+    /// <summary>Seasons running this person has been unsettled — 0 when content. At <c>contentment_thinking_of_leaving_seasons</c> (4) the log warns once; at <c>contentment_leaving_seasons</c> (8) they are ready to leave (D798 call 3, step 5).</summary>
     public int SeasonsUnsettled { get; set; }
 
     /// <summary>Whether the last season's read put them past the line — the card's <i>Unsettled</i> (W2 step 3).</summary>
@@ -580,8 +580,20 @@ public sealed class Villager
 
     public CauseOfDeath CauseOfDeath { get; set; } = CauseOfDeath.None;
 
-    /// <summary>Tick at which they died. Null while alive.</summary>
+    /// <summary>Tick at which they died. Null while alive — and for somebody who left (<see cref="LeftAtTick"/>).</summary>
     public ulong? DiedAtTick { get; set; }
+
+    /// <summary>
+    /// The tick they left the valley, unsettled two years (W2 step 5, `morale.md §13.2`) — a fate beside death: not
+    /// <see cref="Alive"/>, <see cref="DiedAtTick"/> null. Null otherwise. Saved when set, hashed sparsely.
+    /// </summary>
+    public ulong? LeftAtTick { get; set; }
+
+    /// <summary>
+    /// ⭐ The tick they stopped being here, either way — what a reader asks that once meant <i>died</i> (the valley's peak, its
+    /// emptying, the founders' tribute). Grief asks <see cref="DiedAtTick"/>: a departure is not a death in the family.
+    /// </summary>
+    public ulong? GoneAtTick => DiedAtTick ?? LeftAtTick;
 
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
@@ -922,6 +934,7 @@ public sealed class Villager
             : "splitting logs into firewood",
             VillagerState.Resting => atTheSteading ? $"resting at {where}" : unhoused ? "resting in the open — no house yet" : "resting at home",
             VillagerState.Dead => "dead",
+            VillagerState.Left => "gone from the valley",
             VillagerState.HaulingToStore => "carrying a load to the store",
             // The shopper with the household's cart (`handcart.md §8`): the same errand, a thing on the map behind them.
             VillagerState.FetchingFromStore => PushingACart ? "pushing the cart to the shops" : "fetching supplies for home",
@@ -1055,6 +1068,7 @@ public sealed class Villager
             ["alive"] = Alive,
             ["cause_of_death"] = SaveWriter.Enum(CauseOfDeath),
             ["died_at"] = SaveWriter.Hex(DiedAtTick),
+            ["left_at"] = LeftAtTick is null ? null : SaveWriter.Hex(LeftAtTick),
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1124,6 +1138,7 @@ public sealed class Villager
             Alive = save.Bool("alive"),
             CauseOfDeath = save.Enum<CauseOfDeath>("cause_of_death"),
             DiedAtTick = save.NullableULong("died_at"),
+            LeftAtTick = save.HasValue("left_at") ? save.NullableULong("left_at") : null,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

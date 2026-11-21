@@ -48,6 +48,11 @@ public static class Phase0Fixtures
         NomadsFirstYearFloor = 0,
         RefoundYearsFloor = 0,
 
+        // And nobody leaves (W2 step 5): the village of one has no roof to offer and no firewood at all (above), so it holds
+        // two causes it has no lever on every season, and its one villager walked out of the valley at four instead of living
+        // the full life these guards are about. `VillageFixtures.Village` keeps the shipped leaving.
+        ContentmentLeavingSeasons = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

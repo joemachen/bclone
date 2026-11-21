@@ -1417,6 +1417,12 @@ public static class StateHash
         hash = MixSparse(hash, 18u, villager.ContentmentCauses);
         hash = MixSparse(hash, 19u, villager.SeasonsUnsettled);
 
+        // Gone from the valley (W2 step 5): sparse, so a village nobody has left hashes as it did. The state is mixed above.
+        if (villager.LeftAtTick is ulong left)
+        {
+            hash = MixUInt64(MixUInt32(hash, 20u), left);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

@@ -3933,6 +3933,7 @@ public partial class Main
         (int causes, int seasons, LifeStage stage) was = (adult.ContentmentCauses, adult.SeasonsUnsettled, adult.LifeStage);
         string? one = null;
         string? two = null;
+        string? thinking = null;
         try
         {
             OpenCard(new CardSubject(CardKind.Villager, adult.Id));
@@ -3964,6 +3965,15 @@ public partial class Main
             if (text.Text != "Unsettled" || two is null || pill.TooltipText != two || UiLook.TintOf(text) != LightStopped)
             {
                 faults.Add($"two causes read \"{text.Text}\"{(UiLook.TintOf(text) == LightStopped ? string.Empty : ", not amber")} — \"{pill.TooltipText}\"");
+            }
+
+            // A year unsettled (step 5): the same pill, and the sentence says they are thinking of leaving.
+            Pose((1 << (int)ContentmentCause.FarWalk) | (1 << (int)ContentmentCause.NoRoof), world.Config.ContentmentThinkingOfLeavingSeasons);
+            thinking = world.ContentmentNoteFor(adult);
+            if (text.Text != "Unsettled" || thinking is null || pill.TooltipText != thinking
+                || !thinking.StartsWith($"{adult.Name} is thinking of leaving — ", StringComparison.Ordinal))
+            {
+                faults.Add($"a year unsettled reads \"{text.Text}\" — \"{pill.TooltipText}\"");
             }
 
             adult.LifeStage = LifeStage.Child;
@@ -4028,7 +4038,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\"; a child has no pill; "
+            ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\", a year on \"{thinking}\"; a child has no pill; "
                 + $"an unsettled couple's household says \"{waiting}\", a settled one does not"
             : $"[widths] contentment: ⛔ {string.Join("; ", faults)}";
     }

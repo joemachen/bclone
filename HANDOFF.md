@@ -21,6 +21,20 @@
 > wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
 > re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
 > a child). ▶️ STEP 5: leaving.**
+> **✅ STEP 5a BUILT (D806, Joe: *"No, go on to step 5"* — the first child does not wait, as built): warned after a year
+> unsettled (one `Warning` line, the card's *thinking of leaving*), gone after two at a season's turn — a couple only when
+> both are ready, the children with a couple or the last adult; `VillagerState.Left`, `LeftAtTick`, `GoneAtTick` for the
+> peak, the emptying and the tribute; one `Life` line a party. Format stays 13. No village golden moved.
+> Suite 2169 / 0 / 5 of 2174 in 16m42; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (a year unsettled says thinking of leaving), done.. ▶️ 5b, THE WALK OUT — ⏸️ ITS ORDER JOE'S (it draws through the art lane's people code).**
+> - **⛔ TRAP (D806): `VillageFixtures.Village` is built on `Phase0Fixtures.Plenty`.** A system switched off for the village
+>   of one must be switched back on in `Village` with the shipped value, or every village test silently runs without it —
+>   leaving off in `Plenty` turned seven contentment tests red and would have left the rest green and blind.
+> - **⛔ TRAP (D806): Phase 0's village of one holds two contentment causes every season by construction** (no roof to offer,
+>   no firewood at all), so any contentment effect bites it at once: it walked out at four in 16 lifetime guards. A new
+>   effect is switched off in `Plenty` with that reason, as wear, nomads and re-founding are.
+> - **⛔ TRAP (D806): a test of one effect must switch the other off.** `AnUnsettledVillageHasFewerChildren` (everyone
+>   unsettled forty years) went 14 = 14 the day leaving landed — both villages had emptied, and the wait had nobody left
+>   to act on.
 > **✅ THE PAUSE SCREEN'S HITCH (D805, its own commit on this slice — CLAUDE.md: a bug Joe finds while a slice is open goes
 > on it; built by a side session at his ask, *"pass the pause-screen hitch to the systems track - as a new session"*).**
 > Esc read every save on disk whole to fill *Load…* (439 saves, 830 ms frames). Now *Load…* reads the list as its popup
@@ -10653,6 +10667,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   still wait on his own word. **Act on exactly what the calls listed; ask for the rest.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
+  log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only). It draws
+  people who are no longer alive, through `VillageMap.People.cs` / `PersonPainter.cs` — which the art lane's unmerged
+  villager animations (A131–A133 on `art`, 868 lines there) are changing. **His to call:** build 5b now on this slice
+  (a merge to settle when `art` lands), or go on to step 6's guards first and build 5b after the animations merge.
 
 - ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
   SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,

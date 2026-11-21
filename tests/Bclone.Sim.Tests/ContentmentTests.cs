@@ -12,8 +12,9 @@ using Xunit.Abstractions;
 namespace Bclone.Sim.Tests;
 
 /// <summary>
-/// Contentment, steps 2–4 (W2, `specs/morale.md §13`, D798–D804): the causes as rows, the day's tallies, the read at
-/// each season's turn, the card's sentence, and the first effect — an unsettled couple's longer wait between children.
+/// Contentment, steps 2–5a (W2, `specs/morale.md §13`, D798–D806): the causes as rows, the day's tallies, the read at
+/// each season's turn, the card's sentence, the first effect — an unsettled couple's longer wait between children — and
+/// the second: warned after a year unsettled, gone from the valley after two.
 /// </summary>
 public sealed class ContentmentTests
 {
@@ -364,8 +365,9 @@ public sealed class ContentmentTests
     {
         // Every housed adult unsettled from the first season: the jar counted from no dry days at all, on a line of one —
         // so the effect has every couple to act on, and the village grows enough for second children (the fixture's three
-        // households have six or more in forty years, `BirthdayTests`).
-        SimConfig grows = VillageFixtures.Village with { StartingHouseholds = 3, ContentmentUnsettledAt = 1 };
+        // households have six or more in forty years, `BirthdayTests`). ⚠️ Leaving off (step 5): unsettled forty years, both
+        // villages would empty after two and the wait would have nobody to act on — this guard is the births gate's alone.
+        SimConfig grows = VillageFixtures.Village with { StartingHouseholds = 3, ContentmentUnsettledAt = 1, ContentmentLeavingSeasons = 0 };
         SimConfig on = grows with
         {
             ContentmentCauses = grows.ContentmentCauses
@@ -616,5 +618,368 @@ public sealed class ContentmentTests
         world.Tick += 10;
 
         Assert.Equal($"{adult.Name} is content, though they are grieving {kin.Name}.", world.ContentmentNoteFor(adult));
+    }
+
+    // -----------------------------------------------------------------
+    //  Leaving (step 5, `morale.md §13.2`): warned after a year, gone after two
+    // -----------------------------------------------------------------
+
+    /// <summary>A founded world logging to <paramref name="log"/>, its clock at the turn of <paramref name="season"/>.</summary>
+    private static SimWorld LoggedWorldAt(int season, InMemoryLogSink log, SimConfig? config = null)
+    {
+        SimWorld world = SimWorld.Create(config ?? Config, log);
+        world.Tick = SeasonTicks(world.Config) * (ulong)season;
+        return world;
+    }
+
+    /// <summary>Two causes held from here on (no roof, and the walk) — unsettled every season it is read.</summary>
+    private static void Unsettle(SimWorld world, Villager adult, int seasonsSoFar)
+    {
+        if (world.FindHousehold(adult.HouseholdId) is Household home)
+        {
+            home.HomePosition = null;
+        }
+
+        adult.CommuteTiles = 30;
+        adult.SeasonsUnsettled = seasonsSoFar;
+    }
+
+    private static void NextSeason(SimWorld world)
+    {
+        world.Tick += SeasonTicks(world.Config);
+        Read(world);
+    }
+
+    private static List<string> Lines(InMemoryLogSink log, string containing) =>
+        log.Entries.Where(e => e.Message.Contains(containing, StringComparison.Ordinal)).Select(e => e.Message).ToList();
+
+    private static Villager AddTo(SimWorld world, Household home, string name, LifeStage stage, ulong arrivedAt = 0UL)
+    {
+        var person = new Villager
+        {
+            Id = world.Villagers.Max(v => v.Id) + 1,
+            Name = name,
+            Surname = home.Surname,
+            LifespanYears = 70,
+            AgeYears = stage == LifeStage.Child ? 6 : 20,
+            LifeStage = stage,
+            HouseholdId = home.Id,
+            Carried = new Stockpile(Stockpile.Kinds),
+            ArrivedAtTick = arrivedAt,
+        };
+        world.Villagers.Add(person);
+        home.AddMember(person.Id);
+        return person;
+    }
+
+    /// <summary>A couple's household, its partner dead long enough ago that the grief has passed: a lone adult.</summary>
+    private static (Household Home, Villager Lone) ALoneAdult(SimWorld world)
+    {
+        (Household home, Villager one, Villager two) = ACouple(world);
+        two.Alive = false;
+        two.State = VillagerState.Dead;
+        two.CauseOfDeath = CauseOfDeath.OldAge;
+        two.DiedAtTick = 1;
+        return (home, one);
+    }
+
+    private static bool HasLeft(Villager v) =>
+        !v.Alive && v.State == VillagerState.Left && v.LeftAtTick is not null && v.DiedAtTick is null && v.CauseOfDeath == CauseOfDeath.None;
+
+    /// <summary>⭐ Joe's numbers (D798 call 3): thinking of leaving after a year, gone after two; the validator holds the order.</summary>
+    [Fact]
+    public void TheLeavingKeysAreJoesNumbersAndValidated()
+    {
+        SimConfig shipped = ShippedConfig.Load();
+        Assert.Equal((4, 8), (shipped.ContentmentThinkingOfLeavingSeasons, shipped.ContentmentLeavingSeasons));
+        (Config with { ContentmentLeavingSeasons = 0 }).Validate();
+        Assert.Throws<SimConfigException>(() => (Config with { ContentmentThinkingOfLeavingSeasons = 0 }).Validate());
+        Assert.Throws<SimConfigException>(() => (Config with { ContentmentThinkingOfLeavingSeasons = 8 }).Validate());
+        Assert.Throws<SimConfigException>(() => (Config with { ContentmentLeavingSeasons = -1 }).Validate());
+    }
+
+    /// <summary>
+    /// ⭐ A year unsettled and the log says once that they are thinking of leaving (§5: never without warning); the card says
+    /// it from then on; a settled season ends the spell, and the next spell warns again.
+    /// </summary>
+    [Fact]
+    public void AYearUnsettledIsThinkingOfLeavingOnceASpell()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log);
+        (Villager adult, _) = AHousedAdult(world);
+        Unsettle(world, adult, 2);
+
+        NextSeason(world);
+        Assert.Equal(3, adult.SeasonsUnsettled);
+        Assert.Empty(Lines(log, "thinking of leaving"));
+        Assert.StartsWith($"{adult.Name} is unsettled — ", world.ContentmentNoteFor(adult));
+
+        NextSeason(world);
+        NextSeason(world);
+        List<string> warned = Lines(log, "thinking of leaving");
+        Assert.Single(warned);
+        Assert.StartsWith(
+            $"{adult.FullName} is thinking of leaving the valley — they have no roof of their own and the walk to work is a long one. ",
+            warned[0]);
+        Assert.Equal(LogCategory.Warning, log.Entries.Single(e => e.Message == warned[0]).Category);
+        Assert.Equal(
+            $"{adult.Name} is thinking of leaving — they have no roof of their own and the walk to work is a long one.",
+            world.ContentmentNoteFor(adult));
+
+        world.FindHousehold(adult.HouseholdId)!.HomePosition = adult.Position;
+        NextSeason(world);
+        Assert.Equal(0, adult.SeasonsUnsettled);
+        Unsettle(world, adult, 3);
+        NextSeason(world);
+        Assert.Equal(2, Lines(log, "thinking of leaving").Count);
+    }
+
+    /// <summary>
+    /// ⭐ Two years unsettled and a lone adult goes, at the season's turn — alive no longer, and not dead: a fate of their own,
+    /// with one line naming them and why (§11 item 5).
+    /// </summary>
+    [Fact]
+    public void ALoneAdultLeavesAfterTwoYears()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log);
+        AHousedAdult(world);
+        (_, Villager lone) = ALoneAdult(world);
+        int population = world.Population;
+        Unsettle(world, lone, 6);
+
+        NextSeason(world);
+        Assert.True(lone.Alive, "seven seasons is not yet two years");
+        NextSeason(world);
+
+        Assert.True(HasLeft(lone), "two years unsettled: gone, and not dead");
+        Assert.Equal(world.Tick, lone.LeftAtTick);
+        Assert.Equal(population - 1, world.Population);
+        Assert.Equal(
+            new[] { $"{lone.FullName} has left the valley — they have no roof of their own and the walk to work is a long one. {world.Clock.SeasonAndYear()}." },
+            Lines(log, "left the valley"));
+        Assert.Equal(LogCategory.Life, log.Entries.Single(e => e.Message.Contains("left the valley")).Category);
+        Assert.NotEqual(0, lone.ContentmentCauses); // the reason they went stays on them
+
+        NextSeason(world);
+        Assert.Single(Lines(log, "left the valley"));
+    }
+
+    /// <summary>
+    /// ⭐ A couple goes only when both are ready (call 2: <i>"she stayed for him"</i>), and takes the household's children;
+    /// the one held back says so on the card.
+    /// </summary>
+    [Fact]
+    public void ACoupleLeavesOnlyWhenBothAreReadyAndTakesTheChildren()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log);
+        AHousedAdult(world);
+        (Household home, Villager one, Villager two) = ACouple(world);
+        two.Surname = one.Surname;
+        Villager child = AddTo(world, home, "Pip", LifeStage.Child);
+        Unsettle(world, one, 7);
+        Unsettle(world, two, 3);
+
+        NextSeason(world);
+        Assert.True(one.Alive && two.Alive && child.Alive, "one of the two is not ready: nobody goes");
+        Assert.Equal(
+            $"{one.Name} would leave, but {two.Name} is staying — they have no roof of their own and the walk to work is a long one.",
+            world.ContentmentNoteFor(one));
+
+        for (int s = 0; s < 3; s++)
+        {
+            NextSeason(world);
+        }
+
+        Assert.True(one.Alive && two.Alive, "still one season short");
+        NextSeason(world);
+        Assert.True(HasLeft(one) && HasLeft(two) && HasLeft(child), "both ready: the couple goes, and the child with them");
+        Assert.Equal(new ulong?[] { world.Tick, world.Tick, world.Tick }, new[] { one.LeftAtTick, two.LeftAtTick, child.LeftAtTick });
+        Assert.Equal(0, world.LivingMembersOf(home));
+        Assert.Equal(
+            new[] { $"{one.Name} and {two.Name} {one.Surname} have left the valley, taking the child — they have no roof of their own and the walk to work is a long one. {world.Clock.SeasonAndYear()}." },
+            Lines(log, "left the valley"));
+    }
+
+    /// <summary>
+    /// ⭐ A lone leaver's children stay while an adult stays (a grown child goes and the little ones keep their parents), and go
+    /// with the last adult to leave the house (a widow takes them). A child never leaves alone.
+    /// </summary>
+    [Fact]
+    public void TheChildrenGoWithTheLastAdultToLeave()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log);
+        AHousedAdult(world);
+        (Household home, Villager one, Villager two) = ACouple(world);
+        Villager grown = AddTo(world, home, "Wren", LifeStage.Adult);
+        Villager little = AddTo(world, home, "Pip", LifeStage.Child);
+        Unsettle(world, grown, 7);
+        home.HomePosition = one.Position; // the grown child's walk alone is not enough: give the house its roof back…
+        grown.ColdWinterHeldUntil = world.SeasonNumber + 4; // …and a cold winter for the second cause
+        NextSeason(world);
+        Assert.True(HasLeft(grown), "the grown child goes alone");
+        Assert.True(one.Alive && two.Alive && little.Alive, "the little one stays with the parents who stay");
+        Assert.Equal(
+            new[] { $"{grown.FullName} has left the valley — the walk to work is a long one and last winter was a cold one. {world.Clock.SeasonAndYear()}." },
+            Lines(log, "left the valley"));
+
+        // The widow, the last adult in the house, takes the child.
+        two.Alive = false;
+        two.State = VillagerState.Dead;
+        two.CauseOfDeath = CauseOfDeath.OldAge;
+        two.DiedAtTick = 1;
+        Unsettle(world, one, 7);
+        NextSeason(world);
+        Assert.True(HasLeft(one) && HasLeft(little), "the last adult to leave takes the children");
+        Assert.Equal($"{one.FullName} has left the valley, taking the child — ", Lines(log, "left the valley")[1][..$"{one.FullName} has left the valley, taking the child — ".Length]);
+    }
+
+    /// <summary>⭐ A child is never read, so a child never leaves on their own count — whatever the count says.</summary>
+    [Fact]
+    public void AChildNeverLeavesAlone()
+    {
+        SimWorld world = WorldAtTheTurnOf(9);
+        AHousedAdult(world);
+        (Household home, _, _) = ACouple(world);
+        Villager little = AddTo(world, home, "Pip", LifeStage.Child);
+        little.SeasonsUnsettled = 20;
+        NextSeason(world);
+        Assert.True(little.Alive);
+    }
+
+    /// <summary>
+    /// ⭐ Leaving lets go as a death does — the household empties, so the house is free for the next couple — and grief reads
+    /// only the dead: a household whose grown child left is not grieving.
+    /// </summary>
+    [Fact]
+    public void LeavingIsNotGrief()
+    {
+        SimWorld world = WorldAtTheTurnOf(9);
+        AHousedAdult(world);
+        (Household home, Villager one, Villager two) = ACouple(world);
+        Villager grown = AddTo(world, home, "Wren", LifeStage.Adult);
+        Unsettle(world, grown, 7);
+        home.HomePosition = one.Position;
+        grown.ColdWinterHeldUntil = world.SeasonNumber + 4;
+        NextSeason(world);
+        Assert.True(HasLeft(grown));
+
+        NextSeason(world);
+        Assert.False(Holds(one, ContentmentCause.DeathInTheFamily), "a departure is not a death in the family");
+
+        // And with a death too, the one grieved is the one who died — not the one who left after them.
+        two.Alive = false;
+        two.State = VillagerState.Dead;
+        two.CauseOfDeath = CauseOfDeath.OldAge;
+        two.DiedAtTick = grown.LeftAtTick - 5;
+        NextSeason(world);
+        Assert.True(Holds(one, ContentmentCause.DeathInTheFamily));
+        Assert.Contains($"they are grieving {two.Name}", world.ContentmentNoteFor(one), StringComparison.Ordinal); // a winter: the fire is out too
+    }
+
+    /// <summary>
+    /// ⭐ The readers that meant <i>died</i> read <i>gone</i> (§13.2 item 5): the valley empties at the departure, its peak
+    /// counts the leaver out, and a departure that empties the valley says so as a last death does.
+    /// </summary>
+    [Fact]
+    public void AValleyEmptiedByLeavingIsEmptyFromThatTick()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log);
+        AHousedAdult(world);
+        int peak = world.MostEverAlive;
+        foreach (Villager v in world.Villagers.Where(v => v.CanWork))
+        {
+            Unsettle(world, v, 7);
+        }
+
+        Assert.Null(world.EmptiedAtTick);
+        NextSeason(world);
+        Assert.Equal(0, world.Population);
+        Assert.Equal(world.Tick, world.EmptiedAtTick);
+        Assert.Contains(world.Moments, m => m.Title == $"{world.Name} is empty" && m.Body.Contains("left the valley", StringComparison.Ordinal));
+        Assert.False(world.Moments.Single(m => m.Title == $"{world.Name} is empty").WaitsToBeDismissed);
+        Assert.Equal(peak, world.MostEverAlive);
+
+        AddTo(world, world.Households[0], "Ash", LifeStage.Adult, world.Tick + 1);
+        Assert.Equal(peak, world.MostEverAlive); // one alive after the leavers went, not the peak plus one
+        Assert.Equal(world.Tick, world.Villagers[0].GoneAtTick);
+    }
+
+    /// <summary>⭐ The founders' tribute names a founder who left as having left — never <i>"is dead at"</i>.</summary>
+    [Fact]
+    public void TheTributeSaysAFounderLeft()
+    {
+        SimWorld world = WorldAtTheTurnOf(9);
+        AHousedAdult(world);
+        (Household home, _, _) = ACouple(world);
+        AddTo(world, home, "Wren", LifeStage.Adult); // born here: not a founder
+        // The leaver LAST in the list, so list order alone cannot pick them as the last to go (D802's trap, again).
+        Villager last = world.Villagers.Last(v => v.Founder);
+        foreach (Villager founder in world.Villagers.Where(v => v.Founder))
+        {
+            founder.Alive = false;
+            if (founder == last)
+            {
+                founder.State = VillagerState.Left;
+                founder.LeftAtTick = world.Tick;
+            }
+            else
+            {
+                founder.State = VillagerState.Dead;
+                founder.CauseOfDeath = CauseOfDeath.OldAge;
+                founder.DiedAtTick = 1;
+            }
+        }
+
+        new CivicSystem().Execute(world);
+        Moment tribute = world.Moments.Single(m => m.Title == "The last of the founders is gone");
+        Assert.Contains($"{last.Name} was the last of the four", tribute.Body, StringComparison.Ordinal);
+        Assert.Contains("and has left the valley.", tribute.Body, StringComparison.Ordinal);
+        Assert.DoesNotContain("is dead at", tribute.Body, StringComparison.Ordinal);
+    }
+
+    /// <summary>With leaving off (0), nobody leaves and nobody is warned, however long they are unsettled.</summary>
+    [Fact]
+    public void LeavingOffNobodyLeaves()
+    {
+        var log = new InMemoryLogSink();
+        SimWorld world = LoggedWorldAt(9, log, Config with { ContentmentLeavingSeasons = 0 });
+        AHousedAdult(world);
+        (_, Villager lone) = ALoneAdult(world);
+        Unsettle(world, lone, 20);
+        NextSeason(world);
+        Assert.True(lone.Alive);
+        Assert.Empty(Lines(log, "leaving"));
+        Assert.Equal($"{lone.Name} is unsettled — they have no roof of their own and the walk to work is a long one.", world.ContentmentNoteFor(lone));
+    }
+
+    /// <summary>⭐ The departure is saved and hashed sparsely (§13.2 item 8); a save without it reads as never gone.</summary>
+    [Fact]
+    public void LeavingIsSavedAndHashed()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Villager adult = world.Villagers.First(v => v.CanWork);
+        ulong before = StateHash.Compute(world);
+        adult.Alive = false;
+        adult.State = VillagerState.Left;
+        ulong stateOnly = StateHash.Compute(world);
+        adult.LeftAtTick = 78;
+        ulong at78 = StateHash.Compute(world);
+        adult.LeftAtTick = 77;
+        Assert.NotEqual(before, stateOnly);
+        Assert.NotEqual(stateOnly, StateHash.Compute(world));
+        Assert.NotEqual(at78, StateHash.Compute(world)); // the tick itself, not only that there is one
+
+        JsonObject document = SaveGame.Capture(loop, "test", "now", "test");
+        SimWorld back = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config).World;
+        Villager a = back.Villagers.Single(v => v.Id == adult.Id);
+        Assert.Equal((false, VillagerState.Left, (ulong?)77), (a.Alive, a.State, a.LeftAtTick));
+        Assert.Null(back.Villagers.First(v => v.Id != adult.Id && v.CanWork).LeftAtTick);
+        Assert.Equal(StateHash.Compute(world), StateHash.Compute(back));
     }
 }

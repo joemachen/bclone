@@ -24,7 +24,10 @@ public sealed partial class SimWorld
     /// <summary>How many times the valley has been re-founded — the key the wait is hashed on. Hashed sparsely, saved.</summary>
     public int Refoundings { get; internal set; }
 
-    /// <summary>The tick the last villager died, while nobody is alive — the latest death on the roster; null with anybody alive or nobody ever.</summary>
+    /// <summary>
+    /// The tick the last villager went, while nobody is alive — the latest death or departure on the roster (a valley emptied
+    /// by leaving waits from the day they left, W2 step 5); null with anybody alive or nobody ever.
+    /// </summary>
     public ulong? EmptiedAtTick
     {
         get
@@ -37,9 +40,9 @@ public sealed partial class SimWorld
             ulong latest = 0;
             for (int i = 0; i < Villagers.Count; i++)
             {
-                if (Villagers[i].DiedAtTick is ulong died && died > latest)
+                if (Villagers[i].GoneAtTick is ulong gone && gone > latest)
                 {
-                    latest = died;
+                    latest = gone;
                 }
             }
 

@@ -1611,7 +1611,12 @@
   // slows work and never makes anyone sick (D207) -- health is its own system and
   // shares no cause with it (D797). Since step 4 a couple waits
   // contentment_birth_interval_percent of birth_interval_years between children
-  // while either of them is unsettled (200: twice, D798); leaving (step 5) next.
+  // while either of them is unsettled (200: twice, D798). Since step 5 the log
+  // says once that a person is thinking of leaving after
+  // contentment_thinking_of_leaving_seasons unsettled (4, a year), and they leave
+  // the valley after contentment_leaving_seasons (8, two years), at a season's
+  // turn: a couple only when both are ready, taking the children; 0 turns
+  // leaving off.
   //
   // A row each. "at" is the cause's own threshold (tiles for the walk, days for a
   // cold winter or a dry jar); "held_seasons" is how long an episode is held from
@@ -1638,6 +1643,8 @@
   ],
   "contentment_unsettled_at": 2,
   "contentment_birth_interval_percent": 200,
+  "contentment_thinking_of_leaving_seasons": 4,
+  "contentment_leaving_seasons": 8,
 
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one
