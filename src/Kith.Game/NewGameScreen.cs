@@ -171,11 +171,12 @@ public sealed partial class NewGameScreen : Control
     }
 
     /// <summary>
-    /// For the probe (§12.7): what is wrong with the layout, in sentences — empty when nothing is. The footer pinned and
+    /// For the probe (§12.7): what is wrong with the screen, in sentences — empty when nothing is. The footer pinned and
     /// on screen with the settings at their top; the founding's ring left of the panel, and the marker left of it for a
-    /// founding at the valley's east edge too; the share code never widening the panel.
+    /// founding at the valley's east edge too; the share code never widening the panel; and a share code typed into the
+    /// seed box staying there while it is typed, setting its row, and becoming its seed on Enter (A149).
     /// </summary>
-    internal IReadOnlyList<string> LayoutFaults()
+    internal IReadOnlyList<string> ScreenFaults()
     {
         var faults = new List<string>();
         float height = Size.Y;
@@ -216,6 +217,41 @@ public sealed partial class NewGameScreen : Control
             faults.Add($"the panel is {_panel.Size.X:F0}px, past {most:F0} ({PanelMostShare:P0}) — something in it will not narrow");
         }
 
+        faults.AddRange(SeedBoxFaults());
+        return faults;
+    }
+
+    /// <summary>A code typed into the seed box: kept while typed, its row set, cut to the seed on Enter. Puts the box back.</summary>
+    private List<string> SeedBoxFaults()
+    {
+        var faults = new List<string>();
+        string before = _seed.Text;
+        NewGameSettings kept = _settings;
+
+        NewGameRow row = _config.NewGameOptions[0];
+        string value = row.Kind == NewGame.LevelsKind ? row.Levels[^1].Value : row.Min.ToString(CultureInfo.InvariantCulture);
+        string typed = $"oak{SeedText.SettingsMark}{row.Id}={value}";
+        _seed.Text = typed;
+        OnSeedTyped(typed);
+        if (_seed.Text != typed)
+        {
+            faults.Add($"a share code typed into the seed box became \"{_seed.Text}\" while it was being typed");
+        }
+
+        if (_settings.Values[row.Id] != value)
+        {
+            faults.Add($"a share code typed into the seed box left {row.Id} at {_settings.Values[row.Id]}, not {value}");
+        }
+
+        CutTheCodeToItsSeed();
+        if (_seed.Text != "oak")
+        {
+            faults.Add($"Enter left \"{_seed.Text}\" in the seed box, not its seed");
+        }
+
+        _seed.Text = before;
+        _settings = kept;
+        ShowTheSettings();
         return faults;
     }
 
@@ -324,6 +360,8 @@ public sealed partial class NewGameScreen : Control
         var seedRow = new HBoxContainer();
         _seed = new LineEdit { Text = _settings.SeedText, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         _seed.TextChanged += OnSeedTyped;
+        _seed.TextSubmitted += _ => CutTheCodeToItsSeed();
+        _seed.FocusExited += CutTheCodeToItsSeed;
         seedRow.AddChild(_seed);
         var dice = new Button { Text = "Roll", TooltipText = "Roll a new seed of words" };
         dice.Pressed += () => _seed.Text = RollASeed();
@@ -579,14 +617,23 @@ public sealed partial class NewGameScreen : Control
         ShowRefusal(null);
         _settings = read with { VillageName = _settings.VillageName };
 
-        // A pasted code leaves the seed in the box and the settings on the rows.
-        if (text.Contains(SeedText.SettingsMark, StringComparison.Ordinal))
+        // ⚠️ The box keeps what was typed or pasted while it is being used (A149, Joe: "doesnt let me type it or paste more
+        // than flax-oak-93"): cutting it to the seed on every keystroke ate a typed '#' at once and made a paste look
+        // refused. The rows take the code's settings as it is read; the box is cut to the seed on Enter or on leaving it.
+        ShowTheSettings();
+    }
+
+    /// <summary>A share code in the seed box becomes its seed once the player is done with the box — Enter, or leaving it.</summary>
+    private void CutTheCodeToItsSeed()
+    {
+        if (!_seed.Text.Contains(SeedText.SettingsMark, StringComparison.Ordinal)
+            || !NewGame.TryRead(_config, _seed.Text, _settings, out NewGameSettings read, out _))
         {
-            _seed.Text = read.SeedText;
-            _seed.CaretColumn = _seed.Text.Length;
+            return;
         }
 
-        ShowTheSettings();
+        _seed.Text = read.SeedText;
+        _seed.CaretColumn = _seed.Text.Length;
     }
 
     private void SetRow(string id, string value)

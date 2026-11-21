@@ -457,7 +457,7 @@ is re-measured before any threading is proposed.
   hash after the restyle (its own pinned hash, `OldCodesMapHash` — the same with every group stripped, so the
   headings are display only).
 - **Probe, `new game:`** keeps its claim (the panel ends inside the window, the longest refusal showing, a preview
-  baked) and adds (`NewGameScreen.LayoutFaults`): at 1280 × 720 the footer's *Found* button is wholly on screen
+  baked) and adds (`NewGameScreen.ScreenFaults`, `LayoutFaults` until A149): at 1280 × 720 the footer's *Found* button is wholly on screen
   with the settings scrolled to their top, and not inside the scroll; the founding's ring, under the camera the map
   was placed with, lies wholly left of the panel; a founding at the valley's east edge would be marked left of it
   too; and the panel is no wider than 30 % (the share code never widens it). `bar height` stays 183, `done.`
@@ -495,7 +495,7 @@ is re-measured before any threading is proposed.
   with its OFL into `fonts/Cardo/`), `blackletter`, the `PrimaryButton` variation (rubric fill, paper words 6.4 : 1,
   8.5 held; 20 px), and the sliders (an ink groove, an ink disc grip). `UiLook.ReadingFace` / `Blackletter` /
   `PrimaryButton`; on slate each is null or unnamed, so the screen falls back to today's look.
-- **`Main.cs`, two lines** (§12.6): `PoseTheSmallestWindow()` at frame 5, `LayoutFaults()` read at frame 20.
+- **`Main.cs`, two lines** (§12.6): `PoseTheSmallestWindow()` at frame 5, `ScreenFaults()` (`LayoutFaults()` until A149) read at frame 20.
 - **The bake, re-measured** (the probe, beside the suite): **408–650 ms** a bake (the spec's ~320 was with the
   harness running). Unchanged code; it is the number step 2 starts from.
 - **Guards, red-checked (D326), one mutant at a time:**
@@ -514,3 +514,12 @@ is re-measured before any threading is proposed.
 
 - **Renders** (outside git): `D:\Projects\brushes\ui\new-valley\step1-1280-*.png`, `step1-1920-*.png` — the
   shipped seed and an *Any* code, at 1280 × 720 and 1920 × 1080.
+- **⭐ A149 — the seed box keeps a code while it is used** (Joe, playing step 1: *"i dont think the seed box … will
+  take a # character? doesnt let me type it or paste more than flax-oak-93"*). Not the restyle's: since D479 the screen
+  read a code the moment the box held a `#` and cut the box to the bare seed — a typed `#` vanished at once, and a
+  pasted code set the rows but showed only its seed, which read as refused. **Now** the rows take the settings as the
+  code is read, the box keeps what was typed or pasted, and it becomes the seed on Enter or on leaving the box
+  (`CutTheCodeToItsSeed`). §5's *"Pasting a code into the seed box sets the rows"* is unchanged. **Probe** (`new
+  game:`, `ScreenFaults` — `LayoutFaults` renamed, its `Main.cs` line with it): a code typed into the box stays there,
+  sets its row, and Enter leaves the seed. **Reds:** the old cut on every keystroke put back **1** (*"became "oak"
+  while it was being typed"*); Enter doing nothing **1** (*"Enter left "oak#river=0" in the seed box"*).

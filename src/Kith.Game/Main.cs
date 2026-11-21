@@ -430,7 +430,7 @@ public partial class Main : Control
             faults.Add("the preview has no valley on it");
         }
 
-        faults.AddRange(_newGame.LayoutFaults()); // A147: footer, ring, panel (new-game-screen.md §12.7)
+        faults.AddRange(_newGame.ScreenFaults()); // A148-A149: footer, ring, panel, seed box (new-game-screen.md §12.7)
 
         GD.Print(faults.Count == 0
             ? $"[widths] new game: ✅ the column wants {wants:F0}px and has {column.Size.X:F0}, the longest refusal showing; "

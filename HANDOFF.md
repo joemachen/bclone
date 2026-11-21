@@ -10814,6 +10814,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   scroll, the footer stays). Renders: `D:\Projects\brushes\ui\new-valley\step1-*.png`. Then step 2's choice (§12.5),
   in plain words: keep the game's own picture, draw map marks over it (hill hatching, stone and iron signs), or a
   separately drawn map. ⚠️ `Main.cs` took two lines, not one (the probe poses 720 high, then checks).
+  **His first play (2026-11-21):** the seed box would not take a `#` — D479's cut-to-the-seed on every keystroke;
+  🔨 **fixed (A149):** the box keeps a code while it is used, the seed on Enter or leaving it. **And his step-2 answer:**
+  *"Can the preview be watercolor painted? with trees and ore seams (doesnt need animals or forage goods)"* — the
+  game's own in-play look, not a second painter; ⏸️ the plan put to him (A149's message), nothing built.
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
   (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
