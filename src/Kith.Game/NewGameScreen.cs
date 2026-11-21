@@ -89,6 +89,20 @@ public sealed partial class NewGameScreen : Control
     private Control _mark = null!;
     private Button _found = null!;
 
+    /// <summary>
+    /// ⭐ The wash over the map while a valley is painted (A153, Joe: *"some kind of on-theme loading animation to show
+    /// that its not hanging/crashing"*): the paper laid over the old valley, and a slip saying what is happening.
+    /// </summary>
+    private Control _veil = null!;
+
+    private PanelContainer _veilWords = null!;
+
+    /// <summary>Frames the veil has been up since the last change — the paint waits until it has been drawn once.</summary>
+    private int _veilFrames;
+
+    /// <summary>The words on the veil's slip.</summary>
+    internal const string PaintingWords = "Painting the valley…";
+
     /// <summary>Where the valley's top-left corner is drawn, and how many screen pixels a tile is — the camera.</summary>
     private Vector2 _origin;
 
@@ -224,8 +238,67 @@ public sealed partial class NewGameScreen : Control
             faults.Add($"the panel is {_panel.Size.X:F0}px, past {most:F0} ({PanelMostShare:P0}) — something in it will not narrow");
         }
 
+        faults.AddRange(StripFaults());
+        faults.AddRange(VeilFaults());
         faults.AddRange(SeedBoxFaults());
         faults.AddRange(ManyValleysFaults());
+        return faults;
+    }
+
+    /// <summary>
+    /// For the probe (A153): a setting moved raises the veil, its slip in the room left of the panel; the paint waits
+    /// for a frame with the veil drawn even when the hand has long stopped; and the veil comes down with the new valley.
+    /// </summary>
+    private List<string> VeilFaults()
+    {
+        var faults = new List<string>();
+        SimWorld? before = _previewWorld;
+        ShowTheSettings(); // as a setting moved
+        if (!_veil.Visible || !_veilWords.IsVisibleInTree())
+        {
+            faults.Add("a setting moved and the map shows no sign that it is being painted (A153)");
+        }
+
+        if (_veilWords.GetGlobalRect().End.X > _panel.GlobalPosition.X + 0.5f)
+        {
+            faults.Add($"\"{PaintingWords}\" reaches {_veilWords.GetGlobalRect().End.X:F0}px, under the panel");
+        }
+
+        _sinceChange = BakeAfter; // the hand has stopped
+        _Process(0d);
+        if (!ReferenceEquals(_previewWorld, before))
+        {
+            faults.Add("the valley was painted in the frame its veil went up, so the veil was never seen (A153)");
+        }
+
+        _Process(0d);
+        if (ReferenceEquals(_previewWorld, before))
+        {
+            faults.Add("no valley was painted the frame after its veil was drawn");
+        }
+
+        if (_veil.Visible)
+        {
+            faults.Add("the veil stays over the newly painted valley");
+        }
+
+        return faults;
+    }
+
+    /// <summary>
+    /// For the probe (A152): the summary strip no taller than its words at its width, and inside the window. Asked as
+    /// the screen opens too (<c>Main</c>, before any pose) — the moment Joe's strip covered the map.
+    /// </summary>
+    internal IReadOnlyList<string> StripFaults()
+    {
+        var faults = new List<string>();
+        float wants = _stats.GetCombinedMinimumSize().Y + _strip.GetThemeStylebox("panel").GetMinimumSize().Y;
+        if (_strip.Size.Y > wants + 0.5f || _strip.Position.Y < -0.5f)
+        {
+            faults.Add($"the summary strip is {_strip.Size.Y:F0}px tall at y {_strip.Position.Y:F0}, where its words want "
+                + $"{wants:F0} — it covers the map (A152)");
+        }
+
         return faults;
     }
 
@@ -344,7 +417,44 @@ public sealed partial class NewGameScreen : Control
         _mark.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         _mark.Draw += DrawTheFounding;
         _map.AddChild(_mark);
+        _map.AddChild(BuildTheVeil());
         return _map;
+    }
+
+    /// <summary>
+    /// The veil (A153): the screen's own paper, three parts opaque, over the room left of the panel, and a slip in the
+    /// strip's skin at its middle. ⚠️ Still, not moving: the paint holds the main thread for its second or two, so
+    /// anything animated would freeze with it — the slip is drawn before the paint starts and stays until it is done.
+    /// </summary>
+    private Control BuildTheVeil()
+    {
+        _veil = new Control { MouseFilter = MouseFilterEnum.Ignore };
+        _veil.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        Color wash = UiLook.Backdrop() is StyleBoxFlat paper ? paper.BgColor with { A = 0.75f } : new Color(0f, 0f, 0f, 0.6f);
+        _veil.Draw += () => _veil.DrawRect(new Rect2(Vector2.Zero, new Vector2(Room, _veil.Size.Y)), wash);
+
+        _veilWords = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+        _veilWords.AddThemeStyleboxOverride("panel", UiLook.TopBox());
+        var words = new Label { Text = PaintingWords };
+        words.AddThemeFontSizeOverride("font_size", 22);
+        _veilWords.AddChild(words);
+        _veil.AddChild(_veilWords);
+        return _veil;
+    }
+
+    /// <summary>Up goes the veil: a valley is about to be painted.</summary>
+    private void ShowTheVeil()
+    {
+        _veil.Visible = true;
+        _strip.Visible = false; // its words are the old valley's
+        _veilFrames = 0;
+    }
+
+    /// <summary>Down comes the veil: the valley is painted, or refused and the old one stays.</summary>
+    private void HideTheVeil()
+    {
+        _veil.Visible = false;
+        _strip.Visible = true;
     }
 
     /// <summary>The summary strip (§12.4): a slip at the map's bottom-left, what the valley has, in the sim's words.</summary>
@@ -743,6 +853,7 @@ public sealed partial class NewGameScreen : Control
         _code.TooltipText = _code.Text;
         _changed = true;
         _sinceChange = 0;
+        ShowTheVeil();
     }
 
     public override void _Process(double delta)
@@ -756,8 +867,10 @@ public sealed partial class NewGameScreen : Control
 
         // ⭐ Wait for the hand to stop: a slider dragged end to end would otherwise bake every
         // value it passes through. The first preview bakes at once.
+        // ⛔ And not before the veil has been drawn (A153): the paint holds the frame, so a veil raised in the same
+        // frame as the paint would never be seen — the first open included, which froze on the title screen.
         _sinceChange += delta;
-        if (_previewWorld is not null && _sinceChange < BakeAfter)
+        if (++_veilFrames < 2 || (_previewWorld is not null && _sinceChange < BakeAfter))
         {
             return;
         }
@@ -776,6 +889,7 @@ public sealed partial class NewGameScreen : Control
         catch (SimConfigException refused)
         {
             ShowRefusal(refused.Message);
+            HideTheVeil(); // the old valley stays, the refusal says why
             return;
         }
 
@@ -784,6 +898,7 @@ public sealed partial class NewGameScreen : Control
 
         _stats.Text = NewGame.Describe(config, NewGame.Summarise(config, _previewWorld.Map));
         _name.PlaceholderText = _previewWorld.Name;
+        HideTheVeil();
         PlaceEverything();
     }
 
@@ -850,6 +965,9 @@ public sealed partial class NewGameScreen : Control
         float room = Room;
 
         PlaceTheStrip(room, window.Y);
+        _veilWords.ResetSize();
+        _veilWords.Position = ((new Vector2(room, window.Y) - _veilWords.Size) / 2f).Round();
+        _veil.QueueRedraw();
 
         if (_previewWorld is null || _valleyMap is null)
         {
@@ -873,7 +991,15 @@ public sealed partial class NewGameScreen : Control
         int size = _stats.GetThemeFontSize("font_size");
         float words = Mathf.Ceil(font.GetStringSize(_stats.Text, HorizontalAlignment.Left, -1, size).X) + 2f;
         float most = Mathf.Max(120f, room - (2 * StripInset) - skin.GetMinimumSize().X);
-        _stats.CustomMinimumSize = new Vector2(Mathf.Min(words, most), 0f);
+        float width = Mathf.Min(words, most);
+        _stats.CustomMinimumSize = new Vector2(width, 0f);
+
+        // ⛔ A152 (Joe's blank map, "what is this?"): a wrapped label measures its height at the width it HAS, not its
+        // minimum. As the screen opened it had none yet — every word its own line, the strip 2,433px tall over the map
+        // with its words above the window — until a setting was touched. Given its width before the strip is sized, and
+        // then measured again: setting the size checks it against the minimum taken at the OLD width, and keeps that.
+        _stats.Size = new Vector2(width, _stats.Size.Y);
+        _stats.UpdateMinimumSize();
         _strip.ResetSize();
         _strip.Position = new Vector2(StripInset, height - StripInset - _strip.Size.Y);
     }

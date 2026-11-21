@@ -563,6 +563,20 @@ over it, not a second painter — but **the game's own map**, so the preview is 
     without `IsAPreview` **1**, watercolour left off **1**. ⚠️ *"No people, buildings or cart"* and *"no keys"* have
     no probe line — a fresh founding's founders stand at the cart, and nothing headless types into the box; held by
     the renders (`D:\Projects\brushes\ui\new-valley\step2-*.png`) and his play.
+- **⛔ A152 — Joe's blank map** (*"what is this?"*, a screenshot: bare parchment where the map should be). The
+  summary strip (§12.4), 2,433 px tall: a wrapped label measures its height at the width it has, and the first
+  valley's words came before it had ever been laid out (width 0) — a letter a line, held until a setting was touched.
+  `PlaceTheStrip` now gives the label its width and measures it again (`UpdateMinimumSize`) before sizing the strip.
+  **Guard:** the probe asks the strip as the screen opens (frame 4, before any pose) to be no taller than its words
+  and inside the window — **red 1**; the same question after the poses scores **0** (they re-lay the strip), kept.
+- **🔨 A153 — "Painting the valley…"** (Joe: *"some kind of on-theme loading animation to show that its not
+  hanging/crashing when adjusting? it can even be a blank screen \"map loading\" text"*). A still veil: the screen's
+  paper at three-quarters over the old valley, a slip in the strip's skin centred in the room, the strip hidden. **Not
+  animated, because it cannot be:** the paint holds the main thread, and anything moving would stop with it — a moving
+  one waits on the paint off the main thread. ⛔ The paint waits for a frame with the veil drawn (two `_Process`es),
+  the first open too, so the title no longer freezes for the first paint. A refusal lowers it, the old valley kept.
+  **Guard:** a setting moved raises it, slip left of the panel; the hand stopped, the first frame paints nothing and
+  the second paints; the veil down after — reds **1 / 1 / 1**.
 - **⛔ A151 — Joe's crash, and its cause** (*"dragging the river width bar crashed it"*: `gchandle.is_released()`, then a
   null look at `VillageMap.Watercolour.cs:1033`). `GrassLook.Approved` and `GrassLabTerrain.StartingPoint` loaded their
   C#-scripted resource afresh on every call and kept nothing. Play builds its watercolour once, so it hardly ever
