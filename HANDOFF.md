@@ -4,6 +4,9 @@
 > notes). Four checks green (suite 2178 / 0 / 5 of 2183 in 20m34 (the art lane's suite built at 14:07, inside this one's 14:04–14:25); probe 176 lines, 137 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, done.). ⏸️ HIS PLAY, THEN THE MERGE AT HIS WORD.**
 > - **⛔ TRAP (D815): a window's TITLE is its key in the player's settings file.** Rename one and it forgets where he
 >   put it, folded or not. `Main.FormerTitles` maps the new title to the old for one read; add to it, never rename bare.
+> - **⛔ TRAP (D818): a control's HOVER and PRESSED boxes have margins of their own — reserve for the widest.** D816 sized
+>   the roster's titles in the plain box, the probe proved one shape across every sort, and Joe still saw *Age ▾* wrap
+>   when hovered: the hover box adds 12 px. A shape guard cannot see a state it never draws; measure against every box.
 > - **⛔ TRAP (D816): a Godot `Tree` column is never narrower than its title** — a mark added to the sorted column's
 >   title widens that column and the tree's minimum size, and a panel sized by its contents moves. Reserve the widest
 >   title a column can wear (`ShowTheRosterOrder`), and guard the shape across every state, not one.

@@ -1329,7 +1329,7 @@ public partial class Main : Control
         int pupils = world.Villagers.Count(v => v.Alive && v.IsPupil);
         if (atFounding != pupils.ToString() || posed != (pupils + 1).ToString())
         {
-            faults.Add($"the top bar's in school reads {atFounding} with {pupils} at school, and {posed} with one more posed");
+            faults.Add($"the top bar's students reads {atFounding} with {pupils} at school, and {posed} with one more posed");
         }
 
         return faults.Count == 0
@@ -4759,7 +4759,7 @@ public partial class Main : Control
 
         // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5: "maybe children / in school once schools are the player's"
         // — "Yes, add it", D817), where the laborers' cell was: the bar keeps five headcounts and its width.
-        _inSchoolCell = AddBarCell(counts, null, "in school", HeadcountWidth);
+        _inSchoolCell = AddBarCell(counts, null, "students", HeadcountWidth);  // Joe: "rename in school to students"
         _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
 
         // The valley's name is the one word that says which run you are watching — derived

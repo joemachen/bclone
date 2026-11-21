@@ -447,8 +447,14 @@ the commitment; each slice's Definition of Done is its own.
 - **The two counts side by side** (note 3): *Able adults: n* beside *Laborers: n*, and *"Laborers are the spare hands:
   clearing ground, hauling and tidying, and nobody's trade yet."* is the laborers' tooltip, no longer a caption.
 - **The top bar counts no laborers** (note 5): it is here, beside what it is one of. ✅ *"maybe children / in school"* — Joe:
-  *"Yes, add it"* (D817): an *in school* cell beside *children*, where the laborers' was, counting the children at a
+  *"Yes, add it"* (D817): a *students* cell (*in school* until D818 — Joe: *"rename 'in school' to 'students'"*) beside *children*, where the laborers' was, counting the children at a
   school now (`Villager.IsPupil`); the bar keeps five headcounts and its width (probe `bars:`, `laborers:`).
 - **The village roster holds still when sorted** (note 4): each column is as wide as its title with the ▾, whichever is
   sorted — measured before the fix, the roster's minimum width was 187 sorted by name and 174 by age or trade. Probe
   line `roster sort:`.
+- **The roster's titles, again** (D818, Joe after playing D816: *"the village panel headings still move around/resize"*,
+  two screenshots — *Age ▾* hovered wrapped onto two lines). A hovered title is drawn in its own box, with margins (12,
+  measured) the plain one has not: each column is now as wide as its marked title in the **widest** of the three boxes, and
+  8 px of air so the mark does not touch the next title. **Every column reads from the left**, the age with the name and
+  the trade (Joe: *"left align the age number column like trade and name are as strings"*; it was right-aligned, a
+  table's habit for numbers). Probe `roster sort:` measures every title against the widest box, apart from the code.
