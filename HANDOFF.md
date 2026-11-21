@@ -10835,7 +10835,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   8 → 2, put back after).
 
 - ✅ **THE NEW-VALLEY SCREEN RESTYLED — ⭐ BUILT, PLAYED AND APPROVED (A154, *"tested and passed. all are good."*); ✅ MERGED
-  INTO `main` AT HIS WORD (A156, *"Merge it"*, `fca445c` + `5c70a10`), NOT PUSHED (A147, 2026-11-21; Joe: *"Yes, queue it"*, *"New valley
+  INTO `main` AT HIS WORD (A156, *"Merge it"*, `fca445c` + `5c70a10`), PUSHED AT HIS WORD (A157, *"Push main"*, `origin/main` =
+  85e0669) (A147, 2026-11-21; Joe: *"Yes, queue it"*, *"New valley
   first"*, *"Start it"*).** The map fills the screen, one parchment panel docked right, the settings grouped (*The land*,
   *Its riches*, *Its people*), *Found a new village* the one red button. ✍️ **Specced as an amendment,
   `new-game-screen.md §12`; ⏸️ his yes and three calls before any code (§12.6):** (1) the body face, from
