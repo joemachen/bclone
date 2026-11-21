@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **bclone** are documented here.
+All notable changes to **Kith** are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -52,8 +52,8 @@ Categories, for when it is written (only the ones used): **Added**,
   Godot-free class library. See `DESIGN.md` §7 decisions D1–D3.
 - `specs/tick-loop.md` — spec for the deterministic tick loop, written before
   the code (METHODOLOGY §2).
-- `bclone.sln` with `src/Bclone.Sim` (simulation core) and
-  `tests/Bclone.Sim.Tests`; shared build settings in `Directory.Build.props`;
+- `Kith.sln` with `src/Kith.Sim` (simulation core) and
+  `tests/Kith.Sim.Tests`; shared build settings in `Directory.Build.props`;
   `VERSION` as the single source of version truth.
 - **Deterministic fixed-timestep tick loop**: `SimLoop` advances by tick *count*
   and never sees a duration; `FixedTimestepDriver` owns the only clock read and
@@ -76,7 +76,7 @@ Categories, for when it is written (only the ones used): **Added**,
 - **Ageing carries mechanical weight**: vigour is full until 30 then declines to
   55% in the final year, scaling what a foraging trip brings home. A life now has
   a shape — easy middle years, a visibly tightening old age, then death.
-- Godot 4.7.1 view shell (`src/Bclone.Game`): clock, villager state, hunger bar,
+- Godot 4.7.1 view shell (`src/Kith.Game`): clock, villager state, hunger bar,
   vigour, stockpile, scrolling life log, and pause/1x/2x/4x/10x speed controls.
 
 - **Phase 1 — households and smart labour.** A village rather than a villager.
@@ -136,7 +136,7 @@ Categories, for when it is written (only the ones used): **Added**,
   at what the buildings support instead of overshooting and falling back. Measured over
   200 years: **24–35 people, against 24–86 with the cap removed.** Capacity is total
   across goods, not per good: a shed packed with logs has nowhere to stack firewood.
-- **A full audit trail, written every run.** `logs/bclone-<timestamp>.log` now takes
+- **A full audit trail, written every run.** `logs/Kith-<timestamp>.log` now takes
   everything down to `DEBUG` — every villager state change, every load carried, every
   job taken and every refusal, tick-stamped and attributed to a subsystem — while the
   on-screen village log stays the sparse `INFO` story it has always been (D8, D9). A

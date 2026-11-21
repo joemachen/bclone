@@ -6,7 +6,7 @@
 > work on villager animations next?"* The painted people (A93, mock E, `villager-art.md §8`) stand in one painted pose
 > and glide from tick to tick; `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. This is
 > that piece.
-> Owner: Joe + Claude Code · art lane (`art`, A-series) · View only: nothing in `Bclone.Sim`, `data/` or `tests/` changes,
+> Owner: Joe + Claude Code · art lane (`art`, A-series) · View only: nothing in `Kith.Sim`, `data/` or `tests/` changes,
 > and no golden can move. Non-negotiables §1.1 (legibility) and §1.2 (meditative pace) are the bars.
 >
 > Neighbours: `villager-art.md` (the people and `PersonPainter`), `trades-visibly-work.md` (*"you read work from where a
@@ -146,14 +146,14 @@ In the end the build needed only one of them — the line in `_Process`; the dis
 Files — ⚠️ **`VillageMap*.cs` sit in the systems lane's column of HANDOFF's table; asked before touching** (A126's
 shape):
 
-- `src/Bclone.Game/PersonPainter.cs` (the art lane's, A93): `FigureKey` gains `Beat`; `Legs`, `Arms`, `ToolFront` and
+- `src/Kith.Game/PersonPainter.cs` (the art lane's, A93): `FigureKey` gains `Beat`; `Legs`, `Arms`, `ToolFront` and
   `ToolBehind` take it (the poses in §1, from `anim.py`).
-- `src/Bclone.Game/VillageMap.People.cs` (the art lane's, A93): `PersonKeyOf` adds the beat; `DrawThePeople` sets the
+- `src/Kith.Game/VillageMap.People.cs` (the art lane's, A93): `PersonKeyOf` adds the beat; `DrawThePeople` sets the
   transform before `DrawTextureRect` and falls back to a held pose; the per-villager distance.
-- `src/Bclone.Game/VillageMap.cs`: **one line in `_Process`** (the people's clock, beside the meal bowl's) and **the
+- `src/Kith.Game/VillageMap.cs`: **one line in `_Process`** (the people's clock, beside the meal bowl's) and **the
   distance added where `DrawnTile` glides** — the only two places in that file.
-- A new `src/Bclone.Game/VillageMap.PeopleMotion.cs`: the clocks, the beat, the motion table of §1.
-- `src/Bclone.Game/VillageMap.PeopleProbe.cs`: probe lines — the beat from distance (paused: no step; a snap: no step;
+- A new `src/Kith.Game/VillageMap.PeopleMotion.cs`: the clocks, the beat, the motion table of §1.
+- `src/Kith.Game/VillageMap.PeopleProbe.cs`: probe lines — the beat from distance (paused: no step; a snap: no step;
   4×: the cap); two crew members out of step; a pose not yet painted held, not dotted; the far zoom paints one pose;
   tick off, the dots to the byte; red-checked and the reds counted.
 - No `Main.cs` change: the game's speed already reaches the map (`SetFlowPace`, A46).

@@ -1,0 +1,1222 @@
+using Kith.Sim.Config;
+using Kith.Sim.Logging;
+using Kith.Sim.Core;
+using Kith.Sim.World;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace Kith.Sim.Tests;
+
+/// <summary>
+/// <see cref="Footprint"/> and <see cref="Point"/> — the ground a turned building stands on.
+/// </summary>
+/// <remarks>
+/// Joe's call (2026-09-06) out of three options: *"tile coverage from the true rect"* — the sim
+/// keeps the real rotated rectangle and derives tiles from it, so there is no second collision
+/// system and no facade. These guard the rule that makes that legible: **a building covers the
+/// tiles whose centres it stands on.**
+/// </remarks>
+public sealed class FootprintTests
+{
+    private readonly ITestOutputHelper _output;
+
+    public FootprintTests(ITestOutputHelper output) => _output = output;
+
+    // ---------------------------------------------------------------
+    //  Point, and the tile convention
+    // ---------------------------------------------------------------
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(3, 7)]
+    [InlineData(-4, -9)]   // the valley straddles its own origin
+    public void ATileCentreRoundTripsToItsOwnTile(int x, int y)
+    {
+        var tile = new GridPos(x, y);
+        Assert.Equal(tile, Point.CentreOf(tile).ToTile());
+    }
+
+    /// <summary>⚠️ The convention, pinned: a tile centre is half a tile in from its corner.</summary>
+    [Fact]
+    public void ATileCentreIsHalfATileIn()
+    {
+        Point centre = Point.CentreOf(new GridPos(0, 0));
+        Assert.Equal(Fixed.FromRatio(1, 2), centre.X);
+        Assert.Equal(Fixed.FromRatio(1, 2), centre.Y);
+
+        // And a negative tile's centre is negative-and-a-half, not minus-a-half.
+        Point below = Point.CentreOf(new GridPos(-1, -1));
+        Assert.Equal(Fixed.FromRatio(-1, 2), below.X);
+    }
+
+    /// <summary>⭐ A quarter turn takes the x axis onto the y axis, exactly.</summary>
+    /// <remarks>
+    /// Exact because sine and cosine are exact at the cardinals (D318) — so this is a real check on
+    /// the rotation arithmetic rather than on the table's interpolation.
+    /// </remarks>
+    [Fact]
+    public void AQuarterTurnIsExact()
+    {
+        var along = new Point(Fixed.FromInt(1), Fixed.Zero);
+        Point turned = along.RotatedBy(Angle.FromTurnFraction(1, 4));
+
+        Assert.Equal(Fixed.Zero, turned.X);
+        Assert.Equal(Fixed.FromInt(1), turned.Y);
+
+        // Four quarter turns come home.
+        Point home = along
+            .RotatedBy(Angle.FromTurnFraction(1, 4))
+            .RotatedBy(Angle.FromTurnFraction(1, 4))
+            .RotatedBy(Angle.FromTurnFraction(1, 4))
+            .RotatedBy(Angle.FromTurnFraction(1, 4));
+
+        Assert.Equal(along, home);
+    }
+
+    // ---------------------------------------------------------------
+    //  Coverage
+    // ---------------------------------------------------------------
+
+    /// <summary>A one-tile building covers its own tile and nothing else.</summary>
+    [Fact]
+    public void OneTileCoversOneTile()
+    {
+        var at = new GridPos(4, -2);
+        List<GridPos> covered = Footprint.OneTile(at).CoveredTiles();
+
+        Assert.Single(covered);
+        Assert.Equal(at, covered[0]);
+    }
+
+    /// <summary>
+    /// ⭐⭐ ROTATING A ONE-TILE BUILDING CHANGES NOTHING — AT ANY ANGLE, ALL 65,536 OF THEM.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the guard that licenses the whole slice to move no golden.</b> A 1×1 building's
+    /// centre <em>is</em> its tile's centre, so the offset under test is zero and no rotation can
+    /// move it out of its own tile. Every building in the game is 1×1
+    /// (`specs/gridless.md §2.3`), so facing is free for all of them.
+    /// </para>
+    /// <para>
+    /// ⚠️ Checked at every representable angle rather than at a handful, because *"a handful of
+    /// angles"* is exactly the sampling that would miss a quadrant whose symmetry is reflected the
+    /// wrong way.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoRotationOfAOneTileBuildingEverLeavesItsTile()
+    {
+        var at = new GridPos(2, 3);
+
+        for (int raw = 0; raw <= ushort.MaxValue; raw++)
+        {
+            var turned = new Footprint
+            {
+                Origin = Point.CentreOf(at),
+                Width = 1,
+                Height = 1,
+                Facing = Angle.FromRaw((ushort)raw),
+            };
+
+            List<GridPos> covered = turned.CoveredTiles();
+            Assert.Single(covered);
+            Assert.Equal(at, covered[0]);
+        }
+    }
+
+    /// <summary>A three-by-one building lies along x, and a quarter turn stands it along y.</summary>
+    /// <remarks>
+    /// ⭐ **The guard that proves rotation does something**, and the anti-vacuity partner to the one
+    /// above: without it, a `CoveredTiles` that ignored `Facing` entirely would pass every other
+    /// test in this file.
+    /// </remarks>
+    [Fact]
+    public void AThreeByOneTurnsAcross()
+    {
+        var at = new GridPos(0, 0);
+
+        var lying = new Footprint { Origin = Point.CentreOf(at), Width = 3, Height = 1, Facing = Angle.Zero };
+        var standing = new Footprint
+        {
+            Origin = Point.CentreOf(at),
+            Width = 3,
+            Height = 1,
+            Facing = Angle.FromTurnFraction(1, 4),
+        };
+
+        List<GridPos> along = lying.CoveredTiles();
+        List<GridPos> across = standing.CoveredTiles();
+
+        _output.WriteLine($"lying:    {string.Join(" ", along)}");
+        _output.WriteLine($"standing: {string.Join(" ", across)}");
+
+        Assert.Equal(new[] { new GridPos(-1, 0), new GridPos(0, 0), new GridPos(1, 0) }, along);
+        Assert.Equal(new[] { new GridPos(0, -1), new GridPos(0, 0), new GridPos(0, 1) }, across);
+    }
+
+    /// <summary>Turning a building right round leaves it where it was.</summary>
+    [Fact]
+    public void AHalfTurnIsSymmetric()
+    {
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(new GridPos(5, 5)),
+            Width = 3,
+            Height = 1,
+            Facing = Angle.Zero,
+        };
+
+        var turned = shape with { Facing = Angle.FromTurnFraction(1, 2) };
+
+        Assert.Equal(shape.CoveredTiles(), turned.CoveredTiles());
+    }
+
+    /// <summary>⛔ The order is part of the contract, not an accident of the loop.</summary>
+    [Fact]
+    public void CoverageComesBackLowestTileFirst()
+    {
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(new GridPos(0, 0)),
+            Width = 3,
+            Height = 3,
+            Facing = Angle.Zero,
+        };
+
+        List<GridPos> covered = shape.CoveredTiles();
+
+        Assert.Equal(9, covered.Count);
+        for (int i = 1; i < covered.Count; i++)
+        {
+            bool ordered = covered[i].Y > covered[i - 1].Y
+                || (covered[i].Y == covered[i - 1].Y && covered[i].X > covered[i - 1].X);
+
+            Assert.True(ordered, $"{covered[i - 1]} then {covered[i]} is not row-major order.");
+        }
+    }
+
+    /// <summary>⭐ A three-wide workplace stands on three tiles, and a data row is what says so.</summary>
+    /// <remarks>
+    /// <b>The plumbing guard.</b> <c>Footprint</c> could be perfect and reached by nothing — D98's
+    /// rule about a number that is always zero. This asserts the path from the
+    /// <c>extent_width</c> column, through <c>Workplace</c>, to the ground it occupies — and
+    /// therefore to <c>SomethingStandsAt</c>, which asks the footprint now rather than the position.
+    /// </remarks>
+    [Fact]
+    public void AThreeWideWorkplaceStandsOnThreeTiles()
+    {
+        var wide = new Workplace
+        {
+            Id = 1,
+            Kind = JobKind.Forager,
+            Name = "a long shed",
+            Position = Point.CentreOf(new GridPos(10, 10)),
+            Store = new Stockpile(16),
+            Capacity = 1,
+            ExtentWidth = 3,
+            ExtentHeight = 1,
+        };
+
+        List<GridPos> covered = wide.Footprint.CoveredTiles();
+        _output.WriteLine(string.Join(" ", covered));
+
+        Assert.Equal(3, covered.Count);
+        Assert.True(wide.Footprint.Covers(new GridPos(9, 10)));
+        Assert.True(wide.Footprint.Covers(new GridPos(11, 10)));
+
+        // ⭐ And an ordinary building is still one tile, so nothing that exists today moved.
+        var ordinary = new Workplace
+        {
+            Id = 2,
+            Kind = JobKind.Forager,
+            Name = "an ordinary hut",
+            Position = Point.CentreOf(new GridPos(10, 10)),
+            Store = new Stockpile(16),
+            Capacity = 1,
+        };
+
+        Assert.Single(ordinary.Footprint.CoveredTiles());
+    }
+
+    /// <summary>⛔ A building that stands on no ground at all is refused when the config loads.</summary>
+    /// <remarks>
+    /// A zero extent would make <c>CoveredTiles</c> return nothing — so the building would occupy
+    /// no ground, refuse nothing, and be buildable on top of itself. Caught in the config validator
+    /// rather than in the geometry, so a modder's typo names the row it is in.
+    /// </remarks>
+    [Fact]
+    public void ABuildingMustStandOnAtLeastOneTile()
+    {
+        SimConfig broken = VillageFixtures.Village with
+        {
+            Buildings = new[]
+            {
+                new BuildingRow { Id = 0, Name = "a rumour of a hut", ExtentWidth = 0 },
+            },
+        };
+
+        SimConfigException refused = Assert.Throws<SimConfigException>(broken.Validate);
+        _output.WriteLine(refused.Message);
+        Assert.Contains("at least one tile", refused.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>A building covers what it says it covers.</summary>
+    [Fact]
+    public void CoversAgreesWithTheList()
+    {
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(new GridPos(1, 1)),
+            Width = 3,
+            Height = 1,
+            Facing = Angle.Zero,
+        };
+
+        Assert.True(shape.Covers(new GridPos(0, 1)));
+        Assert.True(shape.Covers(new GridPos(1, 1)));
+        Assert.True(shape.Covers(new GridPos(2, 1)));
+        Assert.False(shape.Covers(new GridPos(1, 2)));
+        Assert.False(shape.Covers(new GridPos(3, 1)));
+    }
+
+    /// <summary>
+    /// ⭐⭐ A THREE-TILE BUILDING REFUSES A NEIGHBOUR ON ITS SECOND TILE — end to end (D321).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This is the assertion that would have caught the one-square longhouse.</b> Every guard in
+    /// this file tested `Footprint` in isolation and every one passed while the longhouse occupied
+    /// a single tile in the actual game — because `StoreBuilding.Footprint` was written and read by
+    /// nothing, and `CanBuildAt` only ever validated the anchor.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>It goes through <c>CanBuildAt</c> rather than through <c>Footprint</c></b>, deliberately.
+    /// The geometry was never wrong; the wiring was. *A guard on the shape proves the shape, and
+    /// this bug was everywhere except the shape.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AThreeTileBuildingRefusesANeighbourOnItsSecondTile()
+    {
+        // A stockpile is the one-tile neighbour posed here (D382): the granary this used to pose is 2×2.
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+
+        // The catalogue says three wide, so the sim must believe three wide.
+        Assert.Equal(3, world.BuildingsCatalog[BuildingKind.Longhouse]!.ExtentWidth);
+        Assert.Equal(3, world.FootprintOf(BuildingKind.Longhouse, anchor).CoveredTiles().Count);
+
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor).Allowed);
+
+        // ⛔⛔ RAISED, NOT JUST MARKED — AND THE FIRST VERSION OF THIS GUARD MISSED THAT.
+        // A marked building is a construction SITE, which is a `Workplace`, and workplaces already
+        // went through the footprint. So the guard passed while the bug Joe actually hit — a
+        // FINISHED store drawn and occupying one tile — was untouched. **Reverting the store fix
+        // left it green.** *A guard that stops one step short of the state the player reaches is
+        // D157's green-and-blind, and this one was blind by one call.*
+        Workplace site = world.Workplaces.Single(
+            w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+        Assert.Contains(world.StoreBuildings, s => s.Tile == anchor);
+
+        // ⭐ The anchor is refused because something stands there — that much always worked.
+        Assert.False(world.CanBuildAt(BuildingKind.Pile, anchor).Allowed);
+
+        // ⛔ AND SO ARE THE OTHER TWO, which is the half that did not.
+        var left = new GridPos(anchor.X - 1, anchor.Y);
+        var right = new GridPos(anchor.X + 1, anchor.Y);
+
+        _output.WriteLine(
+            $"anchor {anchor}: left {world.CanBuildAt(BuildingKind.Pile, left).Reason}; "
+            + $"right {world.CanBuildAt(BuildingKind.Pile, right).Reason}");
+
+        Assert.False(
+            world.CanBuildAt(BuildingKind.Pile, left).Allowed,
+            "A granary was allowed on ground the longhouse already stands on.");
+        Assert.False(
+            world.CanBuildAt(BuildingKind.Pile, right).Allowed,
+            "A granary was allowed on ground the longhouse already stands on.");
+
+        // ⭐ ANTI-VACUITY (D7): one tile further out is still free, or this is just refusing
+        // everything and proving nothing.
+        Assert.True(world.CanBuildAt(BuildingKind.Pile, new GridPos(anchor.X + 2, anchor.Y)).Allowed);
+    }
+
+    /// <summary>
+    /// ⭐⭐ A SITE COVERS THE SAME GROUND AS THE GHOST AND THE FINISHED BUILDING (D324).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The state nothing guarded, and it is the middle one.</b> D321's guard raised the
+    /// building and checked the finished store; the ghost is drawn from the row. **Nobody ever
+    /// asked what the site in between looked like** — and Joe found it drawn as a single square in
+    /// the default orientation, for the years a longhouse takes to build.
+    /// </para>
+    /// <para>
+    /// ⚠️ *Three pictures of one building, and the two on either side were tested.* The site is
+    /// also the moment the footprint matters MOST, because it is the last point at which there is
+    /// still time to move it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AMarkedBuildingReservesTheSameGroundItWillStandOn()
+    {
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+        Angle turned = Angle.FromTurnFraction(1, 4);
+
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor, turned).Allowed);
+
+        Workplace site = world.Workplaces.Single(
+            w => w.Construction?.Kind == BuildingKind.Longhouse);
+
+        _output.WriteLine(
+            $"site: {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}, "
+            + $"covering {site.Footprint.CoveredTiles().Count} tiles");
+
+        // ⛔ The extent, or the site draws one square while the ghost drew three.
+        Assert.Equal(3, site.ExtentWidth);
+        Assert.Equal(3, site.Footprint.CoveredTiles().Count);
+
+        // ⛔ AND THE FACING, which is the half Joe named separately: a site drawn in the default
+        // orientation is a picture of a building nobody asked for.
+        Assert.Equal(turned, site.Facing);
+
+        // ⭐ Turned a quarter, so it reserves ground ALONG Y where an unturned one runs along X.
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y - 1)));
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y + 1)));
+        Assert.False(site.Footprint.Covers(new GridPos(anchor.X + 1, anchor.Y)));
+    }
+
+    /// <summary>
+    /// ⭐ A DEMOLITION SITE KEEPS THE ANGLE OF THE BUILDING IT IS TAKING DOWN (D325, guarded D455).
+    /// </summary>
+    /// <remarks>
+    /// The fourth picture of one building, and the one nothing guarded. D325 made
+    /// <c>MarkDemolition</c> read the standing building's facing <b>before</b> it is gone and
+    /// write it onto the site — and the order is the whole fix: read it after the building is
+    /// pulled down and it silently answers zero, a longhouse drawn the wrong way round for the
+    /// years it takes to come down. This holds the site to the building's angle and its ground.
+    /// </remarks>
+    [Fact]
+    public void ADemolitionSiteKeepsTheAngleOfWhatItTakesDown()
+    {
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+        Angle turned = Angle.FromTurnFraction(1, 4);
+        GridPos anchor = RaiseALonghouse(world, turned);
+        Assert.True(config.DemolitionWorkPercent > 0, "A demolition with no work leaves no site to look at.");
+
+        Assert.True(world.MarkDemolition(anchor).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { Demolishing: true });
+
+        _output.WriteLine($"demolition site: {site.Construction!.Kind} {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}");
+        Assert.Equal(turned, site.Facing);
+
+        // ⛔ AND ITS SHAPE (D455) — the guard's first run found the site 2×2: a longhouse stores as
+        // a warehouse, and the store was asked for its building through its store kind.
+        Assert.Equal(BuildingKind.Longhouse, site.Construction.Kind);
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y - 1)));
+        Assert.True(site.Footprint.Covers(new GridPos(anchor.X, anchor.Y + 1)));
+        Assert.False(site.Footprint.Covers(new GridPos(anchor.X + 1, anchor.Y)));
+    }
+
+    /// <summary>⛔ A moved longhouse is put back a longhouse, at its angle (D455).</summary>
+    /// <remarks>
+    /// The same guess one door down (D328's lesson): a move asked <c>WhatStandsAt</c>, which
+    /// answered a store by its store kind — the warehouse — so the site at the far end was a
+    /// warehouse's footprint and recipe for a building that had been three tiles long.
+    /// </remarks>
+    [Fact]
+    public void AMovedLonghouseIsPutBackALonghouse()
+    {
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
+        Angle turned = Angle.FromTurnFraction(1, 4);
+        GridPos from = RaiseALonghouse(world, turned);
+        GridPos to = SomewhereBuildable(world);
+
+        Assert.True(world.MarkRelocation(from, to).Allowed);
+        Workplace site = world.Workplaces.Single(w => w.Construction is { IsFinished: false, Demolishing: false });
+
+        _output.WriteLine($"moving site: {site.Construction!.Kind} {site.ExtentWidth}x{site.ExtentHeight} facing {site.Facing}");
+        Assert.Equal(BuildingKind.Longhouse, site.Construction.Kind);
+        Assert.Equal(3, site.ExtentWidth);
+        Assert.Equal(turned, site.Facing);
+    }
+
+    /// <summary>
+    /// The building a store was raised as is in the fingerprint — and only when it is not the
+    /// row its store kind names, so no village without a longhouse moved (D455).
+    /// </summary>
+    [Fact]
+    public void TheBuildingAStoreWasRaisedAsIsInTheFingerprint()
+    {
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
+        GridPos anchor = RaiseALonghouse(world, Angle.Zero);
+        StoreBuilding longhouse = world.StoreAt(anchor)!;
+        System.Reflection.PropertyInfo raisedAs = typeof(StoreBuilding).GetProperty(nameof(StoreBuilding.RaisedAs))!;
+
+        ulong asALonghouse = Kith.Sim.Determinism.StateHash.Compute(world);
+        raisedAs.SetValue(longhouse, BuildingKind.Warehouse);
+        ulong asAWarehouse = Kith.Sim.Determinism.StateHash.Compute(world);
+        raisedAs.SetValue(longhouse, null);
+        ulong neverRaised = Kith.Sim.Determinism.StateHash.Compute(world);
+
+        Assert.NotEqual(asALonghouse, asAWarehouse);
+        Assert.Equal(neverRaised, asAWarehouse);
+    }
+
+    /// <summary>A finished longhouse, turned as asked, standing somewhere it fits.</summary>
+    private static GridPos RaiseALonghouse(SimWorld world, Angle turned)
+    {
+        GridPos anchor = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor, turned).Allowed);
+
+        Workplace raising = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(raising);
+        for (int i = 0; i <= raising.Construction!.Recipe.WorkTicks; i++)
+        {
+            raising.Construction.Work();
+        }
+
+        world.Complete(raising);
+        Assert.Equal(BuildingKind.Longhouse, world.WhatStandsAt(anchor));
+        Assert.Equal(turned, world.FacingOfWhatStandsAt(anchor));
+        return anchor;
+    }
+
+    /// <summary>
+    /// ⭐⭐ EVERY BUILDING CLASS HONOURS ITS ROW'S EXTENT — not just the two that were needed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe asked whether the longhouse treatment would reach every building, existing and
+    /// future (D325).</b> The honest risk was that it reached the two classes a longhouse happens
+    /// to use — workplace and store — and quietly skipped libraries, the town hall and homes,
+    /// which is exactly what had already happened once: D321's message claimed the occupancy
+    /// conversion was "whole" when only two of five collections had been converted.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>So this asserts the PROPERTY rather than the classes</b>: reflect over every type that
+    /// can stand on the ground and require it to expose a <c>Footprint</c>. A new building class
+    /// added later fails here on the day it is written, rather than on the day somebody makes one
+    /// three tiles wide. *A guard that lists the classes it knows about cannot catch the class
+    /// nobody thought of.*
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryBuildingThatStandsOnTheGroundHasAFootprint()
+    {
+        Type[] standOnGround =
+        {
+            typeof(Workplace),
+            typeof(StoreBuilding),
+            typeof(Library),
+            typeof(TownHall),
+        };
+
+        var missing = new List<string>();
+        foreach (Type type in standOnGround)
+        {
+            if (type.GetProperty("Footprint")?.PropertyType != typeof(Footprint))
+            {
+                missing.Add(type.Name);
+            }
+        }
+
+        _output.WriteLine($"{standOnGround.Length} building classes checked");
+
+        Assert.True(
+            missing.Count == 0,
+            "These stand on the ground and cannot say what ground they stand on, so a multi-tile "
+            + "row of their kind would occupy one tile: " + string.Join(", ", missing));
+    }
+
+    /// <summary>
+    /// ⭐⭐ EVERY TILE OF A LONGHOUSE ANSWERS — selection, naming, demolition and shelter (D326).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe: *"to select the building i have to choose the middle tile - the 1st and 3rd tiles
+    /// arent selectable."*</b> `SomethingStandsAt` was footprint-aware; twelve sibling lookups were
+    /// not. ⛔ `MarkDemolition` disagreed with itself — it measured the building's ANGLE and then
+    /// said there was nothing there to pull down.
+    /// </remarks>
+    [Fact]
+    public void EveryTileOfALongBuildingAnswersWhenAsked()
+    {
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos anchor = SomewhereBuildable(world);
+        Assert.True(world.Mark(BuildingKind.Longhouse, anchor).Allowed);
+
+        Workplace site = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Longhouse);
+        BuildFixtures.StockTheSite(site);
+        for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+
+        foreach (GridPos tile in new[]
+        {
+            new GridPos(anchor.X - 1, anchor.Y), anchor, new GridPos(anchor.X + 1, anchor.Y),
+        })
+        {
+            _output.WriteLine($"{tile}: {world.NameOnTheTile(tile)}");
+
+            Assert.NotNull(world.StoreAt(tile));
+            Assert.Equal(Shelter.Roof, world.ShelterAt(tile));
+            Assert.Contains("longhouse", world.NameOnTheTile(tile), StringComparison.OrdinalIgnoreCase);
+
+            // ⛔ The one Joe actually hit: the ends could not be pulled down.
+            Assert.True(
+                world.MarkDemolition(tile).Allowed,
+                $"Tile {tile} of the longhouse could not be marked for demolition.");
+
+            world.CancelDemolition(tile);
+        }
+    }
+
+    /// <summary>⭐ A FREE building keeps its facing too — the branch D320 missed (D326).</summary>
+    /// <remarks>
+    /// Joe: *"for stockpile and builders hut, the ghost rotates well, but the build at the default
+    /// square orientation."* `Mark` forks on whether the recipe costs anything, and only the costed
+    /// branch carried the angle — `RaiseFreeBuilding` had no parameter for it and `PendingBuilding`
+    /// had nowhere to put one. ⚠️ Both free rows are 1×1, so the symptom was **drawing**, not
+    /// placement; it becomes a placement bug the day any multi-tile building is also free.
+    /// </remarks>
+    [Fact]
+    public void AFreeBuildingKeepsTheFacingItWasPlacedWith()
+    {
+        SimConfig config = BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village);
+        SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
+
+        GridPos at = SomewhereBuildable(world);
+        Angle turned = Angle.FromTurnFraction(1, 8);
+
+        Assert.True(world.Mark(BuildingKind.Pile, at, turned).Allowed);
+
+        StoreBuilding pile = world.StoreAt(at)!;
+        _output.WriteLine($"the stockpile faces {pile.Facing}");
+
+        Assert.Equal(turned, pile.Facing);
+    }
+
+    /// <summary>
+    /// ⛔ <c>Covers</c> and <c>CoveredTiles</c> are the same answer, asked two ways (D329).
+    /// </summary>
+    /// <remarks>
+    /// <c>Covers</c> stopped building the whole list to answer about one tile, because that was
+    /// costing the suite four minutes. **A faster path that disagrees with the slow one is worse
+    /// than the slow one**, and `Fixed` multiplication is not associative — so this compares them
+    /// directly, over a spread of extents and angles, rather than trusting that the arithmetic was
+    /// copied faithfully.
+    /// </remarks>
+    [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(3, 1, 0)]
+    [InlineData(3, 1, 16384)]
+    [InlineData(3, 1, 8192)]
+    [InlineData(2, 5, 21845)]
+    [InlineData(4, 3, 40000)]
+    public void TheFastCoverTestAgreesWithTheWholeList(int width, int height, int rawFacing)
+    {
+        var anchor = new GridPos(12, 9);
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(anchor),
+            Width = width,
+            Height = height,
+            Facing = Angle.FromRaw((ushort)rawFacing),
+        };
+
+        List<GridPos> listed = shape.CoveredTiles();
+        _output.WriteLine($"{width}x{height} at {rawFacing} covers {listed.Count}: "
+            + string.Join(" ", listed));
+
+        int reach = width + height + 2;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                Assert.Equal(listed.Contains(tile), shape.Covers(tile));
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⭐⭐ The point test and the tile test agree wherever they are asked the same
+    /// question — <b>and they are the same arithmetic, so this is a guard on the factoring</b>
+    /// (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>Covers(Point)</c> was factored out of <c>StandsOn</c> so the mouse can ask where a
+    /// building is DRAWN while the sim keeps asking which tiles it CLAIMS. <see cref="Fixed"/>
+    /// multiplication is not associative, so *"it is the same expression"* is a claim worth
+    /// checking rather than an argument.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Asked at tile CENTRES, where the two are defined to agree</b> — and
+    /// away from centres they are supposed to differ, which is the whole reason the point test
+    /// exists. The exceptions are the anchor tile, which
+    /// <see cref="Footprint.Covers(GridPos)"/> forgives unconditionally (D331) and the rectangle
+    /// does not, and a tile that joins two corner-touching tiles (D650, `footprints.md §8`) — the 3×1
+    /// at an eighth is a staircase of them.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData(1, 1, 0)]
+    [InlineData(3, 1, 0)]
+    [InlineData(3, 1, 16384)]
+    [InlineData(3, 1, 8192)]
+    [InlineData(2, 5, 21845)]
+    [InlineData(4, 3, 40000)]
+    public void ThePointTestAgreesWithTheTileTestAtEveryTileCentre(
+        int width, int height, int rawFacing)
+    {
+        var anchor = new GridPos(12, 9);
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(anchor),
+            Width = width,
+            Height = height,
+            Facing = Angle.FromRaw((ushort)rawFacing),
+        };
+
+        List<GridPos> centres = CentreRule(shape);
+        int reach = width + height + 2;
+        for (int dy = -reach; dy <= reach; dy++)
+        {
+            for (int dx = -reach; dx <= reach; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                if (tile == anchor || LiesBetweenTwoCornerTouching(centres, tile))
+                {
+                    continue;
+                }
+
+                Assert.Equal(shape.Covers(tile), shape.Covers(Point.CentreOf(tile)));
+            }
+        }
+    }
+
+    /// <summary>
+    /// ⛔⛔ A building turned between tile centres is clickable across its whole
+    /// rectangle — <b>Joe's complaint, pinned</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe: *"there are areas of a building in which clicking selects a non-building tile even
+    /// though part of the building looks like it is in that spot."*</b> The rectangle reaches into
+    /// tiles whose centres it does not stand on — that is D319 working correctly — so
+    /// the point test must find the building somewhere the tile test does not. **If this ever
+    /// stops being true the fix has quietly become a no-op.**
+    /// </remarks>
+    [Fact]
+    public void ATurnedBuildingIsFoundWhereItIsDrawnAndNotOnlyWhereItStands()
+    {
+        // Half a tile north-east of a centre, turned 45°: the case D331 was found on.
+        Point origin = Point.CentreOf(new GridPos(4, 4))
+            + new Point(Fixed.FromRatio(1, 2), Fixed.FromRatio(1, 2));
+
+        var shape = new Footprint
+        {
+            Origin = origin,
+            Width = 3,
+            Height = 1,
+            Facing = Angle.FromTurnFraction(1, 8),
+        };
+
+        int drawnOver = 0;
+        int claimed = 0;
+
+        for (int dy = -3; dy <= 3; dy++)
+        {
+            for (int dx = -3; dx <= 3; dx++)
+            {
+                var tile = new GridPos(4 + dx, 4 + dy);
+
+                // A grid of sample points across the tile, because "is the building drawn here?"
+                // is a question about the tile's AREA and its centre is one point of it.
+                bool anywhereInside = false;
+                for (int sy = 0; sy < 4 && !anywhereInside; sy++)
+                {
+                    for (int sx = 0; sx < 4 && !anywhereInside; sx++)
+                    {
+                        var at = new Point(
+                            Fixed.FromRatio((tile.X * 8) + 1 + (sx * 2), 8),
+                            Fixed.FromRatio((tile.Y * 8) + 1 + (sy * 2), 8));
+
+                        anywhereInside = shape.Covers(at);
+                    }
+                }
+
+                if (anywhereInside)
+                {
+                    drawnOver++;
+                }
+
+                if (shape.Covers(tile))
+                {
+                    claimed++;
+                }
+            }
+        }
+
+        _output.WriteLine($"drawn over {drawnOver} tiles, claims {claimed}");
+        Assert.True(claimed > 0, "D331: a building always stands on at least its own tile.");
+        Assert.True(
+            drawnOver > claimed,
+            $"The rectangle should reach into tiles it does not claim, but it is drawn over "
+            + $"{drawnOver} and claims {claimed} — so clicking the overhang cannot be the "
+            + "thing that was fixed.");
+    }
+
+    /// <summary>
+    /// ⛔ What an EVEN-width building covers when its edge lands exactly on a tile centre
+    /// — <b>pinned, because nothing in the suite posed it</b> (D338).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⚠️ <b>Found by a red check that scored zero.</b> Flipping <c>&lt;=</c> to
+    /// <c>&lt;</c> in the coverage test left **the entire footprint suite green** — because
+    /// every posed case is odd-width or turned off-axis, and the boundary is only reachable when
+    /// a building has an even extent and is square to the grid. *The only multi-tile building in
+    /// the game is the 3×1 longhouse, so no content can reach it either.*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>This pins the behaviour rather than arguing with it.</b> Touching counts as
+    /// covered, so a 2-wide building claims THREE tiles — the half-tile at each end lands on
+    /// a neighbour centre and takes it. *That is a real design question about even extents and it
+    /// is nobody urgent's, because nothing even-sided exists.* **What matters is that a future
+    /// tidy-up cannot change it in silence.**
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void AnEvenWidthBuildingsEdgeLandsOnATileCentreAndTouchingCounts()
+    {
+        var shape = new Footprint
+        {
+            Origin = Point.CentreOf(new GridPos(10, 10)),
+            Width = 2,
+            Height = 1,
+            Facing = default,
+        };
+
+        System.Collections.Generic.List<GridPos> covered = shape.CoveredTiles();
+        _output.WriteLine("a 2x1 square to the grid covers " + string.Join(" ", covered));
+
+        Assert.Equal(3, covered.Count);
+        Assert.Contains(new GridPos(9, 10), covered);
+        Assert.Contains(new GridPos(11, 10), covered);
+    }
+
+    /// <summary>Somewhere a three-tile building genuinely fits, found rather than assumed.</summary>
+    private static GridPos SomewhereBuildable(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+
+        for (int radius = 2; radius < 20; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var at = new GridPos(site.X + dx, site.Y + dy);
+                    // Both ways round — the guard above marks it turned a quarter (D382: with 2×2
+                    // stores in the founding, a spot that fits it across may not fit it down).
+                    if (world.CanBuildAt(BuildingKind.Longhouse, at).Allowed
+                        && world.CanBuildAt(BuildingKind.Longhouse, at, facing: Angle.FromTurnFraction(1, 4)).Allowed
+                        && world.CanBuildAt(BuildingKind.Pile, new GridPos(at.X + 2, at.Y)).Allowed
+                        && OpenGround(world, at))
+                    {
+                        return at;
+                    }
+                }
+            }
+        }
+
+        throw new Xunit.Sdk.XunitException("Nowhere in the valley fits a three-tile building.");
+    }
+
+    /// <summary>
+    /// Bare grass under the spot and its neighbours — a mark on woodland waits for the felling
+    /// and is not a building yet (D100), which the guards above do not want to be measuring.
+    /// </summary>
+    private static bool OpenGround(SimWorld world, GridPos at)
+    {
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 3; dx++)
+            {
+                var tile = new GridPos(at.X + dx, at.Y + dy);
+                if (!world.Map.Contains(tile) || world.Map.TerrainAt(tile) != Terrain.Grass)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // ---------------------------------------------------------------
+    //  Footprints per building type (D382, specs/footprints.md)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⛔⛔ An even extent anchored on a tile covers exactly its tiles — <b>the centre rule's edge
+    /// is inclusive, and a 2×2 on a tile CENTRE is a 3×3</b> (D382).
+    /// </summary>
+    /// <remarks>
+    /// Every building was 1×1 (or the odd 3×1) until the table was typed, so this was never met.
+    /// <c>AnchorOn</c> puts the even axis half a tile east/south of the centre; the red check is the
+    /// centre itself, which reads nine.
+    /// </remarks>
+    [Fact]
+    public void AnEvenExtentAnchoredOnATileCoversExactlyItsTiles()
+    {
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
+        var at = new GridPos(20, 20);
+
+        Footprint granary = world.FootprintOf(BuildingKind.Granary, at);
+        List<GridPos> covered = granary.CoveredTiles();
+        _output.WriteLine($"a granary on {at}: anchor {granary.Origin}, covers {string.Join(" ", covered)}");
+
+        // The pointed tile is the south-east one; it grows west and north, and `Tile` stays (20, 20).
+        Assert.Equal(new[] { new GridPos(19, 19), new GridPos(20, 19), new GridPos(19, 20), at }, covered);
+        Assert.Equal(at, granary.Origin.ToTile());
+
+        Footprint onTheCentre = granary with { Origin = Point.CentreOf(at) };
+        _output.WriteLine($"on the centre instead: {onTheCentre.CoveredTiles().Count} tiles");
+        Assert.Equal(9, onTheCentre.CoveredTiles().Count);
+
+        // And the town hall, 3×2: odd across, even deep — three by two, growing south.
+        List<GridPos> hall = world.FootprintOf(BuildingKind.TownHall, at).CoveredTiles();
+        Assert.Equal(6, hall.Count);
+        Assert.Contains(new GridPos(19, 20), hall);
+        Assert.Contains(new GridPos(21, 19), hall);
+        Assert.DoesNotContain(new GridPos(20, 21), hall);
+    }
+
+    /// <summary>The table in `specs/footprints.md §2`, row by row (D382).</summary>
+    [Theory]
+    [InlineData(BuildingKind.Home, 2, 1)]
+    [InlineData(BuildingKind.Pile, 1, 1)]
+    [InlineData(BuildingKind.GathererHut, 1, 1)]
+    [InlineData(BuildingKind.ForesterHut, 1, 1)]
+    [InlineData(BuildingKind.FishingHut, 1, 1)]
+    [InlineData(BuildingKind.WoodcutterHut, 2, 1)]
+    [InlineData(BuildingKind.BuilderHut, 2, 1)]
+    [InlineData(BuildingKind.HunterLodge, 2, 1)]
+    [InlineData(BuildingKind.Granary, 2, 2)]
+    [InlineData(BuildingKind.Warehouse, 2, 2)]
+    [InlineData(BuildingKind.Market, 2, 2)]
+    [InlineData(BuildingKind.Farmhouse, 2, 2)]
+    [InlineData(BuildingKind.Library, 2, 2)]
+    [InlineData(BuildingKind.TownHall, 3, 2)]
+    public void TheCatalogueCarriesTheTable(BuildingKind kind, int width, int height)
+    {
+        BuildingRow row = ShippedConfig.Load().BuildingRows.Single(r => r.Id == (int)kind);
+        Assert.Equal((width, height), (row.ExtentWidth, row.ExtentHeight));
+    }
+
+    /// <summary>
+    /// The founding layout raises blindly, so no two of its buildings may share a tile (D382).
+    /// </summary>
+    /// <remarks>
+    /// Red with the builder's hut at its pre-D382 offset (−1, −1): it is 2×1 and the 2×2 warehouse
+    /// at (−2, 0) stands on (−3..−2, −1..0), so they shared (−2, −1).
+    /// </remarks>
+    [Fact]
+    public void TheFoundingLayoutOverlapsNothing()
+    {
+        SimWorld world = SimFactory.CreatePhase0(BuildFixtures.WithTheOldLonghouseStore(VillageFixtures.Village), new InMemoryLogSink()).World;
+        var seen = new Dictionary<GridPos, string>();
+        var twice = new List<string>();
+
+        void Claim(string name, Footprint footprint)
+        {
+            foreach (GridPos tile in footprint.CoveredTiles())
+            {
+                if (seen.TryGetValue(tile, out string? other))
+                {
+                    twice.Add($"{tile}: {other} and {name}");
+                }
+                else
+                {
+                    seen[tile] = name;
+                }
+            }
+        }
+
+        // The market is a store AND a workplace at one position (D36's seam): claimed once.
+        foreach (Workplace place in world.Workplaces)
+        {
+            if (place.Kind != JobKind.Marketer) { Claim(place.Name, place.Footprint); }
+        }
+
+        foreach (StoreBuilding store in world.StoreBuildings) { Claim(store.Name, store.Footprint); }
+        foreach (Household home in world.Households)
+        {
+            if (home.HomePosition is Point at) { Claim($"the {home.Name} house", Footprint.OneTile(at.ToTile())); }
+        }
+
+        _output.WriteLine($"{seen.Count} tiles under {world.Workplaces.Count + world.StoreBuildings.Count} buildings and the homes");
+        Assert.True(twice.Count == 0, "Two founding buildings on one tile: " + string.Join("; ", twice));
+    }
+
+    // ---------------------------------------------------------------
+    //  A footprint is one piece (D650, `footprints.md §8`)
+    // ---------------------------------------------------------------
+
+    /// <summary>⛔⛔ Every building, at every facing and position, stands on one orthogonal piece of ground.</summary>
+    /// <remarks>
+    /// <b>Joe's iron mine stood unbuilt for eighteen years</b> (Ravenscar, Year 11 to 29): a 2×1 turned near an eighth covered
+    /// two tiles touching only at a corner, its door went on one, and the other — its anchor — was walled on all four
+    /// sides to a field that steps only north, south, east and west. One in ten placements of every 2×1 did that.
+    /// </remarks>
+    [Fact]
+    public void EveryFootprintIsOnePiece()
+    {
+        var split = new List<string>();
+        foreach (Footprint shape in EveryPlacement())
+        {
+            if (PiecesOf(shape.CoveredTiles()) != 1)
+            {
+                split.Add($"{shape.Width}x{shape.Height} facing {shape.Facing} from {shape.Origin}");
+            }
+        }
+
+        _output.WriteLine($"{split.Count} placements in more than one piece; first: {split.FirstOrDefault() ?? "none"}");
+        Assert.Empty(split);
+    }
+
+    /// <summary>⭐ And nothing else changed: a footprint gains only the tile between two corner-touching tiles.</summary>
+    /// <remarks>
+    /// A footprint the centre rule already made one piece is the centre rule and the anchor exactly — which is why no 1×1,
+    /// 2×2 or 3×2 building moves — and every tile a split one gains shares a side with two of its tiles that touch only
+    /// at a corner.
+    /// </remarks>
+    [Fact]
+    public void AWholeFootprintAddsOnlyTheTileBetween()
+    {
+        int whole = 0, mended = 0;
+        foreach (Footprint shape in EveryPlacement())
+        {
+            List<GridPos> centres = CentreRule(shape);
+            List<GridPos> covered = shape.CoveredTiles();
+            Assert.Empty(centres.Except(covered));
+            List<GridPos> added = covered.Except(centres).ToList();
+            if (PiecesOf(centres) == 1)
+            {
+                Assert.Empty(added);
+                whole++;
+                continue;
+            }
+
+            Assert.NotEmpty(added);
+            foreach (GridPos tile in added)
+            {
+                Assert.True(
+                    LiesBetweenTwoCornerTouching(centres, tile),
+                    $"{tile} was added to a {shape.Width}x{shape.Height} without lying between two corner-touching tiles.");
+            }
+
+            mended++;
+        }
+
+        _output.WriteLine($"{whole} placements unchanged, {mended} mended");
+        Assert.True(mended > 0, "No placement was split, so this guard watched nothing.");
+    }
+
+    /// <summary>⛔ The one-tile question and the list agree tile by tile around every split placement (D329).</summary>
+    [Fact]
+    public void CoversAgreesWithCoveredTilesWhereAFootprintWasSplit()
+    {
+        int asked = 0;
+        foreach (Footprint shape in EveryPlacement().Where(f => PiecesOf(CentreRule(f)) > 1))
+        {
+            List<GridPos> covered = shape.CoveredTiles();
+            GridPos anchor = shape.Origin.ToTile();
+            for (int dy = -5; dy <= 5; dy++)
+            {
+                for (int dx = -5; dx <= 5; dx++)
+                {
+                    var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                    Assert.True(covered.Contains(tile) == shape.Covers(tile), $"{tile} of a {shape.Width}x{shape.Height} facing {shape.Facing}");
+                    asked++;
+                }
+            }
+        }
+
+        Assert.True(asked > 0, "No placement was split, so nothing was compared.");
+    }
+
+    /// <summary>
+    /// ⭐⭐ The case Joe met: a 2×1 marked where the centre rule splits it is reached, says nothing about walls, and is built.
+    /// </summary>
+    [Fact]
+    public void ASplitSiteIsReachedAndBuilt()
+    {
+        SimConfig config = ShippedConfig.Established();
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        const BuildingKind kind = BuildingKind.WoodcutterHut;
+        Footprint? chosen = null;
+        GridPos founding = world.Map.FoundingSite;
+        for (int radius = 3; radius < 12 && chosen is null; radius++)
+        {
+            for (int deg = 30; deg < 60 && chosen is null; deg++)
+            {
+                for (int s = 0; s < 16 && chosen is null; s++)
+                {
+                    var shape = new Footprint
+                    {
+                        Origin = new Point(
+                            Fixed.FromInt(founding.X + radius) + Fixed.FromRatio((2 * (s % 4)) + 1, 8),
+                            Fixed.FromInt(founding.Y) + Fixed.FromRatio((2 * (s / 4)) + 1, 8)),
+                        Width = world.BuildingsCatalog[kind]!.ExtentWidth,
+                        Height = world.BuildingsCatalog[kind]!.ExtentHeight,
+                        Facing = Angle.FromDegrees(deg),
+                    };
+                    if (PiecesOf(CentreRule(shape)) > 1 && world.CanBuildAt(kind, shape.Origin, facing: shape.Facing).Allowed)
+                    {
+                        chosen = shape;
+                    }
+                }
+            }
+        }
+
+        Assert.NotNull(chosen);
+        Assert.True(world.Mark(kind, chosen.Value.Origin, chosen.Value.Facing).Allowed);
+        Workplace site = Assert.Single(world.Workplaces, w => w.Construction?.Kind == kind && w.IsSite);
+        Assert.Equal(chosen.Value, site.Footprint);
+        _output.WriteLine($"marked at {site.Tile} facing {site.Footprint.Facing}, on {string.Join(" ", site.Footprint.CoveredTiles())}");
+
+        // Every tile of it, not only the anchor: the door goes on one tile, and under the centre rule alone the other is
+        // walled on four sides. Joe's mine had its door off the anchor, so the anchor was the sealed one and nobody came.
+        foreach (GridPos tile in site.Footprint.CoveredTiles())
+        {
+            Assert.True(world.TravelCost.CanReach(world.FirstHomeOrFoundingSite(), tile), $"{tile} of the split site cannot be reached.");
+        }
+
+        Assert.DoesNotContain("walled in", world.SiteWaitingNote(site) ?? string.Empty);
+
+        // A founding holds no stone, and the hut wants 9: put some in a store, so this watches the walk and not the quarry.
+        StoreBuilding shed = world.StoreBuildings.First(store => store.Accepts(Goods.Stone));
+        Assert.Equal(20, shed.Put(Goods.Stone, 20));
+
+        // `Complete` stands a new workplace where the site was, so the hut is looked for on the site's own tile.
+        GridPos stood = site.Tile;
+        bool built = false;
+        for (int t = 0; t < 2 * config.TicksPerYear && !built; t++)
+        {
+            loop.StepOnce();
+            built = world.Workplaces.Any(w => w.Kind == JobKind.Woodcutter && !w.IsSite && w.Tile == stood);
+        }
+
+        Assert.True(built, "Two years on, the split site is not built.");
+    }
+
+    /// <summary>Every catalogue size at every whole degree and sixteen positions within a tile.</summary>
+    private static IEnumerable<Footprint> EveryPlacement()
+    {
+        SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Established(), new InMemoryLogSink()).World;
+        var sizes = new HashSet<(int, int)>();
+        foreach (BuildingKind kind in Enum.GetValues<BuildingKind>())
+        {
+            if (world.BuildingsCatalog[kind] is { } row)
+            {
+                sizes.Add((row.ExtentWidth, row.ExtentHeight));
+            }
+        }
+
+        foreach ((int width, int height) in sizes.OrderBy(z => z))
+        {
+            for (int deg = 0; deg < 360; deg++)
+            {
+                for (int s = 0; s < 16; s++)
+                {
+                    yield return new Footprint
+                    {
+                        Origin = new Point(Fixed.FromRatio((2 * (s % 4)) + 1, 8), Fixed.FromRatio((2 * (s / 4)) + 1, 8)),
+                        Width = width,
+                        Height = height,
+                        Facing = Angle.FromDegrees(deg),
+                    };
+                }
+            }
+        }
+    }
+
+    /// <summary>D319 and D331 alone: the tiles whose centres it covers, and its anchor.</summary>
+    private static List<GridPos> CentreRule(Footprint shape)
+    {
+        GridPos anchor = shape.Origin.ToTile();
+        var tiles = new List<GridPos>();
+        for (int dy = -5; dy <= 5; dy++)
+        {
+            for (int dx = -5; dx <= 5; dx++)
+            {
+                var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
+                if (tile == anchor || shape.Covers(Point.CentreOf(tile)))
+                {
+                    tiles.Add(tile);
+                }
+            }
+        }
+
+        return tiles;
+    }
+
+    /// <summary>Does this tile share a side with two of these that touch only at a corner? (D650's tile between.)</summary>
+    private static bool LiesBetweenTwoCornerTouching(List<GridPos> centres, GridPos tile) =>
+        !centres.Contains(tile)
+        && new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) }.Any(d =>
+            centres.Contains(new GridPos(tile.X + d.Item1, tile.Y))
+            && centres.Contains(new GridPos(tile.X, tile.Y + d.Item2))
+            && !centres.Contains(new GridPos(tile.X + d.Item1, tile.Y + d.Item2)));
+
+    /// <summary>How many orthogonal pieces a set of tiles falls into.</summary>
+    private static int PiecesOf(List<GridPos> tiles)
+    {
+        var left = new HashSet<GridPos>(tiles);
+        int pieces = 0;
+        while (left.Count > 0)
+        {
+            pieces++;
+            var stack = new Stack<GridPos>();
+            GridPos first = left.First();
+            left.Remove(first);
+            stack.Push(first);
+            while (stack.Count > 0)
+            {
+                GridPos at = stack.Pop();
+                foreach (GridPos next in new[] { new GridPos(at.X + 1, at.Y), new GridPos(at.X - 1, at.Y), new GridPos(at.X, at.Y + 1), new GridPos(at.X, at.Y - 1) })
+                {
+                    if (left.Remove(next))
+                    {
+                        stack.Push(next);
+                    }
+                }
+            }
+        }
+
+        return pieces;
+    }
+}

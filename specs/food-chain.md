@@ -519,7 +519,7 @@ before the mill; the farm's card says the limit is met, and raising it is the an
 
 ## 11. How it is tested (written first, each red-checked; D326)
 
-`tests/Bclone.Sim.Tests/FoodChainTests.cs` and `NutritionTests.cs`, named for what they guard:
+`tests/Kith.Sim.Tests/FoodChainTests.cs` and `NutritionTests.cs`, named for what they guard:
 
 - `EveryFoodAtOneIsTodayToTheUnit`: a village with no bread hashes as before (the rule lands
   byte-identical).

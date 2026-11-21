@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D799's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there
+// ⛔ D799's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there
 // before any commit (D420). `morale.md §13` step 1: how often each of W2's causes is met, per adult a season, before a
 // weight or a line is typed — and so where a line falls that a well-run village never crosses and a neglected one does.
 //
@@ -28,7 +28,7 @@ namespace Bclone.Sim.Tests;
 // Year 3 — on seeds 200–299 (ZZ_SEEDS=a,b narrows), ZZ_YEARS (50). Saves: ZZ_SAVES=<folder, a COPY of Joe's saves>,
 // ZZ_PICK (autosave-1.save), run on ZZ_YEARS (10).
 //
-// One ZZC line a run. Copy in; `dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzContentment --logger
+// One ZZC line a run. Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzContentment --logger
 // "console;verbosity=detailed"`; delete.
 public sealed class ZzContentment
 {
@@ -52,7 +52,7 @@ public sealed class ZzContentment
         {
             years = int.Parse(Environment.GetEnvironmentVariable("ZZ_YEARS") ?? "50", System.Globalization.CultureInfo.InvariantCulture);
             SimConfig config = ShippedConfig.Load() with { Seed = ulong.Parse(what, System.Globalization.CultureInfo.InvariantCulture) };
-            loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+            loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
             ColdStartTests.PlayTheOpening(loop.World);
         }
         else

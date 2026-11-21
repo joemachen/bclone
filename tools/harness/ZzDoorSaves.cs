@@ -1,17 +1,17 @@
-using Bclone.Sim.Core;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Core;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D623's MEASUREMENT — `specs/doors.md §5`'s fourth arm: Joe's own villages, stepped on, before and after doors. Kept in
-// tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit (D420). A harness
+// tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit (D420). A harness
 // never turns a building and never raises a market or a smithy (D447, D601, D617); his saves have all of that.
 // Run in two worktrees (the parent and the change), on a folder of COPIES of his saves (`SaveFile.Open` keeps a damaged
 // file as .bad beside it):
-//   ZZ_SAVES=<folder> ZZ_LABEL=<old|new> [ZZ_YEARS=20] dotnet test tests/Bclone.Sim.Tests -c Release
+//   ZZ_SAVES=<folder> ZZ_LABEL=<old|new> [ZZ_YEARS=20] dotnet test tests/Kith.Sim.Tests -c Release
 //     --filter "FullyQualifiedName~ZzDoorSaves" --logger "console;verbosity=detailed"
 // One ZZS line a save: alive at load and after, the deaths since load by cause, births since load.
 public sealed class ZzDoorSaves
@@ -27,7 +27,7 @@ public sealed class ZzDoorSaves
     [MemberData(nameof(Saves))]
     public void Step(string path)
     {
-        SaveOpened opened = SaveFile.Open(path, ShippedConfig.Load(), new Bclone.Sim.Logging.InMemoryLogSink());
+        SaveOpened opened = SaveFile.Open(path, ShippedConfig.Load(), new Kith.Sim.Logging.InMemoryLogSink());
         Assert.True(opened.Loop is not null, opened.Detail);
         SimLoop loop = opened.Loop!;
         SimWorld world = loop.World;

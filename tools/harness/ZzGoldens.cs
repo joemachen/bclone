@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.Logging;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // D641's gate item 2 (DESIGN §4, the end of Phase 5): which Phase 5 chains does any pinned
 // golden actually reach? Replays each years-long golden's village exactly — the final hash is

@@ -1,5 +1,5 @@
 # =============================================================
-#  .gitignore — bclone
+#  .gitignore — Kith
 #  Stack: C# / .NET 8 + Godot 4 (DESIGN.md §7, decision D1).
 #  The Rust/Bevy section has been removed now that the stack
 #  is settled.

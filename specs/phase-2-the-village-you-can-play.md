@@ -159,7 +159,7 @@ From `DESIGN.md §4`, honestly:
    brush seam and the clearing path in one run.
 3. 🔨 **This checklist, walked by Joe.** Written; not walked.
 4. ⛔ **The release blockers** (METHODOLOGY §5): `VERSION` is read by nothing, and
-   `src/Bclone.Game/export_presets.cfg` does not exist — without it `release.yml` can never
+   `src/Kith.Game/export_presets.cfg` does not exist — without it `release.yml` can never
    succeed, because it exports the "Windows Desktop" preset from a clean checkout.
 5. ✅ **`CHANGELOG.md`'s header** reconciled with METHODOLOGY §5.
 

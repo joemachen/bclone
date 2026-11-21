@@ -190,7 +190,7 @@ character; a village where nobody renamed anything hashes as it did before renam
   green. Red-checked with every card at the person's margin: *"a lodge's "meat · leather" no longer
   fits its 77px cell"*.
 - **`RenameTests`** — given, blank, too long; the hash sees a given name and not a born one.
-- A windowed `BCLONE_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
+- A windowed `KITH_SHOT` of four cards (handoff trap 39) looked at once; the shot hook is not in the tree.
 
 ## 4a. Where the food is — one number on the bar, three places in the popup (D394) — ⛔ SUPERSEDED BY D410
 
@@ -281,7 +281,7 @@ right column. Red-checked: one cell built without the trio → *"⛔ posing ever
 the bar 791x58 → 1149x58"* and `panels:` red on the second pass. **One zero, recorded:** the rows on
 the bar instead of the popup scores nothing on either line, because `Amount()` cells are stable
 whatever they sit in — that check is the 58 → 140 measurement above, not a guard. Two windowed
-`BCLONE_SHOT`s (handoff trap 39) looked at: the founding with `more ▾` open, and a card twelve
+`KITH_SHOT`s (handoff trap 39) looked at: the founding with `more ▾` open, and a card twelve
 years in; the hook is not in the tree.
 
 

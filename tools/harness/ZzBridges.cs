@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D547's MEASUREMENT HARNESS for bridges (specs/bridges.md §8) — kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
 //
 //   ZZV  — one line per valley: what lies across the river from the founding (land, woods, rock, iron) and
 //          how wide the river is where a one-wide, quarter-turned deck could cross it.
@@ -102,7 +102,7 @@ public sealed class ZzBridges
     public void Growth(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = config.StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
@@ -151,7 +151,7 @@ public sealed class ZzBridges
     public void Crossings(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed, BridgeUnlockPopulation = 0 };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         foreach (var (name, limit) in config.StartingStockLimits)
         {

@@ -158,7 +158,7 @@ nothing to see** — `Forager` simply reads *"fisher"*.
 
 1. This spec current.
 2. Defaults in code, overridable from config — **one source of truth**, per `goods-catalog.md §8.2`.
-3. No `switch` on a job by name in `Bclone.Sim` **except the two §2.0 and §2.1 exempt on the record**: the idle note, and the stock-limit escape clauses. Both are per-trade reasoning rather than values.
+3. No `switch` on a job by name in `Kith.Sim` **except the two §2.0 and §2.1 exempt on the record**: the idle note, and the stock-limit escape clauses. Both are per-trade reasoning rather than values.
 4. Unit tests passing; determinism green; **goldens byte-identical**.
 5. Slice 2's data-defined-job test passing, **red-checked**.
 6. `DESIGN.md` Progress Tracker + Decisions Log updated.

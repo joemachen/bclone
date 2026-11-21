@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ THE TRADE MEASUREMENT HARNESS (specs/trade.md §8) — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/
+// ⛔ THE TRADE MEASUREMENT HARNESS (specs/trade.md §8) — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/
 // to run and DELETED from there before any commit. Never committed under tests/.
 //
 // Measured before any of it exists (Joe, 2026-10-16: the town hall is the permission, the post stands on a navigable
@@ -103,7 +103,7 @@ public sealed class ZzTrade
     public void Village(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         foreach ((string name, int limit) in config.StartingStockLimits)
         {
@@ -162,7 +162,7 @@ public sealed class ZzTrade
     [InlineData(12)]
     public void Region(int seasons)
     {
-        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(ShippedConfig.Established(), new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         TradeTests.RaiseAPost(world);
         while (world.RegionAwakeSince == 0) { loop.StepOnce(); }

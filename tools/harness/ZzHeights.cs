@@ -1,32 +1,32 @@
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json.Nodes;
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.Logging;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Logging;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D735's MEASUREMENT — `heights.md §8`: what real heights cost. Kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit (D420).
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit (D420).
 //
 // Two arms, run in one build (the heights are a config key and a map layer, so no second worktree is needed):
 //
 // 1. Joe's own villages, on COPIES of his saves. A save from before heights loads flat by design (`heights.md §9`), so the
 //    hilly arm gives the copy its hills first — the Heights stage's own code (`MapGenerator.RaiseHeights`) over the save's
 //    own river and founding site, seeded from its own seed — writes them into the copy's map, and opens that:
-//      ZZ_SAVES=<folder> [ZZ_YEARS=20] [ZZ_HILLS=100] dotnet test tests/Bclone.Sim.Tests -c Release
+//      ZZ_SAVES=<folder> [ZZ_YEARS=20] [ZZ_HILLS=100] dotnet test tests/Kith.Sim.Tests -c Release
 //        --filter "FullyQualifiedName~ZzHeights.OnHisSaves" --logger "console;verbosity=detailed"
 //    One ZZH line a save: alive at load → end, starved and cold since load, logs, firewood and food held at the end, and the
 //    villagers' mean walking share (ticks on a leg against all living ticks), flat | hilly.
 //
 // 2. Unattended valleys founded fresh, flat / Gentle / Rolling / Hilly, over the seeds 1–86:
-//      [ZZ_VALLEY_YEARS=12] dotnet test tests/Bclone.Sim.Tests -c Release --filter "FullyQualifiedName~ZzHeights.FreshValleys"
+//      [ZZ_VALLEY_YEARS=12] dotnet test tests/Kith.Sim.Tests -c Release --filter "FullyQualifiedName~ZzHeights.FreshValleys"
 //    One ZZV line a setting: valleys dead by the end, people alive summed, starved and cold summed, the steep share of the land.
 //    ⚠️ ON `ShippedConfig.Established()`, the shipped numbers with the founding buildings standing — `Load()` alone founds a
 //    bare camp that freezes to the last soul in its first winter on every seed, flat or hilly (the first run's 86 of 86).

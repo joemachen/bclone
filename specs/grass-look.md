@@ -5,7 +5,7 @@ Built on `seasonal-grass.md` (the pack, its import, THE SCENE, the anti-tiling o
 AND RECORDED (D632); ITS OPEN ITEMS 1–3 CHECKED IN THE LAB AND KEPT AS THEY ARE (D633); PAPER GRAIN 0.15 → 0.12 AT
 JOE'S WORD (A10) — the lab opens at it; the
 game's valley does not draw it yet.** One file holds every value
-(`src/Bclone.Game/looks/grass_approved.tres`); nothing in `Bclone.Sim` changed. Owner: Joe + Claude Code.
+(`src/Kith.Game/looks/grass_approved.tres`); nothing in `Kith.Sim` changed. Owner: Joe + Claude Code.
 
 ---
 
@@ -13,7 +13,7 @@ game's valley does not draw it yet.** One file holds every value
 
 **`res://looks/grass_approved.tres`**, a Godot text resource backed by **`GrassLook.cs`**. Chosen because:
 
-- `data/` is the sim's — `sim.config.json`, read by the Godot-free `Bclone.Sim` and hashed with the village. A render
+- `data/` is the sim's — `sim.config.json`, read by the Godot-free `Kith.Sim` and hashed with the village. A render
   look is not sim content and must not move a golden.
 - A `.tres` is text: diffable, and a modder can open it in any editor or in Godot's inspector.
 - **`GrassLook` gives its properties no defaults.** The file is the only place a number lives; the probe asks that it
@@ -85,7 +85,7 @@ its PNG byte for byte** — a spot-check of sampled pixels scored zero against F
 **Method** (`tools/grass/lab_cost.gd`; re-run it every time a terrain layer is stacked):
 
 ```bash
-"$GODOT" --path src/Bclone.Game -s "$(pwd -W)/tools/grass/lab_cost.gd"
+"$GODOT" --path src/Kith.Game -s "$(pwd -W)/tools/grass/lab_cost.gd"
 ```
 
 The lab renders into a **3840 × 2160** viewport so the shader dwarfs the timer's noise; cases are **interleaved over
@@ -127,7 +127,7 @@ machine, and compare a new run with this table rather than with a single number.
   season, the zoom and the placeholders; *Copy* says it in the list of §2. Red-checked: **6 mutants, 6 reds, no zeros**
   — a value missing from the file, mixing switched on in it, the lab opening off it, a value *Reset* skips, *Reset*
   moving the season, *Copy* misnaming a line.
-- **Rendering only.** Nothing on this branch touches `src/Bclone.Sim`, `tests/` or `data/`; no golden moved.
+- **Rendering only.** Nothing on this branch touches `src/Kith.Sim`, `tests/` or `data/`; no golden moved.
 - **Reference images** (`art/grass/`, from `lab_render.gd` + `lab_check.py shots`): the four seasons at the widest and
   the gameplay zoom, and the seasons strip — each season into the next at 0/25/50/75/100 %, at 24 px a tile.
 

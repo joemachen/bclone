@@ -1,13 +1,13 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ D420's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run
+// ⛔ D420's MEASUREMENT HARNESS — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run
 // (tools/harness/arms.sh does it) and DELETED from there before any commit. Never committed under tests/.
 public sealed class ZzBase
 {
@@ -60,7 +60,7 @@ public sealed class ZzBase
         int extraRock = Environment.GetEnvironmentVariable("ZZ_PAINT") is string zp
             ? int.Parse(zp)
             : (stoneTheyCost + aTile - 1) / aTile;
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

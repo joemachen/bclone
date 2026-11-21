@@ -1,14 +1,14 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ THE NOMADS' MEASUREMENT HARNESS (specs/nomads.md §8) — kept in tools/harness/, COPIED into
-// tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
+// tests/Kith.Sim.Tests/ to run and DELETED from there before any commit. Never committed under tests/.
 //
 // Measured before any of it exists, by posing the arrivals from the test side:
 //   ZZK — what a knock would meet: at Spring, Day 1 of Years 8, 10 and 12, the people alive, living households, how
@@ -38,7 +38,7 @@ public sealed class ZzNomads
         // The arms pose their own arrivals (D564's measurement); since D572 the sim settles bands itself, so the
         // switch is off here or every arm would count two arrivals. `arms.sh base` measures the sim's own.
         SimConfig config = ShippedConfig.Load() with { Seed = seed, NomadsEnabled = false };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

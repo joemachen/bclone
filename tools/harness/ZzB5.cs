@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
-// ⛔ B5 MEASUREMENT (D496) — kept in tools/harness/, COPIED into tests/Bclone.Sim.Tests/ to run and DELETED from
+// ⛔ B5 MEASUREMENT (D496) — kept in tools/harness/, COPIED into tests/Kith.Sim.Tests/ to run and DELETED from
 // there before any commit. Never committed under tests/. ZZ_YEARS sets the run length (10 by default; D496 read 30).
 public sealed class ZzB5
 {
@@ -41,7 +41,7 @@ public sealed class ZzB5
     public void Measure(string arm, ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         var limits = ShippedConfig.Load().StartingStockLimits;
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
@@ -228,7 +228,7 @@ public sealed class ZzB5
     public void Placed(ulong seed)
     {
         SimConfig config = ShippedConfig.Load() with { Seed = seed };
-        SimLoop loop = SimFactory.CreatePhase0(config, new Bclone.Sim.Logging.InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, new Kith.Sim.Logging.InMemoryLogSink());
         SimWorld world = loop.World;
         ColdStartTests.PlayTheOpening(world);
         SeamFixtures.PaintNearest(world, Terrain.Rock, 12);

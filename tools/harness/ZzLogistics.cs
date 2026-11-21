@@ -1,21 +1,21 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Logging;
-using Bclone.Sim.Persistence;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Logging;
+using Kith.Sim.Persistence;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // ⛔ D668's MEASUREMENT — logistics (`specs/logistics.md §4`): how much of an adult's year is walking, and how much
 // of that is a FETCH — a walk whose point is to move goods rather than to get to work. Kept in tools/harness/, COPIED
-// into tests/Bclone.Sim.Tests/ to run and DELETED from there before any commit.
+// into tests/Kith.Sim.Tests/ to run and DELETED from there before any commit.
 //
 //   ZZ_SAVES=<folder, a COPY of Joe's saves> [ZZ_PICK=autosave-1.save] [ZZ_YEARS=5]
-//       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnJoesSaves
+//       dotnet test tests/Kith.Sim.Tests -c Release --filter ZzLogistics.OnJoesSaves
 //   ZZ_SEEDS=1,2,3 [ZZ_YEARS=50] [ZZ_CARTS=N] [ZZ_ARMFULS=k] [ZZ_USES=n] [ZZ_SLOW=pct] [ZZ_RESTOCK=armfuls] [ZZ_LABEL=name]
-//       dotnet test tests/Bclone.Sim.Tests -c Release --filter ZzLogistics.OnTheHarness
+//       dotnet test tests/Kith.Sim.Tests -c Release --filter ZzLogistics.OnTheHarness
 //
 // One ZZG line a year per village: every living adult's ticks in nine buckets — work / commute / deliver (the
 // producer's own load to a store) / fetch (home) / market / haul / shelter / home / other. A ZZG end line sums the run

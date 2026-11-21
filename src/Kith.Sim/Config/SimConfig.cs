@@ -1,0 +1,7560 @@
+using System.Text.Json.Serialization;
+using Kith.Sim.World;
+
+namespace Kith.Sim.Config;
+
+/// <summary>
+/// Tunables for a run, loaded from <c>data/sim.config.json</c>.
+/// </summary>
+/// <remarks>
+/// Data-driven from day one (DESIGN.md §3) — nothing here is hardcoded, and a
+/// modder is expected to edit the JSON. Immutable for the duration of a run:
+/// config that changes mid-run is config that breaks replay.
+/// </remarks>
+public sealed record SimConfig
+{
+    /// <summary>
+    /// Seed for the run. Same seed + same config + same tick count produces a
+    /// byte-identical history.
+    /// </summary>
+    [JsonPropertyName("seed")]
+    public ulong Seed { get; init; } = 12345UL;
+
+    /// <summary>
+    /// Ticks per in-game day. The only thing that gives a tick a "duration".
+    /// </summary>
+    [JsonPropertyName("ticks_per_day")]
+    public int TicksPerDay { get; init; } = 4;
+
+    /// <summary>
+    /// Ticks per real second at 1x speed. <b>Playback only</b> — sim logic must
+    /// never read this.
+    /// </summary>
+    [JsonPropertyName("target_ticks_per_second")]
+    public double TargetTicksPerSecond { get; init; } = 1.0;
+
+    /// <summary>
+    /// Spiral-of-death guard: most ticks the driver will run for one frame.
+    /// <b>Playback only</b> — sim logic must never read this.
+    /// </summary>
+    [JsonPropertyName("max_ticks_per_frame")]
+    public int MaxTicksPerFrame { get; init; } = 250;
+
+    // ---------------------------------------------------------------
+    //  Calendar
+    // ---------------------------------------------------------------
+
+    /// <summary>Days in each of the four seasons.</summary>
+    [JsonPropertyName("days_per_season")]
+    public int DaysPerSeason { get; init; } = 15;
+
+    // ---------------------------------------------------------------
+    //  Needs
+    // ---------------------------------------------------------------
+
+    /// <summary>Hunger gained per tick.</summary>
+    /// <remarks>
+    /// <para>
+    /// Seven, not ten. At ten a villager crossed <see cref="EatThreshold"/> every eight
+    /// ticks — a meal every two days — which read as people permanently interrupting
+    /// themselves to eat. Joe watching a run: <em>"the hunger is too aggressive and
+    /// maybe it should be slower."</em> Seven is a meal every 2.8 days: forty per cent
+    /// slower, and still a cadence you can watch rather than calculate.
+    /// </para>
+    /// <para>
+    /// <b>Seven is where it stops being free, and that was measured rather than
+    /// guessed.</b> Over 300 years the village holds a band of 17–32 at seven, against
+    /// 16–31 at ten — unchanged. Below that it comes apart: 12–31 at six, 9–31 at five.
+    /// Nobody starves at any of them, so it is not a food failure — a slower-eating
+    /// village needs a smaller winter store per head, which is a thinner buffer, and a
+    /// thinner buffer swings harder. Slowing hunger further means widening the
+    /// population wave, and that trade should be made deliberately if it is made.
+    /// </para>
+    /// <para>
+    /// <b>This is not a cosmetic dial.</b> It sets what an adult eats in a year, which
+    /// is the number <see cref="World.VillageEconomy"/> derives the entire food economy
+    /// from — the gather yield, the winter store, and the hands that can be spared for
+    /// anything else. Changing it re-derives all of them (D16), and the tests assert
+    /// the shipped config still meets its targets, so a change here fails the build
+    /// rather than the village.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("hunger_per_tick")]
+    public int HungerPerTick { get; init; } = 7;
+
+    /// <summary>Hunger ceiling. Sitting here is what eventually kills.</summary>
+    [JsonPropertyName("hunger_max")]
+    public int HungerMax { get; init; } = 100;
+
+    /// <summary>Hunger at or above which the villager will eat if they can.</summary>
+    [JsonPropertyName("eat_threshold")]
+    public int EatThreshold { get; init; } = 80;
+
+    /// <summary>Hunger removed by one meal.</summary>
+    [JsonPropertyName("eat_reduces_hunger")]
+    public int EatReducesHunger { get; init; } = 80;
+
+    /// <summary>Food consumed by one meal.</summary>
+    [JsonPropertyName("food_per_meal")]
+    public int FoodPerMeal { get; init; } = 5;
+
+    /// <summary>
+    /// Consecutive ticks at <see cref="HungerMax"/> before starvation.
+    /// Boundary is <c>&gt;=</c> (spec §11).
+    /// </summary>
+    [JsonPropertyName("starvation_ticks")]
+    public int StarvationTicks { get; init; } = 24;
+
+    // ---------------------------------------------------------------
+    //  Foraging
+    // ---------------------------------------------------------------
+
+    /// <summary>Food added by one completed gather.</summary>
+    [JsonPropertyName("gather_yield")]
+    public int GatherYield { get; init; } = 24;
+
+    /// <summary>
+    /// How many completed gathers set one tile of a hut's ring back to sapling —
+    /// <b>the copse thinning under use</b> (D257, Joe). Zero switches it off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THIS IS THE ONLY WAY "THINNER YIELD PER TRIP" CAN EXIST, AND THAT IS PROVEN RATHER
+    /// THAN ARGUED.</b> A trip is worth <c>gather_yield × wooded ÷ ring</c>. **The constant has 9%
+    /// of headroom** — 145 against a derived floor of 132, below which
+    /// <c>VillageEconomyTests</c> fails the build — so lowering it is not available. And with the
+    /// density term **static**, any change to the formula is a flat nerf wearing a different hat.
+    /// <b>Measured: a hut's ring sat at 55% wooded in year 0 and 55% in year 110</b>, because
+    /// gathering added food and touched nothing else. *The copse could not thin because nothing
+    /// took anything out of it.*
+    /// </para>
+    /// <para>
+    /// <b>⛔ SO A GATHER NOW COSTS THE WOOD, AND EVERY PIECE OF THAT ALREADY EXISTED.</b> Thinning
+    /// sets <see cref="Terrain.Forest"/> to <see cref="Terrain.Sapling"/>;
+    /// <c>WoodedTilesAround</c> counts only Forest, so the ring's yield falls at once; and
+    /// <c>RegrowthSystem</c> matures saplings back on its own sweep. **The equilibrium is where
+    /// thinning meets regrowth, and it is emergent rather than tuned** — more foragers on one hut
+    /// thin faster, so the hut settles thinner, which is exactly Joe's *"the copse of wood isnt
+    /// infinite."*
+    /// </para>
+    /// <para>
+    /// <b>⭐ It is diegetic, and the player can SEE it.</b> Saplings have had a colour and a
+    /// sentence since D221, so a hard-worked ring visibly lightens around the hut and a rested one
+    /// darkens again. *A pressure the player watches happen is `DESIGN.md §1`'s legibility;
+    /// a number going down in a panel is not.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Counted, not rolled.</b> It fires on the forager's own gather tally, so **nothing here
+    /// touches the RNG** and the draw order of every other system is unmoved. *A seeded roll would
+    /// have been the obvious way and would have shifted every golden for reasons unrelated to the
+    /// feature.*
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ ZERO — OFF — AND THAT IS A DELIBERATE HAND-OVER RATHER THAN AN UNFINISHED FEATURE.
+    /// THE RATE CANNOT BE MEASURED HERE, AND THAT IS THE FINDING.</b> Swept at 30, 12, 6, 3, 2 and
+    /// 1 across three seeds: **the ring visibly thins at every rate** (55% → 46% at three, and it
+    /// oscillates 55/16/58 at one) **and the population does not move at all on the good seeds
+    /// until the rate is aggressive enough to kill the poor one.** The reason is already written
+    /// into this suite: <c>StorageTests.CapacityIsWhatHoldsThePopulationFlat</c> — **an unattended
+    /// village is capped by its granary, not by its food**, so no food lever can bite until it
+    /// drops below a ceiling that is not about food.
+    /// </para>
+    /// <para>
+    /// <b>⭐ Joe plays in the other regime and said so in the same breath he asked for this:</b>
+    /// <em>"not much will change at year 200 as long as i keep adding granaries and
+    /// foragers/farmers."</em> **Adding granaries raises the ceiling until food IS the constraint**
+    /// — which is exactly where this pressure lands and exactly where an unattended harness cannot
+    /// follow him. *The number is his to feel, not mine to derive.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Off also means no golden moved.</b> A village that never thins is byte-identical to one
+    /// from before this existed. **Turning it on moves five** (both fifty-year pairs and the farm's)
+    /// and trips <c>MarketRestockTests</c>'s 80-point overflow allowance at 116 — *timing shifted,
+    /// not a mechanism broken (D200's family), but it wants understanding rather than a raised
+    /// threshold.* **That is one deliberate commit once the rate is settled, not two.**
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gathers_per_thinned_tile")]
+    public int GathersPerThinnedTile { get; init; }
+
+    /// <summary>
+    /// How many people can work one gathering hut at once — <b>three</b> (Joe, D603; two from D262).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THREE SINCE D603 (Joe):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. D262's sentence still holds — a village that wants to live on gathering
+    /// builds more huts — and one more hand a hut is his call on how much one ring carries.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ ASKED FOR FOUR TIMES, AND THE FOURTH CAME WITH THE DESIGN SENTENCE THAT SETTLES IT:</b>
+    /// <em>"the user must build more forests and huts to grow (if it wants to focus on gathering —
+    /// there are/will be other food sources available)."</em> **Gathering is no longer meant to carry
+    /// a village on its own.** Fishing and hunting are next (D253), and the hut that fed forty-four
+    /// people from one ring was the reason nobody would ever have needed them.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT WAS DERIVED AND GAVE SEVEN</b> — the ring priced in workers, 145 tiles ÷ 24 a worker —
+    /// **the only workplace in the game seating more than two**, on the one building that feeds
+    /// everybody. Woodcutter, forester, market and farmhouse all state two. *This was the outlier.*
+    /// </para>
+    /// <para>
+    /// <b>⛔⛔ AND IT WITHDRAWS A PROMISE, DELIBERATELY.</b> An unattended village on a thin-wooded
+    /// valley now dies, because it never builds the second hut the design requires. Joe:
+    /// <em>"my QA trumps your tests."</em> **`MapGenerationTests` asserts survivability WHEN PLAYED
+    /// now, not when ignored** — which is what a management game means, and what D143 already said
+    /// of an unattended valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>It only works beside <c>WoodedShareAround</c> (D260).</b> Without rings that compete, the
+    /// answer to a capped hut is a second hut on the same trees, and the cap is a tax rather than a
+    /// decision. **The two are one design and neither is worth shipping alone.**
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_capacity")]
+    public int GathererHutCapacity { get; init; } = 3;
+
+    /// <summary>
+    /// How many gathering huts a village founded WITH buildings starts with (D262).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ONE IN THE SHIPPED GAME, AND THAT IS THE DESIGN RATHER THAN A DEFAULT</b> (Joe):
+    /// <em>"the user must build more forests and huts to grow."</em> The village is handed a hut and
+    /// has to earn the rest. ⛔ A cold start still gets none — *"no forest, no food"*, and siting
+    /// the first one is the first real decision of a run.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT EXISTS SO A TEST FIXTURE CAN BE A PLAYED VILLAGE RATHER THAN AN ABANDONED ONE.</b>
+    /// Capping the hut at two seats (see <see cref="GathererHutCapacity"/>) means a village that
+    /// never builds a second hut plateaus and dies — **which is exactly the intended pressure, and
+    /// useless in a guard about firewood, farms or apprenticeship.** Those guards are not about
+    /// gathering, and they should not be gated on it. *`VillageFixtures` sets this; the shipped
+    /// file does not.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Huts past the first are sited so their rings do not overlap</b> (D260), because two
+    /// huts on one copse are worth one. A founding that crowded them would be provisioning the
+    /// fixture with buildings that feed nobody.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_gathering_huts")]
+    public int FoundingGatheringHuts { get; init; } = 1;
+
+    /// <summary>Ticks spent gathering once at the source.</summary>
+    [JsonPropertyName("gather_ticks")]
+    public int GatherTicks { get; init; } = 3;
+
+    /// <summary>
+    /// How far into the ring a forager walks to gather — a wooded tile within this many tiles of
+    /// the hut (D384, `specs/trades-visibly-work.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"im not sure that … foragers spend any time … in the forest."* They stood on the
+    /// hut. Three, not the ring's eight: a walk to the ring's far edge doubles the trip and
+    /// re-bases the food floor hard. ⛔ Read by <c>VillageEconomy.RoundTripTicks</c>: the walk
+    /// into the ring is priced, so this re-derives <c>gather_yield</c>.
+    /// </remarks>
+    [JsonPropertyName("gather_walk_tiles")]
+    public int GatherWalkTiles { get; init; } = 3;
+
+    /// <summary>Ticks to cross one unit of distance.</summary>
+    [JsonPropertyName("travel_ticks_per_unit")]
+    public int TravelTicksPerUnit { get; init; } = 1;
+
+    // ---------------------------------------------------------------
+    //  Desire paths (§2.6, D358) — `specs/desire-paths.md`
+    // ---------------------------------------------------------------
+
+    /// <summary>Wear one footstep lays on the tile under it.</summary>
+    [JsonPropertyName("path_wear_per_step")]
+    public int PathWearPerStep { get; init; } = 3;
+
+    /// <summary>How much every tile fades when the season turns — the sweep that also hands wear to the cost field.</summary>
+    [JsonPropertyName("path_wear_decay_per_season")]
+    public int PathWearDecayPerSeason { get; init; } = 4;
+
+    /// <summary>Wear at which grass reads as a worn path and crosses at <see cref="PathWornTileCost"/>.</summary>
+    [JsonPropertyName("path_worn_at")]
+    public int PathWornAt { get; init; } = 30;
+
+    /// <summary>Wear at which a worn path is packed hard and crosses at <see cref="PathPackedTileCost"/>.</summary>
+    [JsonPropertyName("path_packed_at")]
+    public int PathPackedAt { get; init; } = 100;
+
+    /// <summary>
+    /// How far under its line a path's wear may fall before it stops being one — <b>the grace a
+    /// path has once it exists</b> (D362; Joe: *"once it exists, it should exist for longer before
+    /// growing back"*). In wear, so with decay 4 (D396) a value of 24 is six seasons of nobody walking it.
+    /// </summary>
+    [JsonPropertyName("path_holds_for")]
+    public int PathHoldsFor { get; init; } = 24;
+
+    /// <summary>
+    /// The most wear a tile can hold (D414) — so a path nobody walks any more fades on the clock
+    /// the spec promises. Before it, wear ran on to 65,535 and a hub tile abandoned at year
+    /// twenty-five would have stayed packed for a century. ⛔ At least <c>path_packed_at</c> +
+    /// <c>path_wear_decay_per_season</c>: the sweep fades BEFORE it classes, so at a ceiling of
+    /// exactly packed no tile could ever be packed again — measured, 42 fifty-year villages lost 53
+    /// people to it.
+    /// </summary>
+    [JsonPropertyName("path_wear_ceiling")]
+    public int PathWearCeiling { get; init; } = 130;
+
+    /// <summary>
+    /// How many more footsteps on grass a straight-line shortcut may take than the route it
+    /// replaces (D414). 0: <b>a walker the route puts on a path stays on it</b> rather than cutting
+    /// the corner across the grass beside it. Large: any shortcut the eye can see, as before D414.
+    /// </summary>
+    [JsonPropertyName("path_shortcut_grass_allowance")]
+    public int PathShortcutGrassAllowance { get; init; }
+
+    /// <summary>Cost of crossing a worn tile, against <c>TravelCostField.BaseTileCost</c> (10) for grass.</summary>
+    [JsonPropertyName("path_worn_tile_cost")]
+    public int PathWornTileCost { get; init; } = 9;
+
+    /// <summary>Cost of crossing a packed tile. ⛔ The cap §2.6 asks for: a worn detour a quarter longer than the straight walk is still slower.</summary>
+    [JsonPropertyName("path_packed_tile_cost")]
+    public int PathPackedTileCost { get; init; } = 8;
+
+    /// <summary>
+    /// Food a household stores <b>per member</b> before it stops foraging and rests.
+    /// </summary>
+    [JsonPropertyName("stockpile_target")]
+    public int StockpileTarget { get; init; } = 60;
+
+    // ---------------------------------------------------------------
+    //  The valley
+    // ---------------------------------------------------------------
+
+    /// <summary>Width of the world, in tiles, centred on the origin.</summary>
+    /// <remarks>
+    /// <para>
+    /// Wide rather than square, because the terrain DESIGN.md §2.5 describes is a
+    /// river valley — and the river runs along it, not across it.
+    /// </para>
+    /// <para>
+    /// Nothing in the simulation reads this yet: it bounds the camera and gives the
+    /// drawn ground an edge, so a mostly-empty map reads as <em>a valley with room to
+    /// grow</em> rather than as a bug. It lives in sim config rather than view config
+    /// because <b>the map generator will need it</b> (D18) — terrain, water, forest
+    /// stands and forage sites all get generated into these bounds from the run's
+    /// seed, at which point this stops being a drawing hint and becomes world state.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("map_width")]
+    public int MapWidth { get; init; } = 120;
+
+    /// <summary>Height of the world, in tiles, centred on the origin.</summary>
+    [JsonPropertyName("map_height")]
+    public int MapHeight { get; init; } = 80;
+
+    /// <summary>Westmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMinX => -(MapWidth / 2);
+
+    /// <summary>Eastmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMaxX => MapWidth - (MapWidth / 2) - 1;
+
+    /// <summary>Northmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMinY => -(MapHeight / 2);
+
+    /// <summary>Southmost tile of the valley. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int MapMaxY => MapHeight - (MapHeight / 2) - 1;
+
+    /// <summary>Where the villager starts and returns to.</summary>
+    [JsonPropertyName("home_x")]
+    public int HomeX { get; init; }
+
+    /// <summary>Where the villager starts and returns to.</summary>
+    [JsonPropertyName("home_y")]
+    public int HomeY { get; init; }
+
+    // food_source_x/y and extra_forage_sites used to live here, as literal
+    // coordinates, and the remark on them said "these become generator output once the
+    // map is seeded (D18)". They have. Deleted rather than left in place, because a
+    // config key nobody reads is a trap: a modder edits it, nothing happens, and there
+    // is no way to tell from the file that it is decoration. The rules that replaced
+    // them were forage_site_count / forage_site_ring_tiles / site_jitter_tiles, all since retired.
+
+    // ---------------------------------------------------------------
+    //  Life
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// What a <b>dependant</b> eats — a child or an elder — as a percentage of an adult's meal.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A child eating a full adult portion is not just wrong, it is fatal: two working adults
+    /// cannot feed a household of four at full rations, so the village grew, starved, and died
+    /// out every time. Children eat less because they are smaller — and that is what makes
+    /// raising them survivable.
+    /// </para>
+    /// <para>
+    /// <b>⭐ ELDERS EAT THE SAME SHARE (Joe, 2026-08-23), AND THE OLD BEHAVIOUR WAS NEVER
+    /// CHOSEN.</b> <c>MealCostFor</c> had exactly one branch and it tested for
+    /// <see cref="World.LifeStage.Child"/>, so **an elder ate like a prime adult while producing
+    /// at <c>vigour_min_percent</c>** — not as a decision about ageing, but because the other
+    /// arm of an <c>if</c> caught them. *A number nobody picked is still a number the game is
+    /// balanced on*, which is why it was worth asking about rather than assuming.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ RENAMED FROM <c>child_food_share_percent</c> IN THE SAME BREATH</b>, because a key
+    /// that governs elders while calling itself *child* is precisely the name-that-lies this
+    /// project keeps catching (D148, D188). *Dependant* is the word the economy already uses —
+    /// see <see cref="VillageEconomy.RequiredDependants"/>.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("dependant_food_share_percent")]
+    public int DependantFoodSharePercent { get; init; } = 50;
+
+    /// <summary>
+    /// Age at which an unpaired adult starts looking for a partner and a home of
+    /// their own.
+    /// </summary>
+    /// <remarks>
+    /// Without household formation the village suffocates: children stay in their
+    /// birth household forever, every house fills to max_household_size, births
+    /// stop, and the settlement dies out with its last generation.
+    /// </remarks>
+    [JsonPropertyName("leave_home_age")]
+    public int LeaveHomeAge { get; init; } = 18;
+
+    // tree_stand_x/y likewise became generator output (D18) — see tree_stand_count
+    // and tree_stand_ring_tiles.
+
+    /// <summary>Ticks somebody with nothing to do sits before asking again.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ THE VILLAGE'S SLACK, AND IT IS A FEATURE RATHER THAN A COST</b> (Joe, 2026-08-28).
+    /// Before this, <c>Resting</c> was the last line of <c>Decide</c> and lasted one tick, so a
+    /// villager with no job re-asked *"is there anything at all?"* every tick of their life.
+    /// <b>The sim had no way to say somebody was simply fine.</b>
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT IS A WORKING-HOURS DIAL NOW, AND THAT IS A DELIBERATE REVERSAL</b> (Joe,
+    /// 2026-09-02: *"I want villagers to have an idle rest period, even in their respective work
+    /// seasons"*). This paragraph used to read: *"Only reached by somebody who has run out of
+    /// work — a forager mid-season never gets here. It is not a working-hours dial and must not
+    /// quietly become one; widening it to interrupt a job is a design change, not a re-tune."*
+    /// ⚠️ **It was a design change, it was measured, and it was taken** — kept here verbatim
+    /// because a rule that is reversed silently is a rule that gets re-argued from scratch.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The premise behind the ask turned out to be wrong, which is why the change is small.</b>
+    /// Joe asked for *"like 10% of time resting to start"* — and the measurement said job-holders
+    /// **already** spent 9–16% of their ticks in <c>Resting</c>. What they did not have was a
+    /// <em>spell</em>: the state was set for everyone and the span only for the jobless, so a
+    /// job-holder rested one tick and re-asked the next. **The quantity was there; it flickered.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Three ticks, and the observable span is FOUR</b> — the tick that sets the counter is
+    /// itself a rest tick, then three more decrement it. Both numbers are right; this doc used to
+    /// say "four ticks" beside a key of 3 and read as a typo. <b>Expected to move in play</b>: a
+    /// village of spare hands loses roughly this fraction of its fallback labour — clearing,
+    /// hauling and tidying — so raising it makes the village visibly less busy. **That is the dial
+    /// to reach for when the village feels frantic**, and the one to check first if painted ground
+    /// stops being cleared.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The response is NOT monotonic and one sample per value is not a curve</b> (D250): two
+    /// ticks cost a distant farm <em>more</em> than three did, 80% against 86%. **Three is the best
+    /// measured, not the optimum.**
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("rest_ticks")]
+    public int RestTicks { get; init; } = 3;
+
+    /// <summary>Wood one completed cut brings home.</summary>
+    [JsonPropertyName("cut_yield")]
+    public int CutYield { get; init; } = 12;
+
+    /// <summary>Ticks spent cutting once at the stand.</summary>
+    [JsonPropertyName("cut_ticks")]
+    public int CutTicks { get; init; } = 4;
+
+    /// <summary>
+    /// Ticks a laborer spends destroying what stands on one tile — the destroy brush's work
+    /// (D493, `destroy-brush.md §4`). <b>The same as clearing it</b> (<see cref="CutTicks"/>,
+    /// which a laborer spends on a tree, a rock or an iron seam alike): measured, there is no
+    /// separate dig time to match, and destroying should not be a faster way to spend a seam
+    /// than digging it.
+    /// </summary>
+    [JsonPropertyName("destroy_ticks_per_tile")]
+    public int DestroyTicksPerTile { get; init; } = 4;
+
+    /// <summary>How many people can work one forester's hut at once.</summary>
+    /// <remarks>
+    /// <para>
+    /// A local fact about the place, not a statement about the village. What the
+    /// village needs cut is decided by <c>LabourQuota</c>, which will happily leave
+    /// this capacity unfilled in a year when there are barely enough hands to eat.
+    /// </para>
+    /// <para>
+    /// <b>This was <c>tree_stand_capacity</c> until D159.</b> Tree stands were deleted in
+    /// step C and this number never was, because it is load-bearing — it sizes the
+    /// <b>forester's hut</b>, which is the same question wearing a different name: how many
+    /// pairs of hands the village's timber needs in one place. A live setting named after a
+    /// deleted mechanic is the D56 and D148 shape, so it is named for what it does.
+    /// </para>
+    /// </remarks>
+    /// <para>
+    /// <b>⭐ STATED AT TWO, AND READ AT LAST (Joe, D603):</b> <i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>. Until D603 nothing read this number for the seats —
+    /// the row stated none, so <c>SeatsIn</c> asked <c>VillageEconomy.RequiredForesterSeats</c> (3), and the data
+    /// file's 2 and this description were both untrue. The row states it now, and the warm start's hut reads it too.
+    /// The derivation stays as the economy's estimate of the trade's appetite; a village wanting more builds a second hut.
+    /// </para>
+    [JsonPropertyName("forester_hut_capacity")]
+    public int ForesterHutCapacity { get; init; } = 2;
+
+    // ---------------------------------------------------------------
+    //  Firewood (D29) — the woodcutter's hut
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Roughly how much of the valley is wooded, as a percentage (`forests-and-gathering.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The target is content, the clump count is derived from it</b>
+    /// (<c>MapGenerator.ForestClumpCount</c>, D16). *"About this much of the valley is wooded"*
+    /// says what kind of place this is; how many clumps that takes is arithmetic, and typing
+    /// the count would mean a bigger map quietly got a barer valley.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>A target, not a promise.</b> Clumps are dropped independently and overlap, and
+    /// none may fall on water or on a stone or iron seam — so the coverage actually achieved
+    /// is lower than this. What the valley really ends up with is asserted by a measurement.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("forest_coverage_percent")]
+    public int ForestCoveragePercent { get; init; } = 35;
+
+    /// <summary>How big one clump of woodland is, as a diamond radius in tiles.</summary>
+    /// <remarks>
+    /// Content — a fact about what a wood looks like, and since the tree stands retired it is
+    /// the only number that says so. Small clumps give a mottled valley, large ones give a few
+    /// great forests; both are legitimate places to live and neither is derivable.
+    /// </remarks>
+    [JsonPropertyName("forest_clump_radius_tiles")]
+    public int ForestClumpRadiusTiles { get; init; } = 4;
+
+    /// <summary>How much open ground the founding site keeps around it.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Measured, not chosen, and the alternative was fatal.</b> With the valley wooded, 40
+    /// of the 81 tiles within four of the founding site were forest, so every building the
+    /// opening marks waited on a clearing first: the pile stood at <b>t67 instead of t1</b>, the
+    /// woodcutter's hut never stood at all, and <b>all four founders froze</b> — against 4 alive
+    /// and 2 roofed on bare ground. That is D93's rule (any inserted hop kills winter 1)
+    /// arriving from worldgen.
+    /// </para>
+    /// <para>
+    /// Exiles arriving in a river valley settle a glade; the woods begin a few tiles out, which
+    /// is close enough for a gatherer's hut and far enough that the opening is not a clearing
+    /// puzzle.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_clearing_radius_tiles")]
+    public int FoundingClearingRadiusTiles { get; init; } = 4;
+
+    /// <summary>
+    /// How far a gatherer's hut reaches for food, as a diamond radius in tiles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Content, and the most load-bearing piece of content in the game</b>
+    /// (`forests-and-gathering.md §3.2`). It is the ring the hut draws on the map, the ground
+    /// whose trees decide what a trip is worth, and — from slice 3 — <b>the distance the whole
+    /// food economy is derived against</b>, replacing the forage-site ring. A number the player
+    /// can see beats one that is an artefact of where a generator dropped a berry patch.
+    /// </para>
+    /// <para>
+    /// <b>Eight, and the eight is chosen to keep slice 3 small.</b> `MaxHomeToWorkTiles` is 7
+    /// today; moving the anchor to 8 changes the round trip by one tile rather than
+    /// re-deriving the economy from nothing, so the largest re-derivation on the board arrives
+    /// as an adjustment instead of a rewrite.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_ring_tiles")]
+    public int GathererHutRingTiles { get; init; } = 8;
+
+    /// <summary>What a gatherer's hut costs to raise.</summary>
+    /// <remarks>
+    /// A real building with a real price, unlike the pile and the builder's hut — neither of
+    /// those can be charged because nothing can be built without them, and a gatherer's hut has
+    /// no such circle to break.
+    /// </remarks>
+    [JsonPropertyName("gatherer_hut_logs")]
+    public int GathererHutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a gatherer's hut owes.</summary>
+    [JsonPropertyName("gatherer_hut_work_ticks")]
+    public int GathererHutWorkTicks { get; init; } = 40;
+
+    /// <summary>Timber a fishing hut costs.</summary>
+    [JsonPropertyName("fishing_hut_logs")]
+    public int FishingHutLogs { get; init; } = 25;
+
+    /// <summary>Stone a fishing hut costs.</summary>
+    [JsonPropertyName("fishing_hut_stone")]
+    public int FishingHutStone { get; init; } = 9;
+
+    /// <summary>Work a fishing hut takes to raise.</summary>
+    [JsonPropertyName("fishing_hut_work_ticks")]
+    public int FishingHutWorkTicks { get; init; } = 40;
+
+    /// <summary>
+    /// Hands a fishing hut holds — <b>four</b> (Joe, 2026-09-02).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ THE SEAT COUNT IS THE RANK OF A FOOD SOURCE NOW.</b> Forager 2, farm 2, hunter 3,
+    /// fisher 4 — Joe: *"fishing provides a consistent source of food that does not run out — up
+    /// to 4 seats. A step up from foraging in terms of food per worker. **Foraging is bottom of the
+    /// totem pole.**"*
+    /// </para>
+    /// <para>
+    /// ⚠️ It is the largest seat count of any food building, and that is the whole point: a
+    /// fishery is what a village should want to leave foraging FOR. The cost that balances it is
+    /// distance — the river is 2.5% of the valley and always at the periphery.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fishing_hut_seats")]
+    public int FishingHutSeats { get; init; } = 4;
+
+    /// <summary>
+    /// Fish one trip brings back — <b>flat, and it never runs out</b> (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ NO RING, NO SHARE, NO DEPLETION — AND THAT IS THE DESIGN RATHER THAN A SHORTCUT.</b>
+    /// Joe: *"fishing provides a consistent source of food that does not run out."* So a fishing
+    /// hut has no <c>GatheringRadius</c>, does not compete with anything, and does not thin what it
+    /// works. **It is the one food source a village can rely on**, and what it costs is the walk.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A step up from foraging, measured against what a forager ACTUALLY brings home rather
+    /// than against `gather_yield`.</b> The raw key is 145, but that is the value of a trip at a
+    /// fully wooded ring; a real hut's ring runs around 55% wooded, so a forager carries roughly
+    /// **80**. This is set above that on purpose, and `FishingIsAStepUpFromForaging` guards the
+    /// comparison so the two cannot drift back together.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned 300 → 400 with desire paths (D358), by D288's method.</b> A forager walks the
+    /// village's worn lanes and got quicker (849 → 892 food per hundred ticks worked); a fisher's
+    /// walk to the river's edge is theirs alone and did not (832 → 826). At 300 the fisher was
+    /// behind; 350 read 1.05× — noise; **400 reads 1,068 against 892, 1.2×**, the first round
+    /// number clear of it. `fishing_hut_store_cap` went 900 → 1,200 with it — three casts, the
+    /// D290 coupling — and the hunter's `meat_yield` 600 → 800 above it, so the ladder stayed even.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned again for clock B (D361): 400 → 280.</b> A leg costs the distance it is, and
+    /// the fisher's walk to the bank is one long diagonal: at 400 the fisher read 1,547 against the
+    /// forager's unchanged 892 — 1.73×, and the hunter had fallen under. **280 reads 1,088 against
+    /// 892, 1.22×**; the hut 840, three casts. *Each change to the walk's clock re-levels this
+    /// ladder; the rigs are the instrument and the ratios are the target, not the numbers.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fish_yield")]
+    public int FishYield { get; init; } = 280;
+
+    /// <summary>
+    /// Ticks one cast takes — <b>the longest action in the game, on purpose</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe, 2026-09-03:</b> *"He does reach the hut and fishes, but **catches fish too
+    /// quickly** — he should spend a few more ticks 'fishing' at the fishing hut."*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Every other work duration in the game is three or four</b> — gather 3, cut 4, sow 3,
+    /// reap 3, split 4, rest 3. Ten is deliberately out of that band, because a cast is the one
+    /// job whose whole character is waiting. **It is also the first action long enough for mastery
+    /// to express more than two tiers**: `WorkTicksFor` notes that *"a three-tick action can only
+    /// become two."*
+    /// </para>
+    /// <para>
+    /// ⛔ <b>A longer cast is fewer casts, so it is a yield change wearing a pacing change's
+    /// clothes</b> — which is why `fish_yield` was re-measured against it rather than left alone.
+    /// The two are set together and must move together.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fish_ticks")]
+    public int FishTicks { get; init; } = 10;
+
+    /// <summary>
+    /// What a fishing hut can hold before the catch has to be walked away — <b>900</b>, three
+    /// casts (Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The farmhouse's <c>local_store_cap</c>, one building over</b>, and the same sentence
+    /// justifies it: the store underfoot fills first and **the walk lengthens once it is full**.
+    /// Joe: *"the fishing hut should have 300 storage space which the marketer fetches. The
+    /// fisherman also brings it to storage when it is full."*
+    /// </para>
+    /// <para>
+    /// ⭐ It is what makes the long cast affordable: a fisher stops walking home after every catch
+    /// and simply keeps casting, so the trips saved pay for the ticks spent.
+    /// </para>
+    /// <para>
+    /// ⛔⛔ <b>AND THAT IS WHY IT IS NO LONGER 300: D288 RAISED <c>fish_yield</c> TO 300 AND A CATCH
+    /// THEN FILLED THE BUFFER EXACTLY.</b> The hut held **one cast**, so the fisher hauled after
+    /// every single one and the marketer had nothing to come for — *the buffer had stopped being a
+    /// buffer, while both numbers still read as the ones Joe asked for.* He took the call
+    /// (2026-09-03): **900, three casts.**
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>THESE TWO NUMBERS ARE COUPLED AND NEITHER SAYS SO ON ITS OWN.</b> A capacity is only
+    /// meaningful in **casts**, so moving <c>fish_yield</c> silently re-prices this one. *If the
+    /// yield moves again, this moves with it* — and `TheHutHoldsMoreThanOneCast` is the guard that
+    /// says so out loud rather than leaving it to be rediscovered a third time.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fishing_hut_store_cap")]
+    public int FishingHutStoreCap { get; init; } = 840;
+
+    /// <summary>What a hunter's lodge costs to raise — dearer than a fishing hut.</summary>
+    /// <remarks>
+    /// ⭐ <b>It is the top of the food totem pole, so it is the dearest of the three</b> (Joe:
+    /// *"hunting ultimately yields more food"*). A fishery is two walls on a bank; a lodge has to
+    /// hang and keep a carcass.
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_logs")]
+    public int HunterLodgeLogs { get; init; } = 40;
+
+    /// <summary>Stone in a hunter's lodge.</summary>
+    [JsonPropertyName("hunter_lodge_stone")]
+    public int HunterLodgeStone { get; init; } = 36;
+
+    /// <summary>Ticks of a builder's work a hunter's lodge takes.</summary>
+    [JsonPropertyName("hunter_lodge_work_ticks")]
+    public int HunterLodgeWorkTicks { get; init; } = 40;
+
+    /// <summary>How many hunters a lodge seats — <b>three</b> (Joe).</summary>
+    /// <remarks>
+    /// ⭐ <b>Stated, not derived</b>, and for D274's reason: the player builds another lodge
+    /// rather than crowding one. Joe, 2026-09-02: *"3 hunters per hunting lodge."*
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_seats")]
+    public int HunterLodgeSeats { get; init; } = 3;
+
+    /// <summary>
+    /// What a lodge holds before the meat has to be walked away — <b>three hunts</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>Set as a MULTIPLE OF THE YIELD, because D290 is what happens otherwise.</b> A
+    /// fishing hut held exactly one cast for a while, so the fisher hauled after every single one
+    /// and the buffer had silently stopped being a buffer while both numbers still read as the
+    /// ones asked for. `TheLodgeHoldsMoreThanOneHunt` guards the ratio here for the same reason.
+    /// </remarks>
+    [JsonPropertyName("hunter_lodge_store_cap")]
+    public int HunterLodgeStoreCap { get; init; } = 2700;
+
+    /// <summary>
+    /// How far a lodge hunts, in tiles — <b>wider than a gathering ring</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>NOT a <c>gathering_radius</c>, and the distinction is load-bearing</b> — see
+    /// <c>BuildingRow.HuntingRadius</c>. Game ranges further than a person picking berries, which
+    /// is also why a lodge covers more ground than a forager's hut for the same walk.
+    /// </remarks>
+    [JsonPropertyName("hunting_radius")]
+    public int HuntingRadius { get; init; } = 12;
+
+    /// <summary>
+    /// How near its seam a quarry or a mine must stand, and how far from it its faces may be painted, in tiles
+    /// (D540, `specs/seam-reach.md`; Joe: *"4 tiles"*, then D541: *"2 tiles. i want it even closer."*). Zero switches
+    /// the rule off.
+    /// </summary>
+    [JsonPropertyName("face_reach_tiles")]
+    public int FaceReachTiles { get; init; } = 2;
+
+    /// <summary>Ticks one hunt takes — <b>the longest action in the game</b>.</summary>
+    /// <remarks>
+    /// <b>Joe:</b> *"it takes longer and isn't instantaneous."* A cast is ten (D282); a hunt is
+    /// half again as long, and it is the slowest thing anybody in this village does.
+    /// </remarks>
+    [JsonPropertyName("hunt_ticks")]
+    public int HuntTicks { get; init; } = 15;
+
+    /// <summary>
+    /// How far into the range a hunter walks to hunt — a forest tile within this many tiles of
+    /// the lodge (D384, `specs/trades-visibly-work.md §4`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"im not sure that hunters spend any time at the hunting lodge or in the forest
+    /// actually 'hunting'."* They hunted standing on the lodge. Six, half the range: the hunter
+    /// is priced by the rig and only by the rig (`hunting.md §7`), and the walk out and back
+    /// is in the ticks the rig counts.
+    /// </remarks>
+    [JsonPropertyName("hunt_walk_tiles")]
+    public int HuntWalkTiles { get; init; } = 6;
+
+    /// <summary>
+    /// Meat off one animal at a fully wooded range, before vigour.
+    /// </summary>
+    /// <remarks>
+    /// ⛔⛔ <b>PROVISIONAL UNTIL THE RIG SAYS OTHERWISE, AND THE RIG IS THE ONLY THING THAT
+    /// MAY SET IT.</b> `specs/hunting.md §7`: food per hour worked, with demand held open — never
+    /// per load. **The per-load comparison has now been wrong twice** (D286, D288), most recently
+    /// telling us fishing beat foraging while it was making 311 against 721.
+    /// <para>
+    /// ⚠️ <b>Re-tuned 600 → 800 with desire paths (D358), by D293's rig.</b> The fisher went to 400
+    /// (above) and read 1,048 per hundred ticks worked; at 600 the hunter read 906 and Joe's ladder
+    /// (hunting above fishing above foraging) had inverted. **800 reads 1,266 against 1,048 —
+    /// 1.21×**, the same step D293 set. `hunter_lodge_store_cap` 1,800 → 2,400 with it: three hunts.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Re-tuned again for clock B (D361): 800 → 900.</b> With the fisher at 280 (1,044 in his
+    /// own village), **900 reads 1,319 — 1.26×**; the lodge 2,700, three hunts.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("meat_yield")]
+    public int MeatYield { get; init; } = 900;
+
+    /// <summary>Hide off the same animal, before vigour.</summary>
+    /// <remarks>
+    /// ⭐ <b>Much smaller than the meat, and it is not food.</b> One animal is a lot of dinner
+    /// and one hide. Nothing spends leather yet — the tailor does, and does not exist.
+    /// </remarks>
+    [JsonPropertyName("leather_yield")]
+    public int LeatherYield { get; init; } = 10;
+
+    /// <summary>
+    /// The share of its first good's limit at which a trade kept working for its second good stops (D714) — the hunter out
+    /// for hides (D708) stands down once the village holds this much of its meat limit. 200: Joe's <i>"Cap at 2× meat limit"</i>.
+    /// </summary>
+    /// <remarks>
+    /// A hunt brings about 69 meat for each hide (his Elderwood: 46,020 meat, 667 leather), so a leather row under its limit
+    /// drove the meat to twice its row and kept the lodge swollen. Validated at load: at least 100 — below that the cap
+    /// would bind before the first limit does, and D708 would never fire.
+    /// </remarks>
+    [JsonPropertyName("second_good_cap_percent")]
+    public int SecondGoodCapPercent { get; init; } = 200;
+
+    /// <summary>What a forester's hut costs to raise.</summary>
+    [JsonPropertyName("forester_hut_logs")]
+    public int ForesterHutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a forester's hut owes.</summary>
+    [JsonPropertyName("forester_hut_work_ticks")]
+    public int ForesterHutWorkTicks { get; init; } = 40;
+
+    /// <summary>
+    /// How much harder putting a tree back is than taking one down.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Content, and it is the number that decides whether over-clearing is a mistake or a
+    /// shrug.</b> A design statement about the world — the same class as
+    /// <see cref="WorkGroundTilesPerWorker"/> — because nothing in the economy can compute how
+    /// much effort a sapling is worth. What is <em>derived</em> from it is the consequence:
+    /// <c>VillageEconomy.YearsToRewoodOnesGround</c>, which a guard holds to about a
+    /// generation (D16's split — state the fact, derive the outcome).
+    /// </para>
+    /// <para>
+    /// <b>Three, so felling is a decision you can regret for years without regretting the
+    /// run.</b> One would make planting free and a cleared valley meaningless; ten would make
+    /// it theoretical. §0.1: the mistake is real, visible and expensive, and the valley forgives
+    /// you slowly.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("planting_costs_this_much_more_than_felling")]
+    public int PlantingCostsThisMuchMoreThanFelling { get; init; } = 3;
+
+    // ---------------------------------------------------------------
+    //  The farm (`specs/crops-and-orchards.md`, D161)
+    // ---------------------------------------------------------------
+
+    /// <summary>What a farmhouse costs to raise.</summary>
+    [JsonPropertyName("farmhouse_logs")]
+    public int FarmhouseLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a farmhouse owes.</summary>
+    [JsonPropertyName("farmhouse_work_ticks")]
+    public int FarmhouseWorkTicks { get; init; } = 40;
+
+    /// <summary>Ticks a farmer spends putting one tile of ground under seed.</summary>
+    /// <remarks>
+    /// <para>
+    /// Content, in the same class as <see cref="CutTicks"/> and <see cref="GatherTicks"/>: how
+    /// long an action takes is a fact about the work, and nothing in the economy can compute
+    /// it. What is <em>derived</em> from it is the consequence — how big a field one pair of
+    /// hands can keep, which is what <c>VillageEconomy.FieldTilesOneFarmerKeeps</c> says and
+    /// what a farm's work-ground allowance is priced against.
+    /// </para>
+    /// <para>
+    /// <b>The same as <see cref="GatherTicks"/>, deliberately.</b> It is the same kind of thing
+    /// — one person doing one job on one tile — and pricing it differently would be a claim
+    /// about farming nobody could defend. <b>What makes farming expensive is the walking</b>,
+    /// and that is charged where it actually happens rather than folded into a swing of a
+    /// scythe.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("sow_ticks")]
+    public int SowTicks { get; init; } = 3;
+
+    /// <summary>Ticks a farmer spends taking one tile of standing crop.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ EQUAL TO <see cref="SowTicks"/> TODAY, AND STILL ITS OWN NUMBER.</b> The first
+    /// draft made this dearer <em>"because reaping is the half with the load in it"</em>, and
+    /// that reasoning was wrong twice over: the load is now charged as the walk it really is
+    /// (<c>VillageEconomy.FieldTileTicks</c>), and folding it in here as well billed it twice.
+    /// It stays a separate key because a modder changing what a crop costs to bring in should
+    /// not have to change what it costs to plant — two facts about the work, which happen to
+    /// have the same value.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("reap_ticks")]
+    public int ReapTicks { get; init; } = 3;
+
+    /// <summary>
+    /// Food one tile of ripe field gives up when it is reaped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Typed here and derived against a target, exactly like <see cref="GatherYield"/></b>
+    /// (D16): <c>VillageEconomy.RequiredCropYield</c> says what it has to be for
+    /// `crops-and-orchards.md §1`'s surviving target to hold — <em>a household working normally
+    /// through spring, summer and autumn fills its winter store by the first day of winter</em>
+    /// — and a guard checks the shipped file against it as well as the fixture (METHODOLOGY §3,
+    /// and the six recorded times those two diverged).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("crop_yield_per_tile")]
+    public int CropYieldPerTile { get; init; } = 67;
+
+    /// <summary>
+    /// How much of its own harvest a farm may hold before the walk gets longer (Joe: 100).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ It is the first <c>Workplace.Store</c> in the project's history that anything
+    /// writes to</b> — `professions.md §4`'s fifth element, on the type since D30 and dead
+    /// ever since, with a branch in the building panel that could never be true. Joe: *"the
+    /// harvested goods go to the granary although the farm itself can store up to 100 of the
+    /// harvest goods by default."*
+    /// </para>
+    /// <para>
+    /// <b>A buffer, not a destination.</b> The granary is still where food lives; the farm
+    /// holds a harvest until somebody carries it. The 100 means something because the farmer
+    /// hauls to the nearest storage <em>with room</em> and the farm's own store is underfoot —
+    /// so it fills first and the walk lengthens once it is full.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ And a full store must REFUSE the overflow rather than swallow it.</b>
+    /// <c>Stockpile.Add</c> returns what it actually took and the caller has to read it: D96 is
+    /// precisely the bug of not reading it (17,451 food into a full granary and out of the
+    /// world) and D144 is the same shape one deposit path over.
+    /// </para>
+    /// </remarks>
+    /// <summary>How many people fit in a farmhouse — <b>two</b> (Joe, 2026-08-16).</summary>
+    /// <remarks>
+    /// <b>Content, not a derivation, and it used to be the other way round.</b> Deriving it
+    /// from <c>max_household_size / MouthsFedByOneAdult</c> gave <c>1</c> — arithmetically fine
+    /// and a bad building, because a workplace with one seat reads as broken rather than as
+    /// small. How many pairs of hands fit in a steading is a fact about the world, in the same
+    /// class as <c>work_ground_tiles_per_worker</c>; <b>what they produce is what gets derived</b>
+    /// (D16 — state the fact, derive the outcome).
+    /// </remarks>
+    /// <summary>
+    /// How much a household must be short before somebody walks to a store for it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ "WORTH THE TRIP" (Joe, 2026-08-16), and it is the jitter he watched for months.</b>
+    /// A fetch fired the moment a larder dipped below its floor, so a household two firewood
+    /// short sent somebody out for two firewood — and with a store one tile from the door that
+    /// is a villager visibly bouncing between two squares every thirty ticks. D166 measured it:
+    /// runs of four to six flips, about a second of vibration every four seconds at 10x.
+    /// </para>
+    /// <para>
+    /// <b>A percentage, because the bar is taken against two different things and the smaller
+    /// wins.</b> An armful (<see cref="CarryCapacity"/>) says what a trip is worth carrying; the
+    /// good's own target says what the household is actually trying to keep. Using the armful
+    /// alone would set a bar of ten on firewood a household only wants eleven of — nobody would
+    /// fetch fuel until they were nearly out, in winter, which is how people freeze. Taking the
+    /// smaller keeps the rule honest for a good the village holds very little of.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ It is never a reason to starve or freeze.</b> `TryEmergencyRestock` sits ABOVE work
+    /// in the priority order and fires when a household is nearly out regardless of this — so
+    /// the bar delays a convenience errand and can never block a desperate one (D77).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fetch_worth_this_share_percent")]
+    public int FetchWorthThisSharePercent { get; init; } = 25;
+
+    /// <summary>
+    /// How low a larder gets, as a share of its target, before the household goes to a store
+    /// for more (D372, Joe).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Joe's dial:</b> *"it should be when larder items get to 50% of their total maximum,
+    /// not as soon as it is below 99%."* A household goes for a good when it holds this share of
+    /// the target or less, and then keeps going — an armful at a time, back to back — until the
+    /// larder is at target again (<c>Household.ToppingUpFood</c> / <c>ToppingUpFirewood</c>).
+    /// Fewer, fuller trips, instead of a walk for every dip.
+    /// </para>
+    /// <para>
+    /// The emergency restock at <see cref="RestockEmergencyPercent"/> is the floor beneath it and
+    /// must stay below it; <see cref="FetchWorthThisSharePercent"/> is still the *"is the trip
+    /// worth carrying"* bar on top (D166).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("fetch_below_share_percent")]
+    public int FetchBelowSharePercent { get; init; } = 50;
+
+    /// <summary>
+    /// What <i>nearby</i> means when a household picks its shop: the nearest market holding the
+    /// good wins unless a storehouse holding it is nearer by <b>more than this many one-way
+    /// ticks</b> — then the storehouse does (D670–D671). Default <b>4</b>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's D372 sentence was *"only go to the granary if there is no market nearby"*, built with
+    /// <i>nearby</i> meaning <i>reachable</i>. D668 then measured a fifth of every adult's ticks as
+    /// the household's shopping, and D670's sweep found the market–storehouse gaps come in two
+    /// kinds: 3–4 ticks (a market standing beside the granary, the pair's footprints apart — the
+    /// layout D372 was written for, and that market must keep winning) and 5–17 ticks (a second
+    /// granary built out among the homes). At 4, eighteen of 148 homes in his ten villages walk to
+    /// the nearer granary and save 10–30 ticks on a 29–31-tick round trip; at 2 the rule is
+    /// nearest-first again for the pair layout (`specs/logistics.md §5.6`).
+    /// </para>
+    /// <para>
+    /// ⚠️ Not a fence (D201): nobody is refused a walk; the margin only decides between two shops
+    /// that both hold the good. 0 is nearest-first; a very large number is D372 as first built.
+    /// The scrap tier (<c>BehaviorSystem.NearestShopHolding</c>) is untouched by it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("market_detour_ticks")]
+    public int MarketDetourTicks { get; init; } = 4;
+
+    /// <summary>How many people work one farmhouse — <b>three</b> (Joe, D603; two before).</summary>
+    /// <remarks><i>"some building staff default updates: each forester huts only need a max of 2 workers / each forager hut should have a max of 3 workers / each farmhouse should have a max of 3 workers"</i>.</remarks>
+    [JsonPropertyName("farmhouse_seats")]
+    public int FarmhouseSeats { get; init; } = 3;
+
+    [JsonPropertyName("farm_store_cap")]
+    public int FarmStoreCap { get; init; } = 100;
+
+    /// <summary>How much a house's larder holds — food and firewood together (D399).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A LARDER HAS WALLS</b> (Joe, 2026-09-20: *"a larder should have a size limit"*). It was
+    /// the one store in the game with none — <c>Stockpile.Capacity</c> defaults to
+    /// <c>int.MaxValue</c> — so a household's shelf was as deep as the village could fill it.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>It is the HOME's row, not a rule about households</b>, so the house tiers (D206:
+    /// wooden cabin → stone cottage → insulated manor) raise it by changing a row, and a modder's
+    /// house gets one for free — the same column the farmhouse, the fishery and the lodge already
+    /// carry (<see cref="World.BuildingRow.LocalStoreCap"/>).
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The hearth's share is reserved and the food target is clamped to what is left</b>
+    /// (<c>SimWorld.TargetFoodFor</c>), or a big family would top up for ever toward a number their
+    /// house cannot hold. So this number decides, for a household bigger than it, how much of a
+    /// winter they keep at home and how often somebody walks to the granary.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("home_store_cap")]
+    public int HomeStoreCap { get; init; } = 400;
+
+    /// <summary>Where a warm start's builder's hut stands (D108).</summary>
+    /// <remarks>
+    /// <b>A position is content, and so are the hut's seats since 2026-08-30.</b> Where a building
+    /// sits is a fact about the valley a modder may move freely; how many hands fit in it was a
+    /// consequence of the economy until Joe stated it at three (see <see cref="BuilderHutSeats"/>,
+    /// which carries what the derivation was and why it went).
+    /// <para>
+    /// Only a warm start reads it. In the game as it ships the founders arrive to an empty
+    /// valley and the hut is the player's first act (D70).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("builder_hut_x")]
+    public int BuilderHutX { get; init; }
+
+    /// <summary>Where a warm start's builder's hut stands (D108).</summary>
+    [JsonPropertyName("builder_hut_y")]
+    // ⚠️ (0, 3) SINCE D383 — THE FOUNDING LAYOUT LEAVES LANES. Buildings are obstacles, and the
+    // D382 layout was a ring of them round the founding site: the warehouse and the woodcutter's
+    // hut walled its west, the granary and this hut its north, the market its east, and the
+    // founders' homes went into the pockets — a 12-tile walk to a hut eight tiles away, and
+    // the fixture village that used to peak at 19 died out. Every founding building now has
+    // free ground on all four sides and the founding site has four free neighbours
+    // (`specs/buildings-as-obstacles.md §4`). Nothing derives from this offset;
+    // `TheFoundingLayoutOverlapsNothing` and `TheFoundingLayoutLeavesLanes` are the guards.
+    public int BuilderHutY { get; init; } = 3;
+
+    /// <summary>
+    /// Hands a builder's hut holds — <b>three, stated</b> (Joe, 2026-08-30).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ JOE'S CALL, AND IT OVERTURNS THE DERIVATION D108 GAVE THIS BUILDING:</b> *"One
+    /// builder's hut should have 3 employees only. If the user wants more builders, they can build
+    /// a new builder's hut."* — asked after seeing the professions panel read *"Builder — nobody
+    /// working of 21 seats"* in a village of ten adults.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>WHAT 21 WAS, BECAUSE IT WAS NOT A BUG.</b> <c>VillageEconomy.BuilderHutCapacity</c>
+    /// derived *every hand a 20-household village could spare once it had fed and heated itself*
+    /// — 40 hands, less 15 feeding 100 mouths, less 4 on fuel. The hut was **the pool of hands on
+    /// building** rather than a room with chairs in it, and it was derived rather than typed for
+    /// the reason D16 and D50 record: <c>woodcutter_hut_capacity</c> was a hand-picked three from
+    /// when a village was a dozen people, the yields moved when the horizon did and the capacities
+    /// did not, and **thirty-six people froze.**
+    /// </para>
+    /// <para>
+    /// ⭐ <b>What changed is the sentence around it.</b> Since the gathering hut was capped at two
+    /// (D262), every other workplace in the game seats two, and *"one builder's hut serves the
+    /// whole game"* had become the exact thing that cap was built to stop being true of the
+    /// forager. **A seat count that only one building is exempt from is a rule with a hole in it.**
+    /// </para>
+    /// <para>
+    /// ⚠⚠ <b>AND THE HOLE IS NOT CLOSED BY THIS NUMBER ALONE — THE BUILDER'S HUT IS FREE AND
+    /// INSTANT.</b> It costs nothing but the ground and goes up the tick it is marked (D108: the
+    /// building every other building waits on cannot charge timber without making a circle). **So
+    /// "build another hut" is a click, not a decision**, and three seats is a pacing rule rather
+    /// than a constraint — exactly the gap D260's competing rings had to close before the forager's
+    /// two seats meant anything. *Recorded, not fixed: what a builder's hut should cost is Joe's.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("builder_hut_seats")]
+    public int BuilderHutSeats { get; init; } = 3;
+
+    // ⚠️ THERE IS DELIBERATELY NO `gatherer_hut_x` / `gatherer_hut_y`, and I added the pair
+    // before measuring what they did. Every other founding building sits at a configured
+    // offset from the village, so a hut did too — and it landed **inside the founding glade**,
+    // the clearing D112 skips woodland over. A gatherer's hut in a clearing yields almost
+    // nothing (measured: 3 food a trip against 51), the warm-start village starved, and 105
+    // tests failed.
+    //
+    // A coordinate cannot know where the wood is. `SimWorld.WhereTheTreesAre` looks, which is
+    // what a player does and what the mechanic is about.
+
+    /// <summary>Where logs are split into firewood.</summary>
+    /// <remarks>
+    /// Near the homes rather than near the stand. Logs are drawn village-wide, so the
+    /// only distance that costs anything is the woodcutter's daily walk from home.
+    /// </remarks>
+    [JsonPropertyName("woodcutter_hut_x")]
+    public int WoodcutterHutX { get; init; } = -2;
+
+    /// <summary>Where logs are split into firewood.</summary>
+    [JsonPropertyName("woodcutter_hut_y")]
+    // ⛔ READ BY `VillageEconomy.FirewoodStintTicks` — moving this hut re-derives the fuel
+    // economy (D382 tried (−2, 2) and the shipped file stopped meeting its fuel target).
+    public int WoodcutterHutY { get; init; } = 1;
+
+    /// <summary>How many people can work one woodcutter's hut at once.</summary>
+    [JsonPropertyName("woodcutter_hut_capacity")]
+    public int WoodcutterHutCapacity { get; init; } = 3;
+
+    /// <summary>Logs consumed by one splitting job.</summary>
+    /// <remarks>
+    /// The first workplace in the game that <b>consumes an input</b> (D29). It can be
+    /// idle for want of logs rather than for want of a worker, which is a state the
+    /// player has to be able to read — see the no-logs refusal in
+    /// <c>LabourAllocator</c>.
+    /// </remarks>
+    [JsonPropertyName("logs_per_split")]
+    public int LogsPerSplit { get; init; } = 6;
+
+    /// <summary>Firewood produced by one splitting job.</summary>
+    [JsonPropertyName("firewood_per_split")]
+    public int FirewoodPerSplit { get; init; } = 12;
+
+    /// <summary>Ticks spent splitting once at the hut.</summary>
+    [JsonPropertyName("split_ticks")]
+    public int SplitTicks { get; init; } = 4;
+
+    /// <summary>
+    /// Splits a woodcutter makes at the hut before walking home — a day's stint (D384,
+    /// `specs/trades-visibly-work.md §2`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"woodcutters should be at the hut cutting wood for a period of time."* One split
+    /// and home was the rule before; four is a day at four ticks a day. ⛔ Read by
+    /// <c>VillageEconomy.FirewoodStintTicks</c>: the walk is priced once per stint, so this
+    /// re-derives <c>firewood_per_split</c>.
+    /// </remarks>
+    [JsonPropertyName("splits_per_stint")]
+    public int SplitsPerStint { get; init; } = 4;
+
+    // ---------------------------------------------------------------
+    //  Tools, and the smith who makes them (D391, `specs/tools-and-the-smith.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Work actions one tool lasts — a gather, a fell, a split, a cast, a hunt, a tile sown or reaped.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ WEAR PER USE, NEVER A BREAK YEAR (D353).</b> A village that works harder wears its
+    /// tools faster, and the founders' twenty (<c>cart_tools</c>) fade one use at a time rather
+    /// than breaking on a date — the cliff a Year-4 break would have put on D122's floor.
+    /// </para>
+    /// <para>
+    /// <b>Measured before typed</b> (`tools-and-the-smith.md §6`): the fixture's hands begin
+    /// about 55 actions a hand-year, so at 150 uses a tool is about three years of one pair of
+    /// hands, and the founders' twenty are all in hands or worn out by the middle of the first
+    /// fifty years — a gift that lasts a generation, not a run.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Kept at 150 under ticks, by Joe's call (D429).</b> A tool that quickens its action
+    /// makes more actions a year, so a tool now lasts less time than the three years measured above
+    /// (§6.1 has the number). Joe: <i>"keep 150 for default tools — there will be different tool
+    /// types later with different durabilities (stone v iron for example)"</i>.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_uses")]
+    public int ToolUses { get; init; } = 150;
+
+    /// <summary>
+    /// Winters a coat lasts on a back (`clothing.md §3.3`, D659) — the clothing row's <c>coat_winters</c>, priced from
+    /// here so the built-in row and a modder's read one key.
+    /// </summary>
+    /// <remarks>
+    /// <b>Three, Joe's *"a few winters"* (D69) as a lifetime</b>: a coat wears a day every winter day it is worn,
+    /// whatever the day held, so the tailor's demand is a third of the adults a year — a livelihood rather than an
+    /// errand (D22). ⏳ Typed so the suite can run; `clothing.md §3.7` says C4 measures it against the leather flow.
+    /// </remarks>
+    [JsonPropertyName("coat_winters")]
+    public int CoatWinters { get; init; } = 3;
+
+    /// <summary>
+    /// ⭐ The age a villager first wears a coat (Joe, D767: <i>"children start wearing clothes at 5"</i>) — they fetch one
+    /// and count in the tailor's want from here. Unset is <see cref="AdultAge"/>, D659's <i>"Every adult"</i>: children then
+    /// stayed by the hearth, and since D767 they walk to school from five.
+    /// </summary>
+    [JsonPropertyName("coat_from_age")]
+    public int? CoatFromAge { get; init; }
+
+    /// <summary>The age coats start at — <see cref="CoatFromAge"/>, or <see cref="AdultAge"/> when unset.</summary>
+    [JsonIgnore]
+    public int CoatAge => CoatFromAge ?? AdultAge;
+
+    /// <summary>Leather one coat takes at the tailor's shop (`clothing.md §3.5`, D659) — half a hunt's hide. ⏳ C4 measures it.</summary>
+    [JsonPropertyName("leather_per_coat")]
+    public int LeatherPerCoat { get; init; } = 2; // 5 until D666: too weak for ten adults on one lodge (Joe).
+
+    /// <summary>Ticks one coat takes to sew (D659) — between a bake's 4 and a hunt's 15. ⏳ C4.</summary>
+    [JsonPropertyName("sew_ticks")]
+    public int SewTicks { get; init; } = 10;
+
+    /// <summary>Coats a tailor sews in one stint at the shop before walking home (D659). ⏳ C4.</summary>
+    [JsonPropertyName("sews_per_stint")]
+    public int SewsPerStint { get; init; } = 2;
+
+    /// <summary>Seats at a tailor's shop (D659).</summary>
+    [JsonPropertyName("tailor_shop_capacity")]
+    public int TailorShopCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Leather the village must have handled before the tailor's shop reaches the menu (`clothing.md §3.6`, D659) — the
+    /// smithy's shape (D395), about five hunts. Joe: *"50 leather held"*.
+    /// </summary>
+    [JsonPropertyName("tailor_unlock_leather")]
+    public int TailorUnlockLeather { get; init; } = 50;
+
+    // ---------------------------------------------------------------
+    //  The workshop and the carpenter (D678, `specs/workshop-and-the-carpenter.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a workshop costs (§4.1) — a hut's timber, as the smithy's: a bench and a saw-pit, not a forge. ⏳ A proposal until §10's table.</summary>
+    [JsonPropertyName("workshop_logs")]
+    public int WorkshopLogs { get; init; } = 25;
+
+    /// <summary>Stone a workshop costs (§4.1) — the floor and the hearth-stone of a hut, less than the smithy's 36: there is no forge. ⏳ §10.</summary>
+    [JsonPropertyName("workshop_stone")]
+    public int WorkshopStone { get; init; } = 12;
+
+    /// <summary>Work ticks to raise a workshop (§4.1) — as every hut.</summary>
+    [JsonPropertyName("workshop_work_ticks")]
+    public int WorkshopWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats at a workshop (§4.1) — two, as the smithy's and the tailor's shop's.</summary>
+    [JsonPropertyName("workshop_capacity")]
+    public int WorkshopCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Logs the village must have felled before the workshop reaches the menu (§4.1a) — read against
+    /// <c>SimWorld.LogsEverFelled</c> where it moves; the crossing sets <c>SimWorld.WorkshopLearned</c>, which is the gate.
+    /// </summary>
+    /// <remarks>
+    /// <b>1,500 — Joe's number, twice</b>: 2,500 first (D676: *"2500 logs"*), then after playing it (D682, 2026-11-04:
+    /// *"it took me too long for the workshop. bring it down to 1500"*). Still larger than every unlock in the game but the
+    /// mill's, his own ask (D675: *"a larger number than anything else we currently have in-game"*). His Hollowmere felled
+    /// ~74 logs a year and lit it at 2,511 in Year 34; at 1,500 it lands around Year 20. ⚠️ The unattended valley fells
+    /// 30–45 a year and now crosses it around Year 45–48, inside the fifty-year goldens (§4.1b). Validated at load like
+    /// <see cref="QuarryUnlockStone"/>: at least nought.
+    /// ⚠️ At nought the workshop is learned at the first log felled, not at the founding — the flag is set in the fell
+    /// path, never per tick.
+    /// </remarks>
+    [JsonPropertyName("workshop_unlock_logs")]
+    public int WorkshopUnlockLogs { get; init; } = 1500;
+
+    // ---------------------------------------------------------------
+    //  The school (D752–D754, `specs/school-and-education.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a school costs (§12 step 1) — a hall's timber. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_logs")]
+    public int SchoolLogs { get; init; } = 30;
+
+    /// <summary>Stone a school costs (§12 step 1) — a hut's footing and a hearth. ⏳ Typed, not measured.</summary>
+    [JsonPropertyName("school_stone")]
+    public int SchoolStone { get; init; } = 12;
+
+    /// <summary>Work ticks to raise a school — as a hut. ⏳ Typed.</summary>
+    [JsonPropertyName("school_work_ticks")]
+    public int SchoolWorkTicks { get; init; } = 40;
+
+    /// <summary>Teachers a school seats — two, as the smithy's and the workshop's. ⏳ Typed.</summary>
+    [JsonPropertyName("school_capacity")]
+    public int SchoolCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Places each staffed teacher brings (Joe, D754 call 4: *"6 to start"*, measured later). A school's places are its
+    /// teachers at work times this — the player's lever is staffing, never the child (D51, D15).
+    /// </summary>
+    [JsonPropertyName("school_places_per_teacher")]
+    public int SchoolPlacesPerTeacher { get; init; } = 6;
+
+    /// <summary>
+    /// The age a pupil may first take a place (D758). Shipped at <see cref="AdultAge"/>'s twelve, D209's *"ages 12–16"*;
+    /// <b>below <see cref="AdultAge"/> the first years are a child's</b>, who works at nothing anyway, so they cost the
+    /// village no labour — only the years past <see cref="AdultAge"/> do (Joe, D758: *"2 years in school from age 11-13"*,
+    /// measured before it is set).
+    /// </summary>
+    [JsonPropertyName("school_starting_age")]
+    public int SchoolStartingAge { get; init; } = 12;
+
+    /// <summary>
+    /// The age a pupil leaves school for work (D209: *"ages 12–16"*). Pupils are those from <see cref="SchoolStartingAge"/>
+    /// to one below this; the term is the years between, four as shipped. Validated above <see cref="AdultAge"/> — a pupil
+    /// leaves for work — and above <see cref="SchoolStartingAge"/>.
+    /// </summary>
+    [JsonPropertyName("school_leaving_age")]
+    public int SchoolLeavingAge { get; init; } = 16;
+
+    /// <summary>
+    /// ⭐ Firewood a staffed school burns a winter (Joe, D764: <i>"Warm, burns firewood"</i>; `school-and-education.md
+    /// §12.6`) — spread over the house's beats; a staffed school with any in its pile is a fire, as a home is. A cottage's
+    /// twelve. ⏳ Typed, then measured.
+    /// </summary>
+    [JsonPropertyName("school_winter_firewood")]
+    public int SchoolWinterFirewood { get; init; } = 12;
+
+    /// <summary>Ticks of one lesson — a pupil or a teacher at the school before deciding again (a day, as shipped).</summary>
+    [JsonPropertyName("school_lesson_ticks")]
+    public int SchoolLessonTicks { get; init; } = 4;
+
+    /// <summary>
+    /// ⭐ A, reshaped — <i>"a gentler old age"</i> (Joe, D761: <i>"Fuller loads + old age"</i>; D753's A was strong years at
+    /// 30–45 and measured weak, D757): the vigour points a full-term graduate keeps above <see cref="VigourMinPercent"/> at
+    /// the end of her life, scaled by the term served. Full strength still ends at <see cref="VigourFullUntilAge"/> and the
+    /// lifespan is everyone's; the decline is only shallower. <b>Nought ships until it is measured</b> — today's game.
+    /// </summary>
+    [JsonPropertyName("school_old_age_percent")]
+    public int SchoolOldAgePercent { get; init; }
+
+    /// <summary>
+    /// ⭐ Fuller loads (Joe, D761): how much more a full-term graduate brings in one trip — an armful, a basket, a cut of
+    /// timber — scaled by the term served, wherever a villager's load is what she can carry. Not a catch (a fish, a hunt):
+    /// carrying, not luck. <b>Nought ships until it is measured.</b>
+    /// </summary>
+    [JsonPropertyName("school_carry_percent")]
+    public int SchoolCarryPercent { get; init; }
+
+    /// <summary>
+    /// ⭐ B(i) — <i>"she reads the year"</i> (Joe, D753; §11.4): the share of the way to freezing a graduate lets herself
+    /// reach <b>by the time she is at the fire</b> — she goes in when her cold and the chill of her walk to the nearest fire
+    /// would reach it, where everybody else goes in at <see cref="SeekShelterPercent"/> wherever they are. Needs half the
+    /// term served. <b>Nought ships until step 3 measures it</b> — nought is today's rule for everyone.
+    /// </summary>
+    [JsonPropertyName("school_heed_percent")]
+    public int SchoolHeedPercent { get; init; }
+
+    /// <summary>A full term in ticks — the years from <see cref="SchoolStartingAge"/> to <see cref="SchoolLeavingAge"/>.</summary>
+    [JsonIgnore]
+    public int SchoolTermTicks => Math.Max(0, SchoolLeavingAge - SchoolStartingAge) * TicksPerYear;
+
+    /// <summary>Logs one handcart takes at the workshop (§4.3) — the handcart row's <c>made_from</c>, priced from here. ⏳ §10 measures it against the roofs.</summary>
+    [JsonPropertyName("logs_per_handcart")]
+    public int LogsPerHandcart { get; init; } = 10;
+
+    /// <summary>Ticks one handcart takes to make (§4.3) — a wheel trued and a bed hung on it; longer than a hunt's 15. ⏳ §10.</summary>
+    [JsonPropertyName("make_ticks")]
+    public int MakeTicks { get; init; } = 20;
+
+    /// <summary>Handcarts a carpenter makes in one stint before walking home (§4.3). ⏳ §10; Joe's balance bar (D666) may move it to 2.</summary>
+    [JsonPropertyName("makes_per_stint")]
+    public int MakesPerStint { get; init; } = 1;
+
+    /// <summary>
+    /// The shopping trips a household's handcart lasts (`handcart.md §6`, Slice H) — what <c>Household.HandcartUses</c>
+    /// is filled to when a cart is taken from a store, worn one a round trip; at nought the cart is gone and the
+    /// household fetches another. <c>tool_uses</c>' shape, one good over. Validated at load: greater than nought.
+    /// </summary>
+    [JsonPropertyName("handcart_uses")]
+    public int HandcartUses { get; init; } = 150;
+
+    /// <summary>
+    /// The armfuls a shopper carries a trip with the household's handcart in hand (`handcart.md §5`, Slice H) — the one
+    /// term in D668's shopping walk the village could change. <c>carry_capacity</c> is untouched (D537, one meaning); the
+    /// cart multiplies it. Validated at load: at least one (one is a cart that carries nothing extra).
+    /// </summary>
+    [JsonPropertyName("cart_armfuls")]
+    public int CartArmfuls { get; init; } = 3;
+
+    /// <summary>
+    /// A leg's grass tiles cost this share of their ticks under a handcart (`handcart.md §6`, Slice H; Joe, D672 call 5:
+    /// slower on grass) — worn and packed tiles are unchanged, so <i>the cart is slow on grass and quick on the path</i>.
+    /// <see cref="FailingDeckSlowPercent"/>'s shape: the walk slows, never the route; the cost field stays one (`DESIGN.md
+    /// §2.6`). Validated at load: at least 100.
+    /// </summary>
+    [JsonPropertyName("cart_off_path_slow_percent")]
+    public int CartOffPathSlowPercent { get; init; } = 150;
+
+    /// <summary>
+    /// At a market that owns a handcart (`Workplace.HandcartUses` &gt; 0, parked or in its marketer's hands), the counter is
+    /// short — and the restock fires — only with room for this many armfuls of <c>carry_capacity</c> (`handcart.md §13.2c`,
+    /// D700). 1 is D372's one-armful rule to the letter: D696 measured a carted trip arriving to a shortfall of an armful and
+    /// a bit and carrying 86–106 of 240, so the cart was under the trip but the trip was not sized for the cart;
+    /// <see cref="CartArmfuls"/> would size it. A market without a cart is short at one, as always. Read by
+    /// <c>SimWorld.CounterShortOf</c>, the one predicate the marketer's plan and the quota share. Validated at load: at
+    /// least one. Measured on <c>ZzLogistics</c> (`ZZ_RESTOCK`); <b>3 ships (D707)</b> — <see cref="CartArmfuls"/>, so a carted
+    /// restock is sized for the cart.
+    /// </summary>
+    [JsonPropertyName("restock_short_armfuls_with_cart")]
+    public int RestockShortArmfulsWithCart { get; init; } = 3;
+
+    /// <summary>What a tool takes off the ticks of the action it begins, as a percentage.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ ON TICKS — JOE'S CALL (D395, D429):</b> <i>"tool bonus on ticks (and eventually on
+    /// yield when user unlocks upgrades for it)"</i>. Read in <c>SimWorld.WorkTicksFor</c>, beside
+    /// mastery, and <b>multiplied with it and rounded once</b> — base × (1 − mastery) × (1 − tool),
+    /// so the order cannot matter (`tools-and-the-smith.md §3.4`).
+    /// </para>
+    /// <para>
+    /// <b>⚠️ 34 IS WHERE A THREE-TICK GATHER GETS A WHOLE TICK.</b> The reduction rounds down, so
+    /// at 25 % a gather gains nothing; at 34 % gather / sow / reap 3 → 2, fell / split / forge 4 → 3,
+    /// cast 10 → 7, hunt 15 → 10 — 1.33× to 1.5×, the four-tick trades least. D391's warning (a
+    /// percentage on ticks is a step, not a ramp) is still true, and the spec's table says so.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing here reaches <c>VillageEconomy</c>.</b> A worker without a tool works at
+    /// today's ticks to the unit; the tool is upside above the floor, exactly as mastery is.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_speed_bonus_percent")]
+    public int ToolSpeedBonusPercent { get; init; } = 34;
+
+    /// <summary>What a tool adds to an action's yield, as a percentage of today's number.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ KEPT AT 25, BESIDE THE TICKS — JOE'S CALL ON THE MEASUREMENT (D429).</b> D395 moved the
+    /// bonus to the ticks (<see cref="ToolSpeedBonusPercent"/>) with yield left for a later upgrade.
+    /// Measured first: <b>a forager's trip is one gather between two walks</b>, so 3 → 2 ticks saves
+    /// one tick in about fifteen, and ticks alone cost food per worker 17–23 % — 55 fifty-year
+    /// villages read <b>380 alive on ticks alone, 440 on yield alone, 321 with no tools, 444 with
+    /// both</b>. So both ship: a tool is visibly quicker AND brings in a quarter more.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Nothing here reaches <c>VillageEconomy</c>.</b> A worker without a tool works at
+    /// today's number to the unit; the tool is upside above the floor, exactly as a technique is.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("tool_yield_bonus_percent")]
+    public int ToolYieldBonusPercent { get; init; } = 25;
+
+    /// <summary>Work actions an iron tool lasts (`tools-and-the-smith.md §9.2`).</summary>
+    /// <remarks>
+    /// <b>⚠️ The stone tool's three keys above price the STONE row</b> since iron tools came
+    /// (D446) — a tool's numbers are columns on its good's row, and these three price the iron one.
+    /// Joe's order of magnitude (D434): <i>"stone = today's, iron stronger"</i>; §9.4 has the
+    /// measured upper bound (every tool at these numbers: 504 alive of D420's 55 villages against
+    /// 444).
+    /// </remarks>
+    [JsonPropertyName("iron_tool_uses")]
+    public int IronToolUses { get; init; } = 250;
+
+    /// <summary>What an iron tool takes off an action's ticks, as a percentage — multiplied with mastery, rounded once.</summary>
+    /// <remarks>
+    /// At 50 % a gather stays 3 → 2 (a whole tick is all three ticks can give), a fell or a split
+    /// 4 → 2, a cast 10 → 5, a hunt 15 → 8 — so iron's ticks bite hardest on the long actions.
+    /// </remarks>
+    [JsonPropertyName("iron_tool_speed_bonus_percent")]
+    public int IronToolSpeedBonusPercent { get; init; } = 50;
+
+    /// <summary>What an iron tool adds to an action's yield, as a percentage.</summary>
+    [JsonPropertyName("iron_tool_yield_bonus_percent")]
+    public int IronToolYieldBonusPercent { get; init; } = 35;
+
+    /// <summary>Stone one stone tool takes to make (Joe, D434: two stone and a log, no fire).</summary>
+    [JsonPropertyName("stone_per_stone_tool")]
+    public int StonePerStoneTool { get; init; } = 2;
+
+    /// <summary>Logs one stone tool takes to make — the haft.</summary>
+    [JsonPropertyName("logs_per_stone_tool")]
+    public int LogsPerStoneTool { get; init; } = 1;
+
+    /// <summary>Logs a smithy takes to raise — a hut's.</summary>
+    [JsonPropertyName("smithy_logs")]
+    public int SmithyLogs { get; init; } = 25;
+
+    /// <summary>Stone in a smithy — a forge is a hearth of stone, so more than a hut's three.</summary>
+    [JsonPropertyName("smithy_stone")]
+    public int SmithyStone { get; init; } = 36;
+
+    /// <summary>Ticks of a builder's work a smithy takes.</summary>
+    [JsonPropertyName("smithy_work_ticks")]
+    public int SmithyWorkTicks { get; init; } = 40;
+
+    /// <summary>How many smiths a smithy seats — <b>two</b>, `TECH-EXAMPLE.md`'s forge.</summary>
+    /// <remarks>Stated, not derived, for D274's reason: the player builds another rather than crowding one.</remarks>
+    [JsonPropertyName("smithy_capacity")]
+    public int SmithyCapacity { get; init; } = 2;
+
+    /// <summary>Iron one forge takes.</summary>
+    /// <remarks>A seam tile is eight iron (`goods-catalog`), so a tile is two tools' worth of ore.</remarks>
+    [JsonPropertyName("iron_per_tool")]
+    public int IronPerTool { get; init; } = 4;
+
+    /// <summary>Firewood one forge burns.</summary>
+    /// <remarks>
+    /// ⛔ <b>Never the winter's</b>: a forge runs only while <c>LabourQuota.FirewoodShortfall</c>
+    /// reads zero, so this is spent from the sheds' surplus and never from a hearth's share.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_tool")]
+    public int FirewoodPerTool { get; init; } = 4;
+
+    /// <summary>Ticks one forge takes at the smithy — a day, the woodcutter's split.</summary>
+    [JsonPropertyName("forge_ticks")]
+    public int ForgeTicks { get; init; } = 4;
+
+    /// <summary>Tools one forge makes.</summary>
+    [JsonPropertyName("tools_per_forge")]
+    public int ToolsPerForge { get; init; } = 1;
+
+    /// <summary>Forges a smith makes at the hut before walking home — the stint, as <see cref="SplitsPerStint"/>.</summary>
+    [JsonPropertyName("forges_per_stint")]
+    public int ForgesPerStint { get; init; } = 4;
+
+    /// <summary>Iron the village must dig by hand before the smith's craft comes to it (Joe, D395).</summary>
+    /// <remarks>
+    /// *"After 50 iron mined"* — every iron seam holds at least this (D436), so the first seam
+    /// cleared brings it. Read by the smithy's gate (`tools-and-the-smith.md §9.1`) and by the
+    /// tech-tree map's smithy node — one key, so the two cannot disagree.
+    /// </remarks>
+    [JsonPropertyName("smithy_unlock_iron")]
+    public int SmithyUnlockIron { get; init; } = 50;
+
+    // ---------------------------------------------------------------
+    //  The food chain (D520–D522, `specs/food-chain.md`) — wheat to flour to bread
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// What a loaf of bread is worth to a hungry person, against every raw food's 1 (`food-chain.md §3`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The floor reads none of this.</b> Every number in <c>VillageEconomy</c> counts units and
+    /// assumes each is worth a nutrition-1 share — the least an edible unit can be worth — so a better
+    /// food is upside above the floor and never a hole in it. A meal of bread costs the units any meal
+    /// costs and holds hunger off for what it is worth beyond them (<c>Villager.FullFor</c>).
+    /// </para>
+    /// <para>
+    /// Measured (§8.1): at 2, a miller and baker keeping up with one farm add about 1,000 points a
+    /// seat-year — a little above a farmer (755–828), level with a forager. 3 would double it past every
+    /// raw trade. Joe confirmed 2 (D522).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("bread_nutrition")]
+    public int BreadNutrition { get; init; } = 2;
+
+    /// <summary>
+    /// Wheat the village must reap before anybody here mills and bakes — the mill and the bakery are learned
+    /// together (Joe, D523; `food-chain.md §7`).
+    /// </summary>
+    /// <remarks>
+    /// Measured (§8.1): a farm marked at t0 has reaped 5,000 by Year 4, one marked in Year 2 by Year 6
+    /// — about a farm's third harvest. Read by the mill's gate and the tech-tree map's node — one key.
+    /// </remarks>
+    [JsonPropertyName("mill_unlock_wheat")]
+    public int MillUnlockWheat { get; init; } = 5000;
+
+    /// <summary>Wheat one grind takes.</summary>
+    /// <remarks>
+    /// A starting value, sized so one miller keeps up with one farm (~2,000 a year, §8.1) — confirmed by
+    /// the post-build arm, not by this comment.
+    /// </remarks>
+    [JsonPropertyName("wheat_per_grind")]
+    public int WheatPerGrind { get; init; } = 20;
+
+    /// <summary>Flour one grind makes.</summary>
+    [JsonPropertyName("flour_per_grind")]
+    public int FlourPerGrind { get; init; } = 20;
+
+    /// <summary>Ticks one grind takes at the mill — a day, the woodcutter's split.</summary>
+    [JsonPropertyName("grind_ticks")]
+    public int GrindTicks { get; init; } = 4;
+
+    /// <summary>Grinds a miller makes before walking home — the stint, as <see cref="SplitsPerStint"/>.</summary>
+    [JsonPropertyName("grinds_per_stint")]
+    public int GrindsPerStint { get; init; } = 4;
+
+    /// <summary>Flour one bake takes.</summary>
+    [JsonPropertyName("flour_per_bake")]
+    public int FlourPerBake { get; init; } = 20;
+
+    /// <summary>Bread one bake makes.</summary>
+    [JsonPropertyName("bread_per_bake")]
+    public int BreadPerBake { get; init; } = 20;
+
+    /// <summary>Ticks one bake takes at the oven.</summary>
+    [JsonPropertyName("bake_ticks")]
+    public int BakeTicks { get; init; } = 4;
+
+    /// <summary>Bakes a baker makes before walking home — the stint.</summary>
+    [JsonPropertyName("bakes_per_stint")]
+    public int BakesPerStint { get; init; } = 4;
+
+    /// <summary>Firewood the oven burns when it is lit — once a stint, not once a bake (Joe, *"a little"*).</summary>
+    /// <remarks>
+    /// ⛔ <b>Never the winter's</b>: the oven is lit only while <c>LabourQuota.FirewoodShortfall</c> reads
+    /// zero, as the forge is. Measured (§8.1 finding 6): a household burns 24 a winter; one a firing is
+    /// about 25 a year, where one a bake would be four households' winter.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_firing")]
+    public int FirewoodPerFiring { get; init; } = 1;
+
+    /// <summary>Logs a mill takes to raise.</summary>
+    [JsonPropertyName("mill_logs")]
+    public int MillLogs { get; init; } = 30;
+
+    /// <summary>Stone in a mill — the millstones.</summary>
+    [JsonPropertyName("mill_stone")]
+    public int MillStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a mill takes.</summary>
+    [JsonPropertyName("mill_work_ticks")]
+    public int MillWorkTicks { get; init; } = 40;
+
+    /// <summary>How many millers a mill seats.</summary>
+    [JsonPropertyName("mill_capacity")]
+    public int MillCapacity { get; init; } = 2;
+
+    /// <summary>Logs a bakery takes to raise — a hut's.</summary>
+    [JsonPropertyName("bakery_logs")]
+    public int BakeryLogs { get; init; } = 25;
+
+    /// <summary>Stone in a bakery — an oven is a hearth of stone, as a forge is.</summary>
+    [JsonPropertyName("bakery_stone")]
+    public int BakeryStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a bakery takes.</summary>
+    [JsonPropertyName("bakery_work_ticks")]
+    public int BakeryWorkTicks { get; init; } = 40;
+
+    /// <summary>How many bakers a bakery seats.</summary>
+    [JsonPropertyName("bakery_capacity")]
+    public int BakeryCapacity { get; init; } = 2;
+
+    // ---------------------------------------------------------------
+    //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
+    // ---------------------------------------------------------------
+    // ⚠️ PROVISIONAL, EVERY ONE, AND SAID SO: the rows need a price to exist, and nothing can raise either building
+    // until the view gives it a button (commit 6). The barn's room is derived from the herd in commit 2 and these are
+    // re-measured before Joe plays (`trade.md §11.3`). A mill's prices, the nearest building of their size.
+
+    /// <summary>Logs a barn takes to raise — timber, as a farmhouse is (provisional, D590).</summary>
+    [JsonPropertyName("barn_logs")]
+    public int BarnLogs { get; init; } = 40;
+
+    /// <summary>Ticks of a builder's work a barn takes (provisional, D590).</summary>
+    [JsonPropertyName("barn_work_ticks")]
+    public int BarnWorkTicks { get; init; } = 40;
+
+    /// <summary>How many herdsmen a barn seats (provisional, D590).</summary>
+    [JsonPropertyName("barn_capacity")]
+    public int BarnCapacity { get; init; } = 2;
+
+    /// <summary>
+    /// Hay off one cut pasture tile — wheat's <c>crop_yield_per_tile</c> until a played herd says otherwise (D593).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ It is what makes one herdsman's 13-tile cut feed 8 head a winter with the buffer — Joe's own timber barn
+    /// (`livestock.md §10.1.6`). The barn's room is derived from it (<c>VillageEconomy.BarnHayRoom</c>).
+    /// </remarks>
+    [JsonPropertyName("hay_per_tile")]
+    public int HayPerTile { get; init; } = 67;
+
+    /// <summary>
+    /// Days of the herd's hay a herdsman keeps out on the pasture in winter before carrying more (D593) — and how many
+    /// days before winter he starts carrying it.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ Five, not three: at three a traced herd lost a beast on winter's first day (the first armful still on the road)
+    /// and another mid-winter between refills — a herdsman finishes his rest before he re-decides, and spends winter
+    /// going in to get warm. Five days of a full herd of eight is one armful (80), so the pasture is kept topped up.
+    /// </remarks>
+    [JsonPropertyName("hay_feed_ahead_days")]
+    public int HayFeedAheadDays { get; init; } = 5;
+
+    /// <summary>Ticks to put an armful of hay out — a cut tile's (<c>reap_ticks</c>), outdoors (D593).</summary>
+    [JsonPropertyName("hay_feed_ticks")]
+    public int HayFeedTicks { get; init; } = 3;
+
+    /// <summary>Ticks to cull a beast at the barn — a hunt's dressing, about two days' work (D593, provisional).</summary>
+    [JsonPropertyName("cull_ticks")]
+    public int CullTicks { get; init; } = 8;
+
+    /// <summary>
+    /// Logs a trading post takes to raise (D590) — measured at D594 (`trade.md §8.4`): every hall-era village holds its
+    /// logs at the limit, 200, so the post costs at most a sixth of them.
+    /// </summary>
+    [JsonPropertyName("trading_post_logs")]
+    public int TradingPostLogs { get; init; } = 30;
+
+    /// <summary>
+    /// Stone in a trading post — a quay to tie a boat to (D590). Measured at D594 (`trade.md §8.4`): the poorest
+    /// hall-era village held 120 stone, so the quay is a fifth of it.
+    /// </summary>
+    [JsonPropertyName("trading_post_stone")]
+    public int TradingPostStone { get; init; } = 24;
+
+    /// <summary>Ticks of a builder's work a trading post takes (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_work_ticks")]
+    public int TradingPostWorkTicks { get; init; } = 40;
+
+    /// <summary>How many merchants a trading post seats (Joe, D587 call 4 and D591's name; one seat, provisional).</summary>
+    [JsonPropertyName("trading_post_capacity")]
+    public int TradingPostCapacity { get; init; } = 1;
+
+    /// <summary>How much a trading post holds, sold and bought together (provisional, D590).</summary>
+    [JsonPropertyName("trading_post_store_capacity")]
+    public int TradingPostStoreCapacity { get; init; } = 800;
+
+    /// <summary>
+    /// How many seasons a neighbour takes to come back from a boat (D594, `trade.md §4.2`, §8.4): each season a good it
+    /// makes recovers this share of the way back to its size, and a good it wants is used up this share of its size.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Eight — two years — so the next boat remembers the last.</b> Measured (`ZzTrade.Region`): at four, a
+    /// neighbour sold its fill twice over was hungry again within eight seasons and back to its best rate by every boat,
+    /// so selling everything above the keep never cost the village anything — the trap of a boat that empties the stores
+    /// (§7). At eight, a heavy sale is still felt by a boat two years on and mostly gone by one three years on.
+    /// ⚠️ Joe's to tune in play.
+    /// </remarks>
+    [JsonPropertyName("region_seasons_to_recover")]
+    public int RegionSeasonsToRecover { get; init; } = 8;
+
+    // ---------------------------------------------------------------
+    //  The boat (D595, `trade.md §4.4`) — a clock by hash, three ticks, a hold
+    // ---------------------------------------------------------------
+
+    /// <summary>The fewest years between one boat's year and the next's (Joe, D587 call 3: <i>"every 2-3 years"</i>).</summary>
+    [JsonPropertyName("trade_boat_gap_years_floor")]
+    public int TradeBoatGapYearsFloor { get; init; } = 2;
+
+    /// <summary>Years the hash may add to the floor — 1, so a boat comes two or three years after the last.</summary>
+    [JsonPropertyName("trade_boat_gap_years_spread")]
+    public int TradeBoatGapYearsSpread { get; init; } = 1;
+
+    /// <summary>
+    /// Days a boat sails on the map before it ties up — from its neighbour's edge to the post, and again from the post
+    /// off the far edge when it leaves. The view draws it on the river between those ticks (commit 7).
+    /// </summary>
+    [JsonPropertyName("trade_boat_sail_days")]
+    public int TradeBoatSailDays { get; init; } = 2;
+
+    /// <summary>
+    /// Days a boat stays tied up at the post (Joe, D587 call 6: <i>"a reasonable amount of time to be noticed by player
+    /// (will likely have to test)"</i>). ⚠️ <b>Joe's, found in play</b> — ten days is about fifty seconds at 1×.
+    /// </summary>
+    [JsonPropertyName("trade_boat_dock_days")]
+    public int TradeBoatDockDays { get; init; } = 10;
+
+    /// <summary>
+    /// The most a boat takes from the post, and the most it leaves, in units of goods (animals apart) — half the post's
+    /// room, so a visit at its fullest still leaves the post room for what it brings (`trade.md §8.5`).
+    /// </summary>
+    [JsonPropertyName("trade_boat_hold")]
+    public int TradeBoatHold { get; init; } = 400;
+
+    /// <summary>
+    /// Logs one length of pasture fence costs (D598, `livestock.md §0.2.5`) — the yard fence's own price, a log a tile
+    /// (D388). Measured: Joe's 102-tile pasture is 46 lengths, about a barn's 40 logs, from a village holding 207.
+    /// </summary>
+    [JsonPropertyName("pasture_fence_logs_per_edge")]
+    public int PastureFenceLogsPerEdge { get; init; } = 1;
+
+    /// <summary>A builder's ticks a length of pasture fence takes (D598) — Joe's pasture, 92 ticks: 23 days for one builder.</summary>
+    [JsonPropertyName("pasture_fence_work_ticks_per_edge")]
+    public int PastureFenceWorkTicksPerEdge { get; init; } = 2;
+
+    /// <summary>
+    /// The kinds of animal a herd may be (Joe, D588: <b>one kind first</b>, `livestock.md §0`) — rows, so the rest of
+    /// `TECH-EXAMPLE.md`'s list is added without restructuring.
+    /// </summary>
+    [JsonPropertyName("animals")]
+    public IReadOnlyList<AnimalRow> Animals { get; init; } = new[]
+    {
+        new AnimalRow { Id = 0, Name = "cattle", Plural = "cattle" },
+    };
+
+    /// <summary>
+    /// The region (Joe, D587: <b>three neighbours, with reasons</b>; `trade.md §4.2`) — and between them they make
+    /// every good the game has, and animals (call 5), so a boat can bring any of it.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>A size is half the shipped starting limit of its good</b> (D594, `trade.md §8.4`): every played village at
+    /// the hall's era holds nearly everything at its limit (§8.2a), so a <i>keep</i> at half the limit leaves half the
+    /// limit to sell — one boat's worth of a village's spare takes a neighbour from short (double) to rested (its worth).
+    /// Hay has no limit: 400 is a quarter of a barn's room. ⚠️ Joe's to tune in play. ⭐ A good added later joins a
+    /// neighbour's <c>makes</c> the day its system lands (D587: never a good with no use yet).
+    /// </remarks>
+    [JsonPropertyName("neighbours")]
+    public IReadOnlyList<NeighbourRow> Neighbours { get; init; } = new[]
+    {
+        // Up the river: the hills — timber, stone, iron and what a smith makes of it, hides, and cattle.
+        new NeighbourRow
+        {
+            Id = 0,
+            Direction = NeighbourDirection.Upriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Tools, 12),
+                new MaterialCost(World.Goods.IronTools, 12), new MaterialCost(World.Goods.Leather, 100),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Fish, 125),
+                new MaterialCost(World.Goods.Firewood, 200),
+            },
+        },
+
+        // Down the river: the lowlands — grain, flour and bread, fish, forage and firewood.
+        new NeighbourRow
+        {
+            Id = 1,
+            Direction = NeighbourDirection.Downriver,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Produce, 1000), new MaterialCost(World.Goods.Fish, 125),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Firewood, 200),
+            },
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Logs, 100), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Iron, 100), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Clothing, 25),
+            },
+        },
+
+        // Overland: the grazing country — meat, hides, hay and cattle; its caravan waits for carts (tier 2).
+        new NeighbourRow
+        {
+            Id = 2,
+            Direction = NeighbourDirection.Overland,
+            Makes = new[]
+            {
+                new MaterialCost(World.Goods.Meat, 125), new MaterialCost(World.Goods.Leather, 100),
+                new MaterialCost(World.Goods.Hay, 400), new MaterialCost(World.Goods.IronTools, 12),
+
+                // The coats sewn from its hides (D660, `clothing.md §3.4`): half of Joe's "50 clothes" (D62), the
+                // size rule for a good that ships with no limit. By cart only (tier 2), so no boat brings one yet.
+                new MaterialCost(World.Goods.Clothing, 25),
+
+                // And the carts its carters drive (D678, `workshop-and-the-carpenter.md §5`): Joe's standing rule is that
+                // the three make every good the game has (D587 call 5), so the cartwright country makes handcarts — a
+                // hamlet's worth, one a household. By cart only (tier 2), so no boat brings one yet either.
+                new MaterialCost(World.Goods.Handcart, 10),
+            },
+            MakesAnimals = 6,
+            Wants = new[]
+            {
+                new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 500),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Stone, 100),
+            },
+        },
+    };
+
+    // ---------------------------------------------------------------
+    //  The quarry (D434, `specs/quarry.md`) — painted rock that never runs out
+    // ---------------------------------------------------------------
+
+    /// <summary>Stone the village must dig by hand before anybody knows how to cut a quarry (`quarry.md §3.3`).</summary>
+    /// <remarks>
+    /// Joe's call, doubled in D500 (B6, *"the quarry gift comes too soon"*): about seventeen seam
+    /// tiles, more than one seam — so clearing deposits is the early game (D84's warning) and the
+    /// quarry arrives as the village's core goes up, not on the stone of its first granary.
+    /// </remarks>
+    [JsonPropertyName("quarry_unlock_stone")]
+    public int QuarryUnlockStone { get; init; } = 200;
+
+    /// <summary>A quarry's timber — sheds and a crane at the face.</summary>
+    [JsonPropertyName("quarry_logs")]
+    public int QuarryLogs { get; init; } = 25;
+
+    /// <summary>A quarry's stone — none: it is cut into rock, not built of it.</summary>
+    [JsonPropertyName("quarry_stone")]
+    public int QuarryStone { get; init; }
+
+    /// <summary>Work to raise a quarry — as the huts.</summary>
+    [JsonPropertyName("quarry_work_ticks")]
+    public int QuarryWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats in a quarry (Joe: two).</summary>
+    [JsonPropertyName("quarry_capacity")]
+    public int QuarryCapacity { get; init; } = 2;
+
+    /// <summary>Faces one quarrier keeps (`quarry.md §3.6`) — a face never empties, so a few are enough.</summary>
+    [JsonPropertyName("quarry_tiles_per_worker")]
+    public int QuarryTilesPerWorker { get; init; } = 6;
+
+    /// <summary>Ticks one dig at the face takes — a laborer's clearing (Joe: four).</summary>
+    [JsonPropertyName("quarry_dig_ticks")]
+    public int QuarryDigTicks { get; init; } = 4;
+
+    /// <summary>Stone one dig brings (Joe: ten — a stint of four fills an armful of forty).</summary>
+    /// <remarks>Measured as the trip (trap 134, `quarry.md §6.2`): about 100 stone per hundred ticks worked against a laborer's 43.</remarks>
+    [JsonPropertyName("stone_per_dig")]
+    public int StonePerDig { get; init; } = 10;
+
+    /// <summary>Digs in one stint before the quarrier carries the stone off — as <c>forges_per_stint</c>.</summary>
+    [JsonPropertyName("digs_per_stint")]
+    public int DigsPerStint { get; init; } = 4;
+
+    // ---------------------------------------------------------------
+    //  The iron mine (D449, `specs/iron-mine.md`) — painted iron that never runs out
+    // ---------------------------------------------------------------
+
+    /// <summary>Iron tools the smith must forge before anybody knows how to sink a mine (`iron-mine.md §3.4`).</summary>
+    /// <remarks>
+    /// Joe's call, 2026-10-01: *the first iron tool* — dig iron, the smithy gift, the smith works
+    /// iron, the village learns to mine. It spends about one seam by hand (the smithy's 50), leaving
+    /// the rest as mine sites (§0.1). Read by the gate and by the tree's mine node — one key.
+    /// </remarks>
+    [JsonPropertyName("mine_unlock_iron_tools")]
+    public int MineUnlockIronTools { get; init; } = 1;
+
+    /// <summary>A mine's timber — shoring and a headframe.</summary>
+    [JsonPropertyName("mine_logs")]
+    public int MineLogs { get; init; } = 30;
+
+    /// <summary>A mine's stone — a lined shaft head.</summary>
+    [JsonPropertyName("mine_stone")]
+    public int MineStone { get; init; } = 15;
+
+    /// <summary>Work to raise a mine — as the quarry.</summary>
+    [JsonPropertyName("mine_work_ticks")]
+    public int MineWorkTicks { get; init; } = 40;
+
+    /// <summary>Seats in a mine — as the quarry.</summary>
+    [JsonPropertyName("mine_capacity")]
+    public int MineCapacity { get; init; } = 2;
+
+    /// <summary>Faces one miner keeps — an iron seam is about seven tiles, so two miners hold most of one.</summary>
+    [JsonPropertyName("mine_tiles_per_worker")]
+    public int MineTilesPerWorker { get; init; } = 3;
+
+    /// <summary>Ticks one dig at an iron face takes (`iron-mine.md §6`, Joe: slower than the quarry).</summary>
+    [JsonPropertyName("mine_dig_ticks")]
+    public int MineDigTicks { get; init; } = 6;
+
+    /// <summary>Iron one dig brings — eight digs fill an armful of forty.</summary>
+    /// <remarks>Measured as the trip (trap 134, §6): about 40 iron per hundred ticks worked, 47 with an iron tool, against a laborer's 14.</remarks>
+    [JsonPropertyName("iron_per_dig")]
+    public int IronPerDig { get; init; } = 5;
+
+    /// <summary>Digs in one stint before the miner carries the iron off.</summary>
+    [JsonPropertyName("mine_digs_per_stint")]
+    public int MineDigsPerStint { get; init; } = 8;
+
+    /// <summary>Logs a well takes to raise — a timber head over the shaft (D427).</summary>
+    [JsonPropertyName("well_logs")]
+    public int WellLogs { get; init; } = 10;
+
+    /// <summary>Stone in a well's lining (D427).</summary>
+    /// <remarks>
+    /// <b>A little, on Joe's word</b> — `TECH-EXAMPLE.md` says ten cut stone, and this is half of it
+    /// because nobody cuts stone yet: a stone-hungry well would stand as a site on *"missing 10
+    /// stone"* in exactly the village D384 found waiting a century.
+    /// </remarks>
+    [JsonPropertyName("well_stone")]
+    public int WellStone { get; init; } = 15;
+
+    /// <summary>Ticks of a builder's work a well takes.</summary>
+    [JsonPropertyName("well_work_ticks")]
+    public int WellWorkTicks { get; init; } = 20;
+
+    // ---------------------------------------------------------------
+    //  Bridges (D40, D546, D547 — `specs/bridges.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>Logs a wooden bridge takes for each tile of its length, end to end (`bridges.md §4`).</summary>
+    [JsonPropertyName("bridge_logs_per_tile")]
+    public int BridgeLogsPerTile { get; init; } = 8;
+
+    /// <summary>Ticks of a builder's work a wooden bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("bridge_work_ticks_per_tile")]
+    public int BridgeWorkTicksPerTile { get; init; } = 10;
+
+    /// <summary>Stone a stone bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("stone_bridge_stone_per_tile")]
+    public int StoneBridgeStonePerTile { get; init; } = 12;
+
+    /// <summary>Logs a stone bridge takes for each tile of its length — the centring the arch is set on.</summary>
+    [JsonPropertyName("stone_bridge_logs_per_tile")]
+    public int StoneBridgeLogsPerTile { get; init; } = 4;
+
+    /// <summary>Ticks of a builder's work a stone bridge takes for each tile of its length.</summary>
+    [JsonPropertyName("stone_bridge_work_ticks_per_tile")]
+    public int StoneBridgeWorkTicksPerTile { get; init; } = 15;
+
+    /// <summary>What a step onto a wooden deck costs — grass's 10 (`bridges.md §3.1`).</summary>
+    [JsonPropertyName("bridge_wood_tile_cost")]
+    public int BridgeWoodTileCost { get; init; } = 10;
+
+    /// <summary>What a step onto a stone deck costs — a packed path's 8: the quicker crossing (Joe, D546).</summary>
+    [JsonPropertyName("bridge_stone_tile_cost")]
+    public int BridgeStoneTileCost { get; init; } = 8;
+
+    /// <summary>
+    /// The longest a bridge may be, end to end, in tiles (Joe, D550 after playing D549: <i>"let bridges be longer
+    /// than 8 tiles. 12 max."</i>; `bridges.md §4`). Every valley can be crossed in 5 or less (D547); the cap is
+    /// how far a bridge may run, not whether the river can be crossed.
+    /// </summary>
+    [JsonPropertyName("bridge_max_length_tiles")]
+    public int BridgeMaxLengthTiles { get; init; } = 12;
+
+    // ---------------------------------------------------------------
+    //  Condition and maintenance (D552, D553 — `specs/building-condition.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// Years of mild weather before a timber building is <em>worn</em> (`building-condition.md §4.2`) — written onto
+    /// every shipped row but the stone bridge's and the town hall's. Measured feel, not survival (§8.4): at 8 a mature
+    /// played village spends about a fifth of one woodcutter's year on repairs. All three keys 0: nothing wears.
+    /// </summary>
+    [JsonPropertyName("building_wears_in_years")]
+    public int BuildingWearsInYears { get; init; } = 8;
+
+    /// <summary>Years before a timber building is <em>failing</em> — the card warns; a wooden deck slows.</summary>
+    [JsonPropertyName("building_fails_in_years")]
+    public int BuildingFailsInYears { get; init; } = 12;
+
+    /// <summary>Years before an unrepaired timber building is a <em>ruin</em> — closed, and standing until mended or pulled down.</summary>
+    [JsonPropertyName("building_ruined_in_years")]
+    public int BuildingRuinedInYears { get; init; } = 20;
+
+    /// <summary>What each winter begun adds to a building's wear, as a share of a season's ticks (D206's axis). 50: a thing worn at 8 is worn at about 7 calendar years.</summary>
+    [JsonPropertyName("winter_wear_extra_percent")]
+    public int WinterWearExtraPercent { get; init; } = 50;
+
+    /// <summary>A repair's share of the row's logs and work, rounded up — logs only, never stone (`building-condition.md §4.3`; unattended valleys hold no stone, ever).</summary>
+    [JsonPropertyName("repair_cost_percent")]
+    public int RepairCostPercent { get; init; } = 25;
+
+    // ---------------------------------------------------------------
+    //  The nomads (D563, D564 — `specs/nomads.md`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The earliest year a band of nomads knocks (`nomads.md §4.1`): the first knock is this plus a hashed share of
+    /// <see cref="NomadsFirstYearSpread"/>. <b>0: nobody ever knocks</b> (Phase 0's village of one). Joe (D563): their own
+    /// clock, around Year 10.
+    /// </summary>
+    [JsonPropertyName("nomads_first_year_floor")]
+    public int NomadsFirstYearFloor { get; init; } = 8;
+
+    /// <summary>Years a seed may add to the first knock — 8 + 0..4 is Year 8–12.</summary>
+    [JsonPropertyName("nomads_first_year_spread")]
+    public int NomadsFirstYearSpread { get; init; } = 4;
+
+    /// <summary>The fewest years between one band leaving or settling and the next knock, without a town hall.</summary>
+    [JsonPropertyName("nomads_years_between_floor")]
+    public int NomadsYearsBetweenFloor { get; init; } = 6;
+
+    /// <summary>The fewest years between bands once the town hall stands — the hall widens them (Joe, D563).</summary>
+    [JsonPropertyName("nomads_hall_years_between_floor")]
+    public int NomadsHallYearsBetweenFloor { get; init; } = 4;
+
+    /// <summary>Years a seed may add between bands.</summary>
+    [JsonPropertyName("nomads_years_between_spread")]
+    public int NomadsYearsBetweenSpread { get; init; } = 4;
+
+    /// <summary>
+    /// A band is the village's population divided by this, clamped to <see cref="NomadsBandMin"/>..<see cref="NomadsBandMax"/>
+    /// — a quarter (`nomads.md §8.2`: a fifth of a village of eight is the minimum either way; from Year ~50 a quarter sends
+    /// six against five). Two more with the hall standing.
+    /// </summary>
+    [JsonPropertyName("nomads_share_divisor")]
+    public int NomadsShareDivisor { get; init; } = 4;
+
+    /// <summary>The fewest people in a band — a couple.</summary>
+    [JsonPropertyName("nomads_band_min")]
+    public int NomadsBandMin { get; init; } = 2;
+
+    /// <summary>The most people in a band — two families of four.</summary>
+    [JsonPropertyName("nomads_band_max")]
+    public int NomadsBandMax { get; init; } = 8;
+
+    /// <summary>Food each nomad carries into the family's larder on settling — a few days' worth.</summary>
+    [JsonPropertyName("nomads_food_each")]
+    public int NomadsFoodEach { get; init; } = 20;
+
+    /// <summary>
+    /// Where the Nomads switch starts for a new village (`nomads.md §4.1a`, D570; Joe, D568: <i>"enable/disable the
+    /// nomad feature altogether"</i>; D572: the switch is the permission — on, a band settles the tick it comes) — set
+    /// by the new-game screen's <i>Nomads</i> row. The village's own switch is <c>SimWorld.NomadsEnabled</c>, saved and
+    /// hashed; this is only where it starts, as <c>cart_food</c> is only what the cart starts with.
+    /// </summary>
+    [JsonPropertyName("nomads_enabled")]
+    public bool NomadsEnabled { get; init; } = true;
+
+    /// <summary>
+    /// The fewest years after a valley empties before four nomads re-found it (`nomads.md §4.6`; Joe, D563: automatic,
+    /// a few years on). The wait is this plus a hashed share of <see cref="RefoundYearsSpread"/>. <b>0: never</b>.
+    /// </summary>
+    [JsonPropertyName("refound_years_floor")]
+    public int RefoundYearsFloor { get; init; } = 2;
+
+    /// <summary>Years a seed may add to the wait — 2 + 0..4 is two to six years on; measured (§8.4): by then a fifth to a quarter of what stood is failing or fallen in.</summary>
+    [JsonPropertyName("refound_years_spread")]
+    public int RefoundYearsSpread { get; init; } = 4;
+
+    /// <summary>A leg over a failing wooden deck takes this share of its ticks — the slow of D546 call 6 (`building-condition.md §4.4`). The deck byte is already the dial's maximum, so it is the leg that slows.</summary>
+    [JsonPropertyName("failing_deck_slow_percent")]
+    public int FailingDeckSlowPercent { get; init; } = 150;
+
+    /// <summary>
+    /// The village learns to bridge water once it has held this many people (Joe, D546: SCALE). Measured
+    /// (D547): Joe's played villages first hold 10 at Years 11–12.
+    /// </summary>
+    [JsonPropertyName("bridge_unlock_population")]
+    public int BridgeUnlockPopulation { get; init; } = 10;
+
+    /// <summary>
+    /// Crossings walked over bridges before the village learns to set a span in stone (Joe, D546: DOING).
+    /// Measured (D547): one bridge with work across carries a median 23 crossings a year, so 150 was about six years;
+    /// Joe's call after playing (2026-11-07, his village at 1,511): 1000 — about forty years of one bridge.
+    /// </summary>
+    [JsonPropertyName("stone_bridge_unlock_crossings")]
+    public int StoneBridgeUnlockCrossings { get; init; } = 1000;
+
+    /// <summary>Ticks somebody stands at the well drawing water before walking home (D427).</summary>
+    [JsonPropertyName("well_draw_ticks")]
+    public int WellDrawTicks { get; init; } = 2;
+
+    /// <summary>
+    /// Ticks a summer farmhand spends on one sown tile tending it, before walking back to the
+    /// steading to rest (D511, `specs/work-from-the-steading.md §5`). Zero switches tending off.
+    /// </summary>
+    /// <remarks>
+    /// <b>The look only.</b> A tend produces, consumes and teaches nothing, and is offered only where
+    /// a rest would begin — so the number decides how the summer field reads, never what it yields.
+    /// Four is a day.
+    /// </remarks>
+    [JsonPropertyName("tend_ticks")]
+    public int TendTicks { get; init; } = 4;
+
+    /// <summary>
+    /// How much water a household's jar holds — filled to the brim at a well (D778, `water-need.md §5` step 2).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>120, Joe's pick (D779, `water-need.md` call 4), measured</b>: at one a person a day a household of two goes every
+    /// sixty days, three every forty, five every twenty-four. ⛔ <b>Not 40</b>, which was the D427 clock's price (two every
+    /// twenty days) and was right only while nobody walked further than a well: since the river (D779) a household with no well
+    /// walks to the bank, often fifteen to twenty-five tiles — ten days there and back, at four ticks a day — and over 100
+    /// valleys a jar of 40 cost 0.59 ± 0.30 alive a valley, with more starved, and took a farm's harvest from 79 % to 66 %.
+    /// At 120: −0.27 ± 0.34 and 75 %; 2.6 % of adult time on water.
+    /// </remarks>
+    [JsonPropertyName("water_jar")]
+    public int WaterJar { get; init; } = 120;
+
+    /// <summary>
+    /// A jar is low — somebody at home goes for it — when it holds this many days of its living members' drink or fewer (D782).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>Never "less than one day's"</b>, which it was from D778 to D781: the jar of 120 divides by every family size from
+    /// one to six, so a jar drunk a whole day at a time steps 6, 3, 0 and is never <i>less than a day's</i> until it is empty —
+    /// every jar ran dry before anybody went. ⭐ <b>5, measured</b> (D782, with the trip asked at any moment at home): over 100
+    /// valleys the housed families' days spent dry 15 % → 2 %, survival within the noise; on Joe's own village from its fifth
+    /// year, 21 % → 0.4 %. 10 bought the last 2 % for twice the trips' extra time.
+    /// </remarks>
+    [JsonPropertyName("water_low_days")]
+    public int WaterLowDays { get; init; } = 5;
+
+    /// <summary>
+    /// The water each living member of a household drinks on each day's turn (D778). Zero: nobody drinks, so a
+    /// household goes once and its jar stays full.
+    /// </summary>
+    [JsonPropertyName("water_per_person_per_day")]
+    public int WaterPerPersonPerDay { get; init; } = 1;
+
+    // ---------------------------------------------------------------
+    //  Storage (D30, D32)
+    // ---------------------------------------------------------------
+
+    /// <summary>Where the village's food is kept.</summary>
+    /// <remarks>
+    /// Near the homes. A granary is a building people walk to several times a season, so
+    /// its position is the difference between a short errand and a long one. This places
+    /// only the <em>founding</em> granary; every one after it the player sites themselves
+    /// (D43), which is the first decision storage makes interesting.
+    /// </remarks>
+    // ⚠️ (2, −1) since D383 — a lane at x = 0 between it and the warehouse, see BuilderHutY.
+    [JsonPropertyName("granary_x")]
+    public int GranaryX { get; init; } = 2;
+
+    /// <summary>Where the village's food is kept.</summary>
+    [JsonPropertyName("granary_y")]
+    public int GranaryY { get; init; } = -1;
+
+    /// <summary>Where materials are kept — logs, firewood, and later stone and cloth.</summary>
+    /// <remarks>
+    /// Separate from the granary on purpose (D32): food spoils and timber does not,
+    /// and one undifferentiated pile would delete the per-household inequality D14
+    /// exists to create.
+    /// </remarks>
+    // ⚠️ (−1, −1) since D383 — north-west of the founding site with row 0 free, see BuilderHutY.
+    // ⛔ `VillageEconomy.CutRoundTripTicks` reads this offset: the felled log's walk to the
+    // warehouse is a leg of the timber economy. (−1, −1) is the same ten tiles from the
+    // budget's worst home as (−2, 0) was, so nothing re-derives.
+    [JsonPropertyName("storage_warehouse_x")]
+    public int StorageWarehouseX { get; init; } = -1;
+
+    /// <summary>Where materials are kept.</summary>
+    [JsonPropertyName("storage_warehouse_y")]
+    public int StorageWarehouseY { get; init; } = -1;
+
+    /// <summary>Firewood one household burns per day of winter.</summary>
+    /// <remarks>
+    /// Per household, not per member — a house costs the same to heat whether two
+    /// live in it or five. Winter only, for legibility: fuel that trickles all year
+    /// is a background tax, whereas fuel demanded exactly when foraging stops is a
+    /// season with teeth.
+    /// </remarks>
+    [JsonPropertyName("firewood_per_winter_day")]
+    public int FirewoodPerWinterDay { get; init; } = 1;
+
+    /// <summary>
+    /// Days one burn of firewood lasts a household.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, 2026-08-11: <em>"make firewood consumption take longer. like 4x longer. it
+    /// goes too fast."</em></b> The rate had to move here rather than into
+    /// <see cref="FirewoodPerWinterDay"/> because sim state is integer-only (D2) and a
+    /// quarter of a log is not a number this game can hold. Four days per log is the same
+    /// four-times-slower burn, expressed in a unit the sim has.
+    /// </para>
+    /// <para>
+    /// <b>The economy follows it</b> — <c>FirewoodPerHouseholdPerWinter</c> divides by it, so
+    /// the winter store target, the woodcutter seats and the foresters feeding them all come
+    /// down together rather than the burn quietly getting cheaper than the budget.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("firewood_burn_interval_days")]
+    public int FirewoodBurnIntervalDays { get; init; } = 1;
+
+    /// <summary>
+    /// Days between sweeps of the valley for regrowth. <b>Zero switches it off.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// One sweep is both stages of a tree: a sapling seen by a sweep has stood for one
+    /// period and becomes wood, and a grass tile touching wood becomes a sapling. So at
+    /// sixty days — half a year on the shipped calendar — a cleared tile is a sapling within
+    /// six months and a mature tree within a year, which is the rate Joe asked for.
+    /// </para>
+    /// <para>
+    /// It is also the cost control: the sweep examines one period's worth of tiles per tick,
+    /// so a longer period is cheaper per tick as well as slower. Zero is off, which is what
+    /// Phase 0's world wants — its spec describes a fixed valley and a fixture that grew
+    /// trees under the villager would put noise in the one place the project needs none.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("regrowth_period_days")]
+    public int RegrowthPeriodDays { get; init; }
+
+    /// <summary>How much of anything one villager can carry in one trip.</summary>
+    /// <remarks>
+    /// What stops a fetch being a teleport with extra steps (D30). One trip brings
+    /// back one armful, so a household far from the granary genuinely eats worse than
+    /// one beside it — which is where D32 says the interesting inequality lives.
+    /// </remarks>
+    [JsonPropertyName("carry_capacity")]
+    public int CarryCapacity { get; init; } = 40;
+
+    /// <summary>How much food one granary holds. <b>A size, not a promise.</b></summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ A RAW QUANTITY SINCE D219 (Joe): *"It's fine if the granary feeds a different
+    /// number of people. The user should build more granaries — and will need to! — and upgrade
+    /// them."*</b> It was <c>granary_feeds_people: 30</c>, and
+    /// <see cref="World.VillageEconomy.GranaryCapacity"/> multiplied that by a winter's ration to
+    /// reach a quantity.
+    /// </para>
+    /// <para>
+    /// <b>The argument that settled it is about what a granary IS.</b> A granary is a box of a
+    /// certain size; <em>how many people it feeds is a consequence of how much they eat.</em>
+    /// Stating it as people made the building promise something about population and quietly
+    /// resized itself whenever the food economy moved — so a village that ate more got a bigger
+    /// granary for free, which is the opposite of a pressure. **Now, a village that eats more
+    /// needs more granaries**, which is D39's *"the buffer is priced, not capped"* applied to the
+    /// building rather than to the food, and it is what gives an upgrade tier something to be.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>What it stops guaranteeing, stated plainly:</b> nothing here promises the founders
+    /// can be fed. <see cref="World.VillageEconomy.PopulationCeiling"/> is a *consequence* of this
+    /// number now — divide by what a head demands — rather than this number being derived to hit a
+    /// population. **A granary too small for the village that starts in it is now possible**, and
+    /// the validator below is what refuses it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("granary_capacity")]
+    public int GranaryCapacity { get; init; } = 2500;
+
+    /// <summary>Where the market stands — among the homes, which is its whole value.</summary>
+    // ⚠️ (3, 3) since D383 — south-east, a lane on every side, see BuilderHutY.
+    [JsonPropertyName("market_x")]
+    public int MarketX { get; init; } = 3;
+
+    /// <summary>Where the market stands.</summary>
+    [JsonPropertyName("market_y")]
+    public int MarketY { get; init; } = 3;
+
+    /// <summary>
+    /// How many traders the market has room for. <b>Zero switches the market off.</b>
+    /// </summary>
+    /// <remarks>
+    /// More than one, per Joe — a market is a place several people work, not a
+    /// one-person post. Zero is a supported value and there is a test that runs the
+    /// whole village on it: distribution by hand must stay something the settlement can
+    /// live without, because the moment it cannot, an unstaffed market becomes a cliff
+    /// the founding village falls off (spec §3, §14.4).
+    /// </remarks>
+    [JsonPropertyName("market_capacity")]
+    public int MarketCapacity { get; init; } = 2;
+
+    /// <summary>What a market keeps of each good before the player says otherwise (D612, Joe: <i>"set the market's starting limits to 1000 for each item"</i>).</summary>
+    /// <remarks>
+    /// ⛔ <b>It replaced <c>market_stock_per_household</c></b> (40, then 100 since D417), which sized the stock to the
+    /// households a market served because D197 measured a target sized to the building doubling the village's hauling.
+    /// Flat at Joe's word, and measured before it shipped. Shared out of the room in the catalogue's order, so the
+    /// starting limits never add up past <see cref="MarketStoreCapacity"/> (<c>StoreBuilding.KeepsUpTo</c>).
+    /// </remarks>
+    [JsonPropertyName("market_starting_limit")]
+    public int MarketStartingLimit { get; init; } = 1000;
+
+    /// <summary>
+    /// How much a market HOLDS, food and firewood together — a stated number (D416, Joe:
+    /// *"increase market capacity to 4000"*; D612: *"increase the capacity of the market from 4000 to 8000"*).
+    /// </summary>
+    /// <remarks>
+    /// Was derived — <c>market_stock_per_household × economy_horizon_households</c>, 800 shipped —
+    /// the shape D219 took away from the granary because a size that derives itself can hide a
+    /// divergence. ⭐ <b>Since D612 its goods' limits are its split</b> — they may not add up past it, and
+    /// at a market they replace D361's half-for-food rule (Joe's call).
+    /// </remarks>
+    [JsonPropertyName("market_store_capacity")]
+    public int MarketStoreCapacity { get; init; } = 8000;
+
+    // ---------------------------------------------------------------
+    //  What buildings cost to raise (D43)
+    // ---------------------------------------------------------------
+    //
+    // Two numbers each, on purpose. Logs are what the village must HAVE; work ticks are
+    // what it must SPEND. A building that is dear in one and cheap in the other is a
+    // different decision from one that is dear in both, and collapsing them into a
+    // single "cost" would delete that.
+
+    // ---------------------------------------------------------------
+    //  ⭐ THE STONE HALF OF EVERY RECIPE (`multi-material-construction.md`, D213)
+    // ---------------------------------------------------------------
+    //
+    // ⭐ THE MACHINERY SHIPPED AT ZERO AND THE PRICES CAME AFTER, which is D82's and D210's
+    // shape: the refactor landed as a **provable no-op** — every golden byte-identical — so the
+    // balance change could not hide inside it. A recipe drops its zeros, so a building priced at
+    // 0 stone has exactly the recipe it had before any of this existed.
+    //
+    // ⭐⭐ WHICH BUILDINGS PAY, AND IT WAS MEASURED RATHER THAN CHOSEN (D213, D214). Everything
+    // the **player marks** pays; the two free buildings and the **house** do not.
+    //
+    //   STORES (granary 10, warehouse 8, market 10) — a granary the village cannot pay for waits, the
+    //   settlement carries on out of its pile, and the site says what it is short of. Measured at
+    //   fifty years: identical to charging nothing until somebody marks one.
+    //
+    //   HUTS (3 each, Joe's call — "a nominal amount") — fifty years of the shipped opening:
+    //
+    //     hut stone 0, no seam   →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
+    //     hut stone 3, no seam   →  24 alive, 1 gatherer hut,  1 woodcutter hut,  2 unfinished
+    //     hut stone 3, a seam    →  24 alive, 2 gatherer huts, 2 woodcutter huts, 0 unfinished
+    //
+    //   **Full population either way.** The cost of not painting a seam is that the village
+    //   builds FEWER huts, which is a legible and recoverable pressure rather than a death —
+    //   `DESIGN.md §0.1`, the challenge is in the planning and never in the punishment.
+    //
+    // ⚠️⚠️ AN EARLIER MEASUREMENT SAID PRICING THE HUTS TOOK THE FOUNDING FROM 24 ALIVE TO 7,
+    // AND IT IS RECORDED HERE BECAUSE IT WAS WRONG FOR AN INSTRUCTIVE REASON. That probe ran
+    // BEFORE `SimWorld.NextSiteToServe` existed, so what it measured was **D135's starved-head
+    // stall** — a site blocked on stone froze every site behind it — and not the price at all.
+    // Re-measured with the stall fixed, the collapse is gone entirely. *A number is only as good
+    // as the build it was taken on.*
+    //
+    // ⛔ A HOUSE STILL PAYS NOTHING, for a reason no measurement changes: a house is the one
+    // building the VILLAGE decides to raise (D42), so a stone price there is a growth gate on a
+    // resource an unattended valley never gathers.
+    //
+    // ⚠️ ONE KEY PER (BUILDING, GOOD), symmetric with the log keys above, and that is
+    // deliberately a stopgap rather than the catalogue. `content-inventory.md` finding 1 and
+    // `goods-catalog.md §9` both scope **BuildingKind becoming a row** as its own axis — ~45
+    // buildings against 10 — and 45 × 4 materials is not a flat key list. What this buys is the
+    // *structure*: `BuildingRecipe` holds N materials now, so the tier climb is unblocked and
+    // the catalogue is a refactor rather than a redesign.
+
+    /// <summary>Logs a granary takes to build.</summary>
+    [JsonPropertyName("granary_logs")]
+    public int GranaryLogs { get; init; } = 40;
+
+    /// <summary>Ticks of work a granary takes, once the logs are on site.</summary>
+    [JsonPropertyName("granary_work_ticks")]
+    public int GranaryWorkTicks { get; init; } = 60;
+
+    /// <summary>Logs a warehouse takes to build.</summary>
+    [JsonPropertyName("warehouse_logs")]
+    public int WarehouseLogs { get; init; } = 30;
+
+    /// <summary>Ticks of work a warehouse takes.</summary>
+    [JsonPropertyName("warehouse_work_ticks")]
+    public int WarehouseWorkTicks { get; init; } = 45;
+
+    /// <summary>Logs a market takes to build.</summary>
+    [JsonPropertyName("market_logs")]
+    public int MarketLogs { get; init; } = 35;
+
+    /// <summary>Ticks of work a market takes.</summary>
+    [JsonPropertyName("market_work_ticks")]
+    public int MarketWorkTicks { get; init; } = 50;
+
+    /// <summary>Stone a granary takes to build.</summary>
+    [JsonPropertyName("granary_stone")]
+    public int GranaryStone { get; init; } = 30;
+
+    /// <summary>Stone a warehouse takes to build.</summary>
+    [JsonPropertyName("warehouse_stone")]
+    public int WarehouseStone { get; init; } = 24;
+
+    /// <summary>Stone a market takes to build.</summary>
+    [JsonPropertyName("market_stone")]
+    public int MarketStone { get; init; } = 30;
+
+    /// <summary>Stone a woodcutter's hut takes to build.</summary>
+    [JsonPropertyName("hut_stone")]
+    public int HutStone { get; init; } = 9;
+
+    /// <summary>Stone a gatherer's hut takes to build.</summary>
+    [JsonPropertyName("gatherer_hut_stone")]
+    public int GathererHutStone { get; init; } = 9;
+
+    /// <summary>Stone a forester's hut takes to build.</summary>
+    [JsonPropertyName("forester_hut_stone")]
+    public int ForesterHutStone { get; init; } = 9;
+
+    /// <summary>Stone a farmhouse takes to build.</summary>
+    [JsonPropertyName("farmhouse_stone")]
+    public int FarmhouseStone { get; init; } = 9;
+
+    /// <summary>
+    /// Stone a house takes to raise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>The one to think hardest about before raising above zero.</b> A house is the only
+    /// building the <em>village</em> decides to put up — the player never places one (D42) — so
+    /// a stone price here is a growth gate rather than a purchase, and an unattended valley
+    /// paints no seam. `VillageEconomy` derives the timber budget against
+    /// <see cref="LogsPerHouse"/> and has no stone term at all.
+    /// </remarks>
+    [JsonPropertyName("home_stone")]
+    public int HomeStone { get; init; }
+
+    /// <summary>Logs a woodcutter's hut takes to build.</summary>
+    [JsonPropertyName("hut_logs")]
+    public int HutLogs { get; init; } = 25;
+
+    /// <summary>Ticks of work a woodcutter's hut takes.</summary>
+    [JsonPropertyName("hut_work_ticks")]
+    public int HutWorkTicks { get; init; } = 40;
+
+    /// <summary>Ticks of work a house takes to raise (D102).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>New because houses used to be instant</b>, which
+    /// <c>specs/cold-start.md §7.1b</c> has been carrying as an open inconsistency since Joe
+    /// watched it: every other building is marked, hauled to and worked on, and a house simply
+    /// appeared the moment its timber was paid for.
+    /// </para>
+    /// <para>
+    /// <b>The cheapest thing that is still a building.</b> Below a woodcutter's hut, because a
+    /// house is one room and a hut is a workshop — and deliberately not below a pile, which
+    /// costs no work at all because a pile is not a building. What this number really controls
+    /// is how much a growing village's houses compete with its granaries and huts for the
+    /// hands that build both, which is the competition D102 exists to create.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("home_work_ticks")]
+    public int HomeWorkTicks { get; init; } = 30;
+
+    // ---- House tiers (`specs/house-tiers.md`, D716–D719) — every number a proposal until §10's arm B is filled ----
+
+    /// <summary>Logs a stone cottage takes to raise (`house-tiers.md §4.1`).</summary>
+    [JsonPropertyName("cottage_logs")]
+    public int CottageLogs { get; init; } = 20;
+
+    /// <summary>Stone a stone cottage takes to raise.</summary>
+    [JsonPropertyName("cottage_stone")]
+    public int CottageStone { get; init; } = 30;
+
+    /// <summary>Ticks of work a stone cottage takes.</summary>
+    [JsonPropertyName("cottage_work_ticks")]
+    public int CottageWorkTicks { get; init; } = 45;
+
+    /// <summary>A stone cottage's larder, food and firewood together — bigger than the cabin's (Joe, D717).</summary>
+    [JsonPropertyName("cottage_store_cap")]
+    public int CottageStoreCap { get; init; } = 600;
+
+    /// <summary>Firewood a stone cottage burns in a winter — half the cabin's 24 (D206).</summary>
+    [JsonPropertyName("cottage_winter_firewood")]
+    public int CottageWinterFirewood { get; init; } = 12;
+
+    /// <summary>Days a fireless stone cottage keeps a family safe (the cabin's is <c>exposure_days_sheltered</c>).</summary>
+    [JsonPropertyName("cottage_exposure_days_sheltered")]
+    public int CottageExposureDaysSheltered { get; init; } = 30;
+
+    /// <summary>Logs an insulated manor takes to raise.</summary>
+    [JsonPropertyName("manor_logs")]
+    public int ManorLogs { get; init; } = 30;
+
+    /// <summary>Stone an insulated manor takes to raise.</summary>
+    [JsonPropertyName("manor_stone")]
+    public int ManorStone { get; init; } = 45;
+
+    /// <summary>Ticks of work an insulated manor takes.</summary>
+    [JsonPropertyName("manor_work_ticks")]
+    public int ManorWorkTicks { get; init; } = 60;
+
+    /// <summary>An insulated manor's larder — bigger than the cottage's (Joe, D717).</summary>
+    [JsonPropertyName("manor_store_cap")]
+    public int ManorStoreCap { get; init; } = 800;
+
+    /// <summary>Firewood an insulated manor burns in a winter — D206's −80 % of 24 is 4.8.</summary>
+    [JsonPropertyName("manor_winter_firewood")]
+    public int ManorWinterFirewood { get; init; } = 5;
+
+    /// <summary>Days a fireless insulated manor keeps a family safe.</summary>
+    [JsonPropertyName("manor_exposure_days_sheltered")]
+    public int ManorExposureDaysSheltered { get; init; } = 40;
+
+    /// <summary>
+    /// How long a stone house lasts against a timber one, as a percentage of <c>building_wears_in_years</c> and its two
+    /// siblings (`house-tiers.md §4.8`, *lasts*; Joe, D718). 200: a cottage is worn at 16 years where a cabin is at 8.
+    /// </summary>
+    [JsonPropertyName("stone_house_lasts_percent")]
+    public int StoneHouseLastsPercent { get; init; } = 200;
+
+    /// <summary>
+    /// The generation that must be born in the valley before the stone cottage is learned (`house-tiers.md §4.4`, idea A,
+    /// D718: Joe, <i>"I love the family tree unlock idea!"</i>) — read against <c>SimWorld.DeepestGenerationBorn</c>.
+    /// </summary>
+    /// <remarks>
+    /// <b>3, the founders' grandchildren</b>, measured at D719 (`ZzGenerations`): the 3rd generation is first born at Year
+    /// 20–25 and the 4th at 43–51, so with <see cref="CottageUnlockPopulation"/> the cottage lands ~Year 25–32 in Joe's
+    /// villages, against his Year 30. ⚠️ Checked where the factors change — a birth and an arrival — never per tick, and
+    /// the latch (<c>SimWorld.CottageLearned</c>) is the gate; at 1 the founders satisfy it before anybody is born.
+    /// </remarks>
+    [JsonPropertyName("cottage_unlock_generation")]
+    public int CottageUnlockGeneration { get; init; } = 3;
+
+    /// <summary>The most people the village must have held at once before the stone cottage is learned (§4.4) — <c>MostEverAlive</c>.</summary>
+    /// <remarks><b>20</b>: Joe's saves hold 18–27 at Year ~30 (D719), so the size is what holds the 3rd generation back.</remarks>
+    [JsonPropertyName("cottage_unlock_population")]
+    public int CottageUnlockPopulation { get; init; } = 20;
+
+    /// <summary>The generation that must be born before the insulated manor is learned (§4.4) — and the cottage first.</summary>
+    /// <remarks>
+    /// <b>5, the founders' great-great-grandchildren</b>: first born at Year 69 and 86 in the only valleys that reached it
+    /// (D719). With <see cref="ManorUnlockPopulation"/> the manor lands ~Year 70–86, against Joe's Year 80–90.
+    /// </remarks>
+    [JsonPropertyName("manor_unlock_generation")]
+    public int ManorUnlockGeneration { get; init; } = 5;
+
+    /// <summary>The most people the village must have held before the insulated manor is learned (§4.4).</summary>
+    /// <remarks><b>45</b>: Joe's saves hold 45–60 at Year ~70–77 (D719).</remarks>
+    [JsonPropertyName("manor_unlock_population")]
+    public int ManorUnlockPopulation { get; init; } = 45;
+
+    // `pile_work_ticks` WAS HERE AND IS GONE (D96, Joe). It said "small, but not zero — the
+    // work is what makes placing a pile a decision with a cost", and the cost turned out to
+    // belong somewhere better: a pile may only go on ground that is already clear, so ITS
+    // COST IS THE CLEARING. That is paid in the same currency the rest of the game uses and
+    // it ties the harvest brush to placement, where an abstract eight ticks of levelling bare
+    // earth tied it to nothing.
+    //
+    // Deleted rather than set to zero, on Joe's own reasoning: a number that is always zero
+    // is a lie waiting to be found.
+
+    /// <summary>
+    /// How empty a household's stores get before somebody drops everything to refill them
+    /// (D77).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>An emergency line, not the ordinary one.</b> This is the share below which a
+    /// family stops what it is doing — because a household at nothing in winter is the case
+    /// the whole rule exists for, and the errand used to lose to ordinary work every tick.
+    /// Joe watched a house come through a winter with no firewood at all while its residents
+    /// walked next door to get warm.
+    /// </para>
+    /// <para>
+    /// Deliberately low. A high number makes every villager an errand-runner and empties the
+    /// berry patch, which is the shape D52 records; a low one means the interruption is rare
+    /// and always justified. Measured at 20: household-time on an empty larder goes to
+    /// <b>zero</b>, with a market and without.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("restock_emergency_percent")]
+    public int RestockEmergencyPercent { get; init; } = 20;
+
+    /// <summary>How much painted ground one worker can keep (D86).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The first limit in this game that is not distance.</b> Everything bounding work so
+    /// far — <c>MaxHomeToWorkTiles</c>, catchment radii — asks how far somebody must walk.
+    /// This asks how much they can look after, which is what makes the staffing control
+    /// (D62's <c>−1/+1</c>) matter: paint more ground, hire more hands.
+    /// </para>
+    /// <para>
+    /// <b>Content, not a derived number.</b> It says how much land one person keeps, which is
+    /// a fact about the world rather than a consequence of the economy — the same class of
+    /// number as a building's capacity. **The ceiling it implies is derived, though**: a
+    /// workplace cannot be staffed past its capacity, so the most ground anybody can hold is
+    /// capacity × this, and D86's *"to a limit"* needs no second number (D16).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("work_ground_tiles_per_worker")]
+    public int WorkGroundTilesPerWorker { get; init; } = 24;
+
+    // ⭐⭐ `logs_per_forest_tile`, `stone_per_rock_tile` and `iron_per_deposit_tile` MOVED TO THE
+    // GOODS CATALOGUE (D210, `goods-catalog.md`) and are `GoodRow.YieldPerTile` now.
+    //
+    // All three were read by exactly ONE switch in `SimWorld` and by nothing else in the
+    // codebase, which is what made moving them safe — and that switch's own comment had been
+    // asking for this: *"a new harvestable kind is a row… not a fifth place to remember."*
+    //
+    // ⛔ They are DELETED rather than left in place, because a config key nothing reads is worse
+    // than no key at all: a modder edits it, the game ignores them, and nothing says so. The
+    // reasoning they carried is preserved on the rows and beside the seam counts below.
+    //
+    // The values were identical in the shipped file and the defaults (12, 12, 8), so this moved
+    // no behaviour — which is what let the goldens stay byte-identical.
+
+    // ---------------------------------------------------------------
+    //  Visible seams (D67, D84, D90)
+    // ---------------------------------------------------------------
+
+    /// <summary>How many stone seams the generator lays down.</summary>
+    /// <remarks>
+    /// <b>Rules, not coordinates</b> (D18): a modder controls how much ore a valley has and
+    /// roughly where, never which tile. Stone is the common one and sits near the village —
+    /// it is what a building past a log hut costs (D63).
+    /// </remarks>
+    [JsonPropertyName("stone_seam_count")]
+    public int StoneSeamCount { get; init; } = 4;
+
+    /// <summary>How far out the stone seams ring the origin.</summary>
+    [JsonPropertyName("stone_seam_ring_tiles")]
+    public int StoneSeamRingTiles { get; init; } = 14;
+
+    /// <summary>How wide one stone seam is.</summary>
+    [JsonPropertyName("stone_seam_radius_tiles")]
+    public int StoneSeamRadiusTiles { get; init; } = 2;
+
+    /// <summary>How many iron seams the generator lays down.</summary>
+    /// <remarks>
+    /// <b>Fewer and further out than stone, and that is the design rather than scarcity for
+    /// its own sake.</b> Reaching the iron is a decision the player makes — a valley whose ore
+    /// is in the far woods plays differently from one where it is on the doorstep, which is
+    /// the argument D67 makes for visible seams over a percentage roll.
+    /// </remarks>
+    [JsonPropertyName("iron_seam_count")]
+    public int IronSeamCount { get; init; } = 2;
+
+    /// <summary>How far out the iron seams ring the origin.</summary>
+    [JsonPropertyName("iron_seam_ring_tiles")]
+    public int IronSeamRingTiles { get; init; } = 22;
+
+    /// <summary>How wide one iron seam is.</summary>
+    [JsonPropertyName("iron_seam_radius_tiles")]
+    public int IronSeamRadiusTiles { get; init; } = 1;
+
+    /// <summary>Stone seams laid past <see cref="StoneSeamCount"/> (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Summed with the count since D475</b> — the two keys were the hash's split between drawn
+    /// and hashed seams, and every seam is drawn from its stage's stream now
+    /// (<see cref="MapGenerator.SeamsOf"/>). Ring <c>k</c> holds up to <c>4k</c> seams, so twelve
+    /// stone seams are four on the ring and eight half again further out — the D434 layout, spread.
+    /// </para>
+    /// <para>
+    /// <b>Why eight (Joe, 2026-09-29):</b> a quarry is cut only into rock and laborers clear rock
+    /// for good, so a valley must keep seams to quarry after its first are cleared. Measured over
+    /// 64 valleys: with eight, every one has at least three stone seams a villager can walk to.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("extra_stone_seams")]
+    public int ExtraStoneSeams { get; init; } = 8;
+
+    /// <summary>Iron seams laid past <see cref="IronSeamCount"/>, placed by hash (`quarry.md §3.1`, D434).</summary>
+    /// <remarks>
+    /// Two more on the iron ring, so every valley measured has an iron seam of
+    /// <see cref="IronSeamMinIron"/> it can walk to — the river cuts the first two off in some.
+    /// </remarks>
+    [JsonPropertyName("extra_iron_seams")]
+    public int ExtraIronSeams { get; init; } = 2;
+
+    /// <summary>Iron an iron seam holds at least: it grows a ring at a time until it does (D395, D434).</summary>
+    /// <remarks>
+    /// Joe: <em>"iron nodes ≥ 50"</em>, so the first seam cleared unlocks the smithy gift. Before
+    /// this no seam in 64 valleys held 50 — five tiles at 8 a tile, clipped by the river.
+    /// Growing costs no draws.
+    /// </remarks>
+    [JsonPropertyName("iron_seam_min_iron")]
+    public int IronSeamMinIron { get; init; } = 50;
+
+    /// <summary>
+    /// Stone seams laid across the whole valley beyond the near rings, on average (D543, `seams-revisited.md`; Joe:
+    /// *"more variety, more frequency across the whole valley"*). Each valley draws its own richness round this.
+    /// </summary>
+    [JsonPropertyName("scattered_stone_seams")]
+    public int ScatteredStoneSeams { get; init; } = 12;
+
+    /// <summary>Iron seams laid across the whole valley beyond the near ring, on average (D543). No 50-iron minimum.</summary>
+    [JsonPropertyName("scattered_iron_seams")]
+    public int ScatteredIronSeams { get; init; } = 4;
+
+    /// <summary>How far a valley's richness swings round those averages, as a percentage (D543): one draw per kind.</summary>
+    [JsonPropertyName("seam_count_variety_percent")]
+    public int SeamCountVarietyPercent { get; init; } = 50;
+
+    /// <summary>The grid the valley-wide seams are laid on, in tiles a cell (D543): one candidate a cell, so they spread.</summary>
+    [JsonPropertyName("seam_scatter_cell_tiles")]
+    public int SeamScatterCellTiles { get; init; } = 12;
+
+    /// <summary>No valley-wide stone seam within this many tiles of the founding — the house plots (D434, D543).</summary>
+    [JsonPropertyName("stone_seam_clear_of_founding_tiles")]
+    public int StoneSeamClearOfFoundingTiles { get; init; } = 10;
+
+    /// <summary>
+    /// No valley-wide iron seam within this many tiles of the founding (D543): *"iron a little closer"*, not on the
+    /// doorstep — at the stone's 10, one valley in some had iron seven tiles from the founders.
+    /// </summary>
+    [JsonPropertyName("iron_seam_clear_of_founding_tiles")]
+    public int IronSeamClearOfFoundingTiles { get; init; } = 18;
+
+    /// <summary>The smallest a valley-wide seam may be, in tiles (D543, Joe: *"wider range"*).</summary>
+    [JsonPropertyName("scattered_seam_tiles_min")]
+    public int ScatteredSeamTilesMin { get; init; } = 1;
+
+    /// <summary>The largest a valley-wide seam may be, in tiles — skewed so big ones are rare (D543).</summary>
+    [JsonPropertyName("scattered_seam_tiles_max")]
+    public int ScatteredSeamTilesMax { get; init; } = 40;
+
+    /// <summary>
+    /// How often a stone seam takes each shape — <c>blob</c>, <c>vein</c>, <c>cluster</c>, <c>arms</c> — as weights
+    /// (D543, Joe: *"all of the above, more variety"*). The near seams take only the solid two.
+    /// </summary>
+    [JsonPropertyName("stone_seam_shapes")]
+    public IReadOnlyDictionary<string, int> StoneSeamShapes { get; init; } =
+        new Dictionary<string, int> { ["blob"] = 40, ["vein"] = 15, ["cluster"] = 25, ["arms"] = 20 };
+
+    /// <summary>How often an iron seam takes each shape, as weights — iron runs in veins more than stone (D543).</summary>
+    [JsonPropertyName("iron_seam_shapes")]
+    public IReadOnlyDictionary<string, int> IronSeamShapes { get; init; } =
+        new Dictionary<string, int> { ["blob"] = 25, ["vein"] = 40, ["cluster"] = 15, ["arms"] = 20 };
+
+    /// <summary>How much land the exiles arrive having already chosen to live on (D42).</summary>
+    /// <remarks>
+    /// A village founded with no residential zone could never build a house, so the
+    /// starter area exists to stop the game opening on a decision the player has no
+    /// basis for — and to show them what a zone looks like before asking them to paint
+    /// one.
+    /// <para>
+    /// Deliberately modest: large enough that a village nobody helps behaves as it
+    /// always has, small enough that a player who is actively growing the place will
+    /// run out and meet the brush rather than never needing it.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>Four is a measured floor, not a taste.</b> At three, ten of eleven seeds held
+    /// and the eleventh died out — and it died for a reason worth understanding: a
+    /// village that cannot spread cannot form new households, so every home fills to
+    /// <see cref="MaxHouseholdSize"/>, births stop, and the settlement ages out. That is
+    /// D34's failure arriving by a different road.
+    /// </para>
+    /// <para>
+    /// So the starter zone holds comfortably more than the population one granary
+    /// supports. A village nobody helps behaves as it always has; the brush becomes
+    /// necessary when the player builds more granaries and grows past it, which is
+    /// exactly when they are paying attention.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <b>⚠️ Four → six (D386).</b> A home is a house in a plot now — three tiles by two and a
+    /// lane, nine tiles of paint against one — and the radius-four diamond held three plots
+    /// where the fixture village raises seven houses. ⛔ <b>Not seven or eight, and it was
+    /// measured:</b> the diamond's west side lies inside the founding forager's ring, and every
+    /// ring of paint beyond six costs food — residential ground does not regrow (RegrowthSystem)
+    /// — so twelve seeds read 259 / 278 / 12 at four, 199 / 252 / 46 at six and 167 / 239 / 62
+    /// at seven <em>with the old one-tile houses</em>. Six is the smallest diamond that holds the
+    /// village, and the fixture's food premise moved with it, not with the plots (204 / 247 / 21
+    /// with plots at six).
+    /// </remarks>
+    [JsonPropertyName("starting_residential_radius")]
+    public int StartingResidentialRadius { get; init; } = 6;
+
+    /// <summary>
+    /// How far a house's yard reaches past its GATE end, in quarter tiles, one of these by a hash of
+    /// the household (D411, `specs/organic-housing.md §9.5` P4). Which end is the gate's is hashed too.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⭐ <b>The yard follows the house, whichever way it is turned.</b> It is a rectangle about the
+    /// house — this far past each end, <see cref="HomeYardBackQuarters"/> behind, nothing in front —
+    /// and the fence is the tiles whose centres it covers (the centre rule, D319), walled on their
+    /// edges (D404). Joe, with a Foundation screenshot: *"everything in the green boundary is
+    /// housing"* — yards of every size, each turned with its house.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Quarters, and never a half.</b> A tile centre sits on a half along a house turned a
+    /// quarter, and the centre rule's edge is inclusive, so a reach of exactly a half claims a whole
+    /// extra row on one facing and not the next (D331's slip).
+    /// </para>
+    /// <para>
+    /// ⛔ <b>At least three.</b> The gate end must reach a tile past the house, or the yard sits
+    /// wholly behind it, touches the lane nowhere, and has no gate — found on the first picture,
+    /// where most houses stood with no yard at all. The loader refuses less.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("home_yard_side_quarters")]
+    public IReadOnlyList<int> HomeYardSideQuarters { get; init; } = new[] { 3, 5 };
+
+    /// <summary>How far a house's yard reaches past its OTHER end, in quarter tiles, one of these by hash (D411, P4).</summary>
+    /// <remarks>One quarter keeps that end flush with the house; three reaches a tile past it.</remarks>
+    [JsonPropertyName("home_yard_other_side_quarters")]
+    public IReadOnlyList<int> HomeYardOtherSideQuarters { get; init; } = new[] { 1, 3 };
+
+    /// <summary>How far a house's yard reaches behind it, in quarter tiles, one of these by hash (D411, P4).</summary>
+    /// <remarks>
+    /// Five is one row behind the house, nine is two (D404 measured two rows against one: 57 people
+    /// held against 42, 8 starved against 18, with the fences up). ⚠️ Quarters for the reason
+    /// <see cref="HomeYardSideQuarters"/> gives.
+    /// </remarks>
+    [JsonPropertyName("home_yard_back_quarters")]
+    public IReadOnlyList<int> HomeYardBackQuarters { get; init; } = new[] { 5, 9 };
+
+    /// <summary>
+    /// How far back from its path a household likes its house, in quarter tiles, one of these by
+    /// hash (D411, `organic-housing.md §9.5` P1).
+    /// </summary>
+    /// <remarks>
+    /// Every quarter tile off it costs a quarter tile of walk in the site's score, so houses stand
+    /// back from a path by different amounts and their fronts do not share one line — the thing
+    /// that made the rows read as a street (§9.2).
+    /// </remarks>
+    [JsonPropertyName("home_setback_quarters")]
+    public IReadOnlyList<int> HomeSetbackQuarters { get; init; } = new[] { 6, 8, 10 };
+
+    /// <summary>
+    /// The clear ground a household wants between its yard and a neighbour's, in tiles, one of
+    /// these by hash (D411, P2). Every tile short of it costs <see cref="HomeCrowdTiles"/>.
+    /// </summary>
+    /// <remarks>
+    /// Joe, on the fences slice: *"they need some room to breathe with yards and pathways and such."*
+    /// It replaces D386's <c>plot_apart_tiles</c>, which D404 measured as a tie-break and nothing more.
+    /// </remarks>
+    [JsonPropertyName("home_gap_tiles")]
+    public IReadOnlyList<int> HomeGapTiles { get; init; } = new[] { 1, 2, 3 };
+
+    /// <summary>What each tile a site stands short of its household's gap costs, in tiles walked (D411, P2).</summary>
+    [JsonPropertyName("home_crowd_tiles")]
+    public int HomeCrowdTiles { get; init; } = 3;
+
+    /// <summary>
+    /// What a neighbour within two tiles of the gap is worth, in tiles walked (D411, P2) — so houses
+    /// gather into clusters rather than scattering, without packing into rows.
+    /// </summary>
+    [JsonPropertyName("home_company_tiles")]
+    public int HomeCompanyTiles { get; init; } = 2;
+
+    /// <summary>How far a site looks for a path to face, in tiles (D411, P1). Beyond it, a house faces the village.</summary>
+    [JsonPropertyName("home_path_search_tiles")]
+    public int HomePathSearchTiles { get; init; } = 8;
+
+    /// <summary>
+    /// How much a tile of walk to the nearest well weighs against a tile of walk to work, in percent
+    /// (D427, P6) — so houses gather round the wells the player places.
+    /// </summary>
+    /// <remarks>
+    /// <b>Fifty, a light pull, on Joe's word.</b> Below two hundred it barely moves a house: a step
+    /// toward a well that lies away from the village costs a tile to work AND a tile to the granary.
+    /// </remarks>
+    [JsonPropertyName("home_well_weight")]
+    public int HomeWellWeight { get; init; } = 50;
+
+    /// <summary>
+    /// How far a household will walk for water, in tiles (D427, P6). A site with no well this close
+    /// pays the whole reach in its score, and a household this far out makes no trip.
+    /// </summary>
+    [JsonPropertyName("home_well_reach_tiles")]
+    public int HomeWellReachTiles { get; init; } = 12;
+
+    /// <summary>
+    /// Whether the founders arrive to a village already built, or to an empty valley (D70).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>False is the game; true is the world most of the tests describe.</b> The shipped
+    /// file sets this false — the founders get a cart and nothing else, and every building,
+    /// every home and the residential zone itself are the player's to make. Fixtures leave
+    /// it true, so the several hundred tests written about an established village go on
+    /// testing an established village rather than four people freezing in a field.
+    /// </para>
+    /// <para>
+    /// <b>The precedent is <see cref="FirewoodPerWinterDay"/>.</b> Phase 0's spec rules
+    /// warmth out by name, so its fixture switches fuel off entirely and
+    /// <c>HearthSystem</c> honours that — <em>"the fixture should encode the world its
+    /// tests describe"</em>. This is the same move one layer up, and the same discipline
+    /// applies with it: <b>the cold start needs its own tests, or it becomes the one path
+    /// in the game nothing exercises.</b> METHODOLOGY §3's rule about the gap between the
+    /// fixture and the shipped file is what makes that non-optional — the gap has already
+    /// produced D48, D49 and D50.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_buildings")]
+    public bool FoundingBuildings { get; init; } = true;
+
+    /// <summary>How much the founders' cart can hold, across every kind of goods (D64).</summary>
+    /// <remarks>
+    /// <b>Small on purpose.</b> The cart accepts every good, unlike every other store, so
+    /// its capacity rather than its rules is the only thing stopping it being the granary
+    /// and the warehouse at once. A village that never outgrows its wagon never has to build.
+    /// </remarks>
+    [JsonPropertyName("cart_capacity")]
+    public int CartCapacity { get; init; } = 200;
+
+    /// <summary>Food the founders arrive carrying.</summary>
+    /// <remarks>
+    /// <b>One of the two dials for how hard the opening is</b>
+    /// (<c>specs/cold-start.md §7.2</c>), the other being the founding season. The exposure
+    /// rates are deliberately <em>not</em> a dial: they describe a person in the cold, and
+    /// D53 refused moving them to make a body count come out right.
+    /// </remarks>
+    [JsonPropertyName("cart_food")]
+    public int CartFood { get; init; } = 400;
+
+    // `cart_logs` WAS HERE AND IS GONE (D90 step 4, D95, landed with D96). It was a start on
+    // the first house, and it existed because of D72 — building timber was drawn only from
+    // warehouses and a cold start has none, so even felled logs could not become a house. The
+    // harvest brush gave the village its own way to timber and that gate lifted without
+    // anybody noticing.
+    //
+    // D95 measured taking it away rather than assuming: forty years went from 13 alive in 5
+    // households to 14 in 6, houses still raised, and DoingNothingKillsTheFounders still
+    // killed all four. Thirty logs was never the constraint, and that cart space is worth
+    // more as food. The shipped file had already been set to 0.
+    //
+    // DELETED RATHER THAN LEFT AT ZERO, because the cart now REFUSES logs and Stockpile.
+    // Receive knows nothing about Accepts — so the key would have gone on quietly loading
+    // the fixture's default of ten into a wagon that will not take them.
+
+    /// <summary>Tools the founders arrive carrying — the only ones in the world (D17, D64).</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Inert until there is a workshop</b>, and that is the honest state of it: nothing
+    /// consumes tools yet, so this is a stock the player can see and cannot spend. D17 parked
+    /// tools waiting on somewhere to make them, and Joe's opening has the founders arrive with
+    /// them, so the good and the founding stock land together and the mechanic follows.
+    /// </para>
+    /// <para>
+    /// <b>Not a difficulty dial</b>, unlike <see cref="CartFood"/> beside it — it cannot be,
+    /// while nothing spends it. When tools start wearing out it becomes one, and this remark
+    /// is what should be deleted then.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("cart_tools")]
+    public int CartTools { get; init; } = 20;
+
+    // ⛔⛔ `cart_stone` WAS HERE FOR ONE COMMIT AND IS GONE (Joe, D215): *"there should already
+    // be stone on the map for the user to ask the laborers to harvest. I don't want stone in the
+    // cart. Only food and tools."*
+    //
+    // ⚠️⚠️ IT EXISTED BECAUSE OF A UNIT I MISREAD, AND THAT IS THE PART WORTH KEEPING. D214
+    // measured the distance from a founding site to the nearest reachable stone as **120**, read
+    // it as 120 tiles, and concluded the seams were out of reach — so the founders were given a
+    // pile of stone to start with. `TravelCostField.Cost` returns **cost units**, and
+    // `BaseTileCost` is 10: the real distance is **twelve tiles**, on every seed. Worldgen says
+    // so out loud one file over — *"STONE NEAR, IRON FAR… a valley whose ore sits in the far
+    // woods plays differently from one where it is on the doorstep"* — and
+    // `stone_seam_ring_tiles` is 14.
+    //
+    // **The founding was never short of stone; the test fixture simply never painted a seam.**
+    // A number in the wrong unit bought a starting resource the game did not need — the same
+    // shape as D214's other correction, where a probe measured a stall and was read as measuring
+    // a price.
+
+    /// <summary>Share of a building's logs returned when it is pulled down, as a percentage.</summary>
+    /// <remarks>
+    /// Deliberately less than everything. Demolition is how a player corrects a mistake
+    /// (D43), and it should cost something — otherwise a badly-sited granary is free to
+    /// undo and the placement decision carries no weight at all.
+    /// </remarks>
+    [JsonPropertyName("demolition_returns_percent")]
+    public int DemolitionReturnsPercent { get; init; } = 50;
+
+    /// <summary>
+    /// Days outdoors in winter, unclothed, before a healthy adult is in danger (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Stated in <b>days</b>, not ticks, because it is a statement about a human being
+    /// in the cold rather than about the tick rate — and the tick rate has already moved
+    /// once (D49). Fifteen days is half a winter, which is Joe's number and is chosen so
+    /// that going out is dangerous without being immediately fatal.
+    /// </para>
+    /// <para>
+    /// Zero switches outdoor cold off entirely, which is the world clothing eventually
+    /// creates — the <c>market_capacity: 0</c> pattern, so the village can be tested
+    /// against it before the clothing chain exists.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("exposure_days_outdoors")]
+    public int ExposureDaysOutdoors { get; init; } = 15;
+
+    /// <summary>
+    /// Days under a roof with no fire burning before a healthy adult is in danger (D45).
+    /// </summary>
+    /// <remarks>
+    /// Twenty-five, and what that number decides is worth knowing: it is <em>less</em>
+    /// than a thirty-day winter, so an unheated house can still kill inside one season.
+    /// Had it landed above thirty, <c>CauseOfDeath.Cold</c> would have gone dormant until
+    /// clothing shipped and D17's whole reversal with it.
+    /// </remarks>
+    [JsonPropertyName("exposure_days_sheltered")]
+    public int ExposureDaysSheltered { get; init; } = 25;
+
+    /// <summary>
+    /// Days at a burning hearth to come back <b>from the brink of freezing</b> (Joe, D192).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>The third number in D45's table, and the one that was never stated.</b> Fifteen days
+    /// outdoors kills; twenty-five under a fireless roof kills; **five at a fire brings you all
+    /// the way back.** Together those three are the whole cold model, readable in one line each.
+    /// </para>
+    /// <para>
+    /// <b>⭐ IT USED TO BE DERIVED BY MIRRORING THE OUTDOOR RATE, WHICH MEANT FIFTEEN.</b> The
+    /// old reasoning was that mirroring *"needs no number of its own"* — true, and it quietly
+    /// chose one anyway: half a winter to thaw. Joe, watching it: *"fire warm up should be much
+    /// faster than it currently is."* **A derivation that avoids stating a number still states
+    /// one**, and this is what that costs when nobody checks what it came out as.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Bounded below by a measurement</b>: a fire that zeroed the count outright was built,
+    /// measured and rejected — villagers spend **76% of winter at a lit hearth**, so nobody froze
+    /// in 120 years. Five days is fast; instant is a reset.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("thaw_days_at_a_fire")]
+    public int ThawDaysAtAFire { get; init; } = 5;
+
+    /// <summary>
+    /// How far toward freezing a villager gets before they break off work to get warm.
+    /// </summary>
+    /// <remarks>
+    /// Halfway is where the shipped system already put its "you are cold" narration, so
+    /// the player has been trained on that line; this makes it mean something rather
+    /// than merely be said. Zero switches the behaviour off and nobody ever comes in.
+    /// </remarks>
+    [JsonPropertyName("seek_shelter_percent")]
+    public int SeekShelterPercent { get; init; } = 50;
+
+    /// <summary>
+    /// The causes a villager may be unsettled by (W2, `morale.md §4.1`, D798–D800) — a row each, weighed and tuned here.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>Measured before typed</b> (D799, `morale.md §13.1`): the walk from 24 tiles (the card's own walk note starts at
+    /// 8, which 64 % of Joe's adults are past), a cold winter at six days at the get-warm line held the year after, the fire
+    /// out held the year after, the jar at three dry days in a season, a death in the family held four seasons, and no roof
+    /// at all. ⛔ <b>No cause is health's</b> (D797). An empty list switches contentment off: nobody is ever unsettled.
+    /// </remarks>
+    [JsonPropertyName("contentment_causes")]
+    public IReadOnlyList<ContentmentCauseRow> ContentmentCauses { get; init; } = new[]
+    {
+        new ContentmentCauseRow { Cause = ContentmentCause.NoRoof },
+        new ContentmentCauseRow { Cause = ContentmentCause.FarWalk, At = 24 },
+        new ContentmentCauseRow { Cause = ContentmentCause.ColdWinter, At = 6, HeldSeasons = 4 },
+        new ContentmentCauseRow { Cause = ContentmentCause.FireOut, HeldSeasons = 4 },
+        new ContentmentCauseRow { Cause = ContentmentCause.DryJar, At = 3 },
+        new ContentmentCauseRow { Cause = ContentmentCause.DeathInTheFamily, HeldSeasons = 4 },
+    };
+
+    /// <summary>
+    /// The weight of causes held at once that makes a villager unsettled at a season's turn — <b>2</b>, two causes at once
+    /// (Joe, D800 call 1: one cause took a fifth of every village; two takes 4 of his 120 adults in ten years).
+    /// </summary>
+    [JsonPropertyName("contentment_unsettled_at")]
+    public int ContentmentUnsettledAt { get; init; } = 2;
+
+    /// <summary>
+    /// How long a couple waits between children while either of them is unsettled, as a share of
+    /// <c>birth_interval_years</c> — <b>200</b>, twice (Joe, D798 call 4: <i>"8 years in place of 4"</i>). 100 turns the
+    /// effect off. No draw, and the births gate's other terms untouched (W2 step 4).
+    /// </summary>
+    [JsonPropertyName("contentment_birth_interval_percent")]
+    public int ContentmentBirthIntervalPercent { get; init; } = 200;
+
+    /// <summary>
+    /// Seasons unsettled before the log says, once, that a person is thinking of leaving — <b>4</b>, a year (Joe, D798 call 3:
+    /// <i>never without warning</i>). The card says it from then on. Between 1 and <see cref="ContentmentLeavingSeasons"/>.
+    /// </summary>
+    [JsonPropertyName("contentment_thinking_of_leaving_seasons")]
+    public int ContentmentThinkingOfLeavingSeasons { get; init; } = 4;
+
+    /// <summary>
+    /// Seasons unsettled before a person is ready to leave the valley — <b>8</b>, two years (D798 call 3), at a season's turn
+    /// (W2 step 5, `morale.md §13.2`). A couple goes only when both are ready. 0 turns leaving, and its warning, off.
+    /// </summary>
+    [JsonPropertyName("contentment_leaving_seasons")]
+    public int ContentmentLeavingSeasons { get; init; } = 8;
+
+    /// <summary>Wood a couple needs before they can build a home of their own.</summary>
+    /// <remarks>
+    /// <para>
+    /// This is what makes timber matter: the village spreads only as fast as it can
+    /// build, so how it spends its labour decides how it grows. Drawn from both
+    /// parent households, all-or-nothing, like the food dowry.
+    /// </para>
+    /// <para>
+    /// Switched on only after dynamic labour demand landed. Before that, a fixed
+    /// forager demand sent everyone to the berry patch, nobody cut timber, and this
+    /// gate quietly stopped the village growing at all.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("logs_per_house")]
+    public int LogsPerHouse { get; init; } = 30;
+
+    /// <summary>
+    /// Logs a house's fence costs per yard tile it encloses (D388, `specs/organic-housing.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// Joe: *"when a constructed yard shape changes based on painting/unpainting, it should
+    /// require a round of proper construction/demolition with some level of cost/payback. it
+    /// feels too malleable."* The fence is part of the house's construction — the yard as it stood
+    /// the day the house was marked, a log a tile, hauled and worked with the rest, refunded with
+    /// the house — and the brush never moves it afterwards. One: a 3×2 plot is four yard tiles,
+    /// four logs on a thirty-log house, a cost that is felt and not a tax.
+    /// </remarks>
+    [JsonPropertyName("fence_logs_per_tile")]
+    public int FenceLogsPerTile { get; init; } = 1;
+
+    // `forage_site_capacity` is deleted with the patches. *"How many people can work one
+    // forage site at once"* has no subject any more: a gatherer's hut prices its seats from
+    // its own ring (D112), which is the same idea derived rather than typed.
+
+    // ---------------------------------------------------------------
+    //  Map generation (D18) — rules, not outcomes
+    // ---------------------------------------------------------------
+
+    // ⭐ `forage_site_count` AND `forage_site_ring_tiles` ARE DELETED, and the second of them
+    // was the anchor the whole food economy hung off — *"the economy reads this, which is why
+    // generation is bounded rather than checked"*. The bound is `gatherer_hut_ring_tiles`
+    // now: a number the player can see drawn on the map, rather than the radius of a ring of
+    // berry patches no player could ever have learned (`forests-and-gathering.md §3.2`).
+    //
+    // What made them worth deleting is what they were FOR. They kept one economy across every
+    // seed, so a shared seed stayed comparable — and a single stated ring size does that job
+    // without also deciding where the village's food comes from.
+
+    /// <summary>
+    /// How much of its sector a seam may swing through, as a percentage (D475).
+    /// </summary>
+    /// <remarks>
+    /// A ring's seams take one equal sector each (D24's spread), and the ring draws a phase, so
+    /// no sector sits on the compass. 0 puts every seam at its sector's centre — a regular star —
+    /// and 100 lets it reach the sector's edges, where two neighbours could touch. Replaced
+    /// <c>site_jitter_tiles</c>, which moved a seam a tile off one of eight compass slots and left
+    /// the valley a stamped cross (Joe: <em>"planned and symmetrical"</em>).
+    /// </remarks>
+    [JsonPropertyName("seam_angle_scatter_percent")]
+    public int SeamAngleScatterPercent { get; init; } = 80;
+
+    /// <summary>How much further than its ring a seam may lie, as a percentage of the ring (D475).</summary>
+    /// <remarks>
+    /// Out only, never in: D434 found a seam nearer than its ring takes the founders' house plots.
+    /// </remarks>
+    [JsonPropertyName("seam_reach_scatter_percent")]
+    public int SeamReachScatterPercent { get; init; } = 30;
+
+    /// <summary>How much a seam's outcrop may be bigger or smaller than its kind's radius, as a percentage of its area (D475).</summary>
+    [JsonPropertyName("seam_size_scatter_percent")]
+    public int SeamSizeScatterPercent { get; init; } = 40;
+
+    // `tree_stand_count`, `tree_stand_ring_tiles` and `tree_stand_radius_tiles` are deleted
+    // with the stands. Timber comes off ground a forester's hut was given, and the woodland
+    // it is given is painted across the whole valley by `forest_coverage_percent`.
+
+    /// <summary>How far the founding site may sit from the middle of the ring.</summary>
+    /// <remarks>
+    /// Small on purpose. The economy's distance budget assumes a village inside the
+    /// ring of sites rather than off to one side of it, so this is the one piece of
+    /// jitter that has to stay modest.
+    /// </remarks>
+    [JsonPropertyName("founding_jitter_tiles")]
+    public int FoundingJitterTiles { get; init; } = 2;
+
+    /// <summary>How wide the river runs.</summary>
+    /// <remarks>
+    /// Zero generates no river at all, which is a supported valley and a useful control
+    /// in tests. <b>A river is load-bearing, not scenery</b> — water is impassable and
+    /// every travel query routes round it (D40, D41), so widening this genuinely moves
+    /// the village's walks.
+    /// </remarks>
+    [JsonPropertyName("river_width_tiles")]
+    public int RiverWidthTiles { get; init; } = 3;
+
+    /// <summary>
+    /// ⭐ How much wider than <see cref="RiverWidthTiles"/> the river may swell (D344).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe: *"river looks great! Let's widen it by ~50% with some variation."*</b> The base
+    /// went 2 → 3 and this is the *variation*: the width takes a slow walk between the base
+    /// and base-plus-this, holding its value most columns, so a reach reads as a **pool or a
+    /// narrows** rather than as a frayed edge.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Zero is a supported valley</b> — a river of exactly one width —
+    /// and so is a <c>river_width_tiles</c> of zero, which generates no river at all and is a
+    /// useful control in tests.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Both of these are ready to be sliders.</b> A new-game screen sets config values
+    /// before the run starts; it does not add generation stages, so it costs no golden movement
+    /// (see <c>MapGenerator.Stage</c>).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("river_width_wander_tiles")]
+    public int RiverWidthWanderTiles { get; init; } = 1;
+
+    /// <summary>
+    /// Which way the river runs (D477, `new-game-screen.md §6`): <c>we</c> west to east,
+    /// <c>ns</c> north to south, <c>nwse</c> and <c>swne</c> the two diagonals, or <c>any</c> —
+    /// one of the four, chosen by a hash of the River stage's seed.
+    /// </summary>
+    /// <remarks>
+    /// <b><c>we</c> is the river every valley had before this key</b>, carved by the same code
+    /// with the same draws, so the default moves no valley. Read by the River stage only (D473).
+    /// </remarks>
+    [JsonPropertyName("river_course")]
+    public string RiverCourse { get; init; } = "we";
+
+    // ---------------------------------------------------------------
+    //  Heights (D735, `specs/heights.md`) — the Heights stage (6) reads these, and nothing else does until
+    //  the slope reaches the cost field.
+    // ---------------------------------------------------------------
+
+    /// <summary>How many height levels a valley has: 0 (the river's water) to one less than this. <b>1 is a flat
+    /// valley</b> — the ablation every re-taken golden is proven against (`heights.md §7`).</summary>
+    /// <remarks>
+    /// ⭐ <b>The code's default is 1, the shipped data's 16</b> — `river_course`'s precedent (`we`, the river every valley
+    /// had before the key): a config built in code is the valley it always was, so a fixture posed on flat ground keeps
+    /// the ground it was written for, and the game, which loads `data/sim.config.json`, has hills (`heights.md §7`).
+    /// </remarks>
+    [JsonPropertyName("height_levels")]
+    public int HeightLevels { get; init; } = 1;
+
+    /// <summary>The bowl: the ground rises this many levels for every tile from the nearest water, to its rim (`heights.md §5`).
+    /// ⚠️ A level is one of <see cref="HeightLevels"/>' 256 small steps since D736, not one of 16 (`heights.md §3`).</summary>
+    [JsonPropertyName("height_bowl_rise_per_tile")]
+    public int HeightBowlRisePerTile { get; init; } = 2;
+
+    /// <summary>
+    /// The most the ground may rise for every tile from the water (D736): a bank is at most this above the river beside it,
+    /// and nothing behind a bank is a cliff. Hills lower than this keep their own shape.
+    /// </summary>
+    [JsonPropertyName("height_rise_from_water_per_tile")]
+    public int HeightRiseFromWaterPerTile { get; init; } = 12;
+
+    /// <summary>The bowl's rim: it rises no more than this many levels, however far from the river.</summary>
+    [JsonPropertyName("height_bowl_max_levels")]
+    public int HeightBowlMaxLevels { get; init; } = 64;
+
+    /// <summary>The hills' lattice: one drawn height every this-many tiles each way, smoothed between.</summary>
+    [JsonPropertyName("height_hill_lattice_tiles")]
+    public int HeightHillLatticeTiles { get; init; } = 10;
+
+    /// <summary>A lattice point's tallest hill at <see cref="HillScalePercent"/> 100 — drawn 0 to this, inclusive.</summary>
+    [JsonPropertyName("height_hill_max_levels")]
+    public int HeightHillMaxLevels { get; init; } = 130;
+
+    /// <summary>
+    /// <b>The Hilliness row</b> (`heights.md §5`): the hills scaled by this percent — <i>Gentle</i> 50, <i>Rolling</i>
+    /// 100 (the default), <i>Hilly</i> 200. The bowl is not scaled.
+    /// </summary>
+    [JsonPropertyName("hill_scale_percent")]
+    public int HillScalePercent { get; init; } = 100;
+
+    /// <summary>The hills fade to nothing over this many tiles from the water, so the river never sits in a ravine.</summary>
+    [JsonPropertyName("height_river_ramp_tiles")]
+    public int HeightRiverRampTiles { get; init; } = 10;
+
+    /// <summary>The founding ring: every tile within this many of the founding site (either axis) is flat or gentle,
+    /// and the ground blends back to the hills over as many again (`heights.md §5`).</summary>
+    [JsonPropertyName("height_founding_flat_tiles")]
+    public int HeightFoundingFlatTiles { get; init; } = 8;
+
+    /// <summary>A tile whose steepness is this or more is <see cref="World.Slope.Gentle"/> (`heights.md §3`).</summary>
+    [JsonPropertyName("slope_gentle_at")]
+    public int SlopeGentleAt { get; init; } = 4;
+
+    /// <summary>A tile whose steepness is this or more is <see cref="World.Slope.Steep"/>.</summary>
+    [JsonPropertyName("slope_steep_at")]
+    public int SlopeSteepAt { get; init; } = 8;
+
+    /// <summary>What crossing a gentle tile costs, as a percent of the same tile on the flat (`heights.md §4`).</summary>
+    [JsonPropertyName("slope_gentle_cost_percent")]
+    public int SlopeGentleCostPercent { get; init; } = 120;
+
+    /// <summary>What crossing a steep tile costs, as a percent of the same tile on the flat: <b>about half again as long</b>
+    /// (Joe: <i>"not 100% slower"</i>). Worn paths multiply with it; a bridge deck ignores it.</summary>
+    [JsonPropertyName("slope_steep_cost_percent")]
+    public int SlopeSteepCostPercent { get; init; } = 150;
+
+    /// <summary>
+    /// Years between the village sharing out its work again from scratch.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe's call, following <em>Banished</em> (D20): rather than pinning people in
+    /// place with rules, the village periodically re-runs the whole allocation, so
+    /// workers drift toward the jobs nearest where they live. A household whose
+    /// forager died, or a couple who built a house on the far side of the valley,
+    /// gets corrected by the next reshuffle instead of needing a special case.
+    /// </para>
+    /// <para>
+    /// <b>Every three years</b> (D46), and the shipped config says so — this default of 1
+    /// is the older answer, kept only because a config file that sets it is the one that
+    /// matters. D20 argued that a <em>seasonal</em> reshuffle churns jobs faster than a
+    /// player can read the reason for holding one; a yearly one is the same objection at
+    /// lower volume. Three years is a rhythm a person can notice.
+    /// </para>
+    /// <para>
+    /// Affordable because the urgent cases do not wait for it: <c>TakeUpSlack</c> runs at
+    /// every season boundary, and a job left vacant by a death is filled the tick after it
+    /// happens (D47).
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("labour_reshuffle_years")]
+    public int LabourReshuffleYears { get; init; } = 1;
+
+    /// <summary>
+    /// How often the village fills its openings and lets go of anybody it no longer wants — in
+    /// <b>ticks</b> (D200).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Joe, playing: *"30 days feels unresponsive."*</b> This pass was hard-wired to
+    /// <see cref="TicksPerSeason"/>, so a change made on the professions panel waited up to a
+    /// whole season to bite — measured at 25, 15 and 5 in-game days depending on where in the
+    /// season it was set.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT IS NOT THE RESHUFFLE AND MUST NOT BECOME IT.</b>
+    /// <see cref="LabourReshuffleYears"/> moves people who already have jobs, and D20/D46 both
+    /// argue that doing so often *"churns jobs faster than a player can read the reason for
+    /// holding one."* **This pass never moves anybody who already holds a job** — it fills
+    /// openings from the idle and sheds a surplus the player asked to shed. Running it more
+    /// often makes the village obey sooner; it does not make anybody's career shorter.
+    /// </para>
+    /// <para>
+    /// <b>Zero is not allowed.</b> A pass on every tick is the per-tick reassignment
+    /// <c>LabourSystem</c>'s own remarks rule out.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("labour_slack_ticks")]
+    public int LabourSlackTicks { get; init; } = 120;
+
+    // ---------------------------------------------------------------
+    //  Skill (`specs/skills-catalog.md`, Phase 3)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The catalogue — <b>rows, not enum values</b> (`skills-catalog.md §4.1`, D168).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One per job that exists, and no more</b> (§4.2). Every ❌ profession in
+    /// `professions.md §4` brings its own when it lands; inventing them now would be a
+    /// catalogue of things nobody can hold.
+    /// </para>
+    /// <para>
+    /// <b>⛔ LABORERS HOLD NO SKILL, AND THAT IS DELIBERATE.</b> D66 refused
+    /// <c>JobKind.Laborer</c> on the grounds that a laborer is *"the villagers no job currently
+    /// wants"* — a position in the priority order, not a trade (D87). **A skill in being spare
+    /// is a contradiction**, and it would quietly make the fallback a career.
+    /// </para>
+    /// <para>
+    /// Defaults live here rather than in the shipped file, exactly like
+    /// <see cref="HouseholdNames"/> and <see cref="TownNames"/>: a modder replaces the list, and
+    /// a config that says nothing gets the game as designed.
+    /// </para>
+    /// </remarks>
+    /// <summary>
+    /// The goods that exist — <b>rows, so a modder can add a seventh</b> (`goods-catalog.md`, D210).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ Ids 0–5 match <see cref="Goods"/> exactly, and must.</b> The enum survives as an alias
+    /// for the built-in six (Joe's call) so the economy can go on naming food directly; <b>this list
+    /// is what says how many goods there are and what each one does.</b>
+    /// </para>
+    /// <para>
+    /// <b>⛔ Appended, never renumbered.</b> Ids are what a stockpile indexes by, what a stock limit
+    /// is saved under and what the state hash mixes in order.
+    /// </para>
+    /// <para>
+    /// Defaults live here rather than in the shipped file, like <see cref="Skills"/> and
+    /// <see cref="HouseholdNames"/> — <b>one source of truth, not two.</b> Writing them into
+    /// `data/sim.config.json` as well would recreate exactly the fixture-versus-shipped drift
+    /// METHODOLOGY §3 warns about, which has already produced D48, D49 and D50.
+    /// </para>
+    /// <para>
+    /// <b>⭐ NULL BY DEFAULT SINCE STONE AND IRON TOOLS (D446, `tools-and-the-smith.md §9.2`), the
+    /// shape <see cref="Buildings"/> already has and for its reason:</b> a tool's numbers are columns
+    /// on its row, and the built-in tool rows are priced from <c>tool_uses</c>,
+    /// <c>tool_speed_bonus_percent</c>, <c>iron_tool_uses</c> and the rest — keys a property
+    /// initialiser cannot read. Null means <em>"the built-in rows, priced from this config"</em>; see
+    /// <see cref="GoodsCatalog"/>. ⚠️ A file that states its own list states its tools' columns too.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("goods")]
+    public IReadOnlyList<GoodRow>? GoodsList { get; init; }
+
+    /// <summary>The goods this config describes — its own list, or the built-in rows priced from its keys.</summary>
+    /// <remarks>
+    /// ⚠️ Built on every read, as <see cref="BuildingRows"/> is: read it once into a local where it
+    /// is walked. Nothing reads it per tick — the world builds its <c>GoodsCatalog</c> once.
+    /// </remarks>
+    [JsonIgnore]
+    public IReadOnlyList<GoodRow> GoodsCatalog => GoodsList ?? DefaultGoods();
+
+    /// <summary>A forge recipe from keys, leaving out an input a key has set to nothing.</summary>
+    /// <remarks><c>firewood_per_tool</c> 0 is allowed (a forge with no fire), and a row's recipe never lists a zero.</remarks>
+    private static IReadOnlyList<MaterialCost> Recipe(params MaterialCost[] inputs) =>
+        System.Array.FindAll(inputs, static input => input.Amount > 0);
+
+    private IReadOnlyList<GoodRow> DefaultGoods() => new[]
+    {
+        new GoodRow
+        {
+            Id = (int)World.Goods.Produce,
+            Category = World.GoodCategory.Food,
+            // ⭐ "FORAGE", NOT "PRODUCE" (Joe, 2026-09-26, D409): *"I no longer want it to be called
+            // Produce. I want it to be called Forage."* What a forager brings in. The enum keeps
+            // `Goods.Produce` — the player never sees it, and the id (0) is what every golden is
+            // pinned to.
+            Name = "forage",
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // ⭐ THE ONLY EDIBLE GOOD TODAY, AND THE NUMBER IS DELIBERATELY 1 RATHER THAN
+            // `FoodPerMeal`. This answers *"can it be eaten?"* and not yet *"how well?"* — a meal
+            // still costs `food_per_meal` units of whatever is being eaten, so the survival floor
+            // is untouched. See `GoodRow.Nutrition`: the day two rows carry DIFFERENT non-zero
+            // values, `RequiredGatherYield` and `MouthsFedByOneAdult` have to be re-derived first.
+            Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Logs,
+            Category = World.GoodCategory.Materials,
+            Name = "logs",
+            SourceName = "woodland",
+            YieldPerTile = 12,
+
+            // ⛔ No cart. The founders' load is what they could carry, and logs are the one thing
+            // that plausibly will not fit in a wagon you arrived in (D90 step 4) — the refusal that
+            // makes the storage pile load-bearing.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Pile },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Firewood,
+            Category = World.GoodCategory.FuelAndGoods,
+            Name = "firewood",
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Market, StoreKind.Cart, StoreKind.Pile },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Stone,
+            Category = World.GoodCategory.Materials,
+            Name = "stone",
+            TradeWorth = 2,
+            SourceName = "a stone seam",
+            YieldPerTile = 12,
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // A quarry face's pace (D449: a face's pace is the good's row), priced from the keys
+            // that priced it in D434 — so the quarry plays exactly as before.
+            FaceDigTicks = QuarryDigTicks,
+            FacePerDig = StonePerDig,
+            FaceDigsPerStint = DigsPerStint,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Tools,
+            Category = World.GoodCategory.FuelAndGoods,
+
+            // ⭐ "STONE TOOLS" (Joe, 2026-10-01): the founders' tool, and today's tool to the unit —
+            // priced from the three keys that priced every tool before iron (§9.2), so a village
+            // with only stone tools plays and hashes exactly as before.
+            Name = "stone tools",
+            TradeWorth = 8,
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = ToolUses,
+            ToolSpeedBonusPercent = ToolSpeedBonusPercent,
+            ToolYieldBonusPercent = ToolYieldBonusPercent,
+
+            // Two stone and a log, no fire (Joe, D434).
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Stone, StonePerStoneTool),
+                new MaterialCost(World.Goods.Logs, LogsPerStoneTool)),
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Iron,
+            Category = World.GoodCategory.Materials,
+            Name = "iron",
+            TradeWorth = 3,
+            SourceName = "an iron seam",
+            YieldPerTile = 8,
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // A mine face's pace (`iron-mine.md §6`, Joe: slower than the quarry).
+            FaceDigTicks = MineDigTicks,
+            FacePerDig = IronPerDig,
+            FaceDigsPerStint = MineDigsPerStint,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Fish,
+            Category = World.GoodCategory.Food,
+            Name = "fish",
+            SourceName = "the river",
+
+            // ⚠️ STORED WHERE FOOD IS STORED, AND THE GRANARY MATTERS MOST. `StoreForTheLoad`
+            // sends a food load to a granary rather than the nearest store *"because the birth
+            // gate reads granaries"* — so fish that could only go in a warehouse would feed nobody's
+            // children.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // Worth what food is worth. A second VALUE throws at load until the survival floor is
+            // re-derived against a diet (D277, `GoodRow.Nutrition`).
+            Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Meat,
+            Category = World.GoodCategory.Food,
+            Name = "meat",
+            SourceName = "the woods",
+
+            // Stored where food is stored, and the granary matters most — the birth gate reads
+            // granaries, so meat that could only go in a warehouse would feed nobody's children.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+            Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Leather,
+            Category = World.GoodCategory.Materials,
+            Name = "leather",
+            TradeWorth = 3,
+            SourceName = "the woods",
+
+            // ⚠️ A WAREHOUSE, NOT A GRANARY. It is a material, not a meal, and putting it where food
+            // lives would have hides eating granary space the birth gate is measured against.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Wheat,
+            Category = World.GoodCategory.Food,
+            Name = "wheat",
+            SourceName = "the fields",
+
+            // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
+            Nutrition = 1,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.IronTools,
+            Category = World.GoodCategory.FuelAndGoods,
+            Name = "iron tools",
+            TradeWorth = 20,
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            ToolUses = IronToolUses,
+            ToolSpeedBonusPercent = IronToolSpeedBonusPercent,
+            ToolYieldBonusPercent = IronToolYieldBonusPercent,
+
+            // Iron and firewood, as every tool was forged before stone tools (§3.7): never the
+            // winter's firewood.
+            ForgedFrom = Recipe(
+                new MaterialCost(World.Goods.Iron, IronPerTool),
+                new MaterialCost(World.Goods.Firewood, FirewoodPerTool)),
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Flour,
+            Category = World.GoodCategory.Materials,
+            Name = "flour",
+            TradeWorth = 2,
+
+            // ⚠️ KEPT DRY, AND NEVER IN A GRANARY (`food-chain.md §4.1`): it is not food, and a granary's
+            // room is what the birth gate measures. A warehouse holds the oven's firewood too, so a bake
+            // finds both in one store — the forge's rule.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Bread,
+            Category = World.GoodCategory.Food,
+            Name = "bread",
+            TradeWorth = 2,
+
+            // Stored where food is stored, for Fish's reason: the birth gate reads granaries.
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+
+            // ⭐ THE FIRST FOOD WORTH MORE THAN ONE (`food-chain.md §3`): a meal of bread holds hunger off
+            // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
+            Nutrition = BreadNutrition,
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Hay,
+            Category = World.GoodCategory.Materials,
+            Name = "hay",
+
+            // ⛔ ONLY A BARN (D590, `livestock.md §0`): D52 is the argument — a good that shares the warehouse is a
+            // shortage nobody can read. Nobody eats it but the herd.
+            StoredBy = new[] { StoreKind.Barn },
+        },
+        new GoodRow
+        {
+            Id = (int)World.Goods.Clothing,
+            Category = World.GoodCategory.Materials,
+            Name = "clothing",
+
+            // Two leather's worth and a tailor's day (`clothing.md §3.4`, D666): leather is 3.
+            TradeWorth = 8,
+            SourceName = "the tailor's shop",
+
+            // ⚠️ THE WAREHOUSE, LIKE LEATHER — a material, not a meal; and never the market, whose counter is the
+            // household's shop (D372): a coat is fetched by the one who wears it, as a tool is.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+            CoatWinters = CoatWinters,
+        },
+
+        // ⭐ THE HANDCART (D678, `workshop-and-the-carpenter.md §5`): logs made into a cart at the workshop. In Slice W a
+        // good on a shelf; Slice H (`handcart.md`) gives it its trips, its armfuls and its slow on grass, on this row.
+        new GoodRow
+        {
+            Id = (int)World.Goods.Handcart,
+            Category = World.GoodCategory.Materials,
+            Name = "handcarts",
+
+            // Sized from the logs it takes, as clothing's 8 was from leather — a log's worth × `logs_per_handcart`,
+            // rounded to the iron tool's 20 (§5). No neighbour stocks one: a cart is the village's make.
+            TradeWorth = 20,
+            SourceName = "the workshop",
+
+            // ⛔ WHERE TOOLS LIVE, TO THE LETTER (Joe, D672 call 1; `tools-and-the-smith.md §3.5`): the warehouse, the
+            // founders' cart, the pile — never the market, never a granary. A cart is fetched once in years, not once a
+            // half-larder.
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
+
+            // The recipe on the good's row, the smith's shape (D446): a good with a `made_from` is a workshop product.
+            MadeFrom = Recipe(new MaterialCost(World.Goods.Logs, LogsPerHandcart)),
+        },
+    };
+
+    /// <summary>
+    /// The stock limits a new game starts with, by good name — <b>the player's, set before he
+    /// has touched them</b> (D409).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ⛔⛔ <b>THESE LIVED IN THE VIEW, AND EVERY HARNESS MEASURED A GAME NOBODY PLAYS.</b> The
+    /// Stock limits panel set its own numbers the moment it was built (food 2000, firewood 400,
+    /// 200 for the rest — since 2026-08-25), so the game Joe played always had limits and the
+    /// sim, the tests and D407's fifty-year measurement never did. D407's *"shipped 56 alive,
+    /// 28 starved"* was a village with no ceiling on anything. Joe: *"They should be synced with
+    /// and regulated by the stock limit panel — that is literally the whole point of the stock
+    /// limit panel."* So the sim holds them from the first tick and the panel shows and edits
+    /// what the sim holds.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>Empty by default, and the shipped file fills it.</b> A config that says nothing — every
+    /// code-built fixture — gets a village with no limits, which is what those fixtures were
+    /// written against. A key that names no good fails at load.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("starting_stock_limits")]
+    public IReadOnlyDictionary<string, int> StartingStockLimits { get; init; } = new Dictionary<string, int>();
+
+    /// <summary>
+    /// The crops a farm can grow — <b>rows that name their good</b> (D348).
+    /// </summary>
+    /// <remarks>
+    /// Not listed in `sim.config.json`, like the goods: a <c>crops</c> array there replaces this
+    /// list wholesale. One row today; barley and corn are rows the day they are wanted.
+    /// </remarks>
+    [JsonPropertyName("crops")]
+    public IReadOnlyList<CropRow> Crops { get; init; } = new[]
+    {
+        new CropRow { Id = 1, Name = "wheat", Yields = World.Goods.Wheat },
+    };
+
+    /// <summary>
+    /// The trades that exist — <b>rows, so a modder can add a seventh</b> (`jobs-catalog.md`, D218).
+    /// </summary>
+    /// <remarks>
+    /// <b>Ids 0–5 match <see cref="JobKind"/> exactly, and must</b> — every golden and every saved
+    /// staffing figure is pinned to them. Defaults live here rather than in the shipped file, like
+    /// <see cref="GoodsCatalog"/> and <see cref="Skills"/>: <b>one source of truth, not two.</b>
+    /// </remarks>
+    [JsonPropertyName("jobs")]
+    public IReadOnlyList<JobRow> JobsCatalog { get; init; } = new[]
+    {
+        new JobRow
+        {
+            Id = (int)JobKind.Forager,
+            Name = "forager",
+            Plural = "foragers",
+            Doing = "gathering",
+            WorksAt = BuildingKind.GathererHut,
+
+            // ⭐ THE FORAGE ROW (D409). This was null — *"standing the gatherers down on a full
+            // granary is a decision nobody has taken"* — while ONE food limit stood every food trade
+            // down through the quota's back door. Joe took that decision: *"remove produce entirely
+            // and add a forage row"*. The forager stops at the forage limit and at nothing else.
+            LimitedBy = World.Goods.Produce,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Forester,
+            Name = "forester",
+            Plural = "foresters",
+            Doing = "felling timber",
+            WorksAt = BuildingKind.ForesterHut,
+            LimitedBy = World.Goods.Logs,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Woodcutter,
+            Name = "woodcutter",
+            Plural = "woodcutters",
+            Doing = "splitting firewood",
+            WorksAt = BuildingKind.WoodcutterHut,
+            LimitedBy = World.Goods.Firewood,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Marketer,
+
+            // ⚠️ TWO WORDS FOR ONE TRADE, AND THAT IS D188 UNRESOLVED RATHER THAN A TYPO. The
+            // staffing panel says "traders"; the roster beside a villager's name says "marketer".
+            // Both are carried so the row does not settle Joe's question by accident.
+            Name = "marketer",
+            Plural = "traders",
+            Doing = "the market",
+            WorksAt = BuildingKind.Market,
+            LimitedBy = null,
+
+            // ⛔ NO TOOL (D617, Joe's call): a marketer's work is carrying, and there is no work action for a tool to quicken.
+            UsesTool = false,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Builder,
+            Name = "builder",
+            Plural = "builders",
+            Doing = "building",
+            WorksAt = BuildingKind.BuilderHut,
+            LimitedBy = null,
+
+            // ⭐ A TOOL SINCE D617 (Joe: "builders should carry tools"): a builder holding one raises a site a third faster
+            // and wears it a use each time they set to work (`tools-and-the-smith.md §10.2`, `SimWorld.ToolWorkThisTick`).
+            // Once a smithy stands (Joe's call): until tools can be made, the founders' few are the feeding trades'.
+            UsesTool = true,
+            ToolWaitsForTheSmithy = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Farmer,
+            Name = "farmer",
+            Plural = "farmers",
+            Doing = "farming",
+            WorksAt = BuildingKind.Farmhouse,
+
+            // ⭐ LIMITED BY WHEAT, NOT BY FOOD (D348) — Fisher's rule: this column is the
+            // good a limit on THIS TRADE reads, and the trade makes wheat. The food umbrella still
+            // gates the reap itself (D300); this is what a limit on the wheat row alone does.
+            LimitedBy = World.Goods.Wheat,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Fisher,
+            Name = "fisher",
+            Plural = "fishers",
+            Doing = "fishing",
+            WorksAt = BuildingKind.FishingHut,
+
+            // ⛔ LIMITED BY FISH, NOT BY FOOD. The player's food limit already stops the whole
+            // food chain through `FoodTheVillageHolds`, which counts fish since D277; this column
+            // is the good a limit on THIS TRADE reads, and the trade makes fish.
+            LimitedBy = World.Goods.Fish,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Hunter,
+            Name = "hunter",
+            Plural = "hunters",
+            Doing = "hunting",
+            WorksAt = BuildingKind.HunterLodge,
+
+            // ⛔ LIMITED BY MEAT, the same way the fisher is limited by fish: this column is the
+            // good a limit on THIS TRADE reads, and the trade makes meat.
+            LimitedBy = World.Goods.Meat,
+
+            // ⭐ AND THE HIDES KEEP THEM OUT (D708, Joe: "if meat limit is met, keep hunters there for
+            // leather. when leather and meat limits are met they can idle"). The tailor sews coats from
+            // leather (D659), so a met meat row no longer idles the lodge while leather is short.
+            AlsoLimitedBy = World.Goods.Leather,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Smith,
+            Name = "smith",
+            Plural = "smiths",
+            Doing = "forging tools",
+            WorksAt = BuildingKind.Smithy,
+
+            // The good the trade makes, as the woodcutter's is firewood: a met tools limit stops
+            // the forge (D139).
+            LimitedBy = World.Goods.Tools,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Quarrier,
+            Name = "quarrier",
+            Plural = "quarriers",
+            Doing = "cutting stone",
+            WorksAt = BuildingKind.Quarry,
+
+            // A met stone limit stops the cutting (D139), as a met tools limit stops the forge.
+            LimitedBy = World.Goods.Stone,
+            UsesTool = true,
+
+            // ⭐ A face trade (D449): its ground must be rock, and the pace is stone's row.
+            WorksFace = Terrain.Rock,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Miner,
+            Name = "miner",
+            Plural = "miners",
+            Doing = "digging iron",
+            WorksAt = BuildingKind.Mine,
+
+            // A met iron limit stops the digging (D139), as a met stone limit stops the cutting.
+            LimitedBy = World.Goods.Iron,
+            UsesTool = true,
+
+            // The quarrier's face on an iron seam; the pace is iron's row (`iron-mine.md §3.1`).
+            WorksFace = Terrain.IronDeposit,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Miller,
+            Name = "miller",
+            Plural = "millers",
+            Doing = "grinding wheat",
+            WorksAt = BuildingKind.Mill,
+
+            // A met flour limit stops the stones (D139), as a met tools limit stops the forge.
+            LimitedBy = World.Goods.Flour,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Baker,
+            Name = "baker",
+            Plural = "bakers",
+            Doing = "baking bread",
+            WorksAt = BuildingKind.Bakery,
+
+            // A met bread limit lets the oven go cold (D139).
+            LimitedBy = World.Goods.Bread,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Tailor,
+            Name = "tailor",
+            Plural = "tailors",
+            Doing = "sewing coats",
+            WorksAt = BuildingKind.TailorShop,
+
+            // A met clothing limit stills the needle (D139); with none set, the shop sews toward
+            // `LabourQuota.ClothingWanted` (`clothing.md §3.5`).
+            LimitedBy = World.Goods.Clothing,
+            UsesTool = true,
+        },
+
+        // ⭐ THE CARPENTER (D678, `workshop-and-the-carpenter.md §4.2`) — logs into handcarts at the workshop, the tailor's
+        // stint one recipe over. A trade, so the founders' tools are his as they are the tailor's (D617: only the
+        // builder, the herdsman and the laborers wait for the smithy).
+        new JobRow
+        {
+            Id = (int)JobKind.Carpenter,
+            Name = "carpenter",
+            Plural = "carpenters",
+            Doing = "making handcarts",
+            WorksAt = BuildingKind.Workshop,
+
+            // A met handcarts limit stops the bench (D139); with none set, the workshop makes toward
+            // `LabourQuota.HandcartsWanted` and a spare (§4.4).
+            LimitedBy = World.Goods.Handcart,
+            UsesTool = true,
+        },
+
+        // ⭐ THE TEACHER (D754, `school-and-education.md §12` step 1) — at the school; no skill, no tool, nothing made:
+        // what a teacher gives is places, each staffed teacher `school_places_per_teacher` of them.
+        new JobRow
+        {
+            Id = (int)JobKind.Teacher,
+            Name = "teacher",
+            Plural = "teachers",
+            Doing = "teaching",
+            WorksAt = BuildingKind.School,
+        },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
+        // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
+        new JobRow
+        {
+            Id = (int)JobKind.Herdsman,
+            Name = "herdsman",
+            Plural = "herdsmen",
+            Doing = "keeping the herd",
+            WorksAt = BuildingKind.Barn,
+
+            // A met hay limit stops the cutting, as a met limit stops every trade (D139).
+            LimitedBy = World.Goods.Hay,
+
+            // ⭐ A TOOL SINCE D617: the cutting, the feeding out and the cull already begin through `BeginWork` — once a smithy
+            // stands, as the builder's.
+            UsesTool = true,
+            ToolWaitsForTheSmithy = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.Merchant,
+
+            // ⭐ THE MERCHANT, NOT THE TRADER (Joe, D591): the marketer keeps its plural, *traders* (D188).
+            Name = "merchant",
+            Plural = "merchants",
+            Doing = "trading at the post",
+            WorksAt = BuildingKind.TradingPost,
+
+            // Makes no good of its own, so nothing limits it — the marketer's shape.
+            LimitedBy = null,
+
+            // ⛔ NO TOOL (D617, Joe's call): a merchant carries to and from the post — no work action for a tool to quicken.
+            UsesTool = false,
+        },
+    };
+
+    /// <summary>
+    /// The buildings that exist — <b>rows, not enum values</b> (`specs/buildings-catalog.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ NULL BY DEFAULT, AND THAT IS THE ONE PLACE THIS CATALOGUE DIFFERS FROM
+    /// <see cref="GoodsCatalog"/> AND <see cref="JobsCatalog"/>.</b> Their defaults are literals, so
+    /// a plain initialiser works. <b>The built-in ten are priced from other keys on this same
+    /// config</b> — <c>logs_per_house</c>, <c>granary_logs</c>, <c>hut_stone</c> — and a property
+    /// initialiser cannot read <c>this</c>. Null therefore means <em>"the built-in ten, priced from
+    /// this config"</em>; see <see cref="BuildingRows"/>.
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND THAT IS NOT A WORKAROUND, IT IS WHAT KEEPS ONE SOURCE OF TRUTH.</b> Restating
+    /// <c>logs_per_house</c> as a row literal would make it two numbers that must agree — the warehouse's
+    /// capacity, the stockpile's capacity and the timber quota all derive against it, and every
+    /// <c>Config with { LogsPerHouse = … }</c> in the suite would quietly stop meaning anything.
+    /// <b>Folding those keys into the rows is a separate slice with no behaviour in it</b>
+    /// (`buildings-catalog.md §8`), because it is a re-derivation rather than a move.
+    /// </para>
+    /// <para>
+    /// <b>⛔ Ids 0–9 match <see cref="BuildingKind"/> exactly, and must</b> — <c>works_at</c> names
+    /// them, and the enum survives as an alias for the built-in ten.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("buildings")]
+    public IReadOnlyList<BuildingRow>? Buildings { get; init; }
+
+    /// <summary>The tech-tree map's nodes (`tech-tree-map.md`, D440) — a file's own list, or the built-in ones.</summary>
+    [JsonPropertyName("tech_nodes")]
+    public IReadOnlyList<TechNodeRow>? TechNodes { get; init; }
+
+    /// <summary>The nodes this config describes — its own list, or <see cref="TechTree.DefaultNodes"/>.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<TechNodeRow> TechNodeRows => TechNodes ?? TechTree.DefaultNodes();
+
+    /// <summary>The buildings this config describes — its own list, or the built-in ten.</summary>
+    public IReadOnlyList<BuildingRow> BuildingRows => Buildings ?? DefaultBuildings();
+
+    /// <summary>
+    /// The batch trades (`specs/batch-trade.md §3`, W1) — a file's own list, or null for the built-in four.
+    /// </summary>
+    /// <remarks>
+    /// Null means <em>"the built-in four, priced from this config's own keys"</em> — <see cref="Buildings"/>'s rule and for
+    /// its reason: <c>wheat_per_grind</c>, <c>sew_ticks</c> and the rest stay one number each, and every
+    /// <c>Config with { GrindTicks = … }</c> in the suite still means what it says. A list given here is the whole list.
+    /// </remarks>
+    [JsonPropertyName("batch_trades")]
+    public IReadOnlyList<BatchRow>? BatchTrades { get; init; }
+
+    /// <summary>The batch trades this config describes — its own list, or the built-in four. The world builds its catalogue once.</summary>
+    [JsonIgnore]
+    public IReadOnlyList<BatchRow> BatchRows => BatchTrades ?? DefaultBatchRows();
+
+    /// <summary>
+    /// The built-in four, in hiring order — which, inside a <see cref="QuotaBand"/>, is the order the quota takes them.
+    /// </summary>
+    private IReadOnlyList<BatchRow> DefaultBatchRows() => new[]
+    {
+        new BatchRow
+        {
+            Trade = JobKind.Tailor, Input = World.Goods.Leather, InputPerBatch = LeatherPerCoat,
+            Output = World.Goods.Clothing, OutputPerBatch = 1, Ticks = SewTicks, PerStint = SewsPerStint,
+            Verb = "sew", OneOf = "a coat", WalkTo = "the tailor's shop", Working = "sewing coats",
+            FirstBatch = "cutting a hide for a coat",
+            Stop = BatchStop.EveryoneClothed, Hands = BatchHands.ShortfallOverAYear, QuotaBand = QuotaBand.AfterTools,
+            StandsDownInFamine = true,
+        },
+
+        // ⭐ The carpenter's recipe is the product's (D446's shape, Joe's D675 call 3): the workshop's `MakeGood` and its
+        // `made_from`. ⛔ Never a firing: a saw-pit has no fire, so the oven's winter-firewood guard is never asked.
+        new BatchRow
+        {
+            Trade = JobKind.Carpenter, FromTheProduct = true, OutputPerBatch = 1, Ticks = MakeTicks, PerStint = MakesPerStint,
+            Verb = "make", OneOf = "a {product}", WalkTo = "the workshop", Working = "making {products}",
+            FirstBatch = "truing a wheel for a {product}",
+            Stop = BatchStop.EveryHouseholdCarted, Hands = BatchHands.ShortfallOverAYear, QuotaBand = QuotaBand.AfterTools,
+        },
+        new BatchRow
+        {
+            Trade = JobKind.Miller, Input = World.Goods.Wheat, InputPerBatch = WheatPerGrind,
+            Output = World.Goods.Flour, OutputPerBatch = FlourPerGrind, Ticks = GrindTicks, PerStint = GrindsPerStint,
+            Verb = "grind", OneOf = "a grind", WalkTo = "the mill", Working = "grinding wheat", StintWord = "grind",
+            FirstBatch = "grinding wheat at the stones",
+            Stop = BatchStop.FedFirst | BatchStop.OvensSupplied, Hands = BatchHands.EverySeatWithWork,
+            QuotaBand = QuotaBand.AfterStone,
+        },
+        new BatchRow
+        {
+            Trade = JobKind.Baker, Input = World.Goods.Flour, InputPerBatch = FlourPerBake,
+            Output = World.Goods.Bread, OutputPerBatch = BreadPerBake, Firing = FirewoodPerFiring, Ticks = BakeTicks,
+            PerStint = BakesPerStint, Verb = "bake", OneOf = "a bake", WalkTo = "the bakery", Working = "baking bread",
+            StintWord = "batch", FirstBatch = "lighting the oven",
+            Stop = BatchStop.None, Hands = BatchHands.EverySeatWithWork, QuotaBand = QuotaBand.AfterStone,
+        },
+    };
+
+    /// <summary>The built-in ten, priced from this config's own keys — and wearing at the config's years (D552).</summary>
+    private IReadOnlyList<BuildingRow> DefaultBuildings() => WithTheShippedWear(new[]
+    {
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Granary,
+            Name = "granary",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GranaryLogs),
+                new MaterialCost(World.Goods.Stone, GranaryStone),
+            },
+            WorkTicks = GranaryWorkTicks,
+            Stores = StoreKind.Granary,
+
+            // ⭐ STATED, SINCE D219 (Joe): *"it's fine if the granary feeds a different number of
+            // people. The user should build more granaries — and will need to!"* A granary is a box
+            // of a stated size; how many people it feeds falls out of how much they eat.
+            StoreCapacity = GranaryCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Warehouse,
+            Name = "warehouse",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WarehouseLogs),
+                new MaterialCost(World.Goods.Stone, WarehouseStone),
+            },
+            WorkTicks = WarehouseWorkTicks,
+            Stores = StoreKind.Warehouse,
+
+            // ⛔ DERIVED, and it must stay derived (D16): a horizon of households, the firewood they
+            // want, the logs to split it out of, a house's timber, floored at a granary. Typing that
+            // number in is the move `buildings-catalog.md §2.2` refuses.
+            StoreCapacity = null,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Market,
+            Name = "market",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MarketLogs),
+                new MaterialCost(World.Goods.Stone, MarketStone),
+            },
+            WorkTicks = MarketWorkTicks,
+
+            // A market is a place to work as well as a place to keep things (D14) — the one row
+            // that both stores and employs.
+            Stores = StoreKind.Market,
+
+            // ⭐ A STATED SIZE SINCE D416, so it is data in the row like the granary's (D219).
+            StoreCapacity = MarketStoreCapacity,
+            Seats = MarketCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.WoodcutterHut,
+            Name = "woodcutter's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HutLogs),
+                new MaterialCost(World.Goods.Stone, HutStone),
+            },
+            WorkTicks = HutWorkTicks,
+            Seats = WoodcutterHutCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Pile,
+
+            // ⭐ "stockpile", not "storage pile" (Joe, D217). ⚠️ It shares a word with the
+            // `Stockpile` class and they are not the same thing: that is the goods container every
+            // store, larder, workplace and pair of arms holds; this is the name of one kind of
+            // store building.
+            Name = "stockpile",
+
+            // NOTHING AT ALL — no materials and no work (D96), which is what `Mark` reads to know
+            // it is free and instant. A village with nowhere to put things cannot begin, and asking
+            // it to build a store out of timber it has nowhere to stack is a circle. Its cost moved
+            // somewhere better rather than being abolished: a pile may only stand on clear ground,
+            // so THE CLEARING IS WHAT IT COSTS.
+            Stores = StoreKind.Pile,
+            StoreCapacity = null,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Home,
+
+            // ⚠️ NOT USED AS A LABEL — a house is not numbered (`SimWorld.NameFor`), because a home
+            // is identified by the family in it. Carried so the row is complete and so a modded
+            // dwelling has somewhere to put its word.
+            Name = "house",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, LogsPerHouse),
+                new MaterialCost(World.Goods.Stone, HomeStone),
+            },
+            WorkTicks = HomeWorkTicks,
+            HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = HomeStoreCap,
+
+            // ⭐ The cabin's winter is the two keys it always was (`house-tiers.md §4.2`): 3 on every beat, byte for byte.
+            WinterFirewood = FirewoodBurnIntervalDays < 1 ? 0
+                : VillageEconomy.CeilingDivide(DaysPerSeason, FirewoodBurnIntervalDays) * FirewoodPerWinterDay,
+            ExposureDaysSheltered = ExposureDaysSheltered,
+
+            // ⭐ TWO WIDE, ONE DEEP (D386): a house stands across the front of its plot with its
+            // long side on the lane (`footprints.md §2` had it at 1×1 and said this row was
+            // Phase 5's). Anchored for its facing by `SimWorld.HomeAnchorOn`, so it claims
+            // exactly two tiles turned either way.
+            ExtentWidth = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.BuilderHut,
+            Name = "builder's hut",
+
+            // ⭐ FREE AND INSTANT, LIKE THE STOCKPILE (D108). It is the one building that must exist
+            // before any other can be raised, so charging timber for it would be the same circle.
+            //
+            // ⛔ SEATS ARE STATED NOW, NOT DERIVED (Joe, 2026-08-30) — see `BuilderHutSeats`.
+            Seats = BuilderHutSeats < 1 ? 1 : BuilderHutSeats,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.GathererHut,
+
+            // ⭐ "forager's hut", NOT "gatherer's hut" (Joe, 2026-08-27, from play: *"forager hut
+            // workers still referred to as 'gatherers' in villager inspector window"*).
+            //
+            // **D188 settled the vocabulary — *"forager and marketer win"* — and settled it for
+            // the TRADE only.** `ProfessionName` and `TradeOf` were made to agree and the build
+            // button was relabelled, but the BUILDING kept the old word, so the roster said
+            // *"Hattie, 39 — forager"* two lines above *"Work: gatherer's hut 1"*. One
+            // vocabulary in two registers is fine; two vocabularies is what D188 ruled out, and
+            // half the rename is how it survived.
+            //
+            // ⛔ **The enum stays `GathererHut` and so do the config keys.** They are identifiers,
+            // not words anybody reads, and renaming them would rewrite `data/sim.config.json` for
+            // no player-visible gain — the catalogue row is the one place a building is named.
+            Name = "forager's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GathererHutLogs),
+                new MaterialCost(World.Goods.Stone, GathererHutStone),
+            },
+            WorkTicks = GathererHutWorkTicks,
+
+            // ⛔⛔ STATED (D262, Joe, asked four times — two; three since D603, Joe again). See GathererHutCapacity — and
+            // note it only means anything beside D260's competing rings.
+            Seats = GathererHutCapacity,
+            GatheringRadius = GathererHutRingTiles,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.ForesterHut,
+            Name = "forester's hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, ForesterHutLogs),
+                new MaterialCost(World.Goods.Stone, ForesterHutStone),
+            },
+            WorkTicks = ForesterHutWorkTicks,
+
+            // ⭐ STATED (Joe, D603): two seats. It was derived — the woodcutters' appetite plus a hand, three — and
+            // `forester_hut_capacity` sat in the data unread. See ForesterHutCapacity.
+            Seats = ForesterHutCapacity < 1 ? 1 : ForesterHutCapacity,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Farmhouse,
+            Name = "farmhouse",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, FarmhouseLogs),
+                new MaterialCost(World.Goods.Stone, FarmhouseStone),
+            },
+            WorkTicks = FarmhouseWorkTicks,
+            Seats = FarmhouseSeats < 1 ? 1 : FarmhouseSeats,
+
+            // ⭐ The only building with a buffer of its own (`crops-and-orchards.md §3.2a`): reaping
+            // is bursty and the granary is across the village, so the store underfoot fills first
+            // and the walk lengthens once it is full.
+            LocalStoreCap = FarmStoreCap,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Library,
+            Name = "library",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, LibraryLogs),
+                new MaterialCost(World.Goods.Stone, LibraryStone),
+            },
+            WorkTicks = LibraryWorkTicks,
+
+            // ⛔ THE HARD CAP, AND IT IS CARRYING `tech-tree.md §11`'s GUARD NEARLY ALONE. Three
+            // costs were meant to stop *"write everything down"* being always correct; D204 deleted
+            // one of them by making recording automatic. **Choosing which techniques get shelves is
+            // what is left**, so the number is small on purpose and *"build another library"* is
+            // the answer to wanting more.
+            Shelves = LibraryShelves,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 2 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TownHall,
+            Name = "town hall",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TownHallLogs),
+                new MaterialCost(World.Goods.Stone, TownHallStone),
+            },
+            WorkTicks = TownHallWorkTicks,
+
+            // ⛔ IT HAS A PRICE EVEN THOUGH THE FIRST ONE IS FREE, AND THAT IS D108's RULE RATHER
+            // THAN A CHOICE. `Mark` reads `no materials and no work` to mean *free and instant* —
+            // a row costing nothing would make the town hall appear finished the moment it was
+            // marked, which is the one exception D230 spent a decision removing from demolition.
+            // The gift zeroes the MATERIALS at the moment it is spent; the work always stands.
+            //
+            // ⭐ No seats, no store, no shelves, no house capacity: it employs nobody, holds
+            // nothing and houses nobody. **Every column here is zero on purpose** — the building's
+            // entire output is information, and none of it is a good. `Civic` is what says that is
+            // a reason to exist rather than an empty row.
+            Civic = true,
+
+            // ⛔ THE FIRST SINGLETON IN THE GAME (D38). `building-placement.md` has listed the
+            // town hall as *the* example of a build-once building since long before one existed.
+            Singleton = true,
+
+            // The footprint (D382, `specs/footprints.md §2`): 3 across, 2 deep before turning.
+            ExtentWidth = 3,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.FishingHut,
+            Name = "fishing hut",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, FishingHutLogs),
+                new MaterialCost(World.Goods.Stone, FishingHutStone),
+            },
+            WorkTicks = FishingHutWorkTicks,
+            Seats = FishingHutSeats,
+
+            // ⭐ A store of its own, exactly like the farmhouse's (Joe). `SimWorld` reads this
+            // into the workplace's `Stockpile.Capacity` when the hut is finished.
+            LocalStoreCap = FishingHutStoreCap,
+
+            // ⛔ NO GatheringRadius, DELIBERATELY. A ring would enrol it in D260's competition
+            // — `SharersOf` asks `GatheringRadius > 0` and never `JobKind`, so a fishing hut with
+            // one would start competing with FORAGER huts over TREES. Joe's fishery *"does not run
+            // out"*, so it has nothing to share and nothing to thin.
+            MustTouch = Terrain.Water,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.HunterLodge,
+            Name = "hunter's lodge",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HunterLodgeLogs),
+                new MaterialCost(World.Goods.Stone, HunterLodgeStone),
+            },
+            WorkTicks = HunterLodgeWorkTicks,
+            Seats = HunterLodgeSeats,
+            LocalStoreCap = HunterLodgeStoreCap,
+
+            // ⛔⛔ `HuntingRadius`, NOT `GatheringRadius`, AND THE WHOLE FEATURE TURNS ON IT.
+            // `SharersOf` asks `GatheringRadius > 0` and never `JobKind`, so a ring here would
+            // enrol the lodge in D260's competition and it would start halving FORAGERS' yields
+            // by standing near them — over TREES, which is not what it takes. Game is not wood.
+            HuntingRadius = HuntingRadius,
+
+            // The footprint (D382, `specs/footprints.md §2`): 2 across, 1 deep before turning.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Smithy,
+            Name = "smithy",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, SmithyLogs),
+                new MaterialCost(World.Goods.Stone, SmithyStone),
+            },
+            WorkTicks = SmithyWorkTicks,
+            Seats = SmithyCapacity,
+
+            // The footprint (D382, `specs/footprints.md §2`): a hut's, 2 across, 1 deep.
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ THE WELL (D427, `organic-housing.md §9.12`) — the focal point Joe placed by hand in the
+        // Foundation shot, and the destination a household's water trip wears a lane toward. No
+        // water mechanic yet (Phase 6): nothing is carried and nothing is drunk.
+        //
+        // ⛔ It costs something, or `Mark` reads *no materials and no work* as free and instant.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Well,
+            Name = "well",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WellLogs),
+                new MaterialCost(World.Goods.Stone, WellStone),
+            },
+            WorkTicks = WellWorkTicks,
+            DrawsWater = true,
+        },
+
+        // ⭐ THE BRIDGES (D40, D546, `specs/bridges.md`) — a deck over the water, one tile wide, priced
+        // per tile of span. Wood first, learned by village size; stone set over it, learned by crossings.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Bridge,
+            Name = "wooden bridge",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, BridgeLogsPerTile) },
+            WorkTicks = BridgeWorkTicksPerTile,
+            SpansWater = true,
+            DeckTileCost = BridgeWoodTileCost,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.StoneBridge,
+            Name = "stone bridge",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, StoneBridgeLogsPerTile),
+                new MaterialCost(World.Goods.Stone, StoneBridgeStonePerTile),
+            },
+            WorkTicks = StoneBridgeWorkTicksPerTile,
+            SpansWater = true,
+            DeckTileCost = BridgeStoneTileCost,
+            Rebuilds = BuildingKind.Bridge,
+        },
+
+        // ⭐ THE QUARRY (D434, `specs/quarry.md`) — a hut beside its own painted rock. Timber
+        // only: it is cut into the rock, not built of it. Unlocked by stone dug by hand.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Quarry,
+            Name = "quarry",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, QuarryLogs),
+                new MaterialCost(World.Goods.Stone, QuarryStone),
+            },
+            WorkTicks = QuarryWorkTicks,
+            Seats = QuarryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+
+            // Within reach of rock (D540) — the quarrier's `works_face`, which a guard holds them to.
+            MustBeNear = FaceReachTiles > 0 ? new NearRule { Terrain = Terrain.Rock, Tiles = FaceReachTiles } : null,
+        },
+
+        // ⭐ THE IRON MINE (D449, `specs/iron-mine.md`) — the quarry's twin beside its own painted
+        // iron. Shoring timber and a stone-lined shaft head. Unlocked by the smith's first iron tool.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Mine,
+            Name = "iron mine",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MineLogs),
+                new MaterialCost(World.Goods.Stone, MineStone),
+            },
+            WorkTicks = MineWorkTicks,
+            Seats = MineCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+
+            // Within reach of an iron seam (D540).
+            MustBeNear = FaceReachTiles > 0 ? new NearRule { Terrain = Terrain.IronDeposit, Tiles = FaceReachTiles } : null,
+        },
+
+        // ⭐ THE MILL AND THE BAKERY (D522, `specs/food-chain.md`) — wheat to flour to bread. Each
+        // learned by doing and paid for, as the quarry and the mine are. The mill is two by two:
+        // millstones and a store-room, larger than a hut.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Mill,
+            Name = "mill",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MillLogs),
+                new MaterialCost(World.Goods.Stone, MillStone),
+            },
+            WorkTicks = MillWorkTicks,
+            Seats = MillCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Bakery,
+            Name = "bakery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, BakeryLogs),
+                new MaterialCost(World.Goods.Stone, BakeryStone),
+            },
+            WorkTicks = BakeryWorkTicks,
+            Seats = BakeryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ THE TAILOR'S SHOP (D659, `specs/clothing.md §3.5`) — leather to coats. A hut's price and footprint: the
+        // work is a bench and a needle, not an oven. Learned at fifty leather handled (§3.6).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TailorShop,
+            Name = "tailor's shop",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, HutLogs),
+                new MaterialCost(World.Goods.Stone, HutStone),
+            },
+            WorkTicks = HutWorkTicks,
+            Seats = TailorShopCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ THE WORKSHOP (D678, `specs/workshop-and-the-carpenter.md §4.1`) — logs to handcarts, in the smithy's shape:
+        // a hut's footprint, two seats, priced from its own keys. Learned by felling wood (§4.1a; Joe, D675–D676).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Workshop,
+            Name = "workshop",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, WorkshopLogs),
+                new MaterialCost(World.Goods.Stone, WorkshopStone),
+            },
+            WorkTicks = WorkshopWorkTicks,
+            Seats = WorkshopCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ THE SCHOOL (D754, `school-and-education.md §12` step 1) — a workplace for teachers and the places their
+        // pupils fill; a hall's timber. Learned once a library stands. ⏳ Its costs typed, not measured.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.School,
+            Name = "school",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, SchoolLogs),
+                new MaterialCost(World.Goods.Stone, SchoolStone),
+            },
+            WorkTicks = SchoolWorkTicks,
+            Seats = SchoolCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+
+        // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
+        // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Barn,
+            Name = "barn",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, BarnLogs) },
+            WorkTicks = BarnWorkTicks,
+            Seats = BarnCapacity,
+            Stores = StoreKind.Barn,
+
+            // ⭐ No stated room: the economy derives it from the herd its hands can keep (D593, `livestock.md §0.1`).
+            StoreCapacity = null,
+            ExtentWidth = 3,
+            ExtentHeight = 2,
+        },
+
+        // On the river bank — the fishery's rule (`trade.md §4.1`). Its store takes only what the merchant carries.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.TradingPost,
+            Name = "trading post",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TradingPostLogs),
+                new MaterialCost(World.Goods.Stone, TradingPostStone),
+            },
+            WorkTicks = TradingPostWorkTicks,
+            Seats = TradingPostCapacity,
+            Stores = StoreKind.TradingPost,
+            StoreCapacity = TradingPostStoreCapacity,
+            MustTouch = Terrain.Water,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+
+        // ⭐ A pasture's fence (D598, `livestock.md §0.2`): one length of it — put up from the barn's card, never placed.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.PastureFence,
+            Name = "pasture fence",
+            Materials = new[] { new MaterialCost(World.Goods.Logs, PastureFenceLogsPerEdge) },
+            WorkTicks = PastureFenceWorkTicksPerEdge,
+            EnclosesPasture = true,
+        },
+
+        // ⭐ THE HOUSE LADDER (D206; `specs/house-tiers.md`, D716–D719): two more dwelling rows on the cabin's 2×1 ground.
+        // Three rows, one mechanism — a household's `HomeKind` says which it lives in, `SimWorld.HomeRowOf` reads it.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Cottage,
+            Name = "stone cottage",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, CottageLogs),
+                new MaterialCost(World.Goods.Stone, CottageStone),
+            },
+            WorkTicks = CottageWorkTicks,
+            HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = CottageStoreCap,
+            WinterFirewood = CottageWinterFirewood,
+            ExposureDaysSheltered = CottageExposureDaysSheltered,
+            HouseName = "the {family} cottage",
+            ExtentWidth = 2,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Manor,
+            Name = "insulated manor",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, ManorLogs),
+                new MaterialCost(World.Goods.Stone, ManorStone),
+            },
+            WorkTicks = ManorWorkTicks,
+
+            // Five, like every house (Joe, D718: *"keep it at 5"*).
+            HouseCapacity = MaxHouseholdSize,
+            LocalStoreCap = ManorStoreCap,
+            WinterFirewood = ManorWinterFirewood,
+            ExposureDaysSheltered = ManorExposureDaysSheltered,
+            HouseName = "{family} Manor",
+            ExtentWidth = 2,
+        },
+
+        // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
+        // Joe, D568: *"longhouse should be removed from the game"*). `BuildingKind.Longhouse = 14` is a RETIRED id:
+        // it ships no row, is never renumbered and never reissued; a modder may type a row with it, which is then
+        // whatever its columns say (`BuildFixtures.WithTheOldLonghouseStore` does, for the geometry guards).
+    });
+
+    /// <summary>
+    /// Every shipped row wears at <c>building_wears_in_years</c> / <c>building_fails_in_years</c> /
+    /// <c>building_ruined_in_years</c> — except the <b>stone bridge</b> (Joe, D546 call 2: *"it lasts"*), the
+    /// <b>town hall</b> (civic, a singleton, 120 stone — exempt, D553 call 2) and the two free, instant rows
+    /// nobody raises: the stockpile and the builder's hut (`building-condition.md §4.2`).
+    /// </summary>
+    /// <remarks>
+    /// ⭐ One place, so Joe turns three keys and every timber building follows; a modder's `buildings` array is
+    /// taken as typed and wears only where it says so.
+    /// </remarks>
+    private BuildingRow[] WithTheShippedWear(BuildingRow[] rows)
+    {
+        for (int i = 0; i < rows.Length; i++)
+        {
+            BuildingKind id = (BuildingKind)rows[i].Id;
+            if (id is BuildingKind.StoneBridge or BuildingKind.TownHall or BuildingKind.Pile or BuildingKind.BuilderHut)
+            {
+                continue;
+            }
+
+            // ⭐ A stone house lasts (`house-tiers.md §4.8`; Joe, D718): its three thresholds at `stone_house_lasts_percent`.
+            int lasts = id is BuildingKind.Cottage or BuildingKind.Manor ? StoneHouseLastsPercent : 100;
+            rows[i] = rows[i] with
+            {
+                WearsInYears = BuildingWearsInYears * lasts / 100,
+                FailsInYears = BuildingFailsInYears * lasts / 100,
+                RuinedInYears = BuildingRuinedInYears * lasts / 100,
+            };
+        }
+
+        return rows;
+    }
+
+    [JsonPropertyName("skills")]
+    public IReadOnlyList<SkillRow> Skills { get; init; } = new[]
+    {
+        new SkillRow
+        {
+            Id = 1,
+            Name = "foraging",
+            GrownBy = JobKind.Forager,
+            YearsPhrase = "as a forager",
+            MasteryLine = "{0} has foraged these woods for {1} years. "
+                + "Nothing that grows here goes unnoticed now.",
+        },
+        new SkillRow
+        {
+            Id = 2,
+            Name = "forestry",
+            GrownBy = JobKind.Forester,
+            YearsPhrase = "as a forester",
+            MasteryLine = "{0} has worked these woods for {1} years. "
+                + "Where to fell and where to plant takes no thinking about now.",
+        },
+        new SkillRow
+        {
+            Id = 3,
+            Name = "woodcutting",
+            GrownBy = JobKind.Woodcutter,
+            YearsPhrase = "as a woodcutter",
+            MasteryLine = "{0} has split the village's wood for {1} years. "
+                + "The grain gives way where it always did.",
+        },
+        new SkillRow
+        {
+            Id = 4,
+            Name = "farming",
+            GrownBy = JobKind.Farmer,
+            YearsPhrase = "as a farmer",
+
+            // ⭐⭐ Joe's own sentence, from `DESIGN.md`'s opening paragraph by way of §3.3b —
+            // the one he asked for by name. Pronoun-free: villagers have names and no sex.
+            MasteryLine = "{0} has farmed these fields for {1} years. "
+                + "There is nothing about this ground left to learn.",
+        },
+        new SkillRow
+        {
+            Id = 5,
+            Name = "building",
+            GrownBy = JobKind.Builder,
+            YearsPhrase = "as a builder",
+            MasteryLine = "{0} has raised the village's roofs for {1} years. "
+                + "The work goes up straight without measuring twice.",
+        },
+        new SkillRow
+        {
+            Id = 6,
+            Name = "trading",
+            GrownBy = JobKind.Marketer,
+            YearsPhrase = "as a marketer",
+            MasteryLine = "{0} has carried the village's goods for {1} years. "
+                + "Every door and every shortcut is known ground.",
+        },
+
+        new SkillRow
+        {
+            Id = 7,
+            Name = "milling",
+            GrownBy = JobKind.Miller,
+            YearsPhrase = "as a miller",
+            MasteryLine = "{0} has ground the village's grain for {1} years. "
+                + "The stones are set by ear now.",
+        },
+        new SkillRow
+        {
+            Id = 8,
+            Name = "baking",
+            GrownBy = JobKind.Baker,
+            YearsPhrase = "as a baker",
+            MasteryLine = "{0} has baked the village's bread for {1} years. "
+                + "The oven is read by the hand on its door.",
+        },
+        new SkillRow
+        {
+            Id = 9,
+            Name = "tailoring",
+            GrownBy = JobKind.Tailor,
+            YearsPhrase = "as a tailor",
+            MasteryLine = "{0} has sewn the village's coats for {1} years. "
+                + "A hide is cut once and nothing is wasted.",
+        },
+        new SkillRow
+        {
+            Id = 10,
+            Name = "carpentry",
+            GrownBy = JobKind.Carpenter,
+            YearsPhrase = "as a carpenter",
+            MasteryLine = "{0} has made the village's carts for {1} years. "
+                + "A wheel is true before it is fitted.",
+        },
+
+        // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
+        // the founders' trades are drawn from `founding_trades`, a stated list, never from this
+        // catalogue's length — so adding a row moves no founding (`FoodChainTests.
+        // NoFoundingMovesWithTheNewSkillRows`). The note below is the history, kept.
+        //
+        // ⛔ NO ROW FOR THE SMITH — NOR FOR THE FISHER OR THE HUNTER — AND THE REASON IS
+        // MEASURED (D391). The founders' trades are drawn from THIS list with the run's `Rng`
+        // (`SimWorld.GiveTheFoundersTheirTrades`: `NextInt(0, available.Count)`), so a seventh
+        // row reshuffles which trade every founder in every seed has mastered — the fixture's
+        // stores read full where they had read 2,424 held, and three food-limit guards went red
+        // for a village that had never seen a tool. D344's trap, one catalogue over: a draw
+        // whose range is a content count is a seed contract. A skill for the three trades
+        // wants the founding's trades drawn from a stated list, or a per-stage seed, first.
+    };
+
+    /// <summary>
+    /// How much of a building's own work it costs to pull it down again, as a percentage.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ REVERSE CONSTRUCTION, PRICED OFF THE BUILDING'S OWN RECIPE</b> (Joe, 2026-08-26). Half,
+    /// because taking a thing apart is faster than putting it up and nobody has to measure
+    /// anything — **and because it makes the free buildings free to remove without a second rule**:
+    /// a stockpile owes no work to raise, so half of nothing is nothing, and pulling one down is
+    /// still instant.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ A PROPOSAL UNTIL A RUN ARGUES WITH IT.</b> If it is too high, a mis-sited building is
+    /// a season's punishment for a click; too low and demolition is the instant thing it just
+    /// stopped being.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("demolition_work_percent")]
+    public int DemolitionWorkPercent { get; init; } = 50;
+
+    /// <summary>
+    /// Years a granary's count must be kept before anybody here can write (D32, §7a).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ FIFTEEN IS A PACING NUMBER AND IT IS A PROPOSAL.</b> It is chosen to sit **just
+    /// before** the first home-grown master, not after: a granary goes up around year three to
+    /// five, so literacy lands about year eighteen to twenty, and the first technique needs
+    /// twenty years on a trade. **The library becomes buildable slightly before there is anything
+    /// to write in it**, which gives the player a season or two to prepare rather than a scramble.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>If the two ever cross, the feature reads as broken</b> — a technique announced as lost
+    /// before the player was ever allowed to build the thing that would have saved it is the
+    /// funeral surprise `tech-tree.md §11` forbids. <b>Whichever way these numbers move, they move
+    /// together.</b>
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("literacy_years")]
+    public int LiteracyYears { get; init; } = 15;
+
+    /// <summary>Logs a library takes to build.</summary>
+    [JsonPropertyName("library_logs")]
+    public int LibraryLogs { get; init; } = 35;
+
+    /// <summary>Stone a library takes to build.</summary>
+    /// <remarks>
+    /// <b>More than a hut and less than a granary.</b> A library is the first building the village
+    /// raises for a reason other than eating, so it should cost enough to be a decision and not so
+    /// much that it is only ever a late-game monument.
+    /// </remarks>
+    [JsonPropertyName("library_stone")]
+    public int LibraryStone { get; init; } = 36;
+
+    /// <summary>Ticks of work a library takes, once the materials are on site.</summary>
+    [JsonPropertyName("library_work_ticks")]
+    public int LibraryWorkTicks { get; init; } = 55;
+
+    /// <summary>
+    /// How many techniques one library can hold records of.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ THREE AGAINST FOUR TECHNIQUES, AND THE RATIO IS THE POINT RATHER THAN THE NUMBER.</b>
+    /// A library that holds everything the village can know is not a decision; one that holds most
+    /// of it is. **The moment a fifth technique exists this number must be looked at again**, which
+    /// is why it is a stated key and not a constant.
+    /// </para>
+    /// <para>
+    /// <b>⛔ A PROPOSAL UNTIL A RUN ARGUES WITH IT</b> — `tech-tree.md §12` lists *"starting library
+    /// capacity"* among the things it deliberately refuses to invent, and the standing rule is that
+    /// a number in a document comes from a run. This one has not had one.
+    /// </para>
+    /// <para>
+    /// <b>⭐ THREE → FIVE (D389, Joe playing: *"update library shelves from 3 to 5"*).</b> A run
+    /// argued with it. The ratio note above stands as the thing to watch: with four techniques
+    /// today a library holds everything, and the shelf is a decision again the day the tree
+    /// passes five — the full-library guard poses three shelves for itself.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("library_shelves")]
+    public int LibraryShelves { get; init; } = 5;
+
+    /// <summary>Logs a town hall takes to build.</summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⚠️ A PLACEHOLDER, AND IT IS MARKED AS ONE</b> (`specs/town-hall.md §11`). **The first
+    /// town hall is free** — it is a gift, and the only one the village will ever have (D38, D252)
+    /// — so this price is reached by a modded config, a re-founded village, or a player who pulled
+    /// theirs down. *Nothing in the shipped game spends it yet, which is exactly why it should not
+    /// be mistaken for a measured number.*
+    /// </para>
+    /// <para>
+    /// <b>Priced above the library</b>, because `TECH-EXAMPLE.md` puts the town hall at *80 Stone,
+    /// 50 Planks, 20 Iron* — three goods the village cannot make — and the shape worth preserving
+    /// from that is *"the most expensive thing here"*, not the goods.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("town_hall_logs")]
+    public int TownHallLogs { get; init; } = 60;
+
+    /// <summary>Stone a town hall takes to build. See <see cref="TownHallLogs"/> — a placeholder.</summary>
+    [JsonPropertyName("town_hall_stone")]
+    public int TownHallStone { get; init; } = 120;
+
+    /// <summary>
+    /// Ticks of work a town hall takes, once the materials are on site.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THIS ONE IS NOT A PLACEHOLDER, AND IT IS THE HALF THE PLAYER ACTUALLY FEELS.</b> The
+    /// gift covers materials and never work (D232), so **every village that is given a town hall
+    /// pays this number** — the crew still have to raise it. It is the largest in the catalogue,
+    /// deliberately: a monument the builders put up in an afternoon is not a monument.
+    /// </remarks>
+    [JsonPropertyName("town_hall_work_ticks")]
+    public int TownHallWorkTicks { get; init; } = 90;
+
+    /// <summary>
+    /// The techniques that exist — <b>rows, not code</b> (`specs/tech-tree.md`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ FOUR, NOT THIRTY-NINE, AND THAT IS THE POINT.</b> `TECH-EXAMPLE.md` holds 39 named
+    /// techniques from Joe (D206) and <b>almost every one names a building that does not exist</b>
+    /// — a sawmill, a dairy house, a gristmill. These four hang off <b>trades the village already
+    /// has</b>, which is what makes Phase 4 buildable before the T1/T2 building tier
+    /// (`phase-4-the-tech-tree.md §1`). The other thirty-five arrive with their buildings.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ EVERY NUMBER HERE IS A PROPOSAL AND NONE HAS HAD A RUN.</b> D196's own example is
+    /// *"+15% firewood per log"*, and that is where the woodcutter's starts. `tech-tree.md §12`
+    /// refuses false precision on exactly these, and the standing rule is <em>if a number goes
+    /// into a document, it comes from a run.</em>
+    /// </para>
+    /// <para>
+    /// <b>⭐ The lines are written as sentences about a person doing something</b>, because that is
+    /// the whole difference between this and a research menu — and because `phase-4-the-tech-tree.md
+    /// §6`'s success test fails if the answer to *"what happened?"* is *"a node re-locked"* rather
+    /// than a name.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("techniques")]
+    public IReadOnlyList<TechniqueRow> Techniques { get; init; } = new[]
+    {
+        // ⭐ D196's OWN EXAMPLE, WORD FOR WORD: *"a master woodcutter works out splitting lumber in
+        // a way that gives more cords — +15% firewood per log."* It is here first because it is the
+        // one technique in this list Joe specified himself, down to the number.
+        new TechniqueRow
+        {
+            Id = 0,
+            Name = "splitting lumber",
+            Skill = 3,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has split the village's firewood long enough to see the grain "
+                + "before the axe falls. The same log gives more cords now.",
+            LostLine = "{0} took the trick of the grain with them. The woodpile will be thinner "
+                + "for it.",
+        },
+        new TechniqueRow
+        {
+            Id = 1,
+            // ⚠️ THE LINES SAY WHAT IT DOES, WHICH IS NOT WHAT THE WORD USUALLY MEANS. Coppicing
+            // is properly about *regrowth* — cutting so the stool comes back — and the first draft
+            // of these lines said exactly that, while the effect was more timber per stand. **A
+            // sentence that promises a mechanic the code does not have is the untraceable outcome
+            // §1.1 forbids**, and it would have been read as a regrowth bug for a phase. The
+            // effect is honest and the words follow it; the regrowth reading is a technique of its
+            // own to be written when regrowth is something a technique can touch.
+            Name = "coppicing",
+            Skill = 2,
+            YieldBonusPercent = 12,
+            DiscoveryLine = "{0} has worked these stands long enough to cut them so they throw up "
+                + "straight poles instead of scrub. The same wood gives more usable timber now.",
+            LostLine = "The stands are being cut anyhow again. {0} was the last who knew how to "
+                + "take them.",
+        },
+
+        // ⭐ `DESIGN.md §2.7`'s OWN WORKED EXAMPLE — *"your master farmer develops crop rotation
+        // after 25 years"* — arriving as content at last. The pillar has used it as an illustration
+        // since the first day of the project.
+        new TechniqueRow
+        {
+            Id = 2,
+            Name = "crop rotation",
+            Skill = 4,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has read this ground for twenty years, and has begun resting one "
+                + "field in three. What grows in the others comes up thicker for it.",
+            LostLine = "The fields are all sown again this spring. {0} was the only one who knew "
+                + "to rest them.",
+        },
+        new TechniqueRow
+        {
+            Id = 3,
+            Name = "tended patches",
+            Skill = 1,
+            YieldBonusPercent = 10,
+            DiscoveryLine = "{0} has walked these woods so long that the good patches are tended "
+                + "rather than merely found. They give more every year now.",
+            LostLine = "The tended patches are going back to wild. {0} was the last who knew "
+                + "which they were.",
+        },
+    };
+
+    /// <summary>
+    /// Years on the task before somebody is a master of it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Twenty</b> (Joe, D174), against a working life of about fifty-five —
+    /// <see cref="AdultAge"/> to a lifespan of 55–79. **A bit over a third of a career**, which
+    /// means a founder who sticks to one trade masters it and is a master for the back half of
+    /// their life, and a child born in year 1 masters at thirty-two — **so mastery and the first
+    /// grandchildren arrive together** (§3.3b). The generational loop does the pacing rather
+    /// than a timer.
+    /// </para>
+    /// <para>
+    /// <b>Content, not derivation</b> — the class <c>granary_feeds_people</c> is in (D165: a
+    /// stated fact about the world, with the consequence derived). A modder can move it.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_years")]
+    public int MasteryYears { get; init; } = 20;
+
+    // ⭐⭐ SKILL DECAY IS GONE, AND IT WAS BUILT AND MEASURED BEFORE IT WENT (D183, Joe:
+    // *"let's give to the player, not punish or decay"*). It was `skill_decay_years_per_year_lost`
+    // and `skill_floor_years`, derived against `labour_reshuffle_years` — three years away costs
+    // one year of the trade, floored at a year.
+    //
+    // **§3.4 required it on the grounds that "a fifty-year-old who did six jobs is a master of
+    // six". Measured, that cannot happen:** mastery needs 9,600 ticks and an adult life is about
+    // 26,400, so **at most two masteries fit in a whole life** even holding a trade every waking
+    // tick — and over sixty years the most any living villager had mastered was **one**.
+    //
+    // **What the rate did do was take 37% of everything one forager earned**, because a villager
+    // spends over half their adult life off any given trade (D46 moves them every three years).
+    // Agnes held foraging for 12,240 ticks — more than mastery requires — and never became a
+    // master. *That is the trap §3.4 itself forbids, produced by §3.4's own cure.*
+
+    /// <summary>
+    /// What a tick counts for when the villager is <b>out on the job</b>, in hundredths.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A TICK OUT ON THE WORK IS WORTH MORE THAN A TICK WAITING FOR IT</b> (Joe, D183).
+    /// A forester who is out felling learns faster than one sitting at home because the hut has
+    /// no logs — **but the second is still a forester, and still gaining**, which is the half
+    /// that keeps a stuttering supply chain from being a punishment as well as a shortage.
+    /// </para>
+    /// <para>
+    /// <b>Hundredths of a tick, so the weighting is a percentage with no float near sim state</b>
+    /// (D2). 150 against an idle 100 is Joe's 1.5×.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>Measured consequence, stated rather than discovered later:</b> time out on the job
+    /// varies by trade — **forestry 88%, woodcutting 82%, foraging 41%, trading 30%, building
+    /// 27%** — so at 1.5× a forester accrues about **27% faster than a builder**. That is
+    /// divergence the player can *see and act on* (keep the hut supplied, staff it properly),
+    /// which is §2.3's traceable pressure rather than an invisible tax.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("skill_work_per_active_tick")]
+    public int SkillWorkPerActiveTick { get; init; } = 150;
+
+    /// <summary>
+    /// What a tick counts for when the villager <b>holds the trade but is not out on it</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>100 is the anchor</b>: <c>mastery_years</c> means *that many years of holding a seat
+    /// you never leave the house for*, and anybody who actually works it gets there sooner.
+    /// **The generous direction on purpose** (D183) — the idle forester is idle because the
+    /// village ran out of logs, which is not their doing.
+    /// </remarks>
+    [JsonPropertyName("skill_work_per_idle_tick")]
+    public int SkillWorkPerIdleTick { get; init; } = 100;
+
+    /// <summary>
+    /// Extra work a learner gets per tick for standing beside a <b>master of the same trade at
+    /// the same workplace</b>, as a percentage (`skills-catalog.md §5.1a`, D202).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>§2.1's whole point:</b> *"that skill dies with the person unless an elder apprentices a
+    /// youth."* Until this existed, skill was personal and **nothing transferred** — a master
+    /// died and their years died with them, with no way for the village to have done anything
+    /// about it.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE TEACHER PAYS NOTHING</b> (Joe's call, D202, following D183's *"give, never
+    /// punish or decay"*). This adds to the learner and takes nothing from anybody. ⚠️ **The
+    /// stated consequence is that §5.3's policy dial has nothing to trade off**, which is why
+    /// there is no dial rather than a dial that does nothing.
+    /// </para>
+    /// <para>
+    /// <b>Zero is a supported state and is what the guards pose</b> to measure the feature
+    /// against its own absence — §10's anti-vacuity rule: *a village that never teaches must
+    /// produce measurably less than one that does.*
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("apprentice_learning_bonus_percent")]
+    public int ApprenticeLearningBonusPercent { get; init; }
+
+    /// <summary>
+    /// How much faster a <b>master</b> does the work, as a percentage — <b>the width of the
+    /// whole pillar</b> (`skills-catalog.md §3.3`, §12).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐⭐ SKILL SCALES HOW LONG A JOB TAKES, NOT WHAT IT YIELDS — DURATION FIRST, YIELD
+    /// SECOND</b> (§3.3). The reason is legibility rather than arithmetic: **a villager who is
+    /// out longer is visible on the map, and one who brings back less is only visible in a
+    /// panel.** It is also what discharges D28, which has asked since Phase 1 for time-on-task to
+    /// be personal — two people who take different numbers of ticks to do the same thing stop
+    /// arriving together within a season and never re-synchronise.
+    /// </para>
+    /// <para>
+    /// <b>⛔ THE NOVICE FLOOR IS UNTOUCHED AND THAT IS WHAT KEEPS THE ECONOMY STANDING</b>
+    /// (§3.2). At zero progress this scales nothing at all, so `VillageEconomy`'s derivation —
+    /// which solves the **survival floor**, about the least skilled person in the valley — goes
+    /// on being exactly as true as it was. **Mastery is headroom above a floor, and headroom
+    /// above a floor is what progression is.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ QUANTISED HARD, BECAUSE THE DURATIONS ARE TINY.</b> `sow_ticks` and `reap_ticks`
+    /// are **3**, `cut_ticks` and `split_ticks` are **4** — so the only reachable speeds are
+    /// whole ticks, and a bonus that does not round to one **does nothing whatsoever**.
+    /// Measured: at **17% not one duration moves**, and at **25% only the four-tick trades
+    /// do** — a village at 25% produces population and food identical to a village with the
+    /// feature switched off. <c>AMasterIsFasterAtEveryTrade</c> exists to fail the build if a
+    /// tweak here ever rounds the whole pillar away again.
+    /// </para>
+    /// <para>
+    /// <b>⭐⭐ FIFTY IS MEASURED, NOT PICKED (§12), AND IT HAS A CLEAN STATEMENT: a master's
+    /// action takes half the ticks, rounded up.</b> 3 → 2 and 4 → 2. Across three seeds at a
+    /// century, against the same villages with the bonus at zero:
+    /// </para>
+    /// <code>
+    /// seed     population        food stored
+    /// 12345    23 → 29           3,677 → 4,631
+    /// 2        63 → 65           4,870 → 9,648
+    /// 42       15 → 20           2,204 → 2,178
+    /// </code>
+    /// <para>
+    /// <b>Population rises on every seed</b>, which is D161's mid-game answer arriving: a
+    /// masterful village supports more people. **34% was tried first and is marginal** —
+    /// population unchanged on two seeds of three. *Narrow makes skill a footnote, and at these
+    /// durations narrow means literally nothing.*
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The spec predicted a different shape and it is worth recording.</b> §3.2 expected
+    /// mastery to cash out as *"the same output from fewer hands — and the hands it frees become
+    /// laborers"*. **Laborer counts did not move at all**; the village grew instead. Both are
+    /// D161's answer, but through a different door than the one predicted.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("mastery_speed_bonus_percent")]
+    public int MasterySpeedBonusPercent { get; init; } = 50;
+
+    /// <summary>
+    /// How many of the founders arrive already <b>masters</b> of a trade
+    /// (`skills-catalog.md §3.2c`).
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ THE SHAPE IS FIXED AND THE TRADES ARE SEEDED</b> — one master, one journeyman and
+    /// the rest novices (Joe, 2026-08-23). Every seed gets the same *strength* of party and a
+    /// different *speciality*, so a second playthrough differs in **what you can do** rather than
+    /// in **whether you can live**. A fully seeded roll would make a four-novice seed and a
+    /// two-master seed a bad run and a good one rather than two playthroughs, and §0.1 is that
+    /// the challenge is in the planning, never in the punishment.
+    /// </remarks>
+    [JsonPropertyName("founding_masters")]
+    public int FoundingMasters { get; init; } = 1;
+
+    /// <summary>How many founders arrive as <b>journeymen</b>. See <see cref="FoundingMasters"/>.</summary>
+    [JsonPropertyName("founding_journeymen")]
+    public int FoundingJourneymen { get; init; } = 1;
+
+    /// <summary>
+    /// The trades an exile can arrive knowing — the skills, by name, the founding draws from
+    /// (D392). <b>Order is part of the contract.</b>
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⛔ A DRAW WHOSE RANGE IS A CONTENT COUNT IS A SEED CONTRACT (found D391).</b> The founding
+    /// drew from <see cref="Skills"/> itself — <c>Rng.NextInt(0, Skills.Count)</c> — so adding a
+    /// seventh row (the smith's) moved every seed's founders, every fixture village diverged
+    /// from tick 1, and three food-limit guards went red on a village that had never held a
+    /// tool. D344's trap, one catalogue over. The draw ranges over THIS list now: a new skill
+    /// row leaves the founding alone unless it is put here on purpose.
+    /// </para>
+    /// <para>
+    /// <b>Today's six, in today's order, so the draw is byte-identical</b> — no golden moved
+    /// for this key, and `TheShippedFoundingListIsTodaysSix` says the shipped file keeps it that
+    /// way. It is also the legible answer to <em>"can an exile arrive a master smith with no
+    /// smithy in the valley?"</em> — not unless this list says so.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("founding_trades")]
+    public IReadOnlyList<string> FoundingTrades { get; init; } = new[]
+    {
+        "foraging", "forestry", "woodcutting", "farming", "building", "trading",
+    };
+
+    /// <summary>
+    /// Whether every villager is drawn a personal rhythm at birth (`skills-catalog.md §3.5`).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ A SWITCH BECAUSE THE TEST PLAN REQUIRES ONE, NOT BECAUSE ANYBODY WOULD TURN IT
+    /// OFF.</b> §10 asks for a **synthetic all-novice village with the mixed founding switched
+    /// off and the seeded rhythm switched off**, and for D28's lockstep guard to be *"checked red
+    /// by running with both switched off"*. Neither is posable without this.
+    /// </para>
+    /// <para>
+    /// <b>⛔ IT SKIPS THE DRAW RATHER THAN ZEROING THE RESULT, AND THAT IS THE WHOLE POINT.</b>
+    /// Draw order is the seed contract — a run with the rhythm off consumes exactly the draws it
+    /// consumed before §3.5 existed (name, then lifespan), so it reproduces the old history
+    /// byte for byte. Zeroing after drawing would shift every subsequent number and prove
+    /// nothing.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("seeded_rhythm")]
+    public bool SeededRhythm { get; init; } = true;
+
+    // ⭐ `forager_catchment_tiles` IS DELETED (`forests-and-gathering.md §3`, Joe: *"get rid
+    // of the ring and the distance restrictions"*). It was ten tiles, and past it a villager
+    // simply could not hold a job however much they wanted it.
+    //
+    // **What replaces it is not a bigger number, it is a different kind of thing.** The
+    // allocator sorts candidates by travel cost, so the nearest hands are still claimed
+    // first; what has gone is the *refusal*. A ruinous commute is now a mistake the player
+    // can make, watch and pay for, which is D58's settled mechanism and §2.3's argument that
+    // pressure should be traceable to something the player did.
+    //
+    // ⚠️ **Its removal carried a condition rather than a caveat** (D112): deleting the fence
+    // makes a ruinous commute *silent*, so the consequence had to become readable in the same
+    // slice — see `Villager.CommuteNote`.
+
+    /// <summary>
+    /// How many households the economy is derived to support.
+    /// </summary>
+    /// <remarks>
+    /// The furthest home in a village this size sets the worst-case round trip, and
+    /// therefore the yield the whole economy needs. Deriving from the first
+    /// household instead made every outlying family unable to feed itself.
+    /// </remarks>
+    [JsonPropertyName("economy_horizon_households")]
+    public int EconomyHorizonHouseholds { get; init; } = 20;
+
+    /// <summary>
+    /// Winter store as a percentage of one member's winter need.
+    /// </summary>
+    /// <remarks>
+    /// Above 100 because surviving winter exactly is not surviving winter — the
+    /// shock that actually kills a household is a worker dying or ageing out
+    /// part-way through it. The margin is what absorbs that.
+    /// </remarks>
+    [JsonPropertyName("winter_buffer_percent")]
+    public int WinterBufferPercent { get; init; } = 180;
+
+    /// <summary>
+    /// A household is short below this percentage of its food target.
+    /// </summary>
+    /// <remarks>
+    /// <b>The name is older than the job.</b> Nothing shares anything automatically any
+    /// more — D30 deleted both sharing policies and the market replaced them. This is now
+    /// the line at which the <em>village</em> counts itself short of food
+    /// (<see cref="World.LabourQuota.VillageIsShortOfFood"/>), which is what decides
+    /// whether anyone can be spared from gathering.
+    /// </remarks>
+    [JsonPropertyName("sharing_need_percent")]
+    public int SharingNeedPercent { get; init; } = 50;
+
+    /// <summary>
+    /// A household sets out to fetch once its own store falls below this share of target.
+    /// </summary>
+    /// <remarks>
+    /// Also named for the deleted sharing policy, where it was how much a giver kept back.
+    /// It is a fetch trigger now: above <see cref="SharingNeedPercent"/> so a household
+    /// starts walking to the store before it is in the state the village would call short.
+    /// </remarks>
+    [JsonPropertyName("sharing_keep_percent")]
+    public int SharingKeepPercent { get; init; } = 80;
+
+    /// <summary>
+    /// Share of a parent household's larder that leaves with a departing child, as
+    /// a percentage.
+    /// </summary>
+    [JsonPropertyName("dowry_percent")]
+    public int DowryPercent { get; init; } = 25;
+
+    /// <summary>Youngest age at which a villager can become a parent.</summary>
+    [JsonPropertyName("fertility_min_age")]
+    public int FertilityMinAge { get; init; } = 18;
+
+    /// <summary>Oldest age at which a villager can become a parent.</summary>
+    [JsonPropertyName("fertility_max_age")]
+    public int FertilityMaxAge { get; init; } = 40;
+
+    /// <summary>Years a household waits between children.</summary>
+    [JsonPropertyName("birth_interval_years")]
+    public int BirthIntervalYears { get; init; } = 4;
+
+    /// <summary>
+    /// Food a household must have stored before it will have a child.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A village that breeds into a famine is not telling a story, it is just
+    /// oscillating. Requiring a surplus first makes population growth a
+    /// <em>consequence</em> of a good decade rather than a background process.
+    /// </para>
+    /// <para>
+    /// <b>A percentage of the household's own target, not a flat number — and the
+    /// comment above was describing behaviour the code did not have.</b> It used to be
+    /// an absolute 45 while the food target scales with members, so a household of
+    /// seven with a target of 462 would have a child at 45: a tenth of a full larder,
+    /// which is not "a surplus" by any reading. The village grew to fifty, outran what
+    /// the valley could feed, and sixty-one people starved on the way back down.
+    /// </para>
+    /// <para>
+    /// Scaling it is what makes population <em>self-limiting</em>: as the village
+    /// approaches what its forage sites can support, households stop reaching their
+    /// targets, and births slow before anyone starves rather than after. That is the
+    /// difference between a stable settlement and a boom-bust one (D31).
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <para>
+    /// <b>⭐ 80 -> 60 (Joe, D155), and it is the dial D153 deliberately left alone.</b> He
+    /// played a village that sat at **four people for eleven years** and asked why nobody was
+    /// having children. Nothing was broken: both households were housed in Year 1, and the bar
+    /// is <c>stockpile_target × population × this</c> — at four people that is **304 food**, and
+    /// his stores read **292**. The bar scales with the village, so a small settlement sits
+    /// just under it more or less permanently.
+    /// </para>
+    /// <para>
+    /// <b>Since D153 this is the ONLY food term in the birth gate</b>, and it is read in exactly
+    /// two places — the gate and <c>VillageEconomy.PopulationCeiling</c> — so lowering it
+    /// raises the derived ceiling by the same arithmetic. The formula does not approximate the
+    /// gate; it *is* the gate.
+    /// </para>
+    /// <para>
+    /// <b>⚠️ IT BUYS GROWTH WITH HUNGER, MEASURED RATHER THAN HOPED.</b> This is the term the
+    /// deleted household gate was redundant against, and taking it down is the closest this
+    /// economy has come to the famine D153 records — *"bred to ninety-two, thirty-three starved
+    /// on the way back down."* The bar is what stops that, so it is lowered to where growth
+    /// arrives and starvation is still a minority of deaths, and no further.
+    /// </para>
+    /// <para>
+    /// <b>⛔ 70 WAS REFUSED THOUGH IT LOOKS BETTER.</b> It is the best row on the fixture — 48
+    /// alive, 4 starved over 300 years — and one of the worst on the shipped file: 16 alive, 27
+    /// starved. A setting that is excellent on one config and bad on the other is the divergence
+    /// that has bitten this project five times (D48, D49, D50, D128, D132), and is a number to
+    /// avoid rather than to tune toward.
+    /// </para>
+    /// </remarks>
+    /// <remarks>
+    /// <b>⭐ 60 → 100 (D385), re-based, not re-tuned.</b> Every load goes to a store now and a
+    /// larder is filled from it, so the stores hold what the larders used to be filled with
+    /// directly — the same food, read in one place. At 60 the fixture bred to 24 and starved 28
+    /// against 27 of old age; at 100, by Joe's D155 criterion (growth arrives, starvation a
+    /// minority of deaths), it peaks at 22 with 18 starved against 31 of old age, and twelve
+    /// seeds over fifty years read 259 alive / 278 peak / 12 starved against D384's 161 / 210 /
+    /// 34. `PopulationCeiling` moves with it by the same arithmetic.
+    /// </remarks>
+    [JsonPropertyName("birth_food_percent")]
+    public int BirthFoodPercent { get; init; } = 100;
+
+    /// <summary>Most people one household will hold before it stops growing.</summary>
+    [JsonPropertyName("max_household_size")]
+    public int MaxHouseholdSize { get; init; } = 5;
+
+    /// <summary>Households the village is founded with.</summary>
+    /// <remarks>
+    /// Phase 0's lone villager is simply the <c>1 household × 1 adult</c> case rather
+    /// than a special mode — which is what keeps the Phase 0 tests meaningful instead
+    /// of grandfathered.
+    /// </remarks>
+    [JsonPropertyName("starting_households")]
+    public int StartingHouseholds { get; init; } = 2;
+
+    /// <summary>Founding adults in each starting household.</summary>
+    [JsonPropertyName("adults_per_household")]
+    public int AdultsPerHousehold { get; init; } = 2;
+
+    /// <summary>The surnames a founding household may carry — Joe's sixty (D467).</summary>
+    /// <remarks>
+    /// Picked by a hash of the seed and the household's id (<see cref="World.NameHash.Surname"/>),
+    /// the first no living household carries — never a draw. Only the founding picks from it: every
+    /// later household is a couple and carries <b>the older partner's</b> surname, which is what
+    /// makes a family's name something the village inherits rather than something it rolls.
+    /// </remarks>
+    [JsonPropertyName("household_names")]
+    public IReadOnlyList<string> HouseholdNames { get; init; } = new[]
+    {
+        "Thatcher", "Cooper", "Mason", "Weaver", "Chandler", "Fletcher",
+        "Smith", "Miller", "Carpenter", "Wright", "Tanner", "Fuller",
+        "Forester", "Baker", "Brewer", "Hayward", "Pinder", "Sawyer",
+        "Wainwright", "Potter", "Carter", "Skinner", "Draper", "Clark",
+        "Hill", "Wood", "Brook", "Ford", "Hall", "Field",
+        "Marsh", "Dale", "Ridge", "Vale", "Holt", "Croft",
+        "Hurst", "Mead", "Pond", "Stone", "Well", "Grove",
+        "Atwood", "Oakes", "Underwood", "Rivers", "Meadows", "Bramble",
+        "Winter", "Frost", "Day", "Short", "Swift", "Strong",
+        "Young", "White", "Brown", "Green", "Stout", "Sharp",
+    };
+
+    /// <summary>Names a valley can be settled under, one of which the seed picks.</summary>
+    /// <remarks>
+    /// <b>A pool, not a name</b>, and the seed indexes it arithmetically — see
+    /// <see cref="Core.SimWorld.Name"/> for why it must never be a draw. Content, so a
+    /// modder can swap the whole list for their own without touching code, exactly like
+    /// <see cref="HouseholdNames"/> and <see cref="FirstNamePrefixes"/>.
+    /// </remarks>
+    [JsonPropertyName("town_names")]
+    public IReadOnlyList<string> TownNames { get; init; } = new[]
+    {
+        "Ashbourne", "Millbrook", "Thornfield", "Elderwood", "Greyford", "Hollowmere",
+        "Ravenscar", "Willowdale", "Stonebridge", "Fernhollow", "Larkspur", "Oakhaven",
+    };
+
+    /// <summary>
+    /// The name the player typed for the village on the new-game screen, or <c>null</c> for the
+    /// seed's pick from <see cref="TownNames"/> (D477).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>A label, never hashed and never in the share code</b> — D376's rename rule: a name
+    /// changes nothing that happens. Trimmed, 1–24 characters.
+    /// </remarks>
+    [JsonPropertyName("village_name")]
+    public string? VillageName { get; init; }
+
+    /// <summary>The words the new-game screen's dice roll a seed from, as <c>word-word-NN</c> (D477).</summary>
+    /// <remarks>
+    /// Content, replaced wholesale by a json's list like <see cref="TownNames"/>. The roll is the
+    /// view's randomness choosing an <em>input</em>; the sim only ever sees the text
+    /// (<see cref="SeedText"/>), so a list a modder grows reshuffles no valley.
+    /// </remarks>
+    [JsonPropertyName("seed_words")]
+    public IReadOnlyList<string> SeedWords { get; init; } = new[]
+    {
+        "alder", "amber", "ash", "aster", "badger", "barley", "bay", "beck", "birch", "bracken",
+        "bramble", "brook", "burrow", "cedar", "chalk", "clover", "cobble", "copse", "cress", "crow",
+        "dale", "dew", "dove", "elder", "elm", "ember", "fallow", "fen", "fern", "finch",
+        "flax", "flint", "fox", "frost", "gorse", "grove", "hare", "harrow", "hawthorn", "hazel",
+        "heath", "heron", "hollow", "holly", "honey", "ivy", "kestrel", "lantern", "larch", "lark",
+        "linden", "loam", "marrow", "marsh", "meadow", "mill", "mint", "moss", "mossy", "moth",
+        "nettle", "oak", "oat", "otter", "owl", "pebble", "pine", "plover", "poppy", "quill",
+        "rain", "raven", "reed", "ridge", "robin", "rook", "rowan", "rush", "rye", "sage",
+        "sedge", "sloe", "sorrel", "sparrow", "spruce", "stoat", "stone", "sumac", "tansy", "thistle",
+        "thorn", "thrush", "timber", "vale", "willow", "wold", "wren", "yarrow", "yew", "acorn",
+    };
+
+    /// <summary>
+    /// The rows of the new-game screen — <b>data, so a new option is a row, not a screen</b> (D477,
+    /// `new-game-screen.md §5`; Joe: <em>"space for more to be added"</em>).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A row names the config keys it overrides and a range or its levels, and nothing else; the
+    /// screen applies a row by overriding those keys and loading the result through
+    /// <see cref="Validate"/>, the same path as any config (<see cref="NewGame.Apply"/>). Replaced
+    /// wholesale by a json's list, like <see cref="TownNames"/>.
+    /// </para>
+    /// <para>
+    /// ⛔ <b>The ranges and levels are measured, never typed</b> (`new-game-screen.md §7`): every end
+    /// of every row must leave valleys that can be lived in.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("new_game_options")]
+    public IReadOnlyList<NewGameRow> NewGameOptions { get; init; } = NewGame.DefaultRows();
+
+    /// <summary>Age founding adults start at.</summary>
+    [JsonPropertyName("founder_age")]
+    public int FounderAge { get; init; } = 20;
+
+    /// <summary>
+    /// Age at which a child becomes an adult and can take work.
+    /// </summary>
+    /// <remarks>
+    /// Below this a villager eats from the household store and contributes nothing —
+    /// which is exactly why childhood needs households to exist first (D13).
+    /// </remarks>
+    [JsonPropertyName("adult_age")]
+    public int AdultAge { get; init; } = 15;
+
+    /// <summary>
+    /// Age up to which the villager works at full strength. After this, vigour
+    /// declines linearly toward <see cref="VigourMinPercent"/> at death.
+    /// </summary>
+    [JsonPropertyName("vigour_full_until_age")]
+    public int VigourFullUntilAge { get; init; } = 30;
+
+    /// <summary>
+    /// Vigour floor, as a percentage, reached in the final year of life.
+    /// </summary>
+    /// <remarks>
+    /// Tuned so an old villager visibly struggles — many more foraging trips for
+    /// the same food — without tipping into starvation. Old age must stay the
+    /// normal ending, or the two death arcs stop reading differently, which is
+    /// the whole point of the phase.
+    /// </remarks>
+    [JsonPropertyName("vigour_min_percent")]
+    public int VigourMinPercent { get; init; } = 55;
+
+    /// <summary>Median lifespan in years.</summary>
+    [JsonPropertyName("lifespan_years_base")]
+    public int LifespanYearsBase { get; init; } = 45;
+
+    /// <summary>
+    /// Seeded spread around <see cref="LifespanYearsBase"/>, drawn once at birth.
+    /// A little variance stops old age landing on a suspiciously round number.
+    /// </summary>
+    [JsonPropertyName("lifespan_years_variance")]
+    public int LifespanYearsVariance { get; init; } = 5;
+
+    /// <summary>
+    /// The first half of a first name. A villager is "Agnes", never "Villager_01" — the
+    /// people-not-spreadsheets non-negotiable starts here (DESIGN.md §1.4).
+    /// </summary>
+    /// <remarks>
+    /// <b>Joe's list (D465).</b> A first name is a prefix and a suffix, each picked by a hash of
+    /// the seed and the villager's id (<see cref="World.NameHash"/>) — ⛔ never an <c>Rng</c>
+    /// draw, so the lists may grow without reshuffling a seed (D392). <i>Ag + nes</i> is Agnes,
+    /// <i>Wen + dell</i> Wendell: the eight names the game shipped with are in it by construction.
+    /// A list may not repeat an entry — a repeat weights one name double without anybody
+    /// deciding it (his had <i>Val</i> twice; the second is gone).
+    /// </remarks>
+    [JsonPropertyName("first_name_prefixes")]
+    public IReadOnlyList<string> FirstNamePrefixes { get; init; } = new[]
+    {
+        "Ag", "Wen", "Hat", "Ot", "Am", "Mab", "Sil", "Fern", "Eld", "Ash",
+        "Bran", "Cor", "Dav", "El", "Glen", "Hol", "Kael", "Bram", "Val", "Mor",
+        "Nor", "Ran", "Wyn", "Cal", "Sol", "Tor", "Dov", "Ren", "Bel", "Bryn",
+        "Cyp", "Dar", "Fen", "Gale", "Hal", "Is", "Jes", "Kar", "Lark", "Mer",
+        "Nym", "Or", "Pen", "Quin", "Row", "Syl", "Tan", "Ul", "Ver", "Wes",
+        "Yan", "Zeph", "Ar", "Ber", "Cad", "Dor", "Ev", "Fay", "Gar", "Hed",
+        "Ir", "Jor", "Ken", "Lin", "Mar", "Ned", "Oak", "Per", "Quel", "Rhos",
+        "Styr", "Tar", "Vor", "Wren", "Yven", "Ald", "Birch", "Ced", "Dusk", "Em",
+        "Flint", "Hav", "Iv", "Jasp", "Mos", "Pin", "Red", "Sage", "Thorn", "Umb",
+        "Wil", "Yar", "Ast", "Cael", "Lor", "Teth", "Vael", "Zev", "Kyn",
+    };
+
+    /// <summary>The second half of a first name — see <see cref="FirstNamePrefixes"/>.</summary>
+    /// <remarks>Joe's list (D465); his had <i>tis</i> twice, and the second is gone.</remarks>
+    [JsonPropertyName("first_name_suffixes")]
+    public IReadOnlyList<string> FirstNameSuffixes { get; init; } = new[]
+    {
+        "nes", "dell", "tie", "to", "os", "bel", "as", "low", "ric", "gard",
+        "win", "ley", "ford", "mere", "wood", "mont", "ren", "is", "en", "or",
+        "el", "ic", "ald", "yn", "ton", "den", "mar", "ridge", "vail", "brook",
+        "field", "wyld", "burn", "dale", "fell", "holt", "lock", "moor", "shaw", "stead",
+        "thorpe", "wick", "worth", "an", "ar", "et", "in", "on", "us", "lyn",
+        "myr", "ryn", "tyr", "wyn", "dorn", "fast", "helm", "land", "mark", "reach",
+        "stone", "vale", "ward", "well", "wind", "yth", "eth", "oth", "ath", "ith",
+        "ael", "iel", "th", "lan", "ret", "ron", "tis", "ver", "tris", "dyl",
+        "fin", "gan", "his", "kin", "lis", "mir", "nis", "pris", "ris",
+        "van", "wis", "xis", "yan", "zis", "bert", "dram", "frith", "mund", "red",
+    };
+
+    /// <summary>
+    /// A name list must hold something, hold no blank, and hold nothing twice (D465).
+    /// </summary>
+    /// <remarks>
+    /// Empty divides by zero at the first birth; blank is a villager with no name; a repeat is a
+    /// name weighted double that nobody chose to weight. Refused here, by key, where the mistake is.
+    /// </remarks>
+    private static void RequireANameList(IReadOnlyList<string>? names, string key)
+    {
+        if (names is null || names.Count == 0)
+        {
+            throw new SimConfigException($"{key} must contain at least one name.");
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string name in names)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new SimConfigException($"{key} has a blank entry.");
+            }
+
+            if (!seen.Add(name))
+            {
+                throw new SimConfigException($"{key} lists \"{name}\" twice.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fail loudly on nonsense values rather than letting them cause a baffling
+    /// symptom a thousand ticks later.
+    /// </summary>
+    /// <exception cref="SimConfigException">If any value is out of range.</exception>
+    public void Validate()
+    {
+        if (TicksPerDay <= 0)
+        {
+            throw new SimConfigException($"ticks_per_day must be greater than zero (got {TicksPerDay}).");
+        }
+
+        if (TargetTicksPerSecond <= 0.0 || double.IsNaN(TargetTicksPerSecond) || double.IsInfinity(TargetTicksPerSecond))
+        {
+            throw new SimConfigException(
+                $"target_ticks_per_second must be a positive finite number (got {TargetTicksPerSecond}).");
+        }
+
+        if (MaxTicksPerFrame <= 0)
+        {
+            throw new SimConfigException($"max_ticks_per_frame must be greater than zero (got {MaxTicksPerFrame}).");
+        }
+
+        if (DaysPerSeason <= 0)
+        {
+            throw new SimConfigException($"days_per_season must be greater than zero (got {DaysPerSeason}).");
+        }
+
+        if (HungerMax <= 0)
+        {
+            throw new SimConfigException($"hunger_max must be greater than zero (got {HungerMax}).");
+        }
+
+        if (HungerPerTick <= 0)
+        {
+            throw new SimConfigException($"hunger_per_tick must be greater than zero (got {HungerPerTick}).");
+        }
+
+        if (EatThreshold <= 0 || EatThreshold > HungerMax)
+        {
+            throw new SimConfigException(
+                $"eat_threshold must be in 1..hunger_max ({HungerMax}) (got {EatThreshold}).");
+        }
+
+        if (EatReducesHunger <= 0)
+        {
+            throw new SimConfigException($"eat_reduces_hunger must be greater than zero (got {EatReducesHunger}).");
+        }
+
+        if (FoodPerMeal <= 0)
+        {
+            throw new SimConfigException($"food_per_meal must be greater than zero (got {FoodPerMeal}).");
+        }
+
+        if (StarvationTicks <= 0)
+        {
+            throw new SimConfigException($"starvation_ticks must be greater than zero (got {StarvationTicks}).");
+        }
+
+        if (GatherYield <= 0)
+        {
+            throw new SimConfigException($"gather_yield must be greater than zero (got {GatherYield}).");
+        }
+
+        if (GatherTicks <= 0)
+        {
+            throw new SimConfigException($"gather_ticks must be greater than zero (got {GatherTicks}).");
+        }
+
+        if (TravelTicksPerUnit <= 0)
+        {
+            throw new SimConfigException($"travel_ticks_per_unit must be greater than zero (got {TravelTicksPerUnit}).");
+        }
+
+        // Desire paths (D358). The cost field also refuses these, but a config error should
+        // name the key the modder typed, not the class that choked on it.
+        if (PathWearPerStep < 0 || PathWearDecayPerSeason < 0)
+        {
+            throw new SimConfigException(
+                $"path_wear_per_step and path_wear_decay_per_season cannot be negative (got {PathWearPerStep}, {PathWearDecayPerSeason}).");
+        }
+
+        if (PathWornAt < 1 || PathPackedAt < PathWornAt)
+        {
+            throw new SimConfigException(
+                $"path_worn_at must be at least 1 and path_packed_at at least path_worn_at (got {PathWornAt}, {PathPackedAt}).");
+        }
+
+        if (PathHoldsFor < 0 || PathHoldsFor >= PathWornAt)
+        {
+            throw new SimConfigException(
+                $"path_holds_for must be at least 0 and less than path_worn_at (got {PathHoldsFor} against {PathWornAt}).");
+        }
+
+        // ⛔ The sweep fades before it classes (D414): a ceiling under packed + one season's decay
+        // is a valley where nothing can ever be packed.
+        if (PathWearCeiling < PathPackedAt + PathWearDecayPerSeason || PathWearCeiling > ushort.MaxValue)
+        {
+            throw new SimConfigException(
+                $"path_wear_ceiling must be at least path_packed_at + path_wear_decay_per_season and at most {ushort.MaxValue} "
+                + $"(got {PathWearCeiling} against {PathPackedAt} + {PathWearDecayPerSeason}).");
+        }
+
+        if (PathShortcutGrassAllowance < 0)
+        {
+            throw new SimConfigException(
+                $"path_shortcut_grass_allowance cannot be negative (got {PathShortcutGrassAllowance}).");
+        }
+
+        if (PathPackedTileCost < 1 || PathWornTileCost < PathPackedTileCost || PathWornTileCost > World.TravelCostField.BaseTileCost)
+        {
+            throw new SimConfigException(
+                $"path costs must run 1 <= path_packed_tile_cost <= path_worn_tile_cost <= {World.TravelCostField.BaseTileCost} (got worn {PathWornTileCost}, packed {PathPackedTileCost}).");
+        }
+
+        if (StockpileTarget <= 0)
+        {
+            throw new SimConfigException($"stockpile_target must be greater than zero (got {StockpileTarget}).");
+        }
+
+        if (VigourFullUntilAge < 0)
+        {
+            throw new SimConfigException($"vigour_full_until_age cannot be negative (got {VigourFullUntilAge}).");
+        }
+
+        if (VigourMinPercent is <= 0 or > 100)
+        {
+            throw new SimConfigException($"vigour_min_percent must be in 1..100 (got {VigourMinPercent}).");
+        }
+
+        if (LifespanYearsBase <= 0)
+        {
+            throw new SimConfigException($"lifespan_years_base must be greater than zero (got {LifespanYearsBase}).");
+        }
+
+        if (LifespanYearsVariance < 0 || LifespanYearsVariance >= LifespanYearsBase)
+        {
+            throw new SimConfigException(
+                $"lifespan_years_variance must be in 0..lifespan_years_base-1 (got {LifespanYearsVariance}).");
+        }
+
+        RequireANameList(FirstNamePrefixes, "first_name_prefixes");
+        RequireANameList(FirstNameSuffixes, "first_name_suffixes");
+
+        if (CutYield <= 0)
+        {
+            throw new SimConfigException($"cut_yield must be greater than zero (got {CutYield}).");
+        }
+
+        if (CutTicks <= 0)
+        {
+            throw new SimConfigException($"cut_ticks must be greater than zero (got {CutTicks}).");
+        }
+
+        if (DestroyTicksPerTile <= 0)
+        {
+            throw new SimConfigException($"destroy_ticks_per_tile must be greater than zero (got {DestroyTicksPerTile}).");
+        }
+
+        // ⚠️ ZERO IS REFUSED RATHER THAN TREATED AS "OFF". A rest of nought ticks is the old
+        // behaviour — re-decide every tick, for ever — and it would be indistinguishable from
+        // the feature being broken. If the village should never rest, that is a design change
+        // and it should look like one.
+        if (RestTicks <= 0)
+        {
+            throw new SimConfigException($"rest_ticks must be greater than zero (got {RestTicks}).");
+        }
+
+        if (ForesterHutCapacity <= 0)
+        {
+            throw new SimConfigException($"forester_hut_capacity must be greater than zero (got {ForesterHutCapacity}).");
+        }
+
+        if (WoodcutterHutCapacity <= 0)
+        {
+            throw new SimConfigException(
+                $"woodcutter_hut_capacity must be greater than zero (got {WoodcutterHutCapacity}).");
+        }
+
+        if (SmithyCapacity <= 0)
+        {
+            throw new SimConfigException(
+                $"smithy_capacity must be greater than zero (got {SmithyCapacity}).");
+        }
+
+        // A tool that lasts no uses is a tool that is worn out the moment it is picked up, which
+        // reads as a fetch loop rather than as "no tools"; a bonus outside 0–100 is a typo.
+        if (ToolUses <= 0
+            || ToolYieldBonusPercent < 0 || ToolYieldBonusPercent > 100
+            || ToolSpeedBonusPercent < 0 || ToolSpeedBonusPercent > 100)
+        {
+            throw new SimConfigException(
+                $"tool_uses must be greater than zero, and tool_yield_bonus_percent and "
+                + $"tool_speed_bonus_percent 0–100 "
+                + $"(got {ToolUses}, {ToolYieldBonusPercent}, {ToolSpeedBonusPercent}).");
+        }
+
+        if (IronToolUses <= 0
+            || IronToolYieldBonusPercent < 0 || IronToolYieldBonusPercent > 100
+            || IronToolSpeedBonusPercent < 0 || IronToolSpeedBonusPercent > 100)
+        {
+            throw new SimConfigException(
+                $"iron_tool_uses must be greater than zero, and iron_tool_yield_bonus_percent and "
+                + $"iron_tool_speed_bonus_percent 0–100 "
+                + $"(got {IronToolUses}, {IronToolYieldBonusPercent}, {IronToolSpeedBonusPercent}).");
+        }
+
+        // ⛔ A stone tool that costs nothing is a tool from nowhere — the forge would make them for
+        // free until the limit stopped it.
+        if (StonePerStoneTool < 0 || LogsPerStoneTool < 0 || StonePerStoneTool + LogsPerStoneTool <= 0)
+        {
+            throw new SimConfigException(
+                "stone_per_stone_tool and logs_per_stone_tool must be zero or more and not both zero "
+                + $"(got {StonePerStoneTool}, {LogsPerStoneTool}).");
+        }
+
+        if (IronPerTool <= 0 || FirewoodPerTool < 0 || ForgeTicks <= 0 || ToolsPerForge <= 0 || ForgesPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "iron_per_tool, forge_ticks, tools_per_forge and forges_per_stint must be greater "
+                + $"than zero and firewood_per_tool at least zero (got {IronPerTool}, {FirewoodPerTool}, "
+                + $"{ForgeTicks}, {ToolsPerForge}, {ForgesPerStint}).");
+        }
+
+        if (FaceReachTiles < 0)
+        {
+            throw new SimConfigException($"face_reach_tiles must be zero or more (got {FaceReachTiles}).");
+        }
+
+        // ⭐ THE HOUSE LADDER (D719, `house-tiers.md`): a stone house lasts at least as long as a timber one, burns a
+        // winter of zero or more, keeps warm for zero (the shared roof) or more days, and keeps a larder.
+        if (StoneHouseLastsPercent < 100 || CottageWinterFirewood < 0 || ManorWinterFirewood < 0
+            || CottageExposureDaysSheltered < 0 || ManorExposureDaysSheltered < 0 || CottageStoreCap <= 0 || ManorStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                "stone_house_lasts_percent must be 100 or more; cottage_ and manor_winter_firewood and _exposure_days_sheltered "
+                + $"zero or more; cottage_ and manor_store_cap above zero (got {StoneHouseLastsPercent}, {CottageWinterFirewood}, "
+                + $"{ManorWinterFirewood}, {CottageExposureDaysSheltered}, {ManorExposureDaysSheltered}, {CottageStoreCap}, {ManorStoreCap}).");
+        }
+
+        if (BridgeMaxLengthTiles < 2 || BridgeUnlockPopulation < 0 || StoneBridgeUnlockCrossings < 0)
+        {
+            throw new SimConfigException(
+                "bridge_max_length_tiles must be at least 2, and bridge_unlock_population and "
+                + $"stone_bridge_unlock_crossings at least zero (got {BridgeMaxLengthTiles}, "
+                + $"{BridgeUnlockPopulation}, {StoneBridgeUnlockCrossings}).");
+        }
+
+        // All three 0 switches wear off — the rows' own rule (`building-condition.md §4.2`), at the keys: Phase 0's
+        // village of one has nobody to mend anything and its spec rules a second death system out by name.
+        bool nothingWears = BuildingWearsInYears == 0 && BuildingFailsInYears == 0 && BuildingRuinedInYears == 0;
+        if (!nothingWears
+            && (BuildingWearsInYears <= 0 || BuildingFailsInYears <= BuildingWearsInYears || BuildingRuinedInYears <= BuildingFailsInYears))
+        {
+            throw new SimConfigException(
+                "building_wears_in_years, building_fails_in_years and building_ruined_in_years must be positive and "
+                + $"rising, or all 0 for nothing wears (got {BuildingWearsInYears}, {BuildingFailsInYears}, {BuildingRuinedInYears}).");
+        }
+
+        // The nomads' clock and band (`nomads.md §4`): floors and spreads never negative (a first-year floor of 0 is
+        // "nobody knocks"), the share a divisor, the band at least a couple and never smaller than its floor, the food
+        // carried never negative.
+        if (NomadsFirstYearFloor < 0 || NomadsFirstYearSpread < 0 || NomadsYearsBetweenFloor < 1 || NomadsHallYearsBetweenFloor < 1
+            || NomadsYearsBetweenSpread < 0 || NomadsShareDivisor < 1 || NomadsBandMin < 2 || NomadsBandMax < NomadsBandMin
+            || NomadsFoodEach < 0 || RefoundYearsFloor < 0 || RefoundYearsSpread < 0)
+        {
+            throw new SimConfigException(
+                "nomads_first_year_floor and nomads_first_year_spread cannot be negative, nomads_years_between_floor and "
+                + "nomads_hall_years_between_floor must be at least 1, nomads_years_between_spread cannot be negative, "
+                + "nomads_share_divisor must be at least 1, nomads_band_min at least 2 and nomads_band_max at least it, "
+                + "nomads_food_each cannot be negative, and "
+                + "refound_years_floor and refound_years_spread cannot be negative (got "
+                + $"{NomadsFirstYearFloor}, {NomadsFirstYearSpread}, {NomadsYearsBetweenFloor}, {NomadsHallYearsBetweenFloor}, "
+                + $"{NomadsYearsBetweenSpread}, {NomadsShareDivisor}, {NomadsBandMin}, {NomadsBandMax}, {NomadsFoodEach}, "
+                + $"{RefoundYearsFloor}, {RefoundYearsSpread}).");
+        }
+
+        if (WinterWearExtraPercent < 0 || RepairCostPercent < 1 || RepairCostPercent > 100 || FailingDeckSlowPercent < 100)
+        {
+            throw new SimConfigException(
+                "winter_wear_extra_percent must be zero or more, repair_cost_percent 1 to 100 and failing_deck_slow_percent "
+                + $"at least 100 (got {WinterWearExtraPercent}, {RepairCostPercent}, {FailingDeckSlowPercent}).");
+        }
+
+        if (QuarryUnlockStone < 0 || QuarryCapacity <= 0 || QuarryTilesPerWorker <= 0
+            || QuarryDigTicks <= 0 || StonePerDig <= 0 || DigsPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "quarry_capacity, quarry_tiles_per_worker, quarry_dig_ticks, stone_per_dig and "
+                + "digs_per_stint must be greater than zero and quarry_unlock_stone at least zero "
+                + $"(got {QuarryCapacity}, {QuarryTilesPerWorker}, {QuarryDigTicks}, {StonePerDig}, "
+                + $"{DigsPerStint}, {QuarryUnlockStone}).");
+        }
+
+        if (MineUnlockIronTools < 0 || MineCapacity <= 0 || MineTilesPerWorker <= 0
+            || MineDigTicks <= 0 || IronPerDig <= 0 || MineDigsPerStint <= 0)
+        {
+            throw new SimConfigException(
+                "mine_capacity, mine_tiles_per_worker, mine_dig_ticks, iron_per_dig and "
+                + "mine_digs_per_stint must be greater than zero and mine_unlock_iron_tools at least zero "
+                + $"(got {MineCapacity}, {MineTilesPerWorker}, {MineDigTicks}, {IronPerDig}, "
+                + $"{MineDigsPerStint}, {MineUnlockIronTools}).");
+        }
+
+        if (SowTicks <= 0 || ReapTicks <= 0 || CropYieldPerTile <= 0)
+        {
+            throw new SimConfigException(
+                "sow_ticks, reap_ticks and crop_yield_per_tile must all be greater than zero " +
+                $"(got {SowTicks}, {ReapTicks}, {CropYieldPerTile}).");
+        }
+
+        // A farm that may hold nothing is a farm whose every armful is a walk to the granary,
+        // which deletes the buffer the store exists to be. Zero is not "no buffer", it is a
+        // number that makes the deposit path unreachable and the guard on it vacuous (D98's
+        // rule: a number that is always zero is a lie waiting to be found).
+        // ⛔ A HOUSE THAT CANNOT HOLD THE WINTER'S FIREWOOD AND AN ARMFUL OF FOOD IS A HOUSE
+        // NOBODY CAN LIVE IN (D399). Refused by name rather than silently starving a village: the
+        // fire's share is reserved first, so the floor is a winter of it plus one trip's food.
+        //
+        // ⚠️ IT IS ABOUT THE HOUSE, NOT ABOUT THE TARGET, and the first cut had `stockpile_target`
+        // in it — which the yield rigs pose at 100,000 to hold demand open (D286), so a shipped
+        // house of 400 was refused for a number no house was ever meant to hold. What a big family
+        // cannot keep at home they fetch; `SimWorld.TargetFoodFor` clamps for that. **A floor that
+        // reads a posed number is a floor that refuses the pose.**
+        int larderFloor = VillageEconomy.FirewoodStoreWantedPerHousehold(this) + CarryCapacity;
+        if (HomeStoreCap < larderFloor)
+        {
+            throw new SimConfigException(
+                $"home_store_cap must be at least {larderFloor} — a winter's firewood "
+                + $"({VillageEconomy.FirewoodStoreWantedPerHousehold(this)}) and one armful of food "
+                + $"({CarryCapacity}) — but it is {HomeStoreCap}.");
+        }
+
+        if (FarmStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                $"farm_store_cap must be greater than zero (got {FarmStoreCap}).");
+        }
+
+        if (FishingHutStoreCap <= 0)
+        {
+            throw new SimConfigException(
+                $"fishing_hut_store_cap must be greater than zero (got {FishingHutStoreCap}) — a "
+                + "hut with nowhere to put a catch would send its fisher walking after every cast.");
+        }
+
+        if (FishTicks <= 0)
+        {
+            throw new SimConfigException(
+                $"fish_ticks must be greater than zero (got {FishTicks}).");
+        }
+
+        if (BuilderHutSeats <= 0)
+        {
+            throw new SimConfigException(
+                $"builder_hut_seats must be greater than zero (got {BuilderHutSeats}) — a hut with "
+                + "no seat can never build anything, and nothing in the village is raised without "
+                + "one (D108).");
+        }
+
+        if (FarmhouseSeats <= 0)
+        {
+            throw new SimConfigException(
+                $"farmhouse_seats must be greater than zero (got {FarmhouseSeats}) — "
+                + "a farm nobody can work is not a building.");
+        }
+
+        // ⛔⛔ THE OLD "CAN IT FEED THE FOUNDERS?" GUARD IS GONE, AND DELETING IT IS PART OF THE
+        // DECISION RATHER THAN A CASUALTY OF IT (D219).
+        //
+        // It read `granary_feeds_people >= StartingPopulation` — 30 against 4 — which was
+        // trivially true and therefore harmless. Re-expressing it in units was tried first and was
+        // WRONG IN AN INSTRUCTIVE WAY: it asked whether the granary could hold a winter's ration
+        // per founder, which reintroduced **exactly the coupling this decision removed**, one
+        // level up. The capacity stopped depending on the food economy and the validator started
+        // depending on it instead.
+        //
+        // ⚠️ It failed on `Phase0SimTests`, which deliberately sets `FoodPerMeal = 999` to price
+        // meals out of reach while it tests the hunger climb: a winter's ration came to 9,439 and
+        // a 2,500 granary was refused. *A fixture that is not trying to be a viable village must
+        // not be told it is an invalid one.*
+        //
+        // So the only thing checked here is that the box has a size. **A granary too small for
+        // its village is now a legitimate configuration with a visible consequence** — the village
+        // stops growing sooner and the player builds another — which is the whole of Joe's ruling:
+        // *"it's fine if the granary feeds a different number of people."*
+        if (MarketStartingLimit < 0)
+        {
+            throw new SimConfigException(
+                $"market_starting_limit must be 0 or more (got {MarketStartingLimit}) — it is how much of a good a market keeps.");
+        }
+
+        if (MarketStoreCapacity < 1)
+        {
+            throw new SimConfigException(
+                $"market_store_capacity must be at least 1 (got {MarketStoreCapacity}) — a market that holds nothing is not a store.");
+        }
+
+        if (GranaryCapacity < 1)
+        {
+            throw new SimConfigException(
+                $"granary_capacity must be at least 1 (got {GranaryCapacity}) — "
+                + "a granary that holds nothing is not a building.");
+        }
+
+        if (LogsPerSplit <= 0 || FirewoodPerSplit <= 0 || SplitTicks <= 0)
+        {
+            throw new SimConfigException(
+                $"logs_per_split, firewood_per_split and split_ticks must all be greater than zero " +
+                $"(got {LogsPerSplit}, {FirewoodPerSplit}, {SplitTicks}).");
+        }
+
+        if (FirewoodBurnIntervalDays < 1)
+        {
+            throw new SimConfigException(
+                "firewood_burn_interval_days must be at least one — a burn cannot happen more "
+                + $"than once a day (got {FirewoodBurnIntervalDays}).");
+        }
+
+        if (FirewoodPerWinterDay < 0)
+        {
+            throw new SimConfigException(
+                $"firewood_per_winter_day cannot be negative (got {FirewoodPerWinterDay}).");
+        }
+
+        // Zero is legal for either — it switches that half of cold off (D45 §4.5), which
+        // is how a world with clothing in it gets tested before clothing exists.
+        if (ExposureDaysOutdoors < 0 || ExposureDaysSheltered < 0)
+        {
+            throw new SimConfigException(
+                $"exposure_days_outdoors and exposure_days_sheltered cannot be negative " +
+                $"(got {ExposureDaysOutdoors}, {ExposureDaysSheltered}).");
+        }
+
+        // ⛔ A THAW OF ZERO DAYS IS AN INSTANT RESET, AND THAT WAS BUILT AND REJECTED (D45,
+        // D192). Villagers spend 76% of winter at a lit hearth, so a fire that wiped the count
+        // meant nobody froze in 120 years. Refused here rather than left as a division by zero
+        // somebody discovers as an immortal village.
+        if (ThawDaysAtAFire <= 0)
+        {
+            throw new SimConfigException(
+                $"thaw_days_at_a_fire must be greater than zero (got {ThawDaysAtAFire}). "
+                + "A fire that thaws instantly is the reset D45 measured and rejected.");
+        }
+
+        if (SeekShelterPercent is < 0 or > 100)
+        {
+            throw new SimConfigException(
+                $"seek_shelter_percent must be between 0 and 100 (got {SeekShelterPercent}).");
+        }
+
+        if (ContentmentUnsettledAt <= 0)
+        {
+            throw new SimConfigException(
+                $"contentment_unsettled_at must be greater than zero (got {ContentmentUnsettledAt}) — at zero everybody is unsettled.");
+        }
+
+        if (ContentmentBirthIntervalPercent < 100)
+        {
+            throw new SimConfigException(
+                $"contentment_birth_interval_percent must be at least 100 (got {ContentmentBirthIntervalPercent}) — an unsettled couple never waits less than a settled one.");
+        }
+
+        if (ContentmentLeavingSeasons < 0
+            || (ContentmentLeavingSeasons > 0
+                && (ContentmentThinkingOfLeavingSeasons <= 0 || ContentmentThinkingOfLeavingSeasons >= ContentmentLeavingSeasons)))
+        {
+            throw new SimConfigException(
+                $"contentment_leaving_seasons must be 0 (off) or above contentment_thinking_of_leaving_seasons, which must be above 0 "
+                + $"(got leaving {ContentmentLeavingSeasons}, thinking {ContentmentThinkingOfLeavingSeasons}) — nobody leaves without a warning.");
+        }
+
+        var contentmentSeen = new HashSet<ContentmentCause>();
+        foreach (ContentmentCauseRow row in ContentmentCauses)
+        {
+            if (!Enum.IsDefined(row.Cause))
+            {
+                throw new SimConfigException($"contentment_causes names a cause this build does not know ({(int)row.Cause}).");
+            }
+
+            if (!contentmentSeen.Add(row.Cause))
+            {
+                throw new SimConfigException($"contentment_causes lists {row.Cause} twice.");
+            }
+
+            if (row.Weight <= 0 || row.At < 0 || row.HeldSeasons < 0)
+            {
+                throw new SimConfigException(
+                    $"contentment_causes' {row.Cause} needs a weight above zero and no negative at or held_seasons "
+                    + $"(got weight {row.Weight}, at {row.At}, held_seasons {row.HeldSeasons}).");
+            }
+        }
+
+        if (LogsPerHouse < 0)
+        {
+            throw new SimConfigException($"logs_per_house cannot be negative (got {LogsPerHouse}).");
+        }
+
+        if (LabourReshuffleYears <= 0)
+        {
+            throw new SimConfigException(
+                $"labour_reshuffle_years must be greater than zero (got {LabourReshuffleYears}).");
+        }
+
+        // The guards for forage_site_capacity, forage_site_count, tree_stand_count and
+        // forage_site_ring_tiles went with their keys. Two of them said something worth
+        // keeping — *"a valley with nowhere to forage cannot be lived in"* and *"nothing
+        // could be built without timber"* — and both are still true; what changed is that
+        // the answer is now `forest_coverage_percent`, which has its own guard below, and a
+        // hut the player has to build. **The valley owes the village trees; it no longer
+        // owes it jobs.**
+        if (ScatteredStoneSeams < 0 || ScatteredIronSeams < 0 || SeamCountVarietyPercent is < 0 or > 100
+            || SeamScatterCellTiles < 4 || StoneSeamClearOfFoundingTiles < 0 || IronSeamClearOfFoundingTiles < 0
+            || ScatteredSeamTilesMin < 1
+            || ScatteredSeamTilesMax < ScatteredSeamTilesMin)
+        {
+            throw new SimConfigException(
+                $"scattered seams: counts not negative, seam_count_variety_percent 0-100, seam_scatter_cell_tiles at least 4, "
+                + $"the clearances not negative, and 1 <= scattered_seam_tiles_min <= scattered_seam_tiles_max "
+                + $"(got {ScatteredStoneSeams}, {ScatteredIronSeams}, {SeamCountVarietyPercent}, {SeamScatterCellTiles}, "
+                + $"{StoneSeamClearOfFoundingTiles}, {IronSeamClearOfFoundingTiles}, {ScatteredSeamTilesMin}, {ScatteredSeamTilesMax}).");
+        }
+
+        foreach ((string key, IReadOnlyDictionary<string, int> shapes) in new[] { ("stone_seam_shapes", StoneSeamShapes), ("iron_seam_shapes", IronSeamShapes) })
+        {
+            foreach ((string shape, int weight) in shapes)
+            {
+                if (shape is not ("blob" or "vein" or "cluster" or "arms") || weight < 0)
+                {
+                    throw new SimConfigException(
+                        $"{key}: \"{shape}\" must be blob, vein, cluster or arms with a weight of zero or more (got {weight}).");
+                }
+            }
+        }
+
+        if (ExtraStoneSeams < 0 || ExtraIronSeams < 0 || IronSeamMinIron < 0)
+        {
+            throw new SimConfigException(
+                $"extra_stone_seams, extra_iron_seams and iron_seam_min_iron cannot be negative "
+                + $"(got {ExtraStoneSeams}, {ExtraIronSeams}, {IronSeamMinIron}).");
+        }
+
+        // ⛔ The guard the comment above promised and nobody had written (found D477: the new-game
+        // screen's rows load through here, and a forest cover of 150 % or a river −1 wide loaded
+        // without a word). Zero stays allowed for both — a bare valley and a riverless one are the
+        // controls half the generator's tests are posed on.
+        if (ForestCoveragePercent is < 0 or > 100 || RiverWidthTiles < 0 || RiverWidthWanderTiles < 0)
+        {
+            throw new SimConfigException(
+                $"forest_coverage_percent must be 0-100, and river_width_tiles and river_width_wander_tiles "
+                + $"not negative (got {ForestCoveragePercent}, {RiverWidthTiles}, {RiverWidthWanderTiles}).");
+        }
+
+        // Heights (D735): a byte per tile, so at most 256 levels; a lattice and a ramp of at least a tile; the classes in
+        // order. ⛔ `height_levels` 1 is allowed — the flat valley every re-taken golden is proven against.
+        if (HeightLevels is < 1 or > 256 || HeightBowlRisePerTile < 0 || HeightRiseFromWaterPerTile < 1 || HeightBowlMaxLevels < 0
+            || HeightHillLatticeTiles < 1 || HeightHillMaxLevels < 0 || HillScalePercent is < 0 or > 1000
+            || HeightRiverRampTiles < 1 || HeightFoundingFlatTiles < 0 || SlopeGentleAt < 1 || SlopeSteepAt <= SlopeGentleAt
+            || SlopeGentleCostPercent < 100 || SlopeSteepCostPercent < SlopeGentleCostPercent || SlopeSteepCostPercent > 250)
+        {
+            throw new SimConfigException(
+                $"heights: height_levels must be 1-256, the bowl's tiles per level, the lattice and the river ramp at least 1, "
+                + $"the rest not negative, hill_scale_percent 0-1000, and 1 <= slope_gentle_at < slope_steep_at (got levels "
+                + $"{HeightLevels}, bowl {HeightBowlRisePerTile}/{HeightBowlMaxLevels}, from the water {HeightRiseFromWaterPerTile}, lattice {HeightHillLatticeTiles}, "
+                + $"hills {HeightHillMaxLevels} at {HillScalePercent} %, ramp {HeightRiverRampTiles}, founding "
+                + $"{HeightFoundingFlatTiles}, slopes {SlopeGentleAt}/{SlopeSteepAt} at {SlopeGentleCostPercent}/{SlopeSteepCostPercent} %; "
+                + "the slope costs run 100 <= gentle <= steep <= 250).");
+        }
+
+        if (SeamAngleScatterPercent is < 0 or > 100 || SeamReachScatterPercent < 0
+            || SeamSizeScatterPercent is < 0 or > 99)
+        {
+            throw new SimConfigException(
+                $"seam_angle_scatter_percent must be 0-100, seam_reach_scatter_percent not negative and "
+                + $"seam_size_scatter_percent 0-99 (got {SeamAngleScatterPercent}, {SeamReachScatterPercent}, "
+                + $"{SeamSizeScatterPercent}).");
+        }
+
+        if (MapWidth <= 0 || MapHeight <= 0)
+        {
+            throw new SimConfigException(
+                $"map_width and map_height must both be greater than zero (got {MapWidth}x{MapHeight}).");
+        }
+
+
+        if (EconomyHorizonHouseholds <= 0)
+        {
+            throw new SimConfigException(
+                $"economy_horizon_households must be greater than zero (got {EconomyHorizonHouseholds}).");
+        }
+
+        if (WinterBufferPercent < 100)
+        {
+            throw new SimConfigException(
+                $"winter_buffer_percent must be at least 100 (got {WinterBufferPercent}).");
+        }
+
+        if (SharingNeedPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"sharing_need_percent must be in 0..100 (got {SharingNeedPercent}).");
+        }
+
+        if (SharingKeepPercent < SharingNeedPercent || SharingKeepPercent > 100)
+        {
+            throw new SimConfigException(
+                $"sharing_keep_percent must be between sharing_need_percent ({SharingNeedPercent}) and 100 " +
+                $"(got {SharingKeepPercent}) - otherwise giving pushes the giver into need.");
+        }
+
+        if (DowryPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"dowry_percent must be in 0..100 (got {DowryPercent}).");
+        }
+
+        if (FetchBelowSharePercent < RestockEmergencyPercent || FetchBelowSharePercent > 100)
+        {
+            throw new SimConfigException(
+                $"fetch_below_share_percent must be between restock_emergency_percent ({RestockEmergencyPercent}) and 100 " +
+                $"(got {FetchBelowSharePercent}) - the ordinary fetch has to fire before the emergency one.");
+        }
+
+        if (MarketDetourTicks < 0)
+        {
+            throw new SimConfigException($"market_detour_ticks cannot be negative (got {MarketDetourTicks}); 0 is nearest-first.");
+        }
+
+        if (HandcartUses <= 0)
+        {
+            throw new SimConfigException($"handcart_uses must be greater than zero (got {HandcartUses}) — a cart of no trips is no cart.");
+        }
+
+        if (CartArmfuls < 1)
+        {
+            throw new SimConfigException($"cart_armfuls must be at least one (got {CartArmfuls}); one is a cart that carries nothing extra.");
+        }
+
+        if (CartOffPathSlowPercent < 100)
+        {
+            throw new SimConfigException($"cart_off_path_slow_percent must be at least 100 (got {CartOffPathSlowPercent}); 100 is a cart no slower on grass.");
+        }
+
+        if (SecondGoodCapPercent < 100)
+        {
+            throw new SimConfigException($"second_good_cap_percent must be at least 100 (got {SecondGoodCapPercent}); below that a trade could never be kept working for its second good.");
+        }
+
+        if (RestockShortArmfulsWithCart < 1)
+        {
+            throw new SimConfigException($"restock_short_armfuls_with_cart must be at least one (got {RestockShortArmfulsWithCart}); one is the counter short by an armful, as without a cart.");
+        }
+
+        if (LeaveHomeAge < 0)
+        {
+            throw new SimConfigException($"leave_home_age cannot be negative (got {LeaveHomeAge}).");
+        }
+
+        if (DependantFoodSharePercent is <= 0 or > 100)
+        {
+            throw new SimConfigException(
+                $"dependant_food_share_percent must be in 1..100 (got {DependantFoodSharePercent}).");
+        }
+
+        if (FertilityMinAge < 0 || FertilityMaxAge < FertilityMinAge)
+        {
+            throw new SimConfigException(
+                $"fertility ages must satisfy 0 <= min ({FertilityMinAge}) <= max ({FertilityMaxAge}).");
+        }
+
+        if (BirthIntervalYears <= 0)
+        {
+            throw new SimConfigException($"birth_interval_years must be greater than zero (got {BirthIntervalYears}).");
+        }
+
+        if (BirthFoodPercent < 0)
+        {
+            throw new SimConfigException($"birth_food_percent cannot be negative (got {BirthFoodPercent}).");
+        }
+
+        if (MaxHouseholdSize <= 0)
+        {
+            throw new SimConfigException($"max_household_size must be greater than zero (got {MaxHouseholdSize}).");
+        }
+
+        if (StartingHouseholds <= 0)
+        {
+            throw new SimConfigException($"starting_households must be greater than zero (got {StartingHouseholds}).");
+        }
+
+        if (AdultsPerHousehold <= 0)
+        {
+            throw new SimConfigException($"adults_per_household must be greater than zero (got {AdultsPerHousehold}).");
+        }
+
+        RequireANameList(HouseholdNames, "household_names");
+
+        // An empty pool would divide by zero when the seed picks a name, and it would do it
+        // at the first frame that drew the header rather than here — METHODOLOGY §4's
+        // fail-loudly rule applied where the mistake actually is.
+        if (TownNames is null || TownNames.Count == 0)
+        {
+            throw new SimConfigException("town_names must contain at least one name.");
+        }
+
+        RequireANameList(SeedWords, "seed_words");
+
+        if (VillageName is not null && VillageName.Trim().Length is < 1 or > NewGame.LongestVillageName)
+        {
+            throw new SimConfigException(
+                $"village_name must be 1 to {NewGame.LongestVillageName} characters (got \"{VillageName}\").");
+        }
+
+        NewGame.ValidateRows(NewGameOptions);
+
+        if (!World.MapGenerator.IsRiverCourse(RiverCourse))
+        {
+            throw new SimConfigException(
+                $"river_course must be one of {string.Join(", ", World.MapGenerator.RiverCourses)} (got \"{RiverCourse}\").");
+        }
+
+        // ⛔ D411: every hashed range must hold something, and a reach of an exact half is a
+        // centre-rule tie (see `HomeYardSideQuarters`) — refused here, where the mistake is.
+        foreach ((string key, IReadOnlyList<int>? values, int min) in new[]
+        {
+            ("home_yard_side_quarters", HomeYardSideQuarters, 3),
+            ("home_yard_other_side_quarters", HomeYardOtherSideQuarters, 0),
+            ("home_yard_back_quarters", HomeYardBackQuarters, 1),
+            ("home_setback_quarters", HomeSetbackQuarters, 0),
+            ("home_gap_tiles", HomeGapTiles, 0),
+        })
+        {
+            if (values is null || values.Count == 0)
+            {
+                throw new SimConfigException($"{key} must hold at least one value.");
+            }
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (values[i] < min)
+                {
+                    throw new SimConfigException($"{key} cannot hold {values[i]} (the least is {min}).");
+                }
+
+                if (key.StartsWith("home_yard", StringComparison.Ordinal) && values[i] % 4 == 2)
+                {
+                    throw new SimConfigException(
+                        $"{key} cannot hold {values[i]}: an exact half tile puts the yard's edge on a row of tile centres (D331).");
+                }
+            }
+        }
+
+        if (HomePathSearchTiles <= 0)
+        {
+            throw new SimConfigException($"home_path_search_tiles must be greater than zero (got {HomePathSearchTiles}).");
+        }
+
+        if (WaterLowDays <= 0)
+        {
+            throw new SimConfigException($"water_low_days must be greater than zero (got {WaterLowDays}).");
+        }
+
+        if (HomeWellWeight < 0 || HomeWellReachTiles <= 0 || WellDrawTicks <= 0 || WaterJar <= 0 || WaterPerPersonPerDay < 0)
+        {
+            throw new SimConfigException(
+                "home_well_weight and water_per_person_per_day cannot be negative, and home_well_reach_tiles, "
+                + $"well_draw_ticks and water_jar must be greater than zero (got {HomeWellWeight}, "
+                + $"{WaterPerPersonPerDay}, {HomeWellReachTiles}, {WellDrawTicks}, {WaterJar}).");
+        }
+
+        if (TendTicks < 0)
+        {
+            throw new SimConfigException($"tend_ticks cannot be negative (got {TendTicks}); zero switches tending off.");
+        }
+
+        if (FounderAge < 0)
+        {
+            throw new SimConfigException($"founder_age cannot be negative (got {FounderAge}).");
+        }
+
+        ValidateGoods();
+        ValidateCrops();
+        ValidateJobs();
+        ValidateBuildings();
+        ValidateTheRegion();
+        TechTree.Validate(TechNodeRows);
+        if (SmithyUnlockIron < 0)
+        {
+            throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
+        }
+
+        if (TailorUnlockLeather < 0)
+        {
+            throw new SimConfigException($"tailor_unlock_leather cannot be negative (got {TailorUnlockLeather}).");
+        }
+
+        // The workshop's gate (D678): nought learns it at the first log felled; less is nothing.
+        if (SchoolPlacesPerTeacher < 1)
+        {
+            throw new SimConfigException($"school_places_per_teacher must be at least 1 (got {SchoolPlacesPerTeacher}).");
+        }
+
+        // ⭐ AT adult_age, not only above it (D767, Joe: "children in school from ages 5-12 ... they join the labor force at 12").
+        if (SchoolLeavingAge < AdultAge)
+        {
+            throw new SimConfigException(
+                $"school_leaving_age must be at least adult_age ({AdultAge}) — a pupil leaves for work (got {SchoolLeavingAge}).");
+        }
+
+        if (CoatFromAge is < 0)
+        {
+            throw new SimConfigException($"coat_from_age cannot be negative (got {CoatFromAge}).");
+        }
+
+        if (SchoolStartingAge < 1 || SchoolStartingAge >= SchoolLeavingAge)
+        {
+            throw new SimConfigException(
+                $"school_starting_age must be at least 1 and below school_leaving_age ({SchoolLeavingAge}) (got {SchoolStartingAge}).");
+        }
+
+        if (SchoolOldAgePercent < 0 || VigourMinPercent + SchoolOldAgePercent > 100)
+        {
+            throw new SimConfigException(
+                $"school_old_age_percent must be 0 or more, and with vigour_min_percent ({VigourMinPercent}) no more than 100 (got {SchoolOldAgePercent}).");
+        }
+
+        if (SchoolCarryPercent is < 0 or > 100)
+        {
+            throw new SimConfigException($"school_carry_percent must be between 0 (off) and 100 — twice a load (got {SchoolCarryPercent}).");
+        }
+
+        if (SchoolHeedPercent is < 0 or > 95)
+        {
+            throw new SimConfigException(
+                $"school_heed_percent must be between 0 (off) and 95 — at the fire short of freezing (got {SchoolHeedPercent}).");
+        }
+
+        if (SchoolWinterFirewood < 0)
+        {
+            throw new SimConfigException($"school_winter_firewood cannot be negative (got {SchoolWinterFirewood}).");
+        }
+
+        if (SchoolLessonTicks < 1)
+        {
+            throw new SimConfigException($"school_lesson_ticks must be at least 1 (got {SchoolLessonTicks}).");
+        }
+
+        if (WorkshopUnlockLogs < 0)
+        {
+            throw new SimConfigException($"workshop_unlock_logs cannot be negative (got {WorkshopUnlockLogs}).");
+        }
+
+        // The house tiers' family tree (`house-tiers.md §4.4`): every villager is at least the first generation, so a
+        // generation below one is a gate that cannot mean anything; a population may be nought (a modder's valley).
+        if (CottageUnlockGeneration < 1 || ManorUnlockGeneration < 1 || CottageUnlockPopulation < 0 || ManorUnlockPopulation < 0)
+        {
+            throw new SimConfigException(
+                "cottage_unlock_generation and manor_unlock_generation must be at least 1, and the two populations at least 0 "
+                + $"(got {CottageUnlockGeneration}, {ManorUnlockGeneration}, {CottageUnlockPopulation}, {ManorUnlockPopulation}).");
+        }
+
+        // The food chain (D522): the counts that a stint and a recipe are made of must be at least one,
+        // and the unlocks may be nought (a modder's village that knows both from the start) but not less.
+        foreach ((string key, int value) in new[]
+        {
+            ("bread_nutrition", BreadNutrition), ("wheat_per_grind", WheatPerGrind), ("flour_per_grind", FlourPerGrind),
+            ("grind_ticks", GrindTicks), ("grinds_per_stint", GrindsPerStint), ("flour_per_bake", FlourPerBake),
+            ("bread_per_bake", BreadPerBake), ("bake_ticks", BakeTicks), ("bakes_per_stint", BakesPerStint),
+            ("mill_capacity", MillCapacity), ("bakery_capacity", BakeryCapacity),
+            ("leather_per_coat", LeatherPerCoat), ("sew_ticks", SewTicks), ("sews_per_stint", SewsPerStint),
+            ("tailor_shop_capacity", TailorShopCapacity),
+            ("logs_per_handcart", LogsPerHandcart), ("make_ticks", MakeTicks), ("makes_per_stint", MakesPerStint),
+            ("workshop_capacity", WorkshopCapacity),
+            ("hay_per_tile", HayPerTile), ("hay_feed_ahead_days", HayFeedAheadDays), ("hay_feed_ticks", HayFeedTicks),
+            ("cull_ticks", CullTicks), ("region_seasons_to_recover", RegionSeasonsToRecover),
+            ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
+            ("trade_boat_hold", TradeBoatHold), ("trade_boat_gap_years_floor", TradeBoatGapYearsFloor),
+            ("pasture_fence_logs_per_edge", PastureFenceLogsPerEdge), ("pasture_fence_work_ticks_per_edge", PastureFenceWorkTicksPerEdge),
+        })
+        {
+            if (value < 1)
+            {
+                throw new SimConfigException($"{key} must be at least one (got {value}).");
+            }
+        }
+
+        // A boat's whole visit — in, tied up, out — must fit spring to autumn, or it would be on the river in winter.
+        if (TradeBoatGapYearsSpread < 0 || (2 * TradeBoatSailDays) + TradeBoatDockDays > 3 * DaysPerSeason)
+        {
+            throw new SimConfigException(
+                $"trade_boat_gap_years_spread cannot be negative (got {TradeBoatGapYearsSpread}), and a boat's visit — "
+                + $"twice trade_boat_sail_days ({TradeBoatSailDays}) and trade_boat_dock_days ({TradeBoatDockDays}) — "
+                + $"must fit the three seasons before winter ({3 * DaysPerSeason} days).");
+        }
+
+        foreach ((string key, int value) in new[]
+        {
+            ("mill_unlock_wheat", MillUnlockWheat),
+            ("firewood_per_firing", FirewoodPerFiring),
+        })
+        {
+            if (value < 0)
+            {
+                throw new SimConfigException($"{key} cannot be negative (got {value}).");
+            }
+        }
+        ValidateSkills();
+        ValidateTechniques();
+        ValidateBatchRows();
+    }
+
+    /// <summary>Check the techniques catalogue says something the village can actually learn.</summary>
+    /// <remarks>
+    /// <b>⛔ THE ONE THAT MATTERS IS THE SKILL REFERENCE.</b> A technique pointing at a skill id no
+    /// row claims is a technique <b>nobody can ever work out</b> — it would sit at Unknown for
+    /// three hundred years, produce no error, and read exactly like a technique whose masters had
+    /// simply never appeared. <em>A plausible default, not a crash</em>, which is the shape of
+    /// almost every near-miss in this project.
+    /// </remarks>
+    /// <summary>
+    /// The animals and the neighbours (D590): ids unique, names given, goods the catalogue has, amounts that count.
+    /// </summary>
+    private void ValidateTheRegion()
+    {
+        var animalIds = new HashSet<int>();
+        for (int i = 0; i < Animals.Count; i++)
+        {
+            AnimalRow animal = Animals[i];
+            if (!animalIds.Add(animal.Id))
+            {
+                throw new SimConfigException($"animals[{i}] repeats id {animal.Id}.");
+            }
+
+            if (string.IsNullOrWhiteSpace(animal.Name) || string.IsNullOrWhiteSpace(animal.Plural))
+            {
+                throw new SimConfigException($"animals[{i}] (id {animal.Id}) needs a name and a plural.");
+            }
+
+            // ⛔ A head that grazes no ground, eats nothing or is born of nothing divides by zero or never ends (D592).
+            if (animal.PastureTilesPerHead < 1 || animal.HayPerHeadPerWinterDay < 1 || animal.HeadDaysPerBirth < 1
+                || animal.MeatPerHead < 0 || animal.LeatherPerHead < 0)
+            {
+                throw new SimConfigException(
+                    $"animals[{i}] (id {animal.Id}) needs pasture_tiles_per_head, hay_per_head_per_winter_day and "
+                    + "head_days_per_birth of at least one, and no negative meat or leather.");
+            }
+        }
+
+        int goods = GoodsCatalog.Count;
+        var neighbourIds = new HashSet<int>();
+        for (int i = 0; i < Neighbours.Count; i++)
+        {
+            NeighbourRow neighbour = Neighbours[i];
+            if (!neighbourIds.Add(neighbour.Id))
+            {
+                throw new SimConfigException($"neighbours[{i}] repeats id {neighbour.Id}.");
+            }
+
+            if (!Enum.IsDefined(neighbour.Direction))
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) has no direction the game knows.");
+            }
+
+            if (neighbour.MakesAnimals < 0)
+            {
+                throw new SimConfigException($"neighbours[{i}] (id {neighbour.Id}) makes {neighbour.MakesAnimals} animals.");
+            }
+
+            foreach ((string list, IReadOnlyList<MaterialCost> rows) in new[] { ("makes", neighbour.Makes), ("wants", neighbour.Wants) })
+            {
+                foreach (MaterialCost row in rows)
+                {
+                    if ((int)row.Goods < 0 || (int)row.Goods >= goods || row.Amount < 1)
+                    {
+                        throw new SimConfigException(
+                            $"neighbours[{i}] (id {neighbour.Id}) {list} {row.Amount} of good {(int)row.Goods}: the good "
+                            + "must be one the catalogue has, and the amount at least one.");
+                    }
+                }
+            }
+        }
+    }
+
+    private void ValidateTechniques()
+    {
+        if (Techniques is null)
+        {
+            throw new SimConfigException("techniques must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < Techniques.Count; i++)
+        {
+            World.TechniqueRow technique = Techniques[i];
+
+            if (technique.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] has id {technique.Id}; ids index the catalogue and are "
+                    + "hashed, so they cannot be negative.");
+            }
+
+            if (!seen.Add(technique.Id))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] repeats id {technique.Id}. An id is what the village's "
+                    + "knowledge of a technique is stored and hashed under, so two sharing one "
+                    + "would be one technique wearing two names.");
+            }
+
+            if (string.IsNullOrWhiteSpace(technique.Name))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] (id {technique.Id}) has no name.");
+            }
+
+            bool anySkillClaimsIt = false;
+            for (int s = 0; s < Skills.Count; s++)
+            {
+                anySkillClaimsIt |= Skills[s].Id == technique.Skill;
+            }
+
+            if (!anySkillClaimsIt)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) is worked out by skill {technique.Skill}, "
+                    + "which no skill row claims. Nobody could ever learn it, and nothing would "
+                    + "say so.");
+            }
+
+            if (technique.YieldBonusPercent < 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) has a negative yield bonus. A technique "
+                    + "the village would be better off forgetting is not a technique.");
+            }
+
+            if (string.IsNullOrWhiteSpace(technique.DiscoveryLine)
+                || string.IsNullOrWhiteSpace(technique.LostLine))
+            {
+                throw new SimConfigException(
+                    $"techniques[{i}] ({technique.Name}) is missing a discovery or lost line. "
+                    + "Every unlock and every loss owes the player one sentence naming the person "
+                    + "(non-negotiable 1); a silent one is the untraceable outcome the design "
+                    + "forbids.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The catalogue has to be a catalogue — <b>failing at load rather than at the hash</b>.
+    /// </summary>
+    /// <remarks>
+    /// <b>⚠️ A DUPLICATE OR ZERO ID IS A DESYNC, NOT A TYPO.</b> Ids are what proficiency is
+    /// stored and hashed under (§4.1, §8), so two rows sharing one would have two trades writing
+    /// the same counter — a village that diverges from itself for a reason no log would name.
+    /// **Id 0 is refused** because a default <c>int</c> must never name something (D108).
+    /// A modder editing this file is exactly who this message is for.
+    /// </remarks>
+    /// <summary>
+    /// Check the goods catalogue — <b>every failure here is silent and expensive if it ships</b>.
+    /// </summary>
+    /// <summary>
+    /// Every crop names an edible good that some store can hold, and no id is used twice (D348).
+    /// </summary>
+    /// <remarks>
+    /// ⛔ A crop yielding logs would be a farm that grows timber — the goods-catalog rule
+    /// *"a good with no home"* (validate at load) applied one row up. Id 0 is bare ground and may
+    /// not be a crop.
+    /// </remarks>
+    private void ValidateCrops()
+    {
+        if (Crops is null)
+        {
+            throw new SimConfigException("crops must be a list, not null.");
+        }
+
+        if (Crops.Count == 0)
+        {
+            throw new SimConfigException("crops is empty, so no farm could ever sow anything.");
+        }
+
+        var goods = new World.GoodsCatalog(GoodsCatalog);
+        var seen = new HashSet<int>();
+
+        for (int i = 0; i < Crops.Count; i++)
+        {
+            CropRow row = Crops[i];
+
+            if (row.Id <= 0)
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' has id {row.Id}; crop ids start at 1, because 0 is bare ground.");
+            }
+
+            if (!seen.Add(row.Id))
+            {
+                throw new SimConfigException($"crops uses id {row.Id} twice.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Name))
+            {
+                throw new SimConfigException($"crop id {row.Id} has no name.");
+            }
+
+            if ((int)row.Yields < 0 || (int)row.Yields >= goods.Count || goods[row.Yields] is null)
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' yields good {(int)row.Yields}, which the goods catalogue "
+                    + "does not define.");
+            }
+
+            if (!goods.Edible(row.Yields))
+            {
+                throw new SimConfigException(
+                    $"crop '{row.Name}' yields {goods.NameOf(row.Yields)}, which nobody can eat. "
+                    + "A farm grows food; a crop that yields a material is a different building.");
+            }
+        }
+    }
+
+    private void ValidateGoods()
+    {
+        // Built on every read (it is priced from this config's keys) — read once.
+        IReadOnlyList<GoodRow> goodsCatalog = GoodsCatalog;
+
+        var seen = new HashSet<int>();
+        int builtIn = System.Enum.GetValues<World.Goods>().Length;
+
+        for (int i = 0; i < goodsCatalog.Count; i++)
+        {
+            World.GoodRow good = goodsCatalog[i];
+
+            if (good.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] has id {good.Id}; ids index a stockpile and cannot be negative.");
+            }
+
+            if (!seen.Add(good.Id))
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] repeats id {good.Id}. Ids are what a stockpile indexes by and "
+                    + "what the state hash mixes in order, so two goods sharing one would share "
+                    + "a counter.");
+            }
+
+            if (string.IsNullOrWhiteSpace(good.Name))
+            {
+                throw new SimConfigException($"goods[{i}] (id {good.Id}) has no name.");
+            }
+
+            // ⛔ A good no store will take can be produced and never put down. That is not a
+            // config anybody meant to write, and the symptom — a hauler that never completes an
+            // errand — reads as a pathfinding bug rather than a missing line in a data file.
+            if (good.StoredBy.Count == 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') names no store kind in stored_by, so nothing "
+                    + "in the village could ever hold it.");
+            }
+
+            if (good.TradeWorth < 1)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has trade_worth {good.TradeWorth}; a good worth nothing cannot be bartered.");
+            }
+
+            if (good.Nutrition < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has nutrition {good.Nutrition}. Zero means "
+                    + "nobody can eat it; negative means nothing.");
+            }
+
+            // ⛔ Every good sits under a stock-limit heading (D409), and a food under Food: that
+            // heading adds its rows up against what the village needs to grow, so an edible good
+            // filed elsewhere is food the warning cannot see.
+            if (good.Category == World.GoodCategory.Unset)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') names no category. Say which stock-limit heading it "
+                    + "sits under: Food, Materials or FuelAndGoods.");
+            }
+
+            if (good.Edible && good.Category != World.GoodCategory.Food)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') can be eaten and is filed under {good.Category}. "
+                    + "Anything edible sits under Food, where the stock limits add the foods up.");
+            }
+
+            // A tool's numbers are its row's (`tools-and-the-smith.md §9.2`): uses at least nothing,
+            // each bonus a percentage, and only a tool can be forged — a smith making a good nobody
+            // can hold would make it for ever.
+            if (good.ToolUses < 0
+                || good.ToolSpeedBonusPercent < 0 || good.ToolSpeedBonusPercent > 100
+                || good.ToolYieldBonusPercent < 0 || good.ToolYieldBonusPercent > 100)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has tool_uses {good.ToolUses}, "
+                    + $"tool_speed_bonus_percent {good.ToolSpeedBonusPercent} and tool_yield_bonus_percent "
+                    + $"{good.ToolYieldBonusPercent}; uses are zero or more and each bonus is 0 to 100.");
+            }
+
+            // A coat's winters are its row's (`clothing.md §3.3`): none, or some.
+            if (good.CoatWinters < 0)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has coat_winters {good.CoatWinters}; a coat lasts zero or more winters.");
+            }
+
+            if (good.ForgedFrom.Count > 0 && !good.IsTool)
+            {
+                throw new SimConfigException(
+                    $"goods[{i}] ('{good.Name}') has a forged_from recipe but no tool_uses. Only a tool "
+                    + "is forged; give it uses, or take the recipe away.");
+            }
+
+            for (int k = 0; k < good.ForgedFrom.Count; k++)
+            {
+                if (good.ForgedFrom[k].Amount <= 0)
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') forges from {good.ForgedFrom[k].Amount} of "
+                        + $"good {(int)good.ForgedFrom[k].Goods}; every input is more than nothing.");
+                }
+            }
+
+            // A workshop recipe (D678, `workshop-and-the-carpenter.md §4.3`): every input a good the catalogue has, and
+            // more than nothing of it — a carpenter asked for a good no store could hold would stand idle for ever,
+            // and the reason would read as a missing store rather than a missing line in a data file.
+            for (int k = 0; k < good.MadeFrom.Count; k++)
+            {
+                int input = (int)good.MadeFrom[k].Goods;
+                if (GoodsCatalog.All(row => row.Id != input))
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') has a made_from naming good {input}, which the catalogue does not have.");
+                }
+
+                if (good.MadeFrom[k].Amount <= 0)
+                {
+                    throw new SimConfigException(
+                        $"goods[{i}] ('{good.Name}') has a made_from of {good.MadeFrom[k].Amount} of "
+                        + $"good {input}; every input is more than nothing.");
+                }
+            }
+        }
+
+        // ⛔ A starting limit names a good the catalogue has (D409). A misspelt key would be a limit
+        // the player sees in the file and the village never obeys.
+        if (StartingStockLimits is null)
+        {
+            throw new SimConfigException("starting_stock_limits must be an object, not null.");
+        }
+
+        foreach (KeyValuePair<string, int> limit in StartingStockLimits)
+        {
+            bool named = false;
+            for (int i = 0; i < goodsCatalog.Count; i++)
+            {
+                named |= string.Equals(goodsCatalog[i].Name, limit.Key, StringComparison.Ordinal);
+            }
+
+            if (!named)
+            {
+                throw new SimConfigException(
+                    $"starting_stock_limits names '{limit.Key}', which is not a good in the catalogue.");
+            }
+
+            if (limit.Value < 0)
+            {
+                throw new SimConfigException(
+                    $"starting_stock_limits sets {limit.Key} to {limit.Value}; a limit is zero or more.");
+            }
+        }
+
+        // ⭐⭐ EDIBLE GOODS MAY BE WORTH DIFFERENT AMOUNTS SINCE D522 — AND THE FLOOR NEEDED NO
+        // RE-DERIVATION, BECAUSE IT WAS ALREADY SOLVED AT THE WORST (`food-chain.md §3.1`).
+        //
+        // This was a throw: *"every edible good must be worth the same until the survival floor is
+        // re-derived against a diet"* — `food-catalog.md`'s question, *"solved against the worst food
+        // a village might be living on, or the derivation changes shape."* **The answer is the first,
+        // and it was true all along:** every `VillageEconomy` number counts units and assumes each is
+        // worth a nutrition-1 share, and nutrition is an integer that an edible good holds at one or
+        // more (a negative one is refused above; nought means not food). So the floor holds for every
+        // diet, and a better food is upside above it — the tools precedent.
+        //
+        // ⛔ What would break it is a food worth LESS than the floor assumes — D48, D49 and D50 were
+        // each a village that starved against a reader that over-counted. An integer ≥ 1 cannot be.
+
+        // ⛔ The enum is an alias for the first ids (`goods-catalog.md §2.1`). If the catalogue
+        // does not cover them, `Goods.Produce` indexes a row that is not there — and it would fail
+        // as a null reference deep in the sim rather than here, at load, with a sentence.
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id))
+            {
+                throw new SimConfigException(
+                    $"goods is missing id {id} ({(World.Goods)id}). The built-in goods are named "
+                    + "directly by the economy and every golden is pinned to their ids, so a "
+                    + "catalogue may add rows above them but may not omit them.");
+            }
+        }
+
+        // ✅ THE SIX-GOOD CEILING IS LIFTED (D210, slice 1b). Every stockpile in a run is now
+        // sized from this catalogue rather than from `Enum.GetValues<Goods>().Length`, and the
+        // state hash is bounded by the store's own size — so a seventh good is held, hashed and
+        // carried like any other. The check that used to stand here is gone rather than relaxed.
+
+        // ⚠️ The remaining ceiling, raised from 30 to 62 by widening the mask (D210, slice 1b).
+        // `StoreBuilding.AllowedGoods` holds one bit per good with the `Spoken` sentinel at bit
+        // 62, so a good at 62 or beyond would set the sentinel and a store the player never
+        // touched would report that they had — not a crash, a filter that switches itself on.
+        //
+        // Kept as a guard rather than deleted because 62 is a real edge, not a theoretical one:
+        // it is only about twice what the content pass already asks for.
+        const int filterCeiling = 62;
+        if (seen.Count > filterCeiling)
+        {
+            throw new SimConfigException(
+                $"goods has {seen.Count} rows; the store filter is a 64-bit mask with its "
+                + $"sentinel at bit {filterCeiling}, so at most {filterCeiling} goods can exist "
+                + "until it is widened again.");
+        }
+    }
+
+    /// <summary>Check the jobs catalogue (`jobs-catalog.md`, D218).</summary>
+    private void ValidateJobs()
+    {
+        if (JobsCatalog is null)
+        {
+            throw new SimConfigException("jobs must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < JobsCatalog.Count; i++)
+        {
+            World.JobRow job = JobsCatalog[i];
+
+            if (job.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] has id {job.Id}; ids index the quota and cannot be negative.");
+            }
+
+            if (!seen.Add(job.Id))
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] repeats id {job.Id}. Ids are what a staffing figure is stored "
+                    + "and hashed under, so two trades sharing one would share a quota.");
+            }
+
+            if (string.IsNullOrWhiteSpace(job.Name) || string.IsNullOrWhiteSpace(job.Plural))
+            {
+                throw new SimConfigException(
+                    $"jobs[{i}] (id {job.Id}) needs both a name and a plural — they are different "
+                    + "words for a reason (D188), so neither may be left blank.");
+            }
+
+            // ⭐ A FACE TRADE'S SEAM MUST GIVE UP A GOOD WITH A PACE (D449) — or its first dig would
+            // throw deep in the behaviour system rather than here.
+            if (job.WorksFace is World.Terrain face)
+            {
+                World.Goods? good = World.TerrainRules.Yields(face);
+                IReadOnlyList<World.GoodRow> goods = GoodsCatalog;
+                World.GoodRow? row = null;
+                for (int g = 0; g < goods.Count; g++)
+                {
+                    row = good is World.Goods yielded && goods[g].Id == (int)yielded ? goods[g] : row;
+                }
+
+                if (row is null || row.FaceDigTicks <= 0 || row.FacePerDig <= 0 || row.FaceDigsPerStint <= 0)
+                {
+                    throw new SimConfigException(
+                        $"jobs[{i}] (id {job.Id}) works {face} as a face, but that seam gives up no good "
+                        + "whose row states face_dig_ticks, face_per_dig and face_digs_per_stint above zero.");
+                }
+            }
+        }
+
+        // The enum is an alias for the first ids, exactly as it is for goods. A missing built-in
+        // would index a row that is not there, failing deep in the allocator rather than here.
+        int builtIn = System.Enum.GetValues<World.JobKind>().Length;
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id))
+            {
+                throw new SimConfigException(
+                    $"jobs is missing id {id} ({(World.JobKind)id}). The built-in trades are named "
+                    + "directly by the allocator and every golden is pinned to their ids, so a "
+                    + "catalogue may add rows above them but may not omit them.");
+            }
+        }
+    }
+
+    /// <summary>Check the buildings catalogue says something a village can be built out of.</summary>
+    /// <remarks>
+    /// <b>⛔ THE THREE THINGS THAT WOULD FAIL SILENTLY OTHERWISE</b>, each of which
+    /// `buildings-catalog.md §4` names as a failure mode: a repeated id (two buildings sharing a
+    /// name and a recipe), a building that neither stores, employs nor houses anybody (raised, and
+    /// then doing nothing for ever), and <b>a null capacity on a row the economy derives nothing
+    /// for</b> — which would throw in the middle of a run, on the tick the building was finished,
+    /// rather than at load.
+    /// </remarks>
+    private void ValidateBuildings()
+    {
+        IReadOnlyList<BuildingRow> rows = BuildingRows;
+        if (rows is null)
+        {
+            throw new SimConfigException("buildings must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BuildingRow row = rows[i];
+
+            if (row.Id < 0)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] has id {row.Id}; ids index the catalogue and cannot be "
+                    + "negative.");
+            }
+
+            if (!seen.Add(row.Id))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] repeats id {row.Id}. An id is what a trade's works_at names "
+                    + "and what a building is counted under, so two sharing one would be one "
+                    + "building wearing two names.");
+            }
+
+            // ⛔ A building has to stand on at least one tile. Zero would make `CoveredTiles`
+            // return nothing — so the building would occupy no ground, refuse nothing, and be
+            // buildable on top of anything including itself. A negative extent is the same fault
+            // with a stranger shape. *Caught here rather than in the geometry, because a modder's
+            // typo should name the row it is in.*
+            if (row.ExtentWidth < 1 || row.ExtentHeight < 1)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, '{row.Name}') has extent "
+                    + $"{row.ExtentWidth}x{row.ExtentHeight}. A building stands on at least one "
+                    + "tile in each direction; anything less occupies no ground at all and could "
+                    + "be built on top of itself.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Name))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}) has no name. Every building the village raises "
+                    + "is named in the log and on the panel, so a blank one is a sentence with a "
+                    + "hole in it.");
+            }
+
+            if (row.Stores == StoreKind.Cart)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}) stores as a cart. The cart is the wagon the "
+                    + "founders arrive in, not a building anybody puts up.");
+            }
+        }
+
+        // ⛔ THE CAPACITY CHECK, AND IT IS WHAT MAKES §2.2's EXEMPTION HONEST. A null capacity
+        // means *the economy derives this*, and the economy derives it for exactly six built-in
+        // buildings. Any other row leaving it null is a building that throws on the tick it is
+        // finished — which is the shape of bug this project treats as worse than a crash, because
+        // it surfaces in a played run rather than at load.
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BuildingRow row = rows[i];
+            var kind = (BuildingKind)row.Id;
+
+            bool economyDerivesTheStore =
+                kind is BuildingKind.Warehouse or BuildingKind.Pile or BuildingKind.Market or BuildingKind.Barn;
+            if (row.Stores is not null && row.StoreCapacity is null && !economyDerivesTheStore)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) is a store with no capacity. Only "
+                    + "the warehouse, the stockpile and the market have one derived for them; every "
+                    + "other store must state how much it holds.");
+            }
+
+            // ⚠️ Two buildings have left this list in as many days. The forager's hut states its
+            // seats since D262 and the builder's hut since 2026-08-30, so **only the forester's
+            // hut still solves for them** — what the woodcutters can eat, plus a hand for
+            // building. Every other workplace says how many work there.
+            bool economyDerivesTheSeats = kind is BuildingKind.ForesterHut;
+            bool anybodyWorksThere = false;
+            for (int j = 0; j < JobsCatalog.Count; j++)
+            {
+                anybodyWorksThere |= (int?)JobsCatalog[j].WorksAt == row.Id;
+            }
+
+            if (anybodyWorksThere && row.Seats is null && !economyDerivesTheSeats)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) is a workplace with no seats. Only "
+                    + "the forester's hut has them derived; every other workplace must state how "
+                    + "many work there.");
+            }
+
+            // ⭐ SHELVES ARE A FOURTH REASON TO EXIST, AND THIS CHECK IS WHY THEY HAD TO BE.
+            // The library holds no goods, employs nobody yet and houses nobody — **so this guard
+            // refused it**, correctly, before it had a column saying what it was for. *The
+            // validator caught that a library needed a reason to exist before the library did*,
+            // which is the best argument for having written it.
+            // ⭐ AND CIVIC IS A FIFTH, FOR THE SAME REASON AND CAUGHT THE SAME WAY (D252). The
+            // town hall holds no goods, employs nobody, houses nobody and shelves no techniques —
+            // **so this guard refused it too**, correctly, before it had a column saying what it
+            // was for. *Second building, second time; the validator is earning its keep.*
+            // ⭐ AND DRAWING WATER IS A SIXTH (D427) — the well, refused the same way, a third time.
+            // ⛔ ONLY THE HOUSE ROW HOUSES ANYBODY (D571). The longhouse was the one other row that carried
+            // `house_capacity`, and `RaiseFinished` turned any such row into one; with it gone, a modder's
+            // `house_capacity` on any other row would be raised and shelter nobody for ever. Refused at load.
+            // ⭐ THE HOUSE LADDER LIFTED IT (D719, `house-tiers.md §4.6`): three dwelling rows now. What the refusal still
+            // guards is the longhouse's lesson — a row that houses somebody must be a HOUSE: it stands on the house row's
+            // ground (every plot, fence and door is drawn from it, D386) and keeps a larder.
+            if (row.HouseCapacity > 0 && row.Id != (int)BuildingKind.Home)
+            {
+                BuildingRow? house = null;
+                for (int h = 0; h < rows.Count; h++)
+                {
+                    if (rows[h].Id == (int)BuildingKind.Home)
+                    {
+                        house = rows[h];
+                    }
+                }
+
+                if (house is null || row.ExtentWidth != house.ExtentWidth || row.ExtentHeight != house.ExtentHeight
+                    || row.LocalStoreCap <= 0 || row.Stores is not null || (row.Seats ?? 0) > 0)
+                {
+                    throw new SimConfigException(
+                        $"buildings[{i}] (id {row.Id}, {row.Name}) has house_capacity {row.HouseCapacity}, but a dwelling must "
+                        + $"stand on the house row's {house?.ExtentWidth ?? 1}×{house?.ExtentHeight ?? 1} ground, keep a larder "
+                        + "(local_store_cap) and be nothing else — no store, no seats; the longhouse that once housed people "
+                        + "another way was removed (D571).");
+                }
+            }
+
+            // ⭐ A HOUSE'S NAME IS A DWELLING'S, AND NAMES THE FAMILY (`house-tiers.md §4.8`, D722): on a granary it would never
+            // be said; without `{family}` every cottage in the valley would bear the same name.
+            if (row.HouseName is string named
+                && (row.HouseCapacity <= 0 || !named.Contains("{family}", StringComparison.Ordinal)))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has house_name \"{named}\", but only a dwelling (house_capacity "
+                    + "above zero) bears a family's name, and the name must say where the family's goes — {family}.");
+            }
+
+            // ⭐ AND SPANNING WATER IS A SEVENTH (D546) — the bridge, refused the same way, a fourth time.
+            if (row.Stores is null && !anybodyWorksThere && row.HouseCapacity <= 0
+                && row.Shelves <= 0 && !row.Civic && !row.DrawsWater && !row.SpansWater && !row.EnclosesPasture)
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) stores nothing, employs nobody, "
+                    + "houses nobody, keeps no records, is not civic, nobody draws water there and it "
+                    + "spans no water. The village would raise it and it would do nothing for ever.");
+            }
+
+            // ⛔ A deck's cost goes into Dial's bucket queue, which takes 1..10 and throws otherwise — said
+            // here, at load, rather than the first time somebody routes over the bridge.
+            if (row.SpansWater
+                && (row.DeckTileCost < 1 || row.DeckTileCost > World.TravelCostField.BaseTileCost
+                    || row.ExtentWidth != 1 || row.ExtentHeight != 1))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) spans water, so its deck_tile_cost must be "
+                    + $"1 to {World.TravelCostField.BaseTileCost} (got {row.DeckTileCost}) and its extent 1×1 — "
+                    + "a bridge's length is the river's, not the row's.");
+            }
+
+            // Condition (D552): a row wears in three rising years, or never.
+            bool wears = row.WearsInYears != 0 || row.FailsInYears != 0 || row.RuinedInYears != 0;
+            if (wears && !(0 < row.WearsInYears && row.WearsInYears < row.FailsInYears && row.FailsInYears < row.RuinedInYears))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) wears in {row.WearsInYears} / {row.FailsInYears} / "
+                    + $"{row.RuinedInYears} years — wears_in_years, fails_in_years and ruined_in_years must all be 0 "
+                    + "(never wears) or positive and rising.");
+            }
+        }
+
+        // The enum is an alias for the first ids, exactly as it is for goods and trades. A missing
+        // built-in would index a row that is not there, failing deep in a placement rather than
+        // here.
+        // ⛔ A RETIRED ID (D571): `BuildingKind.Longhouse = 14` stays in the enum, never renumbered, and ships no
+        // row — a catalogue without it is whole. A modder may type one. Named once, in `BuildingKinds.IsRetired`.
+        int builtIn = System.Enum.GetValues<BuildingKind>().Length;
+        for (int id = 0; id < builtIn; id++)
+        {
+            if (!seen.Contains(id) && !BuildingKinds.IsRetired((BuildingKind)id))
+            {
+                throw new SimConfigException(
+                    $"buildings is missing id {id} ({(BuildingKind)id}). The built-in buildings are "
+                    + "named directly by the placement rules and the founding, so a catalogue may "
+                    + "add rows above them but may not omit them.");
+            }
+        }
+    }
+
+    /// <summary>The skill rows the founding draws from, in the list's order (D392).</summary>
+    /// <remarks>
+    /// Resolved by name once here rather than per founding, and validated with the skills
+    /// because a name that is not a row is a party thinner than <c>founding_masters</c> promised.
+    /// </remarks>
+    public IReadOnlyList<SkillRow> FoundingSkills()
+    {
+        var rows = new List<SkillRow>(FoundingTrades.Count);
+        for (int i = 0; i < FoundingTrades.Count; i++)
+        {
+            rows.Add(SkillNamed(FoundingTrades[i])
+                ?? throw new SimConfigException($"founding_trades[{i}] names no skill: \"{FoundingTrades[i]}\"."));
+        }
+
+        return rows;
+    }
+
+    private SkillRow? SkillNamed(string name)
+    {
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            if (string.Equals(Skills[i].Name, name, StringComparison.Ordinal))
+            {
+                return Skills[i];
+            }
+        }
+
+        return null;
+    }
+
+    private void ValidateFoundingTrades()
+    {
+        if (FoundingTrades is null)
+        {
+            throw new SimConfigException("founding_trades must be a list, not null.");
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < FoundingTrades.Count; i++)
+        {
+            string name = FoundingTrades[i];
+            if (SkillNamed(name) is null)
+            {
+                throw new SimConfigException(
+                    $"founding_trades[{i}] names no skill: \"{name}\". Every entry must be the name "
+                    + "of a row in skills — the founding deals its trades from this list.");
+            }
+
+            if (!seen.Add(name))
+            {
+                throw new SimConfigException(
+                    $"founding_trades repeats \"{name}\" — one draw each, never the same trade twice.");
+            }
+        }
+
+        // Fewer trades than the party asks for is a founder who arrives a novice where the
+        // shape promised a master — quietly. Loud, here, instead.
+        int dealt = FoundingMasters + FoundingJourneymen;
+        if (FoundingTrades.Count < dealt)
+        {
+            throw new SimConfigException(
+                $"founding_trades lists {FoundingTrades.Count} trades and the founding deals {dealt} "
+                + $"(founding_masters {FoundingMasters} + founding_journeymen {FoundingJourneymen}).");
+        }
+    }
+
+    /// <summary>
+    /// Every batch row names a trade with a hut, goods that exist and a stint that takes time; one row a trade
+    /// (`batch-trade.md §3`). The keys the built-in four are priced from are checked above, so this is a modder's list's
+    /// guard.
+    /// </summary>
+    private void ValidateBatchRows()
+    {
+        IReadOnlyList<BatchRow> rows = BatchRows;
+        var seen = new HashSet<JobKind>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            BatchRow row = rows[i];
+            string at = $"batch_trades[{i}] ({row.Trade})";
+            if (!seen.Add(row.Trade))
+            {
+                throw new SimConfigException($"{at} repeats a trade: one row a trade, or two recipes would argue over one hut.");
+            }
+
+            JobRow? job = null;
+            for (int j = 0; j < JobsCatalog.Count; j++)
+            {
+                if (JobsCatalog[j].Id == (int)row.Trade)
+                {
+                    job = JobsCatalog[j];
+                }
+            }
+
+            if (job?.WorksAt is null)
+            {
+                throw new SimConfigException($"{at} names a trade with no job row, or one that works at no building.");
+            }
+
+            if (row.Ticks < 1 || row.PerStint < 1 || row.OutputPerBatch < 1 || row.Firing < 0)
+            {
+                throw new SimConfigException(
+                    $"{at} needs ticks, per_stint and output_per_batch of at least one and a firing of at least nought "
+                    + $"(got {row.Ticks}, {row.PerStint}, {row.OutputPerBatch}, {row.Firing}).");
+            }
+
+            if (!row.FromTheProduct && (row.InputPerBatch < 1 || !IsAGood(row.Input) || !IsAGood(row.Output)))
+            {
+                throw new SimConfigException(
+                    $"{at} needs an input and an output that are goods, and an input_per_batch of at least one "
+                    + $"(got {row.Input}, {row.Output}, {row.InputPerBatch}).");
+            }
+
+            if (row.Hands == BatchHands.ShortfallOverAYear
+                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted)) == 0)
+            {
+                throw new SimConfigException(
+                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed or "
+                    + "EveryHouseholdCarted) — there would be nothing to divide.");
+            }
+
+            if (string.IsNullOrWhiteSpace(row.Verb) || string.IsNullOrWhiteSpace(row.OneOf)
+                || string.IsNullOrWhiteSpace(row.WalkTo) || string.IsNullOrWhiteSpace(row.Working)
+                || string.IsNullOrWhiteSpace(row.FirstBatch))
+            {
+                throw new SimConfigException($"{at} is missing its words (verb, one_of, walk_to, working, first_batch).");
+            }
+        }
+
+        bool IsAGood(World.Goods goods)
+        {
+            for (int g = 0; g < GoodsCatalog.Count; g++)
+            {
+                if (GoodsCatalog[g].Id == (int)goods)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    private void ValidateSkills()
+    {
+        if (Skills is null)
+        {
+            throw new SimConfigException("skills must be a list, not null.");
+        }
+
+        var seen = new HashSet<int>();
+        for (int i = 0; i < Skills.Count; i++)
+        {
+            SkillRow skill = Skills[i];
+
+            if (skill.Id <= 0)
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] has id {skill.Id}; ids must be greater than zero, because a "
+                    + "default int must never name a skill.");
+            }
+
+            if (!seen.Add(skill.Id))
+            {
+                throw new SimConfigException(
+                    $"skills[{i}] repeats id {skill.Id}. Ids are what proficiency is stored and "
+                    + "hashed under, so two skills sharing one would share a counter.");
+            }
+
+            if (string.IsNullOrWhiteSpace(skill.Name))
+            {
+                throw new SimConfigException($"skills[{i}] (id {skill.Id}) has no name.");
+            }
+        }
+
+        if (MasteryYears <= 0)
+        {
+            throw new SimConfigException(
+                $"mastery_years must be greater than zero (got {MasteryYears}).");
+        }
+
+        ValidateFoundingTrades();
+
+        if (SkillWorkPerIdleTick <= 0)
+        {
+            throw new SimConfigException(
+                $"skill_work_per_idle_tick must be greater than zero (got "
+                + $"{SkillWorkPerIdleTick}) — a villager who holds a trade is always gaining "
+                + "in it, even when the village has nothing for them to do.");
+        }
+
+        if (SkillWorkPerActiveTick < SkillWorkPerIdleTick)
+        {
+            throw new SimConfigException(
+                $"skill_work_per_active_tick ({SkillWorkPerActiveTick}) must be at least "
+                + $"skill_work_per_idle_tick ({SkillWorkPerIdleTick}), or going out to do the "
+                + "work would teach somebody less than staying at home.");
+        }
+    }
+
+    /// <summary>Founding population. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int StartingPopulation => StartingHouseholds * AdultsPerHousehold;
+
+    /// <summary>Ticks in one in-game year. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int TicksPerYear => TicksPerDay * DaysPerSeason * 4;
+
+    /// <summary>Work that makes a master, for a trade that does not state its own years.</summary>
+    [JsonIgnore]
+    public int MasteryWork => MasteryYears * TicksPerYear * SkillWorkPerIdleTick;
+
+    /// <summary>Years on the task that make a master of <paramref name="skill"/>.</summary>
+    /// <remarks>
+    /// <b>The trade's own number if it states one, the village's otherwise</b> — see
+    /// <see cref="SkillRow.MasteryYears"/>. **No row states one today**, and D182 records the
+    /// measurement that removed the reason to.
+    /// </remarks>
+    public int MasteryYearsFor(SkillRow skill)
+    {
+        ArgumentNullException.ThrowIfNull(skill);
+        return skill.MasteryYears ?? MasteryYears;
+    }
+
+    /// <summary>Work that makes a master of <paramref name="skill"/>.</summary>
+    public int MasteryWorkFor(SkillRow skill) =>
+        MasteryYearsFor(skill) * TicksPerYear * SkillWorkPerIdleTick;
+
+    /// <summary>Ticks in one season. Derived, not configured.</summary>
+    [JsonIgnore]
+    public int TicksPerSeason => TicksPerDay * DaysPerSeason;
+
+    /// <summary>Ticks outdoors, unclothed, before danger. Derived from days (D45).</summary>
+    [JsonIgnore]
+    public int ExposureTicksOutdoors => ExposureDaysOutdoors * TicksPerDay;
+
+    /// <summary>Ticks under a roof with no fire before danger. Derived from days (D45).</summary>
+    [JsonIgnore]
+    public int ExposureTicksSheltered => ExposureDaysSheltered * TicksPerDay;
+
+    /// <summary>
+    /// What <see cref="World.Villager.Cold"/> has to reach to kill somebody (D45).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>One accumulator, two rates</b>, and the product of the two tick-counts is the
+    /// scale that makes both rates exact integers for any pair of day-counts a config can
+    /// state. No lowest common multiple, no rounding, no float (D2).
+    /// </para>
+    /// <para>
+    /// The alternative — a counter per row of D45's table — leaves a hole in the ordinary
+    /// case: a villager who alternates between a fortnight outdoors and a spell in a cold
+    /// room trips neither counter and is immortal in conditions that should kill them.
+    /// Partial exposure has to add up.
+    /// </para>
+    /// <para>
+    /// Zero when either half is switched off, which callers read as "cold cannot kill".
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public int ExposureThreshold => ExposureTicksOutdoors * ExposureTicksSheltered;
+
+    /// <summary>What a tick outdoors in winter costs. Derived (D45).</summary>
+    [JsonIgnore]
+    public int ExposurePerTickOutdoors =>
+        ExposureTicksOutdoors == 0 ? 0 : ExposureThreshold / ExposureTicksOutdoors;
+
+    /// <summary>What a tick under a fireless roof costs. Derived (D45).</summary>
+    [JsonIgnore]
+    public int ExposurePerTickSheltered =>
+        ExposureTicksSheltered == 0 ? 0 : ExposureThreshold / ExposureTicksSheltered;
+
+    /// <summary>
+    /// What a tick beside a burning fire gives back — <b>a day by the fire undoes a day
+    /// outdoors</b> (D45 §4.1, Joe's answer (c)).
+    /// </summary>
+    /// <remarks>
+    /// A fire used to zero the count outright, and that was measured before it was built:
+    /// villagers spend <b>76% of winter standing at a lit hearth</b>, so the count was
+    /// wiped constantly and <em>nobody ever froze in 120 years</em>. Thawing keeps the
+    /// sentence true — you never freeze while a fire is burning — without letting one warm
+    /// minute erase a fortnight in the snow.
+    /// <para>
+    /// <b>⭐ IT USED TO MIRROR THE OUTDOOR RATE, ON THE GROUNDS THAT MIRRORING NEEDED NO NUMBER
+    /// OF ITS OWN — AND THE NUMBER IT AVOIDED CHOOSING WAS WRONG (Joe, 2026-08-23, D192).</b>
+    /// A day by the fire undoing a day outdoors meant **fifteen days at a hearth to come back
+    /// from the brink**, which is half a winter spent thawing. Joe, having watched it: *"fire
+    /// warm up should be much faster than it currently is."*
+    /// </para>
+    /// <para>
+    /// <b>Now stated as the fact and derived from it</b> (D165's split): <em>a fire brings you
+    /// back from the brink in <see cref="ThawDaysAtAFire"/> days.</em> Five, against fifteen
+    /// outdoors and twenty-five under a fireless roof — so a hearth is **three times** the
+    /// rescue it was, and getting warm is now something you can watch happen rather than
+    /// something that takes a season.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The old argument's second half still holds and is what bounds this.</b> A fire that
+    /// zeroed the count outright was measured and rejected: villagers spend **76% of winter at a
+    /// lit hearth**, so the count was wiped constantly and **nobody froze in 120 years**. Five
+    /// days is fast, not instant — *faster and it is the reset again wearing a delay.*
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public int ThawPerTickAtAFire =>
+        ThawTicksAtAFire == 0 ? 0 : ExposureThreshold / ThawTicksAtAFire;
+
+    /// <summary>Ticks at a fire to come back from the brink. Derived from days.</summary>
+    [JsonIgnore]
+    public int ThawTicksAtAFire => ThawDaysAtAFire * TicksPerDay;
+}
+
+/// <summary>Thrown when config is missing, malformed, or out of range.</summary>
+public sealed class SimConfigException : Exception
+{
+    public SimConfigException(string message) : base(message) { }
+
+    public SimConfigException(string message, Exception innerException) : base(message, innerException) { }
+}

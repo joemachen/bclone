@@ -307,7 +307,7 @@ buttons and mods get an *"Other"* group.
 
 1. This spec current.
 2. Defaults in code, overridable from config — **one source of truth**, per `goods-catalog.md §8.2`.
-3. No `switch` on a building by name in `Bclone.Sim` **except the exemptions §2.2 and §2.3 name on
+3. No `switch` on a building by name in `Kith.Sim` **except the exemptions §2.2 and §2.3 name on
    the record**: the derived capacities, `Complete`'s `Home` arm, and `Demolish`'s cart. Each is
    reasoning or a derivation, never a value.
 4. Unit tests passing; determinism green; **goldens byte-identical**.

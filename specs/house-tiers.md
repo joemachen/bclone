@@ -375,7 +375,7 @@ None new. Logs and stone. *(Planks, bricks, mortar — later, §4.1.)*
 | Re-founding inherits cottages | Fine: `HomeKind` is the house's, it stays with the house |
 | A modded dwelling row | Allowed if it is a full dwelling row (§4.6); it appears on the brush's bar only if a learned rule names it — or never, recorded rather than built |
 
-## 9. How it is tested — `tests/Bclone.Sim.Tests/HouseTierTests.cs` (TDD; every guard red-checked and its reds counted)
+## 9. How it is tested — `tests/Kith.Sim.Tests/HouseTierTests.cs` (TDD; every guard red-checked and its reds counted)
 
 1. **A cabin burns today's firewood to the log** — the spread formula at W 24, B 8 is 3 every beat; a cabin village's
    hash over a winter equals today's (the identity guard that keeps the goldens honest).

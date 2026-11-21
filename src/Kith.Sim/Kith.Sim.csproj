@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ============================================================
+       Kith.Sim — the simulation core.
+
+       THIS PROJECT MUST NEVER REFERENCE GODOT, OR ANY ENGINE TYPE.
+       It is plain C#, headlessly testable, and deliberately portable.
+       See DESIGN.md §3 and specs/tick-loop.md §6.
+       ============================================================ -->
+
+  <PropertyGroup>
+    <RootNamespace>Kith.Sim</RootNamespace>
+    <AssemblyName>Kith.Sim</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Turns the determinism rules in specs/tick-loop.md §6 into
+         compile errors instead of code-review discipline. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The labour allocator is internal on purpose: there must be no way for the
+         game shell to assign a worker (DESIGN.md D15), and a reflection test asserts
+         the absence of that public API. Tests still need to drive it directly - a
+         quota shrinking, or a worker being shed - so the test assembly, and only the
+         test assembly, can see inside. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Kith.Sim.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

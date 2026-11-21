@@ -34,7 +34,7 @@ status in August (D159), and this review found fifteen more (§4.4):
 
 - **The code:** `BuildingKind`, `JobKind`, `Goods` and their rows (`BuildingRow`, `JobRow`, `GoodRow`), `SimConfig`,
   `TechTree.DefaultNodes`, `SimConfig.Techniques`, `SimConfig.Skills`, `SimWorld.WhyNotYet`, the systems in
-  `src/Bclone.Sim/Systems`, and `data/sim.config.json`.
+  `src/Kith.Sim/Systems`, and `data/sim.config.json`.
 - **Every spec in `specs/`** (101) and `TECH-EXAMPLE.md`, each status line checked against the code and §7.
 - **Joe's asks:** HANDOFF's ⏸️ OPEN list, DESIGN §4–§5, §7 searched by theme, and **his tracker, every tab** — Dashboard,
   Roadmap 17 rows, Food 69, Buildings 86, Professions 43, Resources 46, Systems 84, Techniques 77, Unlocks 15, Unlock

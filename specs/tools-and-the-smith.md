@@ -372,7 +372,7 @@ idle or not, and the two are not reconciled.
   seeds, gated / free alive: `main` 43 / 28, branch 51 / 32), and 12345 came up 0. Re-posed on seed 6,
   whose ungated village lives on both, with the table beside it.
 
-## 7. How it is tested — `tests/Bclone.Sim.Tests/ToolsTests.cs`
+## 7. How it is tested — `tests/Kith.Sim.Tests/ToolsTests.cs`
 
 - `AToolWearsOncePerAction` — red with the wear off.
 - `AWorkerWithoutAToolWorksAtTodaysNumberToTheUnit` — red with the bonus handed to a bare hand;

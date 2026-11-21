@@ -55,7 +55,7 @@ that makes answering it possible. **I have a recommendation (§7.4) and it is no
 
 ### 2.1 ✅ The sim has NO floating point in it at all. D2 is genuinely held.
 
-Fifteen `float`/`double` occurrences exist in `Bclone.Sim`, and **every one is in
+Fifteen `float`/`double` occurrences exist in `Kith.Sim`, and **every one is in
 `FixedTimestepDriver` or `TargetTicksPerSecond`** — wall-clock pacing, deliberately outside sim
 state. **Sim logic is integer end to end.**
 
@@ -67,7 +67,7 @@ the question is purely what to introduce.
 `DESIGN.md §4` says *"Fixed-point `Fixed` (Q32.32) **already exists in the design** for exactly
 this kind of need — that is the door, and it was left open deliberately."* **That sentence is
 true as written and is very easy to read as "the type is in the codebase."** It is not: the only
-match for `fixed` in `src/Bclone.Sim` is `FixedTimestepDriver`, which is the tick loop and
+match for `fixed` in `src/Kith.Sim` is `FixedTimestepDriver`, which is the tick loop and
 unrelated.
 
 ⚠️ **So "the door was left open" means a decision was recorded, not that work was banked.**
@@ -392,11 +392,11 @@ time now, but with nothing on screen to say why a dot paused.
 Joe, playing slice 7: *"slice/movement-skip still has skipping. all 4 founders skip at the same time it seems."* A
 skip that moves every dot in one instant cannot be any one villager's, so the frame was measured first.
 
-**1. The frame — cleared on Joe's machine.** `FrameWatch` (view, `src/Bclone.Game/FrameWatch.cs`) charges each
+**1. The frame — cleared on Joe's machine.** `FrameWatch` (view, `src/Kith.Game/FrameWatch.cs`) charges each
 gap between two `_Process` calls to the frame **before** it — its ticks, step, `Refresh()`, raw draw, collections
 and tick of the day — because the debug line D403 read timed the sim step alone, and the map's draw passes are
 smoothed nine-tenths old so one long frame vanishes from them. It is the debug line's second row, and every frame
-over 33 ms prints `[frame] long: …`. `BCLONE_FRAME_SAMPLE=<seconds>` (`_SPEED=<x>`) founds the config's valley in a
+over 33 ms prints `[frame] long: …`. `KITH_FRAME_SAMPLE=<seconds>` (`_SPEED=<x>`) founds the config's valley in a
 real window, runs, prints the summary and quits, writing no save and no settings. **Sixty seconds each at 1×, 4×
 and 10× (44, 176 and 442 ticks), ~160 fps with vsync: no frame over 33 ms, the longest 8–12 ms, and a frame that
 stepped a tick no longer than one that did not (6.0 against 6.1 ms).** ⚠️ The sample's founding is unattended,
@@ -564,7 +564,7 @@ takes at the UI is a look at the default state.*
 
 | # | Item | State |
 |---|---|---|
-| 1 | `Fixed` (Q32.32) exists, integer-only, **no `float`/`double` in its API at all** | ✅ `src/Bclone.Sim/Core/Fixed.cs` |
+| 1 | `Fixed` (Q32.32) exists, integer-only, **no `float`/`double` in its API at all** | ✅ `src/Kith.Sim/Core/Fixed.cs` |
 | 2 | Rounding is one stated rule, asserted on **both sides of zero** | ✅ floor; −1.5 → −2 |
 | 3 | Overflow fails loudly, with both operands in the message | ✅ throws; anti-vacuity guard that fitting arithmetic does not |
 | 4 | Determinism extended to fixed-point arithmetic | ✅ scripted replay folded through `MixFixed`, pinned |

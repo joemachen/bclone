@@ -1,12 +1,12 @@
-using Bclone.Sim.Config;
-using Bclone.Sim.Core;
-using Bclone.Sim.Determinism;
-using Bclone.Sim.Logging;
-using Bclone.Sim.World;
+using Kith.Sim.Config;
+using Kith.Sim.Core;
+using Kith.Sim.Determinism;
+using Kith.Sim.Logging;
+using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Bclone.Sim.Tests;
+namespace Kith.Sim.Tests;
 
 // D643's measurement for `specs/phase-5-golden.md §5`: the posed Phase 5 village on the shipped data,
 // stepped for ZZ_YEARS (default 50), one ZZP line a year — people, and what each chain made — so the
