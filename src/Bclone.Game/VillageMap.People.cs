@@ -237,6 +237,18 @@ public partial class VillageMap
             _peopleThisFrame.Add((point.Y, villager, point));
         }
 
+        // ⭐ And whoever is walking out (5b) — gone from the sim, so asked of the walk, never the roster.
+        if (_walkOuts.Count > 0)
+        {
+            var leavers = new List<(Villager Who, Vector2 Tile, float Shown)>();
+            AddTheLeavers(world, stillAlive, leavers);
+            foreach ((Villager who, Vector2 tile, _) in leavers)
+            {
+                Vector2 point = ToScreen(tile);
+                _peopleThisFrame.Add((point.Y, who, point));
+            }
+        }
+
         _peopleThisFrame.Sort((a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.Who.Id.CompareTo(b.Who.Id));
         float scale = PersonPixels / PersonPainter.BakeHeight;
         bool poses = PersonPixels >= PosesFromPixels;
@@ -245,8 +257,13 @@ public partial class VillageMap
         {
             // ⭐ The motion (A130): the pose this frame, and how the picture is moved — the step paid for by the distance
             // the drawn point has walked (where it is drawn: the glide, or the road a nomad walks in on).
+            // A leaver (5b) walks their road out and fades at its end, `shown` of them left.
             Vector2 live = DrawnTile(villager);
-            (float walked, Vector2 heading) = WalkedTo(villager.Id, villager.LifeStage, WalkInPlaceOf(villager.Id, live, out _) ?? live);
+            float shown = 1f;
+            Vector2 road = villager.Alive
+                ? WalkInPlaceOf(villager.Id, live, out _) ?? live
+                : WalkOutPlaceOf(villager.Id, out shown) ?? live;
+            (float walked, Vector2 heading) = WalkedTo(villager.Id, villager.LifeStage, road);
             FigureKey still = PersonKeyOf(villager, world, heading);
             PersonMotion motion = MotionOf(still, AtWork(villager.State), walked, _peopleClock, poses);
             FigureKey key = still with { Beat = motion.Beat };
@@ -263,12 +280,13 @@ public partial class VillageMap
             if (held is null)
             {
                 // Over the frame's budget and never painted before: the dot for one frame, in their life stage's colour.
-                DrawCircle(point, VillagerRadius, villager.LifeStage switch
+                Color dot = villager.LifeStage switch
                 {
                     LifeStage.Child => ChildColour,
                     LifeStage.Elder => ElderColour,
                     _ => AdultColour,
-                });
+                };
+                DrawCircle(point, VillagerRadius, new Color(dot, dot.A * shown));
                 continue;
             }
 
@@ -277,7 +295,7 @@ public partial class VillageMap
             PaintedFigure f = held.Figure;
             float tall = f.FeetY / PersonPainter.FeetFromTop * scale;
             Vector2 feet = point + new Vector2(0f, tall * PersonPointUp);
-            if (villager.Id == _selectedVillagerId)
+            if (villager.Id == _selectedVillagerId && villager.Alive)
             {
                 DrawTheSelectionAtTheFeet(feet, tall);
             }
@@ -285,22 +303,29 @@ public partial class VillageMap
             // The shadow on the ground at their feet, scaled to them and not moved with them (A130).
             PaintedFigure sf = shadow.Figure;
             float ss = f.FeetY / sf.FeetY * scale;
-            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false);
+            var faded = new Color(1f, 1f, 1f, shown);
+            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false, modulate: faded);
 
             // The person, lifted, leaned and squashed about their feet as the motion says.
             DrawSetTransform(feet + (new Vector2(motion.Dx, motion.Dy) * tall), Mathf.DegToRad(motion.Turn), new Vector2(1f, motion.Squash));
             var rect = new Rect2(-(new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
-            DrawTextureRect(held.Texture, rect, tile: false);
+            DrawTextureRect(held.Texture, rect, tile: false, modulate: faded);
             DrawSetTransformMatrix(Transform2D.Identity);
 
             // ⭐ The water pail at their side (`water-need.md §2e`, D782) — the dots' stand-in, hung at a person's hip height.
-            if (_pails.TryGetValue(villager.Id, out bool full))
+            if (villager.Alive && _pails.TryGetValue(villager.Id, out bool full))
             {
                 DrawThePail(feet - new Vector2(0f, tall * 0.42f), tall * 0.16f, full);
             }
 
             Vector2 overHead = feet - new Vector2(0f, tall);
             float r = Mathf.Max(3f, tall * 0.12f);
+            if (!villager.Alive)
+            {
+                DrawTheChevron(overHead, r, shown);
+                continue;
+            }
+
             if (WalkInProgressOf(villager.Id) is float walking)
             {
                 DrawTheArrivalMark(overHead, r, walking);

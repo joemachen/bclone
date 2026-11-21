@@ -374,6 +374,12 @@ public sealed class SaveLoadTests : IDisposable
             "SplitsThisStint", "ToolUses", "ToolGood", "ForgesThisStint", "DigsThisStint", "Rhythm", "Skills",
             "BatchesThisStint", "FullFor", "FullFrom", "ArrivedAtTick", "ServingSiteId", "CoatDays", "PushingACart",
             "CartForTheWorks", "Generation", "SchoolId", "SchoolTicks", "BatchTrade",
+
+            // Contentment's tallies (W2, D798–D800) — saved, and hashed since step 4 (D804).
+            "ColdDaysThisWinter", "LastColdDay", "ColdWinterHeldUntil", "CommuteTiles", "ContentmentCauses", "SeasonsUnsettled",
+
+            // Gone from the valley (W2 step 5) — `left_at`, written only when set (`ContentmentTests.LeavingIsSavedAndHashed`).
+            "LeftAtTick",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
@@ -385,6 +391,7 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse",
+            "FireOutHeldUntil", "DryDaysThisSeason",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
@@ -660,6 +667,144 @@ public sealed class SaveLoadTests : IDisposable
         SaveOpened opened = SaveFile.Open(Path.Combine(_folder, "gone.save"), VillageFixtures.Village);
         Assert.Null(opened.Loop);
         Assert.Equal("That save is not there any more.", opened.Refusal);
+    }
+
+    // ---------------------------------------------------------------
+    //  The list's read — the head of the file, never the village (D805, `title-and-pause.md §5.2`)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ The load list reads a save's header without reading its village: the village here is not JSON at all, and
+    /// the list still names the save — while <see cref="SaveFile.Open"/> refuses it, so the damage is real.
+    /// </summary>
+    /// <remarks>
+    /// Joe's pause screen froze for 830 ms reading 439 saves whole to list them (D805). Today's read of every one of
+    /// them reaches <c>"world"</c> inside its first 16 KB, which is what lets the head stand for the file.
+    /// </remarks>
+    [Fact]
+    public void TheListReadsTheHeadAndNeverTheVillage()
+    {
+        string path = Saved();
+        string text = Unzip(File.ReadAllBytes(path));
+        int world = text.IndexOf("\"world\"", StringComparison.Ordinal);
+        Assert.True(world > 0, "the save has a world member");
+        File.WriteAllBytes(path, Zip(text[..world] + "\"world\": { this is not a village"));
+
+        SaveOpened listed = SaveFile.ReadHeader(path);
+        Assert.Null(listed.Refusal);
+        Assert.Equal(300UL, listed.Header!.Tick);
+        Assert.Equal(SaveGame.Format, listed.Header.Format);
+        Assert.Equal("0.0.1", listed.Header.Build);
+
+        SaveOpened opened = SaveFile.Open(path, VillageFixtures.Village);
+        Assert.Null(opened.Loop);
+        Assert.StartsWith("This save can't be read — it's damaged.", opened.Refusal, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A head that does not reach <c>"world"</c> is read whole, as before D805 — so a header written after the village,
+    /// or one longer than the head, still lists.
+    /// </summary>
+    [Theory]
+    [InlineData("the village first")]
+    [InlineData("a header longer than the head")]
+    public void AHeadThatDoesNotReachTheWorldIsReadWhole(string shape)
+    {
+        string path = shape == "a header longer than the head"
+            ? Saved(doc => doc["village_name"] = new string('a', SaveFile.HeadBytes + 1000))
+            : Saved();
+        if (shape == "the village first")
+        {
+            JsonObject written = JsonNode.Parse(Unzip(File.ReadAllBytes(path)))!.AsObject();
+            var reordered = new JsonObject { ["world"] = written["world"]!.DeepClone() };
+            foreach (KeyValuePair<string, JsonNode?> member in written.Where(m => m.Key != "world"))
+            {
+                reordered[member.Key] = member.Value?.DeepClone();
+            }
+
+            SaveFile.Write(path, reordered);
+            Assert.StartsWith("{\n  \"world\"", Unzip(File.ReadAllBytes(path)).ReplaceLineEndings("\n"), StringComparison.Ordinal);
+        }
+
+        SaveOpened listed = SaveFile.ReadHeader(path);
+        Assert.Null(listed.Refusal);
+        Assert.Equal(300UL, listed.Header!.Tick);
+        if (shape == "a header longer than the head")
+        {
+            Assert.Equal(SaveFile.HeadBytes + 1000, listed.Header.VillageName!.Length);
+        }
+    }
+
+    /// <summary>
+    /// The list refuses what it refused before D805, in the same words and keeping no <c>.bad</c> copy — every damage
+    /// <see cref="ADamagedSaveIsRefusedAndKeptAsBad"/> poses, another format, and a file gone. ⚠️ <b>Except a file cut
+    /// short after its header</b>: it now lists, and <see cref="SaveFile.Open"/> refuses it when it is picked
+    /// (`title-and-pause.md §5.2`, the one thing the head read changes). A key missing or a wrong type in the village
+    /// always listed — the header's six fields are all the list ever read.
+    /// </summary>
+    [Theory]
+    [InlineData("cut short", false)]
+    [InlineData("not gzip", true)]
+    [InlineData("not JSON", true)]
+    [InlineData("a key missing", false)]
+    [InlineData("a key written twice", true)]
+    [InlineData("a wrong type", false)]
+    public void TheListRefusesWhatItRefusedBefore(string damage, bool refusedOnTheList)
+    {
+        string path = Saved(damage switch
+        {
+            "a key missing" => doc => doc["world"]!["villagers"]![0]!.AsObject().Remove("hunger"),
+            "a wrong type" => doc => doc["world"]!["villagers"]![0]!["hunger"] = "hungry",
+            _ => null,
+        });
+
+        byte[] gz = File.ReadAllBytes(path);
+        string text = Unzip(gz);
+        string format = $"\"format\": {SaveGame.Format},";
+        switch (damage)
+        {
+            case "cut short":
+                File.WriteAllBytes(path, gz[..(gz.Length / 2)]);
+                break;
+            case "not gzip":
+                File.WriteAllText(path, text);
+                break;
+            case "not JSON":
+                File.WriteAllBytes(path, Zip("nonsense"));
+                break;
+            case "a key written twice":
+                Assert.Contains(format, text, StringComparison.Ordinal);
+                File.WriteAllBytes(path, Zip(text.Replace(format, format + "\n  " + format, StringComparison.Ordinal)));
+                break;
+        }
+
+        SaveOpened listed = SaveFile.ReadHeader(path);
+        Assert.False(File.Exists(path + SaveFile.BrokenSuffix), "the list keeps no .bad copy");
+        if (refusedOnTheList)
+        {
+            Assert.Equal("This save can't be read — it's damaged.", listed.Refusal);
+            Assert.Null(listed.Header);
+            Assert.NotNull(listed.Detail);
+        }
+        else
+        {
+            Assert.Null(listed.Refusal);
+            Assert.Equal(300UL, listed.Header!.Tick);
+            Assert.NotNull(SaveFile.Open(path, VillageFixtures.Village).Refusal);
+        }
+    }
+
+    [Fact]
+    public void TheListNamesTheBuildOfAnotherFormatAndAFileGone()
+    {
+        string path = Saved(doc => { doc["format"] = 99; doc["build"] = "0.0.3"; });
+        SaveOpened other = SaveFile.ReadHeader(path);
+        Assert.Equal("Saved by build 0.0.3, whose saves this build cannot read.", other.Refusal);
+        Assert.Equal(99, other.Header!.Format);
+        Assert.Equal($"{path}: format 99, where this build reads {SaveGame.Format}.", other.Detail);
+
+        SaveOpened gone = SaveFile.ReadHeader(Path.Combine(_folder, "gone.save"));
+        Assert.Equal("That save is not there any more.", gone.Refusal);
     }
 
     // ---------------------------------------------------------------

@@ -276,7 +276,7 @@ the view first sees them one tick later (`SimLoop.StepOnce`: systems at `T`, the
 0 — *nobody arrived*, founders and the born-here — is refused by name, because a new game is watched from tick 0 and
 `[0, 1)` would otherwise walk the founders in from the edge — so a skip that steps a year in one frame still catches the knock inside it — and, at the
 arrival, works out **once**: the edge tile the one cost field reaches most cheaply from the camp
-(`EdgeNearestTheCamp` — every passable perimeter tile asked `TravelCost.Cost(edge, camp)`, ties to the first in a
+(`EdgeNearest` — named `EdgeNearestTheCamp` until D809, when the leavers' walk out began to use it too — every passable perimeter tile asked `TravelCost.Cost(edge, camp)`, ties to the first in a
 fixed sweep; never a second travel system) and the sim's own route from it (`TravelCost.RouteFrom`), smoothed by a
 three-tile mean (`SmoothedPath`) so the four-connected staircase reads as a line — ⭐ a smoothed point never leaves
 its own tile (the two neighbours pull it at most a third of a tile on each axis), so nobody is ever drawn on the water

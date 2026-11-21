@@ -36,9 +36,17 @@ public partial class Main
     /// <summary>Where every village's saves live: <c>user://saves</c>, beside the settings file.</summary>
     private static string SavesRoot => ProjectSettings.GlobalizePath("user://saves");
 
+    /// <summary>For the probe's <c>pause:</c> line: how many times the save list has been read from disk (D805).</summary>
+    private int _saveListsRead;
+
     /// <summary>Every save on disk, newest first, as the new-game screen lists them — none under the probe.</summary>
-    private static List<TitleScreen.SaveListing> TheSavesOnDisk(SimConfig data)
+    /// <remarks>
+    /// ⚠️ Each save's head is read (<see cref="SaveFile.ReadHeader"/>, D805) — 40 ms for Joe's 439 — but it is still
+    /// a walk of the disk: the pause screen calls this only when its Load… opens, never to open itself.
+    /// </remarks>
+    private List<TitleScreen.SaveListing> TheSavesOnDisk(SimConfig data)
     {
+        _saveListsRead++;
         var listed = new List<TitleScreen.SaveListing>();
         if (TheProbeIsRunning || !System.IO.Directory.Exists(SavesRoot))
         {
@@ -326,8 +334,11 @@ public partial class Main
     /// exists"</i>) — and, under them, the line that says what happened (D518). Enter in the box saves too.
     /// </summary>
     /// <param name="body">Where the rows go.</param>
-    /// <param name="afterASave">Run when a save is written — the pause screen refills its Load… list.</param>
-    private (Button Save, Label Said) AddTheSaveRow(VBoxContainer body, Action afterASave)
+    /// <remarks>
+    /// ⚠️ D518's refill after a save is gone (D805): the pause screen's Load… reads the list each time it opens, so a
+    /// save just made is on it without being told.
+    /// </remarks>
+    private (Button Save, Label Said) AddTheSaveRow(VBoxContainer body)
     {
         var row = new HBoxContainer();
         var name = new LineEdit
@@ -358,10 +369,6 @@ public partial class Main
             said.Text = sentence;
             UiLook.Tint(said, saved ? UiLook.Saved : UiLook.Refused);
             said.Visible = true;
-            if (saved)
-            {
-                afterASave();
-            }
         }
 
         save.Pressed += Saving;

@@ -35,6 +35,10 @@ public static class VillageFixtures
         NomadsFirstYearSpread = 4,
         RefoundYearsFloor = 2,
         RefoundYearsSpread = 4,
+
+        // And the shipped leaving (W2 step 5): Phase 0's fixture lets nobody leave its village of one; here a person two
+        // years unsettled goes, as in the game.
+        ContentmentLeavingSeasons = 8,
                 // THE SHIPPED CALENDAR (D49), which this fixture did not have for four
                 // commits. D49 moved `data/sim.config.json` to thirty-day seasons and
                 // re-derived the economy around them; nothing moved the tests, so every

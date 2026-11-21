@@ -118,10 +118,27 @@ public static class SaveFile
     /// <summary>Where the <paramref name="n"/>th newest autosave in <paramref name="folder"/> lives.</summary>
     public static string AutosavePath(string folder, int n) => Path.Combine(folder, $"{AutosaveStem}{n}{Extension}");
 
+    /// <summary>
+    /// How much of a save, inflated, the load list reads for its header (D805): the header is written first and is a
+    /// few hundred bytes, and every one of Joe's 439 saves reached <c>"world"</c> inside 16 KB.
+    /// </summary>
+    public const int HeadBytes = 4096;
+
     /// <summary>The header of the save at <paramref name="path"/>, for the load list — or the sentence saying why not.</summary>
+    /// <remarks>
+    /// ⭐ <b>THE HEAD OF THE FILE, NEVER THE VILLAGE</b> (D805, `title-and-pause.md §5.2`). Reading Joe's 439 saves
+    /// whole to list them froze his pause screen for 830 ms; their heads take 40 ms. A head that does not make a
+    /// header is read whole, as before, so every refusal is the one the list always gave. ⚠️ A save cut short
+    /// <i>after</i> its header now lists, and <see cref="Open"/> refuses it when it is picked.
+    /// </remarks>
     public static SaveOpened ReadHeader(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
+        if (TheHeaderFromTheHead(path) is SaveHeader fromTheHead)
+        {
+            return Listed(path, fromTheHead);
+        }
+
         (JsonObject? document, SaveOpened? refused) = ReadDocument(path, keepBroken: false);
         if (document is null)
         {
@@ -130,15 +147,73 @@ public static class SaveFile
 
         try
         {
-            SaveHeader header = SaveGame.HeaderOf(document);
-            return header.Format == SaveGame.Format
-                ? new SaveOpened(null, header, null, null)
-                : new SaveOpened(null, header, OtherFormat(header.Build), $"{path}: format {header.Format}, where this build reads {SaveGame.Format}.");
+            return Listed(path, SaveGame.HeaderOf(document));
         }
         catch (SaveFormatException ex)
         {
             return new SaveOpened(null, null, Damaged(null), $"{path}: {ex.Message}");
         }
+    }
+
+    private static SaveOpened Listed(string path, SaveHeader header) =>
+        header.Format == SaveGame.Format
+            ? new SaveOpened(null, header, null, null)
+            : new SaveOpened(null, header, OtherFormat(header.Build), $"{path}: format {header.Format}, where this build reads {SaveGame.Format}.");
+
+    /// <summary>
+    /// The header made from the top-level members written before <c>"world"</c>, read from the first
+    /// <see cref="HeadBytes"/> of the file inflated — or <c>null</c>, and the caller reads the whole file, when the head
+    /// does not reach <c>"world"</c>, will not read, or does not make a header. Never throws for anything in the file.
+    /// </summary>
+    private static SaveHeader? TheHeaderFromTheHead(string path)
+    {
+        byte[] head = new byte[HeadBytes];
+        int length = 0;
+        try
+        {
+            using FileStream file = File.OpenRead(path);
+            using var zipped = new GZipStream(file, CompressionMode.Decompress);
+            int read;
+            while (length < head.Length && (read = zipped.Read(head, length, head.Length - length)) > 0)
+            {
+                length += read;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            // ⚠️ Not swallowed: the whole-file read meets the same fault and says it, in today's words.
+            return null;
+        }
+
+        var reader = new Utf8JsonReader(head.AsSpan(0, length), isFinalBlock: length < head.Length, state: default);
+        var members = new JsonObject();
+        try
+        {
+            if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
+            {
+                return null;
+            }
+
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
+            {
+                if (reader.ValueTextEquals("world"))
+                {
+                    return SaveGame.HeaderOf(members);
+                }
+
+                // A member cut off by the end of the head throws here, and the whole file is read instead.
+                string name = reader.GetString()!;
+                members.Add(name, JsonNode.Parse(ref reader));
+            }
+        }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or SaveFormatException)
+        {
+            // ⚠️ Not swallowed either: a key written twice, a value that is not JSON or a header missing a key is the
+            // whole-file read's to refuse, and it does, in the words the list has always used.
+            return null;
+        }
+
+        return null;
     }
 
     /// <summary>

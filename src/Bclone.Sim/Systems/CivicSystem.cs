@@ -159,7 +159,8 @@ public sealed class CivicSystem : ISimSystem
                 continue;
             }
 
-            if (last is null || villager.DiedAtTick > last.DiedAtTick)
+            // Gone either way (W2 step 5): a founder who left the valley is mourned as having left.
+            if (last is null || villager.GoneAtTick > last.GoneAtTick)
             {
                 if (last is not null)
                 {
@@ -208,7 +209,8 @@ public sealed class CivicSystem : ISimSystem
             ? "was the last of the four who walked into this valley with a cart and no roof"
             : $"was the last of the four who found this valley empty in Year {SimClock.FromTick(last.ArrivedAtTick, world.Config).Year} and made it theirs again";
 
-        return $"{last.Name} {arrival}, and is dead at {last.AgeYears}.{beside} {whoIsLeft} "
+        string gone = last.LeftAtTick is not null ? "has left the valley" : $"is dead at {last.AgeYears}";
+        return $"{last.Name} {arrival}, and {gone}.{beside} {whoIsLeft} "
             + "The village has gathered timber and stone for a hall in their name — put it "
             + $"wherever you like, and it will cost you nothing. {world.Clock.SeasonAndYear()}.";
     }

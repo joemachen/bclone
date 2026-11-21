@@ -38,6 +38,7 @@ public static class SimFactory
         new SchoolSystem(),     // 11b. and the pupils at school count their term (D754) — nothing, with no school
         new KnowledgeSystem(),  // 12. and what the village knows is what those people know (Phase 4)
         new CivicSystem(),      // 13. and what the village makes of itself: the founders' hall (D252)
+        new ContentmentSystem(), // 14. and, at a season's turn, whether the people are settled there (W2, D798–D800)
     };
 
     // ⭐ WHY KNOWLEDGE TICKS LAST, AND DIRECTLY AFTER SKILL (Phase 4). The order is part of the

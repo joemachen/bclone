@@ -114,6 +114,7 @@ internal static class LabourAllocator
             // Cleared with the job, so a reshuffle that gives somebody a shorter walk does
             // not leave last year's complaint about the road on them.
             world.Villagers[i].CommuteNote = string.Empty;
+            world.Villagers[i].CommuteTiles = 0;
         }
 
         Match(world, quota, before);
@@ -469,6 +470,10 @@ internal static class LabourAllocator
 
         villager.JobReason = reason.ToString();
         villager.CommuteNote = DescribeTheCommute(world, workplace, cost);
+
+        // The walk in tiles beside its note, for contentment's far walk (W2, D800 call 2) — 0 when no note is said, so the
+        // two cannot disagree about whether there is a long walk at all.
+        villager.CommuteTiles = villager.CommuteNote.Length > 0 ? Tiles(cost) : 0;
 
         // ⭐ A NOTE BELONGS TO THE JOB IT WAS WRITTEN FOR (D410). The trade's own branch writes
         // `WorkNote` and nothing else clears it, and a forager gathering writes none — so a
@@ -1121,6 +1126,7 @@ internal static class LabourAllocator
         // Somebody with no job has no commute. Leaving the note behind would have the panel
         // telling a resting villager how much of their day the road takes.
         villager.CommuteNote = string.Empty;
+        villager.CommuteTiles = 0;
 
         // Nor the trade's note: it was about the job they no longer hold (D410).
         villager.WorkNote = string.Empty;
