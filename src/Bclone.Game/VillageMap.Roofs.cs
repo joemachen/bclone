@@ -163,6 +163,9 @@ public partial class VillageMap
         JobKind.Farmer => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1, Yard: YardKind.Farmhouse),
         JobKind.Carpenter => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1, Yard: YardKind.Workshop),
         JobKind.Miller => new(RoofForm.Mill, RoofMaterial.Shingle, Yard: YardKind.Mill),
+
+        // ⭐ The school's stove (D764) has a chimney now, so its winter fire shows (A139, Joe's call 2: "okay").
+        JobKind.Teacher => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1),
         JobKind.Woodcutter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Woodcutter),
         JobKind.Builder => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Builder),
         JobKind.Hunter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Hunter),
@@ -187,7 +190,7 @@ public partial class VillageMap
     /// </summary>
     private bool DrawPaintedBuilding(
         RoofLook? look, Vector2 centre, float wide, float deep, ushort facing, Color colour, Condition worn, Door? door, int seed, float alpha = 1f,
-        YardState yard = default, Func<Vector2, Vector2[]>? homeYard = null)
+        YardState yard = default, Func<Vector2, Vector2[]>? homeYard = null, bool burning = false)
     {
         if (!PaintsBuildings || look is not RoofLook roof)
         {
@@ -202,6 +205,9 @@ public partial class VillageMap
         RoofCache held = CachedRoof(new RoofSignature(roof, at, wide, deep, facing, colour, worn == Condition.Ruin, door, doorAt, seed, yard), homeYard);
         held.LastSeen = frame;
         DrawRoofRuns(held, alpha);
+
+        // ⭐ Smoke from its chimneys while its fire burns (A139, `indoors-and-smoke.md §2`).
+        DrawTheSmoke(held, burning, alpha);
         return true;
     }
 
@@ -225,6 +231,12 @@ public partial class VillageMap
         public required List<RoofRun> Runs { get; init; }
 
         public ulong LastSeen { get; set; }
+
+        /// <summary>Its chimneys' flues, in the view's tiles (A139): where its smoke rises from.</summary>
+        public Vector2[] Flues { get; init; } = Array.Empty<Vector2>();
+
+        /// <summary>Its smoke, 0 cold to 1 lit, carried frame to frame (<see cref="SmokeOn"/>).</summary>
+        public float Smoke { get; set; }
     }
 
     /// <summary>The painted buildings' meshes, one entry a building, keyed by where it stands.</summary>
@@ -252,8 +264,9 @@ public partial class VillageMap
         List<RoofPiece> pieces = RoofDrawing(
             signature.Look, signature.At, signature.Wide, signature.Deep, signature.Facing, signature.Colour, 1f,
             signature.Door, signature.DoorAt, signature.Seed, signature.FallenIn, signature.Yard, homeYard?.Invoke(signature.At));
-        var laid = new RoofCache { Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile) };
+        var laid = new RoofCache { Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile), Flues = FluesOf(pieces), Smoke = held?.Smoke ?? 0f };
         _roofCache[signature.At] = laid;
+        KeepTheStep(signature, pieces);
         return laid;
     }
 
@@ -475,6 +488,12 @@ public partial class VillageMap
         _roofCacheGeneration = world.BuildingGeneration;
         foreach (Vector2 at in _roofCache.Where(e => e.Value.LastSeen + 2 < frame).Select(e => e.Key).ToList())
         {
+            // Its door's step goes with it (A139): a door the village no longer has is never asked for.
+            if (_roofCache[at].Signature.Door is Door door)
+            {
+                _paintedSteps.Remove(door.Tile);
+            }
+
             _roofCache.Remove(at);
         }
     }
@@ -774,6 +793,11 @@ public partial class VillageMap
 
         pieces.Add(new RoofPiece(RoofPieceKind.Line, part + " eave", frame.Box(at, hw, hd), Ink, Width: 2f, Closed: true, Dashed: fallenIn));
     }
+
+    /// <summary>The flues among a building's pieces — the chimney's smallest square, its dark mouth (A139).</summary>
+    internal static Vector2[] FluesOf(List<RoofPiece> pieces) =>
+        pieces.Where(p => p.Kind == RoofPieceKind.Fill && p.Part == "chimney" && p.Colour == ChimneyFlue)
+            .Select(p => CentreOf(p.Points)).ToArray();
 
     private static void Chimney(List<RoofPiece> pieces, RoofFrame frame, Vector2 at)
     {

@@ -59,27 +59,6 @@ public partial class VillageMap
 
     private static readonly Goods[] CarriedGoods = Enum.GetValues<Goods>().Where(g => g != Goods.Handcart).ToArray();
 
-    /// <summary>
-    /// Indoors and out of sight (A90 call 3): at home resting, at school, teaching — the house's and the school's cards
-    /// list who is in. The village empties at night and fills in the morning.
-    /// ⭐ <b>Resting is indoors only for a household with a house</b> (A133, Joe: <i>"they arent visible at all"</i>). A
-    /// founder with nothing to do rests, and before the first house is up they rest <i>in the open</i> (the card says so:
-    /// "resting in the open — no house yet") — A93 hid them anyway, and his whole new village vanished from the map.
-    /// </summary>
-    internal static bool ShownAsAPerson(VillagerState state, bool housed) => state switch
-    {
-        VillagerState.AtSchool or VillagerState.Teaching => false,
-        VillagerState.Resting => !housed,
-        _ => true,
-    };
-
-    /// <summary>
-    /// <see cref="ShownAsAPerson"/> for this villager: drawn and clicked by the one answer. The household is asked only of
-    /// someone resting.
-    /// </summary>
-    private static bool ShownOnTheMap(SimWorld world, Villager villager) =>
-        ShownAsAPerson(villager.State, villager.State == VillagerState.Resting && world.HouseholdOf(villager).HasHome);
-
     /// <summary>The doing of a trade, at its place: the tool out and the person facing us.</summary>
     internal static bool AtWork(VillagerState state) => state is VillagerState.Gathering or VillagerState.Cutting
         or VillagerState.MakingFirewood or VillagerState.Building or VillagerState.Clearing or VillagerState.TidyingGround

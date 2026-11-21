@@ -1,6 +1,7 @@
 # People going indoors, and chimney smoke
 
-> **Status: ✍️ specced and mocked (A138, 2026-11-20), nothing built — ⏸️ five calls Joe's (§6).** Claimed on `art` (A137).
+> **Status: ✍️ specced and mocked (A138, 2026-11-20); ✅ his five calls answered — *"1. Smoke B please. 2. okay 3. okay 4. instant 5. permission granted"* — and 🔨 BUILT on `art`
+> (A139, §7), not merged — ⏸️ his eyes, then his word.** Claimed on `art` (A137).
 > Joe, from play, 2026-11-20: *"if they dont already, villagers should go inside buildings not just appear on them (like
 > when they are cold)"* and *"buildings burning firewood should have smoke plums coming from their chimnies as long as
 > they are burning firewood"*. His order, A137: these two first. **View only** — it reads the sim and writes nothing.
@@ -83,3 +84,32 @@ stops the same way** (no pop); the bakery and the smithy smoke only while the wo
 4. **The fade at the door:** 0.3 s (recommended), or an instant step through.
 5. **`VillageMap.cs`:** bending the glide to the door touches `DrawnTile`/`DrawnCentre` there (the systems lane's file) —
    his OK to edit it, as A130's *"B, all as recommended"* gave for the animations.
+
+**✅ Answered (A139):** *"1. Smoke B please. 2. okay 3. okay 4. instant 5. permission granted"* — **B** (not C, the recommendation: his eye over the mock's measure; B was darkened once more
+in the build, `#b0a89e` with a `#787068` pooled edge), the school's chimney, the forge and the batch trades indoors, **no
+fade** (gone on reaching the door), and `VillageMap.cs`.
+
+## 7. ✅ As built (A139)
+
+- **`VillageMap.Indoors.cs`** — `Indoors(state, housed, inADooredBuilding)`: at school and teaching always; resting with a
+  house (A133); warming by a fire (*SeekingShelter*), *Forging* and *WorkingABatch* once inside a building with a door.
+  `ShownOnTheMap` (drawing and the click test, one answer) hides them **once their glide is within 0.15 tiles of the door**
+  (`AtTheDoorAlready` — call 4, no slow last shuffle). `AtTheDoor` draws anyone on a doored building's tile **at its door**,
+  feet on the step: the painted step (kept per door tile as each roof is laid, `_paintedSteps`, dropped with the roof),
+  or before the roof is laid the middle of the door's wall, just outside (`DoorWallOf`). A fisher stays at the water
+  (piece (b)'s). The dots (tick off) unchanged.
+- **`VillageMap.cs`** (his OK, call 5) — `DrawnTile` bends both ends of the glide through `AtTheDoor`; `AdvanceInterpolation`
+  notes the fires once a tick (`NoteTheFires`); the home and workplace painters pass `burning`.
+- **`VillageMap.Smoke.cs`** — `PuffAt`: six puffs a chimney, a 4 s life on the people's clock (capped 1.5×, still when
+  paused), rising 1.6 tiles, drifting 0.65 down the wind, 0.1 → 0.42 tiles across, each chimney at its own phase;
+  `SmokeOn` lights and puts out over a second, held while paused; one puff painted once (a wash with a pooled edge).
+  **True to the sim:** `HearthBurns` (a home: winter, lived in, firewood in the larder); the school (winter, staffed, wood in
+  its store); a smith *Forging* (`firewood_per_tool` > 0); a batch trade at work whose batch is fired (the oven).
+- **`VillageMap.Roofs.cs`** — each cached roof keeps its flues (`FluesOf`: the chimney's dark mouth) and its smoke level;
+  **the school has a chimney** (call 2).
+- **Seen in a render of his Ravenscar** (`year-13.save` run into the snow): smoke over all three houses, swelling and
+  thinning down the wind; a woman walking home up the path stops with her feet on the painted step and is gone.
+- **Probe `indoors and smoke:`** (appended to `painted villagers:`): who is indoors and when, the door's wall, reached
+  within a step, a home smoking only in winter, lived in, with firewood; on and off over a second and held while paused;
+  a puff rising and swelling from nothing; two chimneys out of step; flues 1 / 1 / 2 / 0 (smithy, school, manor,
+  forager's hut). **Red-check: 12 mutants, 8 red.** ⚠️ **Four score zero, written down:** the fisher kept off the hut's door, the forge's fire (`NoteTheFires`), the glide bent to the door, and the painted step kept — each needs a living village, which the probe's new game does not have; the last two were seen working in the render of his save, the first two were not.

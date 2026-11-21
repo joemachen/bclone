@@ -203,7 +203,7 @@ and the rest). Each will need world art, a glyph and its own construction/ruin s
 | **Trading boat** | 6-point hull `#7a5636`, triangle sail `#efe6d2` (`VillageMap.Boat.cs:13–15`, `:68–88`) | Arriving / docked / leaving (built) | B4 | 🟨 |
 | Fishing boats | ⬜ | — | — | ⬜ |
 | Overland caravan, cart road | ⬜ | — | blocked on carts (`trade.md §4.7`) | 💭 |
-| Smoke, fire, chimney | ⬜ — none anywhere | Per working building, winter hearths | B11 | ⬜ |
+| Smoke, fire, chimney | 🔨 **built (A139, `indoors-and-smoke.md`)** — watercolour puffs from painted chimneys while firewood burns: homes and the school in winter, the forge, the oven | Forge glow, oven light | B11 | 🔨 |
 | Tools on the ground | ⬜ | — | — | 💭 |
 | **The handcart** (Slice H, `handcart.md §8`) | ✅ placeholder: `HandcartColour` `#6b8a94` three ways — a chip beside the home in the heap chips' geometry with its axle across it when parked (`VillageMap.DrawParkedCarts`), a small rectangle trailing the pushing villager's dot against their heading (`DrawTheCartBehind`), a crate in the warehouse like any good | A drawn cart: wheels, a bed, a load | B1, B2 | 🟨 |
 | Doorsteps and the plaza | Drawn by the trail network (D605) | — | B6 | 🟨 |
