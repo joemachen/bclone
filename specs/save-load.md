@@ -213,6 +213,13 @@ Every refusal and problem is also written to the audit log (METHODOLOGY §4). No
   (`SaveReader` / `SaveWriter`, every value spelled in one place; `SaveFormatException` for damage,
   `SaveDataException` for a sound save over changed data). ⚠️ A good is saved by its **id**, never its
   enum name: a modder's good has an id and no name.
+- ⭐ **`SaveFile.ReadHeader` — the load list's read — reads the head of the file only** (D805,
+  `title-and-pause.md §5.2`): the first `HeadBytes` (4 KB) inflated, the top-level members up to `"world"`,
+  through `SaveGame.HeaderOf` as before. Reading the whole village to list it cost Joe's 439 saves 1.8 s and froze
+  the pause screen; the head costs 40 ms. **A head that does not reach `"world"`, will not read, or does not make a
+  header is read whole** — today's path — so every refusal the list shows is unchanged. ⚠️ A save whose JSON
+  breaks *after* its header (cut short) lists as openable and is refused by `Open` when picked (kept as `.bad`,
+  §7); one with a wrong value in its village always did.
 - **Each class saves itself** — `ToSave` / `FromSave` (or `ReadSave` into a fresh one) beside its fields,
   so the field and its line in the save are read together. **`SimWorld`** holds the rest: an `internal`
   `CaptureTheVillage`, an `internal static Restore`, and the constructor's one new argument — given a save,
@@ -295,6 +302,7 @@ and fails on any field not in its table (*Saved*, *Rebuilt* — compared too, so
 | `cottage_learned`, `manor_learned`, `homes_built_as` (the world) and `rebuilds_home` (a site) — house tiers piece 3 (D721); the format left at 13 | 1 each (the field guard by name) | `HouseTierTests.TheLatchesAndTheChoiceAreSavedAndHashedOnlyWhenSet` and `ARebuildIsSavedAndHashed`: read back, hash to hash; `EveryFieldIsSavedOrNamed` named the four and the two derived caches (red until it did) |
 | `rebuilds_older_homes` (the world, written only when off) and `keeps_its_house` (a household, only when on) — house tiers piece 5 (D723); the format left at 13, and a save without them reads the defaults, so a piece-4 save loads | 1 each | `HouseTierTests.TheSwitchesAreSavedAndHashedOnlyOffTheirDefaults`: read back, hash to hash, and the keys stripped from a save read as the defaults; `EveryFieldIsSavedOrNamed` names the two |
 | `generation` (a villager's generation in the valley, `house-tiers.md §14.1`, D719); the format 12 → 13 | 1 + 1 | `HouseTierTests.TheGenerationIsSavedAndNotHashed` (read back, and ⛔ deliberately unhashed — the gap asserted) and `EverySavedFieldComesBackAsItWas` (8 poses red with it dropped); `AFormatTwelveSaveIsRefused` |
+| Contentment's tallies — a villager's `cold_days_this_winter`, `last_cold_day`, `cold_winter_held_until`, `commute_tiles`, `contentment_causes`, `seasons_unsettled`; a household's `fire_out_held_until`, `dry_days_this_season` (`morale.md §13` step 2, D801) — and **`left_at`**, the tick a villager left the valley (step 5, D806); each written only when set; the format left at 13 (a save without them reads as nobody unsettled and nobody gone) | 1 each | `ContentmentTests.TheTalliesAreSaved` and `LeavingIsSavedAndHashed` (read back, hash to hash, the left tick itself moving the hash); `EveryFieldIsSavedOrNamed` named `LeftAtTick` (red until it did) |
 ⭐ **The run-on year alone would have missed seven of the twelve dropped fields**, and §4's own hash guard would have
 missed all but two. The field guard is the one this feature rests on, as §9.4 said it would be.
 

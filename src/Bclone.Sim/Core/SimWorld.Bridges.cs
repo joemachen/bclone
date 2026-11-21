@@ -544,9 +544,10 @@ public sealed partial class SimWorld
                 ulong arrived = v.ArrivedAtTick != 0UL ? v.ArrivedAtTick
                     : v.Founder || v.BirthTick < 0 ? 0UL : (ulong)v.BirthTick;
                 events.Add((arrived, +1));
-                if (v.DiedAtTick is ulong died)
+                // Gone either way — died, or left the valley (W2 step 5): a leaver is out of the count from the tick they went.
+                if (v.GoneAtTick is ulong gone)
                 {
-                    events.Add((died, -1));
+                    events.Add((gone, -1));
                 }
             }
 

@@ -1,5 +1,134 @@
 # Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS, W2 (MORALE). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/morale` — W2, MORALE (2026-11-19, Joe: *"start morale on its own slice in a new nested session. but i want to
+> weigh the pros and cons between it being "morale," "health," or "happiness.""*). The name first, put to him; then
+> `specs/morale.md` (D207) re-read against today's code, spec first, his calls, then the code.**
+> **📝 THE WORD IS *CONTENTMENT*, HEALTH A SEPARATE SYSTEM, ONE CAUSE ONE SYSTEM (D797, Joe: *"Yes keep both"*), and his
+> cause: the dead with nowhere to lie once the cemetery is learnable (W4). ⏸️ SIX CALLS HIS, `morale.md §10`. Nothing built.**
+> **✅ ALL SIX AS RECOMMENDED (D798, *"All as recommended"*): pillar §2.8; a single adult leaves alone, a couple when both
+> are unsettled, with their children; warned a year, gone after two; twice the birth interval; off the map; the dry jar
+> contentment's. ▶️ STEP 1 OF SIX (`morale.md §13`): `ZzContentment`, the causes measured before a number is typed.**
+> **📏 STEP 1 MEASURED (D799, `morale.md §13.1`): TWO CAUSES HELD AT ONCE FOR TWO YEARS — 4 of his 120 adults leave in ten
+> years, all Hollowmere. ⏸️ FIVE CALLS HIS (`morale.md §14`): the line, the walk from 24 tiles, a cold winter at six
+> get-warm days, the jar at three dry days, the cabin out of W2 (a roof counts, the tier does not). Then step 2.**
+> **✅ ALL FIVE AS RECOMMENDED (D800, *"all as recommended"*). ▶️ STEP 2: the causes as rows, the season's read.**
+> **✅ STEP 2 BUILT (D801): `contentment_causes`, `ContentmentSystem` (14th in the order), the tallies saved and NOT hashed;
+> no golden moved. Suite 2133 / 0 / 5 of 2138 in 15m36; probe bar 183 everywhere, tile centres ✅, new game ✅, 0 ⛔, done.. ▶️ STEP 3: the card's Content / Unsettled pill and its sentence.**
+> **✅ STEP 3 BUILT (D802, Joe: *"Go on"*): a person's NEEDS reads *Content* / *Unsettled* (amber, adults only), the
+> sentence `SimWorld.ContentmentNoteFor` its tooltip; *Happiness* off "Not here yet". No golden moved. Suite 2138 / 0 / 5 of 2143 in 16m01;
+> probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅, done.. ▶️ STEP 4: fewer children — an unsettled couple waits twice the interval; the goldens move.**
+> **✅ STEP 4 BUILT (D804, Joe: *"Go on"*): `contentment_birth_interval_percent` 200 — either partner unsettled doubles the
+> wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
+> re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
+> a child). ▶️ STEP 5: leaving.**
+> **✅ STEP 5b BUILT (D809, Joe: *"5b, the walk out"*) — W2 IS BUILT.** `main` merged into the slice first (`93db715`: the
+> animations, indoors, smoke), re-imported. Leavers walk the sim's own routes from where each stood to their household's
+> edge, the chevron above, fading over the last second; view only, no hold (`VillageMap.WalkOut.cs`). Suite 2173 / 0 / 5 of 2178 in 20m49 (twelve view mutant builds and probes ran beside it; no sim code changed);
+> probe 173 lines, 134 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, walk out ✅, done.. ⏸️ JOE PLAYS W2 against `morale.md §15`.**
+> - **⛔ TRAP (D809): someone gone from the sim is skipped by every `Alive` loop in the view — the draw, the click, and
+>   the prune that forgets their motion.** A leaver drawn without being added to the frame's `stillAlive` loses their
+>   walk's bookkeeping every frame (`_walked`, `_lastPersonKey`, `_tiles` are pruned by it) and slides in one pose. The
+>   walk out adds them there (`AddTheLeavers`); anything new drawn for the not-alive must do the same.
+> - **⛔ TRAP (D809): a probe that poses a LIVING person as the thing it guards never touches the not-alive path.** The
+>   first `walk out:` line was green and never asked how a real leaver is drawn; a villager made gone and put back is
+>   what scores the draw, the keep and the click. ⚠️ The shell's watch's own call scores ZERO headless: the probe's
+>   world is new, at tick 0, and a departure is stamped before the tick a look sees. Joe's play is its check. And a
+>   pose on a tile's exact centre cannot tell 'from where they stood' from 'from the tile' — pose off it.
+> **✅ STEP 6 BUILT (D808, Joe: *"Step 6 first"*): the anti-vacuity pair and the gate's golden.** A village that ignores
+> contentment loses people (`AVillageThatIgnoresContentmentLosesPeople`, 4 adults in 12 valleys by Year 15); a kept one
+> loses nobody with a roof (`AKeptVillageLosesNobodyItKeeps`, fifty years); `TheGoldenThatSeesADeparture` (seed 9, Year
+> 15). The fire-out cause needs a fire to keep. Suite 2173 / 0 / 5 of 2178 in 20m23 (+3m35 against D807: the art lane's suite ran in its worktree from 23:17, over the last part of this one; the three new guards cost ~18 s alone); probe 170 lines, 131 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅, log trim ✅, done.. ⏸️ LEFT OF W2: 5b (the walk out),
+> then JOE'S PLAY against `morale.md §15`.**
+> - **⛔ TRAP (D808): a no-house pose is a death test, not a contentment one.** Timber past reach, all twelve villages
+>   froze out within 25 years and nobody left: no roof is one cause, and the cold kills before two causes held two years
+>   can add up. Neglect a contentment guard with causes people survive (the dry jar, the cold winter held).
+> - **⛔ TRAP (D808): read what a fixture's people actually HOLD before writing why.** D806 wrote Phase 0 left for *"no
+>   roof and no firewood"*; it has a roof — it held the fire out (no fuel at all) and a dry jar. One measured line
+>   (`ZzLeaving`'s Phase-0 dump) would have said so; the commit said otherwise, and the cause with no lever went unseen.
+> **✅ JOE'S P0, THE VILLAGE LOG'S CRASH (D807, its own commit on this slice; his play notes, relayed by the art lane with
+> his *"All of that yes"*).** `Main.AppendNewLogLines` trimmed at 800 WRAPPED lines and kept 400 ENTRIES; entries that
+> wrap three a line are 1,200 lines, so it trimmed again every frame — `Clear()` + 400 entries re-parsed, ~30 ms a
+> refresh — and his Ravenscar died in one of those `Clear()`s after an hour and a half of it. Counts paragraphs now (one
+> an entry). Suite 2169 / 0 / 5 of 2174 in 16m48; probe 170 lines, 131 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, log trim ✅, done.. ⏸️ Joe plays it.
+> - **⛔ TRAP (D807): `RichTextLabel.GetLineCount()` counts WRAPPED lines, so it depends on the panel's width.** A limit
+>   in wrapped lines against a trim that keeps entries can sit permanently over itself. Count entries
+>   (`GetParagraphCount()`) for anything kept or trimmed — and a trim must leave the count well under what trips it.
+> - **⛔ TRAP (D807): a frame log's steady `refresh` floor is a per-frame rebuild until shown otherwise.** Joe's
+>   `refresh` sat at ~30 ms from tick ~1,500 for an hour and a half before the crash, and nothing reported it: the
+>   long-frame lines were there the whole time. A throwaway stress through the game's own refresh found it in one run.
+> - **⚠️ 2026-11-21, the art lane measured the same loop in his *lark-tansy* Year 33 (his "18 fps"), from the art folder
+>   on `main`, which D807 has not reached:** with the Village log window **collapsed**, the label is 1 px wide, every
+>   word wraps to its own line, and **15 entries already counted past 800**. So the loop starts within minutes of
+>   loading, not after 400 entries. `refresh` climbs 1 → 35 → 50–70 ms a frame as the log fills: 2,100 trims in
+>   ~3,000 frames. D807's paragraph count doesn't depend on width, so the fix covers it; no new guard, because the
+>   mutant that puts `GetLineCount()` back already reds `log trim:`. **His 18 fps stays until `slice/morale` merges**,
+>   or until he plays from the main checkout, which is on this slice.
+> **✅ STEP 5a BUILT (D806, Joe: *"No, go on to step 5"* — the first child does not wait, as built): warned after a year
+> unsettled (one `Warning` line, the card's *thinking of leaving*), gone after two at a season's turn — a couple only when
+> both are ready, the children with a couple or the last adult; `VillagerState.Left`, `LeftAtTick`, `GoneAtTick` for the
+> peak, the emptying and the tribute; one `Life` line a party. Format stays 13. No village golden moved.
+> Suite 2169 / 0 / 5 of 2174 in 16m42; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (a year unsettled says thinking of leaving), done.. ▶️ 5b, THE WALK OUT — ⏸️ ITS ORDER JOE'S (it draws through the art lane's people code).**
+> - **⛔ TRAP (D806): `VillageFixtures.Village` is built on `Phase0Fixtures.Plenty`.** A system switched off for the village
+>   of one must be switched back on in `Village` with the shipped value, or every village test silently runs without it —
+>   leaving off in `Plenty` turned seven contentment tests red and would have left the rest green and blind.
+> - **⛔ TRAP (D806): Phase 0's village of one holds two contentment causes every season by construction** (no roof to offer,
+>   no firewood at all), so any contentment effect bites it at once: it walked out at four in 16 lifetime guards. A new
+>   effect is switched off in `Plenty` with that reason, as wear, nomads and re-founding are.
+> - **⛔ TRAP (D806): a test of one effect must switch the other off.** `AnUnsettledVillageHasFewerChildren` (everyone
+>   unsettled forty years) went 14 = 14 the day leaving landed — both villages had emptied, and the wait had nobody left
+>   to act on.
+> **✅ THE PAUSE SCREEN'S HITCH (D805, its own commit on this slice — CLAUDE.md: a bug Joe finds while a slice is open goes
+> on it; built by a side session at his ask, *"pass the pause-screen hitch to the systems track - as a new session"*).**
+> Esc read every save on disk whole to fill *Load…* (439 saves, 830 ms frames). Now *Load…* reads the list as its popup
+> opens, and `SaveFile.ReadHeader` reads each save's first 4 KB up to `"world"` (whole-file fallback, so every refusal is
+> as before): 44–62 ms on his saves. Suite 2158 / 0 / 5 of 2163 in 17m15; probe clean, bar 183. ⏸️ Joe plays it (the ⏸️ OPEN item). Morale untouched.
+> - **⛔ TRAP (D805): a frame log's `other` bucket is the shell, and a burst of per-save lines before it names the culprit.**
+>   `long: 831ms … other 828.1 · gc0 136` came straight after one `format N, where this build reads 13` line per save —
+>   the list being read. Godot keeps five `godot*.log` files and the probe writes one per run: **copy Joe's log the moment
+>   he reports a hitch**, or a few probe runs push it off the disk (the 14:57 one was gone by 15:18, measured from a copy
+>   of his saves instead).
+> - **⛔ TRAP (D805): the load list must never read a village to name it.** `ReadHeader` gunzipped and parsed the whole
+>   save for six fields; a player who keeps saves makes every list a stall. Anything listing saves goes through
+>   `ReadHeader` (the head) and is read when the list is opened, not when the screen holding it is.
+> - **⛔ TRAP (D804): a whole-village effect test needs a village that GROWS.** The shipped seed 201, unattended, bred 4
+>   children in thirty years with the longer wait and 4 without — nobody reached a second child. The fixture's three
+>   households breed six-plus in forty (`BirthdayTests`); with everyone unsettled, 13 against 19.
+> - **⛔ TRAP (D804): a mutant or ablation patch that leaves a parameter unused does not compile** (`IDE0060` is an error
+>   here), and the script reads BUILD FAILED, not a verdict. Patch in a way that still reads every parameter
+>   (`value == 0 || tag != 0 ? hash : …`).
+> - **⛔ TRAP (D804): `WoodTests.TimberGatesGrowthWithoutStoppingIt` is a coin on its seed, and contentment flipped it**
+>   (seed 9's gated village died: 11 born against 30). Re-posed on seed 12 by its own rule; when it goes dead again,
+>   run `tools/harness/ZzTimberSeeds.cs` and pick by the table, never by trying seeds until one passes.
+> - **⛔ TRAP (D804): a golden is a snapshot of the LAST tick, so it cannot vouch for a field that is 0 there.** With
+>   `SeasonsUnsettled` dropped from the hash all eight goldens stayed green — nobody was unsettled when the runs ended.
+>   A newly hashed field gets its own guard (`EveryContentmentFieldIsHashed`: set it on a posed world, the hash moves).
+> - **⛔ TRAP (D802): a tie-break test whose cases sit in the list's own order cannot see the tie-break.** The grief
+>   sentence names the *latest* death; the test's two deaths died in list order, so "the first found" gave the same
+>   name and the mutant that dropped *latest* came back green. Put the cases AGAINST the list order, then red-check.
+> - **Merged `main` (b65f391, the crop-field paths A126–A128) into `slice/morale` at the coordinator's ask, between steps:
+>   `d0c6060`; DESIGN §7's two appended tails conflicted and both were kept. Re-imported per trap 56; probe clean after.**
+> - **⛔ TRAP (2026-11-20): `--import` in the main checkout exits 139 (segfault) and that alone says nothing.** The first run
+>   died mid-reimport (on a font) and left a `.tmp` in `.godot/imported`; a second run said `[ DONE ]`, then segfaulted on
+>   quit — the usual headless exit. Run it until a run has nothing to reimport. Then tidy BY LIST: 66 untracked `.uid` files
+>   (`git ls-files --others --exclude-standard`), and ~220 tracked `.import` files rewritten LF-for-CRLF only — prove it with
+>   `git diff --ignore-cr-at-eol --stat` (empty), then `git checkout -f --pathspec-from-file=<the list>`.
+> - **⛔ TRAP (D801): a mutant script that reads `dotnet test -v q` sees no test names, and scores every mutant GREEN.**
+>   Fourteen of fourteen came back green with an empty failure list; the guards were fine, the instrument was blind. Pass
+>   `--logger "console;verbosity=normal"`, assert the test count, and red-check the script on ONE mutant first. And a
+>   restore that searches for the mutant's text must find it exactly once — check `count(new) == 0` before applying, or
+>   the restore fails and leaves the break in the tree (it did, once: `HearthSystem` was put back by hand and verified).
+> - **⛔ TRAP (D799): `CommuteNote` is not "a long walk" — it fires past the old forage ring (8 tiles), which 64 % of
+>   Joe's adults are.** Any system that reads it as a hardship reads his ordinary village as miserable. Measure the tiles.
+> - Joe's saves for a harness: `%APPDATA%/Godot/app_userdata/bclone/saves/`, copied first; the format-8 ones are refused.
+> - ✅ **Paid on this slice:** the shell's *"Not here yet"* rows (`Main.cs`, `NotYetInTheValley`) — *Happiness* gone with the
+>   card (D802), the stale *Students* and *Clothes* (D769, D667) in their own commit (D803). *(Read "Owed on this slice" until D803.)*
+> - **⛔ TRAP (D797): a list whose comment says *"Delete a row when it ships"* is a list nobody deletes from.** Two slices
+>   shipped (the school, the coat) and left their rows promising *"no school"* to the player. When a system ships,
+>   grep `NotYetInTheValley` as part of its view step.
+> - ⚠️ The untracked `Archivo_Narrow/` in the main checkout is **deleted at Joe's word** (2026-11-20, *"No, delete it"*,
+>   done by the coordinator session; the game's own copies under `src/Bclone.Game/fonts/ArchivoNarrow/` untouched) — do
+>   not restore it. *(Read "missing at the claim commit and back by D797's — never stage or delete it" until D802.)*
+>
 > **⭐ W1 MERGED INTO `main` AND PUSHED AT HIS WORD (D796, 2026-11-18, *"Merge and push"*) — `6967479`, no conflict;
 > `slice/batch-trade` deleted. NO BRANCH OPEN BUT `art`. ⏸️ HIS PLAY OF A VILLAGE WITH ALL FOUR HUTS. ▶️ NEXT FOR SYSTEMS:
 > W2, MORALE (`systems-complete.md §5.1`), ON ITS OWN `slice/`, SPEC FIRST.** On the merged tree: suite 2119 / 0 / 5 of 2124 in 17m20;
@@ -10613,6 +10742,52 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
+  log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing
+  people no longer alive through `VillageMap.People.cs` / `PersonPainter.cs`. ✅ *The villager animations those files
+  carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
+  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); ✅ **Joe, 2026-11-21: *"5b, the walk out"*** — ✅ 5b
+  built (D809), `main` merged in first. ✅ **Played, 2026-11-21: *"yep they walked away and faded"*** — on a posed save of his
+  Larkspur (Year 22: the Masons, a couple, held two years by a cold winter and the fire out, 40 ticks before a turn;
+  `saves/larkspur-heron-flax-99/test-leaving-next-season.save`, and `test-warned-next-season.save` for the warning; built by
+  a throwaway harness, each re-opened and played past the turn first). **⏸️ Left: the slice's merge at his word** — `main`
+  has moved since (art A141–A144), so the merge meets `VillageMap.People.cs` (the cloak dye beside the walk-out hooks).
+  **His first play, 2026-11-21: *"its actually hard to make people leave haha i didnt get it done in my last save"*.** His
+  `larkspur-heron-flax-99`, read: at autosave-3 (tick 16,320, 30 alive) he had set **woodcutters, foresters and foragers to
+  0**. Only Penret Croft was ready to leave (8 seasons, the cold winter and the fire out), and Penret was held by a
+  partner who was not unsettled, which is checklist item 5 working as built. **All 30 then died of the cold within 25
+  ticks** (autosave-2, tick 16,800). Nobody left. **The neglect killed before it unsettled**: the same thing D808 found
+  with the no-house pose. ⏸️ **His to call (a design tension, not a bug):** whether people who are freezing should leave
+  before they die rather than after two years. And for now, whether to see 5b with the leaving keys shortened for a
+  test play (`data/sim.config.json`: `contentment_thinking_of_leaving_seasons` 4 → 1, `contentment_leaving_seasons`
+  8 → 2, put back after).
+
+- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
+  yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
+  (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
+  spare hands…"* into a tooltip on *Laborers: n*, beside *Able adults: n*; (4) the village roster's sort headers jump and
+  shift the panel; (5) the top bar drops the labourer count (it is in Professions) — maybe children / in school once
+  schools are the player's; (6) the tech tree renamed **Lore** — the words he sees, ⚠️ not the JSON keys or save fields
+  (renaming those breaks old saves and mods; he answered the art lane's recommendation *"All of that yes"*). The first
+  commit for each claims it here.
+  **(7), 2026-11-21, relayed by the art lane: nothing built on steep ground.** Joe, with a screenshot of a site on a ridge
+  at the valley's east edge: *"Shouldnt be able to build buildings or put things like farm fields or livestock fields on
+  the edge/peak of a hill/mountain - right or wrong?"* The art lane proposed refusing any building, field or pasture whose
+  footprint touches a **Steep** tile (`SimWorld.SlopeAt`, D735), allowing gentle, with the refusal *"too steep to build
+  on"*. Joe: *"Yes, as proposed"*. It reverses `heights.md §2`'s *"out unless he asks"*: he has asked. **Where it lands
+  (read, not built):** placement never asks about slope today; the checks are `CanBuildAt` (×2), `CanPaintResidential`
+  and `CanPaintWorkGround` in `SimWorld.cs`, and perhaps `CanBridge`'s banks. Harvest and destroy zones are not
+  building and stay as they are. **To settle when it is built:** what already stands on steep ground in his saves
+  (refuse new placements only, never knock down what is there); the founding ring (smoothed, so expected safe; a guard
+  says so); and his ridge first. It may be the valley's drawn edge rather than steep tiles, so hover *What's here*
+  there or read his save. Expect goldens to need a look only if a harness places on steep ground. Unclaimed; his order
+  with the other six.
+
+- ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
+  SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,
+  no freeze and no villagers popping in**; *Load…* opens its list (it reads his saves as it opens — a blink, not
+  seconds) and lists the save he just made; old-format saves still greyed. A save cut short now lists and is refused
+  in words when picked (`title-and-pause.md §5.2`).
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE.** Recorded so they outlive the chat
   (A136). Each is a piece of its own; the first commit on a branch claims it here. **✅ Answered (A137), Joe: *"All of that
   yes"*** — the crash and the six systems asks sent to the morale session (`slice/morale`); *Lore* is the words he sees,
@@ -10699,7 +10874,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **✅ MERGED INTO `main` AND PUSHED (A107, *"Merge and push"*) — THE UI'S IMAGE ASSETS IN PHOTOSHOP: ALL FOUR PHASES DONE (A104) — 169 files in `src/Bclone.Game/textures/ui/` (chrome 12, controls 37, icons 113, screens 7; `D:\Projects\brushes\ui\phase4_title.jpg`, `phase4_screens.jpg`); ✅ HE APPROVED THEM (A105, *"Yes, it's done"*); merged after water, as he said (A107); ⏸️ NEXT, wiring them in — PLANNED (A108, `ui-art.md §9`), WAITS ON THE ESTABLISHED-DATE SLICE (it edits `Main.Cards.cs`; Joe: *"add the established line / then hook in the UI and villagers"*); his four calls answered, all as recommended (A109, §9.4); 🔨 BEING BUILT on `art` since Joe's *"UI hook-in can start now"* — step 1, the seam, done (A110, `UiLook.cs`, probe `ui theme:`); step 2, the painted icons, done (A111, `UiIcons.cs`, probe `ui icons:`) — ✅ his two calls answered (A112, *"Yes to both"*): the bar's guard 177, the top bar's goods at 10 px; step 3, the parchment look, done (A113, *"A, frames add width"*; `ParchmentLook.cs`, `LookLoader.cs`, probes `ui contrast:` and `bars:`). ✂️ THE SCROLLS REMOVED (A114, Joe: *"i hate the scrolls. keep the parchment and remove the scrolls"*): the sheets repainted without rolls, the scroll pieces retired, the roll-up dropped; the scrollbar's grabber and the fold controls painted plain too (A115, *"Yes, plain grabber"*); 🖋️ every sheet's edge inked like his reference (A116), the text inks darkened to 5 : 1 on the painted paper; 📜 the paper weathered like it too (A117, *"i want that too"*), the inks darkened again for the stains — his darkening under the words left out, for legibility; 🖋️ no grey margin, a near-black muddled ink edge (A118); 🔤 his font Archivo Narrow SemiBold, the bar's guard 173, the folded windows' smear fixed (A119); 🔤 then his pair, Metamorphous for headers (and the bar's main row) and Grenze Gotisch for the rest, the bar's guard 183 (A120) — the column heads in Metamorphous too (A121, *"Yes, headers"*). ✅ APPROVED (A122, *"approved"*); ⭐ MERGED INTO `main` AND PUSHED (A123, *"Merge and push"*). Next on `art`: the glyph buttons' painted controls, the screens, his play. Next on `art`: the glyph buttons' painted controls, fonts (his title face from a render), screens (on the plain sheets) (the seam: `Main.cs`/`Main.Cards.cs` are the systems lane's, A97), each set with its probe line. Still his: the app icon (waits on the name). The six spec rows and the owed mark answered (A106: all yes, a medallion on the building); the school's and the teacher's colour the systems lane's line.** *(A103:)* Phase 3 done — all 113 icons in `src/Bclone.Game/textures/ui/icons/` (`D:\Projects\brushes\ui\phase3_goods.png`, `_buildings`, `_trades`, `_tools`, `_time`); ⏸️ HIS OK, THEN PHASE 4 (the screens, skipping what waits on the name); the owed ring or a corner medallion his to choose; the school's and the teacher's colour still the systems lane's line.** *(A102:)* Phase 2 done — all 49 chrome and control files in `src/Bclone.Game/textures/ui/` (`D:\Projects\brushes\ui\phase2_stretch.jpg`, `phase2_stretch_controls.jpg`, `phase2_controls.jpg`); ⏸️ HIS OK, THEN PHASE 3 (the icons, set by set, at 20 logical), and SIX spec rows the hung scroll changes (`window`, `roll`, `modal`, the Parchment hex, `checkbox`, `pill`). NOTHING WIRED; the set's probe line is owed at wiring.** *(A101:)* He picked 2, the hung scroll, with thinner edges — repainted (`D:\Projects\brushes\ui\a101_hung_scroll.jpg`, `a101_before_after.jpg`); icons raised to 20 logical px in `ui-assets.md`. ⏸️ HIS OK ON THE THINNER EDGES, THEN PHASE 2 (chrome and controls, each 9-patch at three sizes), and four spec rows the hung scroll makes wrong (`window`, `roll`, `modal`, the Parchment hex).** *(A100:)* Phase 1 done — three directions over his game (`D:\Projects\brushes\ui\phase1_options.jpg`); 1 parchment sheet, 2 hung scroll, 3 walnut board. *(A99:)* (A99, 2026-11-15): the look REOPENED (Joe hates A97's scrolls); `ui-assets.md`'s inventory followed exactly; phases with his OK at each; Phase 0 (the pipeline) proven. ⏸️ Phase 1 waits on his references in `D:\Projects\brushes\ui\refs\`, his few words on the look, and any brushes or paper/ink scans to use.** *(Below, A97's line as it stood:)* THE UI AS MANUSCRIPT SCROLLS (A97, 2026-11-15; A96 before it). Joe answered A96: scrolls with watercolour of their own, rolled up to close; his `fonts/` folder; the art lane makes the `Main.cs` change after water merges; the name is a placeholder. Remocked — `specs/ui-art.md §8`; sheets `D:\Projects\brushes\ui\scroll_options.jpg`, `scroll_closeup.jpg`, `scroll_winter.jpg`, `scroll_log.jpg`, `scroll_titles.jpg`, and the animation `scroll_rollup.gif`. NOTHING BUILT. Three calls his:** (1) **titles in Metamorphous (the banner's capitals) or Eagle Lake (the calligraphic hand)** — recommended Metamorphous; (2) **the roll-up as mocked** — about two-thirds of a second, folding keeps the title, closing winds it away and fades; (3) **the scrolls cost room** — each window about 40 px taller for its rolls, columns about a tenth wider for the bigger text; recommended accept it, with the UI-size setting the way to win it back (the alternative: thinner rolls, today's text size). *(A96's line, kept:)* THE UI, THE PARCHMENT-AND-WOOD INTERFACE (A96, 2026-11-15; Joe's order, A90). `specs/ui-art.md`; sheets `D:\Projects\brushes\ui\ui_options.jpg`, `ui_closeup.jpg`, `ui_winter.jpg`, `ui_young.jpg`, `ui_bar.jpg`, `ui_titles.jpg` — your own Hollowmere and Ashbourne, the game's real panels, dressed three ways. NOTHING BUILT. Four calls his:** (1) **which look** — A parchment leaves like your 13 November concept (recommended), B parchment in an oak frame, or C dark leather and gilt (today's dark kept); (2) **may the art lane use your `fonts/` folder** — recommended yes: a plain book face for everything you read, one display face for titles only; (3) **the panels' colours are written into `Main.cs` and `Main.Cards.cs` (the systems lane's files)**, so whichever look needs one change there that moves them into the theme, changing nothing you see by itself — recommended: the art lane makes it, after water merges; (4) **the style frame's extras** (the seal as a logo, a round minimap with a compass, ribbon titles) — recommended later, as their own piece.
 - ⏸️ **✅ MERGED INTO `main` AT JOE'S WORD (A94, *"Played it, merge"*, c269441) AND PUSHED (A95, *"Push it"*) — THE VILLAGERS (A93: E, people standing up in the manner of illuminated manuscripts, at his *"Yes, build E"*; `villager-art.md §8`; renders `D:\Projects\brushes\villagers\built_people.jpg`). The teacher's colour in `TradeGlyph.cs` is the systems lane's one line.** The history (A90, 2026-11-15, `specs/villager-art.md`), **Joe's next art piece: *"i want to work on villagers for the next art piece. And then the UI"* — the lane's order: the villagers, then the parchment-and-wood interface.** Every villager is a dot coloured only by age; the job, the load, the coat and the state are in the sim and nowhere on the map. **Mocked on copies of his saves** (Hollowmere Years 63 and 85, Ashbourne Year 20; `D:\Projects\brushes\villagers\villagers_options.jpg`, `villagers_catalogue.jpg`, `villagers_design.jpg`): **A** a painted token, **B** a painted figure from above in trade colours (hat, tool, load, coat), **C** the same in homespun as the concept's lineup. Trade pairs that look alike at the middle zoom: today 171 of 171, A 5, B 4, C 34. **Joe rejected all three (*"i hate all of those. make them look like actual people."*) — remocked as D, people standing up as in his lineup sheet (A91, `villager-art.md §3a`; `people_options.jpg`, `people_closeup.jpg`, `people_large.jpg`); Then *"you're heading in the right direction, now let's incorporate a little flavour from some real life examples"* (seven manuscript pages) — **E, D with the illuminations' gowns, pigments, ink folds, coifs, hoods and curls** (A92, `villager-art.md §3b`; `illum_options.jpg`, `illum_closeup.jpg`, `illum_large.jpg`). ⏸️ his calls now §6a: D or E, standing people on the top-down map, 0.72 of a tile tall, plus calls 3 and 4 below.** Calls on A–C (§6), each recommended: (1) B; (2) a third bigger than today's dot; (3) people indoors not drawn on the roof; (4) the teacher the library's blue, deepened. Nothing built. **And his running list** (*"take note of the systems work being done and all of the buildings and art pieces that will have to be created for that"*) is `art-inventory.md §15`, in D750's order, kept current from each systems spec's art section (D774).
 - ✅ **SYSTEMS COMPLETE — PLACED AS RECOMMENDED (D776, *"All as recommended"*): the exit gate's item 7, the review after water,
-  the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** **🔨 being built on `slice/systems-complete` (2026-11-16) — the review and its workplan, `specs/systems-complete.md`; docs only.** **📝 WRITTEN (D788): ⏸️ TEN CALLS JOE'S, `systems-complete.md §6`, each with a recommendation — (1) the cut line: Phase 6 means the *systems* (morale, health, drought, fire and blight, paving, the cemetery, the wool coat, the caravan, the hall's tabs), the variety of crops, animals and workshops is Phase 7's; (2) the mason's yard node kept as a horizon; (3) warm clothing in; (4) the caravan in; (5) paving in; (6) the cemetery in; (7) the Shining Rock a monument with no effect, the fountain in, the bell parked; (8) the named-villager lock, kitchen garden, ox cart, five extra unlock routes out, full settings and ironman to Phase 8; (9) the order W1–W13; (10) delete the merged `worktree-slice-cart-home`, and let the Phase 6 QA walk cover the merged-unplayed pieces. Then the merge at his word.** ✅ **ALL TEN ANSWERED AS RECOMMENDED (D789, 2026-11-17, *"All as recommended"*); the branch deleted. ✅ MERGED AND PUSHED AT HIS WORD (D790, *"Merge and push"*); ▶️ next, W1.** *(Read "⏸️ The merge at his word" at D789.)* **🔨 W1, THE BATCH TRADE AS A ROW, being built on `slice/batch-trade` (2026-11-17, Joe: *"Start W1"*) — spec first, `specs/batch-trade.md`.** **📝 SPECCED (D791); ✅ HIS CALL A (D792); ✅ BUILT, ALL SIX STEPS, NO GOLDEN MOVED (D795) — ⏸️ THE MERGE AT HIS WORD.** *(Read "🔨 step 1 of 6 done" at D792.)* *(Read "⏸️ ONE CALL HIS — the states, A one shared pair (recommended) or B the four keep theirs" at D791.)* *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
+  the town hall's tabs last, warm clothing Phase 6's unless he moves it out.** **🔨 being built on `slice/systems-complete` (2026-11-16) — the review and its workplan, `specs/systems-complete.md`; docs only.** **📝 WRITTEN (D788): ⏸️ TEN CALLS JOE'S, `systems-complete.md §6`, each with a recommendation — (1) the cut line: Phase 6 means the *systems* (morale, health, drought, fire and blight, paving, the cemetery, the wool coat, the caravan, the hall's tabs), the variety of crops, animals and workshops is Phase 7's; (2) the mason's yard node kept as a horizon; (3) warm clothing in; (4) the caravan in; (5) paving in; (6) the cemetery in; (7) the Shining Rock a monument with no effect, the fountain in, the bell parked; (8) the named-villager lock, kitchen garden, ox cart, five extra unlock routes out, full settings and ironman to Phase 8; (9) the order W1–W13; (10) delete the merged `worktree-slice-cart-home`, and let the Phase 6 QA walk cover the merged-unplayed pieces. Then the merge at his word.** ✅ **ALL TEN ANSWERED AS RECOMMENDED (D789, 2026-11-17, *"All as recommended"*); the branch deleted. ✅ MERGED AND PUSHED AT HIS WORD (D790, *"Merge and push"*); ▶️ next, W1.** *(Read "⏸️ The merge at his word" at D789.)* **🔨 W1, THE BATCH TRADE AS A ROW, being built on `slice/batch-trade` (2026-11-17, Joe: *"Start W1"*) — spec first, `specs/batch-trade.md`.** **📝 SPECCED (D791); ✅ HIS CALL A (D792); ✅ BUILT, ALL SIX STEPS, NO GOLDEN MOVED (D795) — ⏸️ THE MERGE AT HIS WORD.** ✅ **W1 MERGED AND PUSHED AT HIS WORD (D796).** **🔨 W2, MORALE, being built on `slice/morale` (2026-11-19) — the name first (*morale*, *health* or *happiness*, his to weigh), then `specs/morale.md`.** **📝 The player's word is *contentment*, health a separate system with no cause shared (D797, *"Yes keep both"*); ⏸️ six calls his, `morale.md §10`.** **✅ All six as recommended (D798); 📏 step 1 measured (D799); ✅ its five calls as recommended (D800); ✅ step 2 built (D801); ▶️ step 3, the card.** *(Read "🔨 step 1 of 6 done" at D792.)* *(Read "⏸️ ONE CALL HIS — the states, A one shared pair (recommended) or B the four keep theirs" at D791.)* *(Read "⏸️ … JOE'S TO CALL" at D774–D775.)* **SYSTEMS COMPLETE — WHERE IT SITS IN PHASE 6 (D774, 2026-11-15).** His goal: *"i want to add something to phase 6: systems complete. all in-game systems are built and functioning and approved. that means a review of all backlog systems, buildings, professions, etc and a prioritized workplan for them, including upgrade tiers, unlocked techs, etc"* Recorded in
   `DESIGN.md §4` Phase 6. **Recommended:** a seventh exit-gate item (the phase ends when everything on the reviewed list is
   built, working and approved, or moved out by him); the review and workplan as the piece after water, before morale; the town
   hall's tabs stay last; warm clothing stops being optional unless he moves it out at the review. The review itself is not

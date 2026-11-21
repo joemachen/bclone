@@ -367,6 +367,36 @@ public sealed class Villager
     /// </remarks>
     public int Cold { get; set; }
 
+    // ------------------------------------------------------------------------------------------------------------------
+    //  Contentment (W2, `morale.md §13` step 2, D798–D800) — read once a season by `ContentmentSystem`. Saved; hashed
+    //  sparsely SINCE STEP 4 (D804), when the births gate first reads them — not before, because a fact nothing reads is
+    //  not a second fact about the village, so the goldens moved once, with the first effect (§8, D152).
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>Days this winter the person reached the get-warm line (<c>seek_shelter_percent</c>) — at most one a day.</summary>
+    public int ColdDaysThisWinter { get; set; }
+
+    /// <summary>The day (<see cref="SimWorld.Today"/>) last counted in <see cref="ColdDaysThisWinter"/>; 0 if never.</summary>
+    public int LastColdDay { get; set; }
+
+    /// <summary>The season number (<see cref="SimWorld.SeasonNumber"/>) a cold winter stops being held — held while larger.</summary>
+    public int ColdWinterHeldUntil { get; set; }
+
+    /// <summary>
+    /// The walk to work in tiles, written with <see cref="CommuteNote"/> by the allocator and cleared with it — <b>0 when
+    /// the note is not said</b> (within the old forage ring, or no job).
+    /// </summary>
+    public int CommuteTiles { get; set; }
+
+    /// <summary>The causes held at the last season's read, one bit a <see cref="ContentmentCause"/> — what the card will say.</summary>
+    public int ContentmentCauses { get; set; }
+
+    /// <summary>Seasons running this person has been unsettled — 0 when content. At <c>contentment_thinking_of_leaving_seasons</c> (4) the log warns once; at <c>contentment_leaving_seasons</c> (8) they are ready to leave (D798 call 3, step 5).</summary>
+    public int SeasonsUnsettled { get; set; }
+
+    /// <summary>Whether the last season's read put them past the line — the card's <i>Unsettled</i> (W2 step 3).</summary>
+    public bool IsUnsettled => SeasonsUnsettled > 0;
+
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 
@@ -550,8 +580,20 @@ public sealed class Villager
 
     public CauseOfDeath CauseOfDeath { get; set; } = CauseOfDeath.None;
 
-    /// <summary>Tick at which they died. Null while alive.</summary>
+    /// <summary>Tick at which they died. Null while alive — and for somebody who left (<see cref="LeftAtTick"/>).</summary>
     public ulong? DiedAtTick { get; set; }
+
+    /// <summary>
+    /// The tick they left the valley, unsettled two years (W2 step 5, `morale.md §13.2`) — a fate beside death: not
+    /// <see cref="Alive"/>, <see cref="DiedAtTick"/> null. Null otherwise. Saved when set, hashed sparsely.
+    /// </summary>
+    public ulong? LeftAtTick { get; set; }
+
+    /// <summary>
+    /// ⭐ The tick they stopped being here, either way — what a reader asks that once meant <i>died</i> (the valley's peak, its
+    /// emptying, the founders' tribute). Grief asks <see cref="DiedAtTick"/>: a departure is not a death in the family.
+    /// </summary>
+    public ulong? GoneAtTick => DiedAtTick ?? LeftAtTick;
 
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
@@ -892,6 +934,7 @@ public sealed class Villager
             : "splitting logs into firewood",
             VillagerState.Resting => atTheSteading ? $"resting at {where}" : unhoused ? "resting in the open — no house yet" : "resting at home",
             VillagerState.Dead => "dead",
+            VillagerState.Left => "gone from the valley",
             VillagerState.HaulingToStore => "carrying a load to the store",
             // The shopper with the household's cart (`handcart.md §8`): the same errand, a thing on the map behind them.
             VillagerState.FetchingFromStore => PushingACart ? "pushing the cart to the shops" : "fetching supplies for home",
@@ -993,6 +1036,13 @@ public sealed class Villager
             ["job_reason"] = JobReason,
             ["work_note"] = WorkNote,
             ["commute_note"] = CommuteNote,
+            // W2's tallies (D798–D800) — optional keys, so a save from before reads a content village.
+            ["cold_days_this_winter"] = ColdDaysThisWinter != 0 ? ColdDaysThisWinter : null,
+            ["last_cold_day"] = LastColdDay != 0 ? LastColdDay : null,
+            ["cold_winter_held_until"] = ColdWinterHeldUntil != 0 ? ColdWinterHeldUntil : null,
+            ["commute_tiles"] = CommuteTiles != 0 ? CommuteTiles : null,
+            ["contentment_causes"] = ContentmentCauses != 0 ? ContentmentCauses : null,
+            ["seasons_unsettled"] = SeasonsUnsettled != 0 ? SeasonsUnsettled : null,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
             ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
@@ -1018,6 +1068,7 @@ public sealed class Villager
             ["alive"] = Alive,
             ["cause_of_death"] = SaveWriter.Enum(CauseOfDeath),
             ["died_at"] = SaveWriter.Hex(DiedAtTick),
+            ["left_at"] = LeftAtTick is null ? null : SaveWriter.Hex(LeftAtTick),
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1058,6 +1109,12 @@ public sealed class Villager
             JobReason = save.String("job_reason"),
             WorkNote = save.String("work_note"),
             CommuteNote = save.String("commute_note"),
+            ColdDaysThisWinter = save.HasValue("cold_days_this_winter") ? save.Int("cold_days_this_winter") : 0,
+            LastColdDay = save.HasValue("last_cold_day") ? save.Int("last_cold_day") : 0,
+            ColdWinterHeldUntil = save.HasValue("cold_winter_held_until") ? save.Int("cold_winter_held_until") : 0,
+            CommuteTiles = save.HasValue("commute_tiles") ? save.Int("commute_tiles") : 0,
+            ContentmentCauses = save.HasValue("contentment_causes") ? save.Int("contentment_causes") : 0,
+            SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
             ArrivedAtTick = save.ULong("arrived_at"),
@@ -1081,6 +1138,7 @@ public sealed class Villager
             Alive = save.Bool("alive"),
             CauseOfDeath = save.Enum<CauseOfDeath>("cause_of_death"),
             DiedAtTick = save.NullableULong("died_at"),
+            LeftAtTick = save.HasValue("left_at") ? save.NullableULong("left_at") : null,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

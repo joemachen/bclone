@@ -295,6 +295,15 @@ public sealed class HearthSystem : ISimSystem
                 villager.Cold = threshold;
             }
 
+            // ⭐ A DAY AT THE GET-WARM LINE, ONCE A DAY (W2, D800 call 3; `morale.md §13.1`): a winter of six such days is a
+            // cold winter for contentment. Any tick at or past the line counts the day, as D799 measured it — the episode's
+            // sentence below is said once on the way up; this counts the days the cold kept them there.
+            if (warnAt > 0 && villager.CanWork && villager.Cold >= warnAt && villager.LastColdDay != world.Today)
+            {
+                villager.LastColdDay = world.Today;
+                villager.ColdDaysThisWinter++;
+            }
+
             // Once per episode, on the way UP through the line where they break off work
             // to get warm — so the sentence a player reads and the decision the villager
             // makes are the same moment. Crossing it downward is somebody thawing out,

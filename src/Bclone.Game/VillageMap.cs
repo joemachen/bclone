@@ -9180,6 +9180,25 @@ public partial class VillageMap : Control
             }
         }
 
+        // ⭐ And whoever is walking out (5b): gone from the sim, on the road to the edge, fading there, the chevron above.
+        if (_walkOuts.Count > 0)
+        {
+            var leavers = new List<(Villager Who, Vector2 Tile, float Shown)>();
+            AddTheLeavers(world, stillAlive, leavers);
+            foreach ((Villager who, Vector2 tile, float shown) in leavers)
+            {
+                Vector2 centre = ToScreen(tile);
+                Color colour = who.LifeStage switch
+                {
+                    LifeStage.Child => ChildColour,
+                    LifeStage.Elder => ElderColour,
+                    _ => AdultColour,
+                };
+                DrawCircle(centre, VillagerRadius, new Color(colour, colour.A * shown));
+                DrawTheChevron(centre, VillagerRadius, shown);
+            }
+        }
+
         PruneTheDead(stillAlive);
     }
 
@@ -9320,8 +9339,10 @@ public partial class VillageMap : Control
             return;
         }
 
-        // A walk whose last nomad is in is forgotten here, once a tick, with the rest of the bookkeeping (D573).
+        // A walk whose last nomad is in is forgotten here, once a tick, with the rest of the bookkeeping (D573) — and a
+        // leaver who has reached the edge (5b).
         PruneTheFinishedWalkIns();
+        PruneTheFinishedWalkOuts();
 
         // ⭐ And whose forge or oven is lit (A139) — once a tick, where the states change.
         NoteTheFires(world);

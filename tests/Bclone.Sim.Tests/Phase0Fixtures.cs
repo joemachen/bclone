@@ -48,6 +48,13 @@ public static class Phase0Fixtures
         NomadsFirstYearFloor = 0,
         RefoundYearsFloor = 0,
 
+        // And nobody leaves (W2 step 5): these guards are about one full life, and its spec rules out a second way to lose
+        // the villager, as the wear and the nomads above. Its villager walked out of the valley at four, holding "the fire
+        // went out" from its first winter — a fixture with no fuel at all, which no longer counts (D808: no fire to keep, no
+        // fire to go out) — and a dry jar, a person walking for water alone. `VillageFixtures.Village` keeps the shipped
+        // leaving. *(D806 wrote "no roof to offer": it has one, measured — D808.)*
+        ContentmentLeavingSeasons = 0,
+
         TicksPerDay = 4,
         DaysPerSeason = 15,
         TargetTicksPerSecond = 1.0,

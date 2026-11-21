@@ -1258,6 +1258,15 @@ public sealed class Household
     public int Water { get; set; }
 
     /// <summary>
+    /// The season number (<see cref="SimWorld.SeasonNumber"/>) a winter with the fire out stops being held (W2, D800) —
+    /// held while larger. Saved, and hashed sparsely since step 4 (D804; see <see cref="Villager.ColdDaysThisWinter"/>).
+    /// </summary>
+    public int FireOutHeldUntil { get; set; }
+
+    /// <summary>Days this season the household was housed with its jar dry (W2, D800) — read and cleared at the season's turn.</summary>
+    public int DryDaysThisSeason { get; set; }
+
+    /// <summary>
     /// The trips left in the household's handcart — <b>0 for no cart</b> (`handcart.md §3`, §6; Slice H, Joe's call
     /// D672: a cart is the household's good, parked at the home).
     /// </summary>
@@ -1357,6 +1366,8 @@ public sealed class Household
         // Every household's, empty or not (D780) — so a save from before water, with no key, is told apart from a dry jar and reads full.
         ["water"] = Water,
         ["handcart_uses"] = HandcartUses,
+        ["fire_out_held_until"] = FireOutHeldUntil != 0 ? FireOutHeldUntil : null,
+        ["dry_days_this_season"] = DryDaysThisSeason != 0 ? DryDaysThisSeason : null,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
@@ -1382,6 +1393,8 @@ public sealed class Household
             ToppingUpFirewood = save.Bool("topping_up_firewood"),
             Water = save.HasValue("water") ? save.Int("water") : waterJar,
             HandcartUses = save.Int("handcart_uses"),
+            FireOutHeldUntil = save.HasValue("fire_out_held_until") ? save.Int("fire_out_held_until") : 0,
+            DryDaysThisSeason = save.HasValue("dry_days_this_season") ? save.Int("dry_days_this_season") : 0,
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };
 
