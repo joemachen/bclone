@@ -41,7 +41,8 @@ Each finished building is drawn, in its own turned frame, as:
      the kind's colour, so a material carries pattern and the kind carries colour (§3).
    - The eave inked all round (2 px, `Ink`; dashed when fallen in, D556), the ridge and the hips a fine pen, the ridge a
      faint darker band.
-4. **Chimneys** on the ridge: the cabin, cottage, smithy, bakery, farmhouse, workshop and tailor one; the manor two.
+4. **Chimneys** on the ridge: the cabin, cottage, smithy, bakery, farmhouse, workshop, tailor and — for its stove's smoke
+   (A139, `indoors-and-smoke.md`) — the school one; the manor two.
    Stone, a dark flue, an ink edge, a small shadow on the roof.
 5. **Its own extras:** the manor's upper storey (a smaller gable over the main roof, a step lighter); the town hall's bell
    turret (a small hip in clay tile on the ridge).

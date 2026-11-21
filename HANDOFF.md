@@ -10542,6 +10542,10 @@ founders rest in the open at the camp, and so does anyone idle with nothing to d
 new village vanished. Before hiding or drawing anyone by state, ask the sim's own description (`DescribeState`'s
 `unhoused`, `atTheSteading`) what the state means for *this* person. And when he says nobody is visible, log what the
 draw loop *finds* before what it draws — the first per-person log printed nothing at all, which was the answer.
+(63) **A game autosaves at the year's turn — into the copy you are rendering from** (A139): a render run fast past a
+year's end overwrote the scratch `APPDATA`'s save, and the next run began a year later with a discovery's popup pausing
+it. Restore the save from his folder at the start of every run (`raven_movie.sh`), and when a render's frames stop
+changing, look at one before measuring them.
 
 **▶️ The terrain shader, in the lab (`specs/terrain-shader.md`; ✅ MERGED INTO `main` (D710, 2026-11-07) from `claude/nostalgic-panini-a63043`, whose worktree is removed — the art's standing worktree is `.claude/worktrees/art`, branch `art`).** Specced A1. **Built: piece 1 of 4, the fake coverage map (A2); piece 2, world-anchored grain and drag to pan (A3, at Joe's "build the grain next"); piece 3, snow (A4, at his "build snow next"); piece 4, splat blending and edge bleed (A5, at his "build piece 4"). All four are built. ⭐ He approved splat and bleed at 5.5, 0.33 and 0.30 tiles (A7, after tuning them, A6); ⭐ he approved the grain and snow at his tuning too (A8–A9: grain 0.065 tiles, under the village; snow Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles); the coverage map is the lab's fake. ⭐ The approved look's *Paper grain* is 0.12 at his word (A10; was 0.15). ⚠️ **Debt:** `art/grass/`'s nine reference JPEGs were rendered at 0.15 — `tools/grass/lab_render.gd` then `lab_check.py shots` remakes them, but `art/` and `tools/` are not the art lane's to commit without his word.** `.\run.bat grass` from the worktree; on the *Terrain* panel tick *Coverage map* and move *Coverage fade*; tick *World-anchored grain*, drag the land, move *Grain scale* and the zoom; *Grain under the village* compares the grain's place; put the left panel's *Season* on winter (3), tick *Snow*, move *Snow amount* and try the three *Snow blend*s (Lerp is the recommendation; Lighten fringes purple round bare patches), *Snow patchiness* and *Snow patch size*; with *Coverage map* on, the river stays clear. With *Coverage map* on, tick *Splat blending* and move *Splat sharpness* (48 hard, 2 a wash), tick *Edge bleed* and move *Bleed reach* and *Bleed scale* — they open at Joe's approved values, 5.5, 0.33 and 0.30 tiles (A6–A7), switches still off; his look was coverage map, world grain, splat and bleed on, snow off; the river's edge stays hard under both, by construction (A5 changed the spec: the splat no longer softens the water). **The GPU bar is 1 ms a frame at 4K for the whole stack** (A11, `terrain-shader.md §3.3`): everything on is +0.64–0.80 ms, inside it; measure again in the wired valley and bake the snow's threshold and the bleed's warp (§5) only if it goes over. ⚠️ **Merge: D700 was taken twice** — `worktree-slice-cart-home` (systems) has its own D700; whichever lands second renumbers its entries, and every `Dnnn` in its specs, HANDOFF and code comments with them. **Joe, 2026-11-07: "Systems first."** This branch waits for `worktree-slice-cart-home` to reach main, then renumbers D700–D710 (✅ done at the merge, D710: the art takes its own A-series, A1–A11) (commit messages keep the old ones), re-runs the four checks, and goes to Joe for his `--no-ff`. The session stops after each piece for his eyes. `grass_approved.tres` and `GrassLook.cs` are unchanged; the options start from `looks/terrain_lab.tres`, all switches off, and with every switch off the lab's renders are byte-identical to before the slice. **Waits for house tiers:** everything in `terrain-shader.md §5`: the bake's coverage channel, `VillageMap` drawing through the shader, the grain's overlay in the game, what happens to `Dressed`'s noise. ✍️ **House tiers merged (D724); the wiring is specced (A22, 2026-11-09): `terrain-shader.md §5` — what the valley does today (§5.1), six calls for Joe (§5.2, also the first ⏸️ line), what is settled without asking (§5.3), three pieces after his answers (§5.4). Nothing built.** The lane table's left column now also holds `VillageMap.cs` and `ValleyTexture.cs` for this slice (the banner, D724); `Main.cs` is still the systems', and call 5 asks Joe for the six lines of the switch. ✅ **Answered (A23), all as recommended — the tick in `Main.cs` at his OK, a before/after slider beside it.** 🔨 **Piece 1 built (A24):** `ValleyTexture(withWeights: true)` keeps the mix (RGBA8 grass/wood/seam/water + RG8 young/iron shares, 8 px a tile, 3.7 MB); the default bake keeps none, so the game is unchanged until piece 2's tick; the colour bake byte-identical; the probe's `valley mix:` line — 99.85 % of boundary pixels agree with the colour, water within 1 px of the bake's bank — and `logs/valley-mix.png` to look at. ⚠️ Several seams in the founding valley are one tile thin: where piece 2 checks A7's bleed first. 🔨 **Piece 2 built (A25):** `shaders/valley_terrain.gdshader` + `VillageMap.Watercolour.cs` (a layer behind the map; `_Draw` skips the Beyond, parchment and bake with the tick on) + two ticks in `Main.cs`; probe `watercolour:`; tick off byte-identical to the pre-piece-2 build in windowed renders at two zooms; 4K +1.35 / +1.73 ms. Scratch tools (not committed — `tools/` is not the lane's): `render.gd` (frame-sample door, tree paused at founding, shots), `measure4k.gd` (the game in a 4K SubViewport, alternating rounds). ⏸️ **Joe's eyes next.** ✅ **He played it (2026-11-10) and set an art direction toward the concept (A26, `terrain-shader.md §7`): five pieces — ink and pooling, calmer ground, the river drawn and flowing, winter with structure, decorative relief.** 🔨 **Ink and pooling built (A27):** a pen line where each kind's share crosses a half, constant on screen, drawn on the *unbled* edge so the wash bleeds past it (on the bled edge it came out ragged — A7's fray); pooling inside each wash; values in `looks/valley_watercolour.tres` (`ValleyWatercolourLook.cs`), none approved yet.
 
@@ -10603,7 +10607,41 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ 🔨 **being built on `art`** (2026-11-20, Joe: *"Can we work on villager animations next?"*). **THE VILLAGERS MOVE — a walk,
+- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE.** Recorded so they outlive the chat
+  (A136). Each is a piece of its own; the first commit on a branch claims it here. **✅ Answered (A137), Joe: *"All of that
+  yes"*** — the crash and the six systems asks sent to the morale session (`slice/morale`); *Lore* is the words he sees,
+  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g) —
+  **and (i) added: *"a gentle wind animation to trees that is a degree or two more intense in the winter. think of how
+  the water animates and the visuals used there."***
+  - 🔨 **being built on `art`: (f) people go indoors + (e) chimney smoke** — ✍️ **specced and mocked (A138,
+    `specs/indoors-and-smoke.md`; `D:\Projects\brushes\smoke\smoke_*.gif`); ⏸️ five calls his (§6): the smoke's look
+    (⭐ C), a chimney for the school, which trades work indoors, the door's fade, his OK for `VillageMap.cs`.**
+    **✅ Answered — B, the school's chimney, indoors, instant, his OK — and 🔨 built (A139, §7). ⏸️ His eyes: `.\run.bat`
+    in the art folder, a winter with homes holding firewood.**
+  - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
+    log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logs
+un_20261120_203730.log`
+    in the art folder). Not reproduced. `Main.cs` — the systems lane's; onto the open slice (CLAUDE.md: a bug found while a
+    slice is open goes on it).
+  - **Systems (`Main*.cs`, the settings, the data):** a **full-screen** option in Settings, on by default; **F5 quicksave,
+    F7 quickload**; Professions — *"Laborers are the spare hands…"* to a **tooltip on "Laborers: n"**; the village roster's
+    **sort headers jump** and shift the panel; the top bar **drops the labourer count** (it is in Professions) — maybe a
+    children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
+    (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
+  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps; (b)
+    **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
+    (c) **every trade and action** with varied work animations (stone gathering named); (d) **stockpiles show piles** of
+    each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
+    block; (e) **chimney smoke** while a building burns firewood (`art-inventory.md` B11, *"none anywhere"*); (f) **people
+    go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
+    on the building (D45); (g) **berry bushes / gathering resources** and **animals for hunting**, animated (`art-inventory.md`
+    §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
+    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph); (i) **trees
+    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
+  - ✅ **Answered, not a piece:** the coloured bar down a card's left edge is `chrome/sheet-selected.png` — *"an
+    illuminated bar… the card being worked with"* (`ui-assets.md`, the selected card's sheet). Intentional; dropping it is
+    his call.
+- ✅ **MERGED INTO `main` (A134) AND PUSHED (A135)** (2026-11-20, Joe: *"Can we work on villager animations next?"*). **THE VILLAGERS MOVE — a walk,
   the work swings, carrying, an idle sway, the pushed cart.** The painted people (A93) stand still in one painted pose and glide;
   `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. View only: it reads the sim, never writes it.
   ✍️ **Specced and mocked (A129): three looks on his Hollowmere — A breathing (no new paintings), B two poses, C full cycle;
