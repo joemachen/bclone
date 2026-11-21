@@ -10609,7 +10609,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g) —
   **and (i) added: *"a gentle wind animation to trees that is a degree or two more intense in the winter. think of how
   the water animates and the visuals used there."***
-  - 🔨 **being built on `art`: (f) people go indoors + (e) chimney smoke** — specced and mocked first, his eyes before code.
+  - 🔨 **being built on `art`: (f) people go indoors + (e) chimney smoke** — ✍️ **specced and mocked (A138,
+    `specs/indoors-and-smoke.md`; `D:\Projects\brushes\smoke\smoke_*.gif`); ⏸️ five calls his (§6): the smoke's look
+    (⭐ C), a chimney for the school, which trades work indoors, the door's fade, his OK for `VillageMap.cs`.**
   - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
     log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logs
 un_20261120_203730.log`
