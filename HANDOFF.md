@@ -10603,10 +10603,16 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE, NOTHING CLAIMED, HIS ORDER.** Recorded
-  so they outlive the chat (A136). Each is a piece of its own; the first commit on a branch claims it here.
+- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE.** Recorded so they outlive the chat
+  (A136). Each is a piece of its own; the first commit on a branch claims it here. **✅ Answered (A137), Joe: *"All of that
+  yes"*** — the crash and the six systems asks sent to the morale session (`slice/morale`); *Lore* is the words he sees,
+  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g) —
+  **and (i) added: *"a gentle wind animation to trees that is a degree or two more intense in the winter. think of how
+  the water animates and the visuals used there."***
+  - 🔨 **being built on `art`: (f) people go indoors + (e) chimney smoke** — specced and mocked first, his eyes before code.
   - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
-    log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logsun_20261120_203730.log`
+    log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logs
+un_20261120_203730.log`
     in the art folder). Not reproduced. `Main.cs` — the systems lane's; onto the open slice (CLAUDE.md: a bug found while a
     slice is open goes on it).
   - **Systems (`Main*.cs`, the settings, the data):** a **full-screen** option in Settings, on by default; **F5 quicksave,
@@ -10622,7 +10628,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
     on the building (D45); (g) **berry bushes / gathering resources** and **animals for hunting**, animated (`art-inventory.md`
     §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
-    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph).
+    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph); (i) **trees
+    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
   - ✅ **Answered, not a piece:** the coloured bar down a card's left edge is `chrome/sheet-selected.png` — *"an
     illuminated bar… the card being worked with"* (`ui-assets.md`, the selected card's sheet). Intentional; dropping it is
     his call.
