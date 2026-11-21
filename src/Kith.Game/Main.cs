@@ -1313,8 +1313,27 @@ public partial class Main : Control
             faults.Add("the top bar still counts laborers");
         }
 
+        // ⭐ The bar counts the children at school (D817): none at a founding, and a child posed at school is one.
+        string atFounding = _inSchoolCell.Text;
+        Villager? child = world.Villagers.FirstOrDefault(v => v.Alive && !v.IsPupil);
+        string posed = "-";
+        if (child is not null)
+        {
+            child.SchoolId = int.MaxValue;
+            Refresh();
+            posed = _inSchoolCell.Text;
+            child.SchoolId = 0;
+            Refresh();
+        }
+
+        int pupils = world.Villagers.Count(v => v.Alive && v.IsPupil);
+        if (atFounding != pupils.ToString() || posed != (pupils + 1).ToString())
+        {
+            faults.Add($"the top bar's in school reads {atFounding} with {pupils} at school, and {posed} with one more posed");
+        }
+
         return faults.Count == 0
-            ? $"[widths] laborers: ✅ Professions reads '{_ableAdultsReadout.Text}' beside '{_laborerReadout.Text}', the sentence its tooltip; the top bar counts none"
+            ? $"[widths] laborers: ✅ Professions reads '{_ableAdultsReadout.Text}' beside '{_laborerReadout.Text}', the sentence its tooltip; the top bar counts none, and counts the children at school ({atFounding}, {posed} with one posed)"
             : $"[widths] laborers: ⛔ {string.Join("; ", faults)}";
 
         static IEnumerable<Label> LabelsUnder(Node root)
@@ -1391,7 +1410,7 @@ public partial class Main : Control
         Vector2 before = _topBar.GetCombinedMinimumSize();
         Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
 
-        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _eldersCell, _onTheGround };
+        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _inSchoolCell, _eldersCell, _onTheGround };
         foreach ((Goods _, Label held) in _goodsReadouts)
         {
             cells.Add(held);
@@ -3254,12 +3273,18 @@ public partial class Main : Control
         int adults = 0;
         int children = 0;
         int elders = 0;
+        int pupils = 0;
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager person = world.Villagers[i];
             if (!person.Alive)
             {
                 continue;
+            }
+
+            if (person.IsPupil)
+            {
+                pupils++;
             }
 
             switch (person.LifeStage)
@@ -3273,6 +3298,7 @@ public partial class Main : Control
         _populationCell.Text = world.Population.ToString();
         _adultsCell.Text = adults.ToString();
         _childrenCell.Text = children.ToString();
+        _inSchoolCell.Text = pupils.ToString();
         _eldersCell.Text = elders.ToString();
 
         // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
@@ -4730,6 +4756,10 @@ public partial class Main : Control
         _populationCell = AddBarCell(counts, WorldChip(VillageMap.AdultColour), "villagers", HeadcountWidth);
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
         _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
+
+        // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5: "maybe children / in school once schools are the player's"
+        // — "Yes, add it", D817), where the laborers' cell was: the bar keeps five headcounts and its width.
+        _inSchoolCell = AddBarCell(counts, null, "in school", HeadcountWidth);
         _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
 
         // The valley's name is the one word that says which run you are watching — derived
@@ -7586,6 +7616,9 @@ public partial class Main : Control
     private const float ProfessionNameWidth = 110f;
 
     private Label _ableAdultsReadout = null!;
+
+    /// <summary>The top bar's count of children at school (D817).</summary>
+    private Label _inSchoolCell = null!;
 
     private Label _laborerReadout = null!;
 

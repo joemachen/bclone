@@ -10790,8 +10790,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **ALL SEVEN BUILT on `slice/play-notes` (D814–D816), the four checks green; ⏸️ his play, then the merge
-  at his word** (Joe 2026-11-21: *"Then the play notes"*). ⏸️ Open from them: *"maybe children / in school"* on the
-  top bar (note 5) — his call.
+  at his word** (Joe 2026-11-21: *"Then the play notes"*). ✅ *"maybe children / in school"* on the top bar (note
+  5) — answered *"Yes, add it"* and built (D817).
   *(As claimed:)* ✅ **The P0 crash — fixed on `slice/morale` (D807)**, merged. **Six asks, claimed:**
   (1) a full-screen option in Settings, on by default; (2) F5 quicksave, F7 quickload; (3) Professions — *"Laborers are the
   spare hands…"* into a tooltip on *Laborers: n*, beside *Able adults: n*; (4) the village roster's sort headers jump and

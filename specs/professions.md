@@ -446,8 +446,9 @@ the commitment; each slice's Definition of Done is its own.
 
 - **The two counts side by side** (note 3): *Able adults: n* beside *Laborers: n*, and *"Laborers are the spare hands:
   clearing ground, hauling and tidying, and nobody's trade yet."* is the laborers' tooltip, no longer a caption.
-- **The top bar counts no laborers** (note 5): it is here, beside what it is one of. ⏸️ *"maybe children / in school"* on
-  the bar — his to call; the bar already counts children.
+- **The top bar counts no laborers** (note 5): it is here, beside what it is one of. ✅ *"maybe children / in school"* — Joe:
+  *"Yes, add it"* (D817): an *in school* cell beside *children*, where the laborers' was, counting the children at a
+  school now (`Villager.IsPupil`); the bar keeps five headcounts and its width (probe `bars:`, `laborers:`).
 - **The village roster holds still when sorted** (note 4): each column is as wide as its title with the ▾, whichever is
   sorted — measured before the fix, the roster's minimum width was 187 sorted by name and 174 by age or trade. Probe
   line `roster sort:`.
