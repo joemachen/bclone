@@ -4,7 +4,8 @@
 > ✅ step 1 measured (D799, §13.1), its five calls as recommended (D800, §14); ✅ step 2 built — the causes as rows and the
 > season's read, saved, not hashed, nothing acting on it (D801); ✅ step 3 built — the card's *Content / Unsettled* and its
 > sentence (D802); ✅ step 4 built — an unsettled couple waits twice the interval, contentment hashed, eight goldens re-taken
-> (D804); ✅ step 5a built — warned after a year, gone after two, the card and the log (D806); ▶️ 5b, the walk out.**
+> (D804); ✅ step 5a built — warned after a year, gone after two, the card and the log (D806); ✅ step 6's guards and golden
+> (D808); ▶️ 5b, the walk out, then Joe's play (§15).**
 > *(Read "▶️ step 5, leaving" at D804–D805, "▶️ step 4, fewer children" at D802–D803, "▶️ step 3, the card" at D801, "▶️ step 1" at D798,
 > "⏸️ six calls Joe's" at D797.)* Specced as *morale* (D207, 2026-08-24); **the player's word is *contentment* since D797**
 > — the file keeps its old name because the log and eighteen links point at it. Owner: Joe + Claude Code · Pillar:
@@ -287,7 +288,7 @@ the nomads are built (D563–D584)**; (1), (3) and (4) are restated below agains
 3. ✅ **The card** (D802) — the *Content / Unsettled* pill in the needs row and the sentence (`ContentmentNoteFor`, the `WaterNoteFor` shape); the probe's line; *"Not here yet"* loses *Happiness*. Built: an adult's pill only; *Unsettled* in amber; the tooltip says what the last season's read found, the causes in the data file's order, grief naming who was lost; *"… is content here."* with nothing held.
 4. ✅ **Fewer children** (D804) — an unsettled couple waits twice `birth_interval_years`; the household card's sentence. Goldens move — proved by ablation, re-pinned, stated. Built: `contentment_birth_interval_percent` 200, either partner; *"Not ready for another child — Otto is unsettled."* on the household's status; the eight fields hashed; eight goldens re-taken (six by the hash alone, Phase-5's two by the births as well).
 5. **Leaving** — *"thinking of leaving"* after a year unsettled (card + one log line), gone after two at a season's turn: a fate beside death (alive, gone), the walk to the map's edge (the nomads' walk-in reversed), the house, goods and seats let go, one log line naming the person and the reason; ~~save format bumped~~ *(the format stays 13 — §13.2 item 8)*. Goldens move once more. **Two commits (§13.2):** ✅ **5a** the sim, the card and the log (D806); **5b** the walk out, view only, as D573's walk-in is.
-6. **The guards and the gate** — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play.
+6. ✅ **The guards and the gate** (D808) — the anti-vacuity pair (a neglected village loses people; a kept one loses nobody), a posed golden that reaches a departure (Phase 6 gate item 2), the four checks, and Joe's play. Built: `AVillageThatIgnoresContentmentLosesPeople` (the unattended fixture, seeds 1–12, fifteen years — 4 adults gone, each with two causes held two years); `AKeptVillageLosesNobodyItKeeps` (the water answered, fifty years — nobody with a roof leaves); `TheGoldenThatSeesADeparture` (seed 9, Year 15, four gone in Year 13). ⛔ Not the no-house pose: it is a death test (all twelve froze out, nobody left). ⚠️ The fire-out cause needs a fire to keep (`firewood_per_winter_day` > 0) — Phase 0's village of one held it from a fixture with no fuel. ⏸️ Joe's play: §15.
 
 *Owed beside them, its own commit:* the stale *Students* and *Clothes* rows in *"Not here yet"* (D797). ✅ **Deleted (D803).**
 
@@ -378,3 +379,21 @@ its teeth from the causes W3 and W4 add (the tavern's absence, the dead with now
 5. **The cabin is not a cause in W2** (§4.1 listed *the home and its tier*): a roof at all counts; living in a cabin is 44 %
    of his adults' seasons and the cottage waits on the family tree, which the player cannot hurry — §4's lever rule. A tier
    above the cabin may *raise* contentment later, with the tavern's rows (W3).
+
+## 15. Joe's play — the checklist (step 6, D808)
+
+In his own village from the main checkout (`.\run.bat`), at 4× or a skip of a few years. What he should see, in order:
+
+1. A person's card: the NEEDS row's last pill reads **Content**, or **Unsettled** in amber; its tooltip says why, in
+   words, never a number.
+2. A household holding off a child: its card's status ends *"Not ready for another child — Otto is unsettled."*
+3. A year unsettled: **one** amber line in the village log — *"… is thinking of leaving the valley — …"* — and the
+   card's sentence says *thinking of leaving*.
+4. Two years: one line *"… have left the valley …"* naming them and why; they are gone from the map (5b will walk them
+   to the edge), the roster and the professions; their house stands empty for the next couple.
+5. A couple where one is ready and one is not: the ready one's card says *"… would leave, but … is staying"*.
+6. Answering a cause (a well, a house, firewood): the pill goes back to **Content** within a season or two.
+7. The log reads the departure; **no `ERROR`** in the run's log (gate item 5).
+
+⚠️ **W2 is quiet with today's causes** (§13.1: 4 of his 120 adults in ten years, all Hollowmere). A young village may
+see nothing past item 1; an old, spread one with no well is where leaving shows.

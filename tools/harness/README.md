@@ -61,6 +61,10 @@ against a number from an older commit.
   100 valleys (fifty years) or Joe's saves (`ZZ_SAVES` a copy, `ZZ_PICK`, `ZZ_YEARS` 10), with three readings of the line —
   a streak of seasons, a rolling year, and the causes *held* as recommended. `ZZ_WALKTILES`, `ZZ_COLDDAYS`, `ZZ_COLDWINTER`,
   `ZZ_DRYDAYS` move the cuts. Copy in, `--filter ZzContentment`, delete; `contentment.py <logs>` sums them.
+- `ZzLeaving.cs` — D808's measure for `specs/morale.md §13` step 6: the fixture's seeds 1–12, neglected (no house
+  possible), kept (as shipped) and kept with the water answered — who left, who died, who is alive, the first departure,
+  each leaver's causes — and Phase 0's village of one, season by season, with leaving on. Copy in, `--filter ZzLeaving`,
+  delete.
 - `ZzTimberSeeds.cs` — D804's table for `WoodTests.TimberGatesGrowthWithoutStoppingIt`: the fixture's seeds 1–12, alive at
   Year 120, gated (30 logs a house) and free, with contentment's longer wait on (200) and off (100) — alive / born /
   unsettled adult-seasons, in parallel (~3 minutes). Copy in, `--filter ZzTimberSeeds`, delete. Re-run it when that test's

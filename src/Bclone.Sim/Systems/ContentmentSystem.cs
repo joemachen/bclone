@@ -56,7 +56,10 @@ public sealed class ContentmentSystem : ISimSystem
     private static void CountTheDay(SimWorld world, SimConfig config)
     {
         ContentmentCauseRow? dry = RowFor(config, ContentmentCause.DryJar);
-        ContentmentCauseRow? fire = RowFor(config, ContentmentCause.FireOut);
+        // ⛔ No fire to keep, no fire to go out (W2 step 6, D808): with `firewood_per_winter_day` 0 nobody needs one, and a
+        // household with no firewood held "the fire went out" every winter day — a cause with no lever (§4), which is what
+        // unsettled Phase 0's village of one, whose fixture has no fuel at all.
+        ContentmentCauseRow? fire = config.FirewoodPerWinterDay > 0 ? RowFor(config, ContentmentCause.FireOut) : null;
         bool winter = world.Clock.Season == Season.Winter;
         if (dry is null && (fire is null || !winter))
         {

@@ -215,6 +215,24 @@ public sealed class ContentmentTests
         Assert.Equal(new[] { true, true, true, true, false }, held);
     }
 
+    /// <summary>
+    /// ⭐ No fire to keep, no fire to go out (D808): with fuel switched off (<c>firewood_per_winter_day</c> 0) an empty woodpile
+    /// in winter is not a cause — §4, nothing the player cannot change. Phase 0's village of one held it every winter.
+    /// </summary>
+    [Fact]
+    public void AFireOutNeedsAFireToKeep()
+    {
+        SimWorld world = WorldAtTheTurnOf(3, Config with { FirewoodPerWinterDay = 0 });
+        (Villager adult, Household home) = AHousedAdult(world);
+        home.Stockpile.TryTake(Goods.Firewood, home.Stockpile.Firewood);
+        world.Tick += (ulong)world.Config.TicksPerDay;
+        Read(world);
+        Assert.Equal(0, home.FireOutHeldUntil);
+        world.Tick = SeasonTicks(world.Config) * 4;
+        Read(world);
+        Assert.False(Holds(adult, ContentmentCause.FireOut));
+    }
+
     /// <summary>A death in the household is held four seasons from the day it happened, then lifts.</summary>
     [Fact]
     public void ADeathInTheFamilyIsHeldFourSeasons()
@@ -956,6 +974,103 @@ public sealed class ContentmentTests
         Assert.Empty(Lines(log, "leaving"));
         Assert.Equal($"{lone.Name} is unsettled — they have no roof of their own and the walk to work is a long one.", world.ContentmentNoteFor(lone));
     }
+
+    // -----------------------------------------------------------------
+    //  Step 6, the guards (`morale.md §11` item 4, both ways) and the gate's golden
+    // -----------------------------------------------------------------
+
+    /// <summary>Seeds 1–12 of <paramref name="config"/> for <paramref name="years"/>, in parallel: each village and its log.</summary>
+    private static List<(int Seed, SimWorld World, InMemoryLogSink Log)> Valleys(SimConfig config, int years)
+    {
+        var runs = new System.Collections.Concurrent.ConcurrentBag<(int, SimWorld, InMemoryLogSink)>();
+        Parallel.ForEach(Enumerable.Range(1, 12), seed =>
+        {
+            var log = new InMemoryLogSink(LogLevel.Info);
+            SimLoop loop = SimFactory.CreatePhase0(config, log, (ulong)seed);
+            for (int y = 0; y < years; y++)
+            {
+                loop.Step(config.TicksPerYear);
+            }
+
+            runs.Add((seed, loop.World, log));
+        });
+        return runs.OrderBy(r => r.Item1).ToList();
+    }
+
+    private int CountTheCauses(Villager v) => Enumerable.Range(0, 32).Count(b => (v.ContentmentCauses & (1 << b)) != 0);
+
+    /// <summary>
+    /// ⭐ ANTI-VACUITY (§11 item 4): a village that ignores contentment loses people — the fixture as the unattended harness
+    /// plays it, which never builds a well and lets winters go cold. Measured (D808, `ZzLeaving`): 12 people in 3 of 12
+    /// valleys by Year 50, the first in Years 11 and 13, every adult with a cold winter and a dry jar held two years. ⛔ Not
+    /// the no-house pose: with no roof possible all twelve froze to death and nobody left — a death test, not this one.
+    /// </summary>
+    [Fact]
+    public void AVillageThatIgnoresContentmentLosesPeople()
+    {
+        var runs = Valleys(Config, 15);
+        int adults = 0;
+        foreach ((int seed, SimWorld world, InMemoryLogSink log) in runs)
+        {
+            foreach (Villager gone in world.Villagers.Where(v => v.LeftAtTick is not null && v.ContentmentCauses != 0))
+            {
+                adults++;
+                Assert.True(CountTheCauses(gone) >= Config.ContentmentUnsettledAt, $"seed {seed}: {gone.Name} left holding one cause");
+                Assert.True(gone.SeasonsUnsettled >= Config.ContentmentLeavingSeasons, $"seed {seed}: {gone.Name} left early");
+            }
+
+            int parties = world.Villagers.Where(v => v.LeftAtTick is not null).Select(v => v.LeftAtTick).Distinct().Count();
+            Assert.True(parties <= log.Entries.Count(e => e.Message.Contains(" left the valley", StringComparison.Ordinal)),
+                $"seed {seed}: a departure with no line naming it");
+        }
+
+        _output.WriteLine($"adults gone in 12 neglected valleys by Year 15: {adults}");
+        Assert.True(adults > 0, "nobody left a village that ignores contentment — the system is decorative");
+    }
+
+    /// <summary>
+    /// ⭐ AND ITS MIRROR (§11 item 4): a kept village loses nobody it keeps — the same valleys with the water answered (the
+    /// harness never builds a well) for fifty years: nobody with a roof leaves. Measured (D808): one departure in twelve
+    /// valleys, Year 48, a grown child still waiting for a house and grieving — the unhoused, whom the harness never housed.
+    /// </summary>
+    [Fact]
+    public void AKeptVillageLosesNobodyItKeeps()
+    {
+        var runs = Valleys(Config with { WaterPerPersonPerDay = 0 }, 50);
+        int alive = 0;
+        foreach ((int seed, SimWorld world, _) in runs)
+        {
+            alive += world.Population;
+            foreach (Villager gone in world.Villagers.Where(v => v.LeftAtTick is not null && v.ContentmentCauses != 0))
+            {
+                Assert.True(Holds(gone, ContentmentCause.NoRoof), $"seed {seed}: {gone.Name} left a kept village with a roof over them");
+            }
+        }
+
+        Assert.True(alive > 0, "every kept valley died — the guard is vacuous");
+    }
+
+    /// <summary>
+    /// ⭐ PHASE 6 GATE ITEM 2 — A GOLDEN THAT REACHES A DEPARTURE (D808): the fixture's seed 9, fifteen years — its first family
+    /// left in Year 13 (two adults and two children). Every other golden ends with nobody gone, so this is the one that sees
+    /// leaving's state in the hash.
+    /// </summary>
+    [Fact]
+    public void TheGoldenThatSeesADeparture()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink(), 9UL);
+        for (int y = 0; y < 15; y++)
+        {
+            loop.Step(Config.TicksPerYear);
+        }
+
+        Assert.True(loop.World.Villagers.Count(v => v.LeftAtTick is not null) >= 2, "the golden's village has nobody gone");
+        _output.WriteLine($"hash {StateHash.Compute(loop.World)}");
+        Assert.Equal(LeavingGolden, StateHash.Compute(loop.World));
+    }
+
+    /// <summary>Taken 2026-11-20 (D808), on its first run: four gone in Year 13, the village still standing at 15.</summary>
+    private const ulong LeavingGolden = 593170502162136593UL;
 
     /// <summary>⭐ The departure is saved and hashed sparsely (§13.2 item 8); a save without it reads as never gone.</summary>
     [Fact]

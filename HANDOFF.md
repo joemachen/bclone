@@ -21,6 +21,17 @@
 > wait; the household's status says *"Not ready for another child — Otto is unsettled."*; contentment hashed; eight goldens
 > re-taken by ablation. Suite 2148 / 0 / 5 of 2153 in 16m45; probe 169 lines, 130 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅ (the household's sentence too), done.. ⏸️ JOE'S CALL: a FIRST child does not wait (the interval counts from
 > a child). ▶️ STEP 5: leaving.**
+> **✅ STEP 6 BUILT (D808, Joe: *"Step 6 first"*): the anti-vacuity pair and the gate's golden.** A village that ignores
+> contentment loses people (`AVillageThatIgnoresContentmentLosesPeople`, 4 adults in 12 valleys by Year 15); a kept one
+> loses nobody with a roof (`AKeptVillageLosesNobodyItKeeps`, fifty years); `TheGoldenThatSeesADeparture` (seed 9, Year
+> 15). The fire-out cause needs a fire to keep. Suite 2173 / 0 / 5 of 2178 in 20m23 (+3m35 against D807: the art lane's suite ran in its worktree from 23:17, over the last part of this one; the three new guards cost ~18 s alone); probe 170 lines, 131 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, contentment ✅, log trim ✅, done.. ⏸️ LEFT OF W2: 5b (the walk out),
+> then JOE'S PLAY against `morale.md §15`.**
+> - **⛔ TRAP (D808): a no-house pose is a death test, not a contentment one.** Timber past reach, all twelve villages
+>   froze out within 25 years and nobody left: no roof is one cause, and the cold kills before two causes held two years
+>   can add up. Neglect a contentment guard with causes people survive (the dry jar, the cold winter held).
+> - **⛔ TRAP (D808): read what a fixture's people actually HOLD before writing why.** D806 wrote Phase 0 left for *"no
+>   roof and no firewood"*; it has a roof — it held the fire out (no fuel at all) and a dry jar. One measured line
+>   (`ZzLeaving`'s Phase-0 dump) would have said so; the commit said otherwise, and the cause with no lever went unseen.
 > **✅ JOE'S P0, THE VILLAGE LOG'S CRASH (D807, its own commit on this slice; his play notes, relayed by the art lane with
 > his *"All of that yes"*).** `Main.AppendNewLogLines` trimmed at 800 WRAPPED lines and kept 400 ENTRIES; entries that
 > wrap three a line are 1,200 lines, so it trimmed again every frame — `Clear()` + 400 entries re-parsed, ~30 ms a
@@ -10683,7 +10694,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing
   people no longer alive through `VillageMap.People.cs` / `PersonPainter.cs`. ✅ *The villager animations those files
   carry are merged into `main` (A134) and pushed (A135)* — so 5b merges `main` into this slice first and builds on them.
-  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — step 6's guards next, then 5b.
+  ✅ **Joe, 2026-11-20: *"Step 6 first"*** — ✅ step 6 built (D808); **5b next**, then his play (`morale.md §15`).
 
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 — THE SYSTEMS LANE'S SEVEN (relayed by the art lane, A136, with his *"All of that
   yes"*).** ✅ **The P0 crash — fixed on `slice/morale` (D807)**, his play to confirm. **Six asks, unclaimed, his order:**
