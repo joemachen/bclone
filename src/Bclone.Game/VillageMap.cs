@@ -705,6 +705,9 @@ public partial class VillageMap : Control
         // The meal mark's clock (D531): real seconds, so half a second is half a second at any speed.
         _mealClock += delta;
 
+        // The people's clock (A130): the game's speed, capped at 1.5×; still while the village is paused.
+        TickThePeopleClock(delta);
+
         // The walk-in's clock (D573): real seconds too, but still while the village is paused.
         TickTheWalkClock(delta);
 
@@ -7575,7 +7578,7 @@ public partial class VillageMap : Control
             // ⭐ With its yard (A86, `building-yards.md`): stock from its own store where it keeps one, else whether it is working.
             RoofLook workLook = RoofOf(workplace.Kind);
             YardState workYard = PaintsBuildings ? YardStateOf(world, workplace, workLook.Yard) : default;
-            if (!DrawPaintedBuilding(workLook, centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id, yard: workYard))
+            if (!DrawPaintedBuilding(workLook, centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id, yard: workYard, burning: FireLitAt(world, workplace)))
             {
                 DrawFootprint(
                     centre,
@@ -8104,7 +8107,8 @@ public partial class VillageMap : Control
             // ⭐ With its yard on its own plot (A86, `building-yards.md §4`): its firewood and its food in levels.
             bool roofed = DrawPaintedBuilding(
                 RoofOf(kind), centre, wide, deep, facing, Weathered(DwellingRoofColourOf(kind), worn), worn, world.DoorOf(household), household.Id, alpha,
-                PaintsBuildings ? YardStateOf(household) : default, at => HomeYardTiles(household, at, facing, wide, deep));
+                PaintsBuildings ? YardStateOf(household) : default, at => HomeYardTiles(household, at, facing, wide, deep),
+                burning: HearthBurns(world.Clock.Season, occupied, household.Stockpile.Firewood));
             if (!roofed)
             {
                 DrawColoredPolygon(house, weathered with { A = alpha });
@@ -9319,6 +9323,9 @@ public partial class VillageMap : Control
         // A walk whose last nomad is in is forgotten here, once a tick, with the rest of the bookkeeping (D573).
         PruneTheFinishedWalkIns();
 
+        // ⭐ And whose forge or oven is lit (A139) — once a tick, where the states change.
+        NoteTheFires(world);
+
         // ⭐ AND WHOEVER ATE THIS TICK IS MARKED (D531) — once a tick, where the sim's fact changes.
         var ate = new List<int>();
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -9490,9 +9497,10 @@ public partial class VillageMap : Control
     /// <summary>The ordinary glide, in the view's tile space: from last tick's place toward this one, fanned off a crowded tile.</summary>
     private Vector2 DrawnTile(Villager villager)
     {
-        Vector2 current = InViewTiles(villager.Position);
+        // ⭐ In and out by the door (A139): a place inside a building with one is drawn at its step.
+        Vector2 current = AtTheDoor(InViewTiles(villager.Position), villager.State);
         bool seen = _tiles.TryGetValue(villager.Id, out var known);
-        Vector2 previous = seen ? known.Previous : current;
+        Vector2 previous = seen ? AtTheDoor(known.Previous, villager.State) : current;
 
         // Lerp from where they were to where they are. If they moved more than a
         // tile — being born, moving house, or several ticks passing inside one frame at
@@ -9541,7 +9549,7 @@ public partial class VillageMap : Control
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || (PaintsPeople && !ShownAsAPerson(villager.State)))
+            if (!villager.Alive || (PaintsPeople && !ShownOnTheMap(world, villager)))
             {
                 continue;
             }
