@@ -705,6 +705,9 @@ public partial class VillageMap : Control
         // The meal mark's clock (D531): real seconds, so half a second is half a second at any speed.
         _mealClock += delta;
 
+        // The people's clock (A130): the game's speed, capped at 1.5×; still while the village is paused.
+        TickThePeopleClock(delta);
+
         // The walk-in's clock (D573): real seconds too, but still while the village is paused.
         TickTheWalkClock(delta);
 
@@ -9541,7 +9544,7 @@ public partial class VillageMap : Control
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || (PaintsPeople && !ShownAsAPerson(villager.State)))
+            if (!villager.Alive || (PaintsPeople && !ShownOnTheMap(world, villager)))
             {
                 continue;
             }

@@ -62,9 +62,23 @@ public partial class VillageMap
     /// <summary>
     /// Indoors and out of sight (A90 call 3): at home resting, at school, teaching — the house's and the school's cards
     /// list who is in. The village empties at night and fills in the morning.
+    /// ⭐ <b>Resting is indoors only for a household with a house</b> (A133, Joe: <i>"they arent visible at all"</i>). A
+    /// founder with nothing to do rests, and before the first house is up they rest <i>in the open</i> (the card says so:
+    /// "resting in the open — no house yet") — A93 hid them anyway, and his whole new village vanished from the map.
     /// </summary>
-    internal static bool ShownAsAPerson(VillagerState state) =>
-        state is not (VillagerState.Resting or VillagerState.AtSchool or VillagerState.Teaching);
+    internal static bool ShownAsAPerson(VillagerState state, bool housed) => state switch
+    {
+        VillagerState.AtSchool or VillagerState.Teaching => false,
+        VillagerState.Resting => !housed,
+        _ => true,
+    };
+
+    /// <summary>
+    /// <see cref="ShownAsAPerson"/> for this villager: drawn and clicked by the one answer. The household is asked only of
+    /// someone resting.
+    /// </summary>
+    private static bool ShownOnTheMap(SimWorld world, Villager villager) =>
+        ShownAsAPerson(villager.State, villager.State == VillagerState.Resting && world.HouseholdOf(villager).HasHome);
 
     /// <summary>The doing of a trade, at its place: the tool out and the person facing us.</summary>
     internal static bool AtWork(VillagerState state) => state is VillagerState.Gathering or VillagerState.Cutting
@@ -85,15 +99,18 @@ public partial class VillageMap
 
     /// <summary>
     /// What a villager's picture depends on this frame. Pure: it reads the villager and their heading and changes nothing.
+    /// ⭐ <paramref name="heading"/> is the way their drawn point is moving, zero when they stand (A132): someone in a work
+    /// state who is moving — a labourer clearing tile to tile, a builder round the site — walks, tool in hand; standing
+    /// at it, they face us and work.
     /// </summary>
     internal static FigureKey PersonKeyOf(int id, LifeStage stage, JobKind? trade, VillagerState state, Vector2 heading,
         Goods? good, bool coat, bool cart)
     {
-        bool atWork = AtWork(state);
+        bool working = AtWork(state);
         bool moving = heading.LengthSquared() > 1e-6f;
         FigurePose pose = FigurePose.Front;
         bool flip = false;
-        if (!atWork && moving)
+        if (moving)
         {
             if (Mathf.Abs(heading.X) > Mathf.Abs(heading.Y) * 0.8f)
             {
@@ -111,15 +128,14 @@ public partial class VillageMap
         bool hasTool = PersonPainter.HasATool(trade, stage);
         FigureHold hold = cold ? FigureHold.Hug
             : good is Goods g && !PersonPainter.OnTheShoulder(g) ? FigureHold.Front
-            : (atWork || GoingToWork(state)) && hasTool ? FigureHold.Tool
+            : (working || GoingToWork(state)) && hasTool ? FigureHold.Tool
             : talking && pose == FigurePose.Front ? FigureHold.Talk
             : FigureHold.None;
         bool toolOut = (hold == FigureHold.Tool) || (stage == LifeStage.Elder && hold == FigureHold.None);
-        bool walking = moving && !atWork;
-        return new FigureKey(id, stage, trade, pose, flip, hold, walking, toolOut, good, coat, cart, cold);
+        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold);
     }
 
-    private FigureKey PersonKeyOf(Villager villager, SimWorld world)
+    private FigureKey PersonKeyOf(Villager villager, SimWorld world, Vector2 heading)
     {
         JobKind? trade = villager.WorkplaceId != 0 && world.FindWorkplace(villager.WorkplaceId) is Workplace w ? w.Kind : null;
         Goods? most = null;
@@ -134,7 +150,6 @@ public partial class VillageMap
             }
         }
 
-        Vector2 heading = ToScreen(villager.LegTo) - ToScreen(villager.LegFrom);
         bool cart = villager.PushingACart && !world.TheWorksCartSleepsWith(villager);
         return PersonKeyOf(villager.Id, villager.LifeStage, trade, villager.State, heading, most, villager.CoatDays > 0, cart);
     }
@@ -225,7 +240,7 @@ public partial class VillageMap
             }
 
             stillAlive.Add(villager.Id);
-            if (!ShownAsAPerson(villager.State))
+            if (!ShownOnTheMap(world, villager))
             {
                 continue;
             }
@@ -236,9 +251,17 @@ public partial class VillageMap
 
         _peopleThisFrame.Sort((a, b) => a.Y != b.Y ? a.Y.CompareTo(b.Y) : a.Who.Id.CompareTo(b.Who.Id));
         float scale = PersonPixels / PersonPainter.BakeHeight;
+        bool poses = PersonPixels >= PosesFromPixels;
+        PersonCache shadow = TheShadow();
         foreach ((_, Villager villager, Vector2 point) in _peopleThisFrame)
         {
-            FigureKey key = PersonKeyOf(villager, world);
+            // ⭐ The motion (A130): the pose this frame, and how the picture is moved — the step paid for by the distance
+            // the drawn point has walked (where it is drawn: the glide, or the road a nomad walks in on).
+            Vector2 live = DrawnTile(villager);
+            (float walked, Vector2 heading) = WalkedTo(villager.Id, villager.LifeStage, WalkInPlaceOf(villager.Id, live, out _) ?? live);
+            FigureKey still = PersonKeyOf(villager, world, heading);
+            PersonMotion motion = MotionOf(still, AtWork(villager.State), walked, _peopleClock, poses);
+            FigureKey key = still with { Beat = motion.Beat };
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             if (held is not null)
             {
@@ -262,6 +285,7 @@ public partial class VillageMap
             }
 
             held.LastSeen = frame;
+            KeepTheOtherPoses(key, frame);
             PaintedFigure f = held.Figure;
             float tall = f.FeetY / PersonPainter.FeetFromTop * scale;
             Vector2 feet = point + new Vector2(0f, tall * PersonPointUp);
@@ -270,8 +294,16 @@ public partial class VillageMap
                 DrawTheSelectionAtTheFeet(feet, tall);
             }
 
-            var rect = new Rect2(feet - (new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
+            // The shadow on the ground at their feet, scaled to them and not moved with them (A130).
+            PaintedFigure sf = shadow.Figure;
+            float ss = f.FeetY / sf.FeetY * scale;
+            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false);
+
+            // The person, lifted, leaned and squashed about their feet as the motion says.
+            DrawSetTransform(feet + (new Vector2(motion.Dx, motion.Dy) * tall), Mathf.DegToRad(motion.Turn), new Vector2(1f, motion.Squash));
+            var rect = new Rect2(-(new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
             DrawTextureRect(held.Texture, rect, tile: false);
+            DrawSetTransformMatrix(Transform2D.Identity);
 
             // ⭐ The water pail at their side (`water-need.md §2e`, D782) — the dots' stand-in, hung at a person's hip height.
             if (_pails.TryGetValue(villager.Id, out bool full))
@@ -303,6 +335,26 @@ public partial class VillageMap
         foreach (int id in _lastPersonKey.Keys.Where(id => !stillAlive.Contains(id)).ToList())
         {
             _lastPersonKey.Remove(id);
+        }
+
+        foreach (int id in _walked.Keys.Where(id => !stillAlive.Contains(id)).ToList())
+        {
+            _walked.Remove(id);
+        }
+    }
+
+    /// <summary>
+    /// A person's other poses are part of their look: kept while any one of them is drawn, so a long pause (one pose shown
+    /// for minutes) does not let the others go and leave the village repainting when it runs again (A130, after play).
+    /// </summary>
+    private void KeepTheOtherPoses(FigureKey key, ulong frame)
+    {
+        for (int b = 0; b <= 2; b++)
+        {
+            if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))
+            {
+                other.LastSeen = frame;
+            }
         }
     }
 

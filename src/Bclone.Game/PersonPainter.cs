@@ -45,9 +45,15 @@ internal enum FigureHold
 /// <param name="Coat">In a coat (the cloak).</param>
 /// <param name="Cart">Pushing the household's handcart.</param>
 /// <param name="Cold">Going in out of the cold.</param>
+/// <param name="Beat">
+/// Which pose of a motion (A130, <c>villager-animation.md</c>, look B): 0 is the still picture A93 painted (a stride,
+/// the palm raised, the tool held) — except a walker toward or away, whose feet, hem and hands step both ways since
+/// Joe's play; walking, 1 is the other step; talking, 1 is the palm lowered; at work with a tool
+/// that swings, 1 is the tool raised and 2 the stroke.
+/// </param>
 internal readonly record struct FigureKey(
     int Id, LifeStage Stage, JobKind? Trade, FigurePose Pose, bool Flip, FigureHold Hold, bool Walking, bool ToolOut,
-    Goods? Good, bool Coat, bool Cart, bool Cold);
+    Goods? Good, bool Coat, bool Cart, bool Cold, int Beat = 0);
 
 /// <summary>A painted person: straight RGBA bytes, and where on them the feet stand.</summary>
 internal sealed record PaintedFigure(int Width, int Height, byte[] Rgba, float FeetX, float FeetY);
@@ -303,6 +309,9 @@ internal static class PersonPainter
         internal readonly bool Detail, Face;
         internal bool Flip;
 
+        /// <summary>While set, every point is turned this many degrees (clockwise on screen) about a point first — a tool swung (A130).</summary>
+        internal (float Cx, float Cy, float Cos, float Sin)? Turn;
+
         internal Canvas(float pxH)
         {
             S = pxH * Supersample;
@@ -314,7 +323,23 @@ internal static class PersonPainter
             Face = pxH >= 30f;
         }
 
-        private (float X, float Y) P(float x, float y) => ((FeetFromLeft + (Flip ? -x : x)) * S, (FeetFromTop + y) * S);
+        private (float X, float Y) P(float x, float y)
+        {
+            if (Turn is (float cx, float cy, float cos, float sin))
+            {
+                float dx = x - cx, dy = y - cy;
+                x = cx + (dx * cos) - (dy * sin);
+                y = cy + (dx * sin) + (dy * cos);
+            }
+
+            return ((FeetFromLeft + (Flip ? -x : x)) * S, (FeetFromTop + y) * S);
+        }
+
+        internal void TurnAbout((float X, float Y) about, float degrees)
+        {
+            float a = degrees * MathF.PI / 180f;
+            Turn = (about.X, about.Y, MathF.Cos(a), MathF.Sin(a));
+        }
 
         /// <summary>Fills a polygon given in figure units, even-odd, sampling at pixel centres.</summary>
         internal void Fill(ReadOnlySpan<(float X, float Y)> pts, Rgb c)
@@ -495,12 +520,21 @@ internal static class PersonPainter
     // ------------------------------------------------------------------ the parts (illum.py, in order)
     private static readonly Dictionary<Length, float> Hem = new() { [Length.Ankle] = -0.05f, [Length.Calf] = -0.15f, [Length.Knee] = -0.29f };
 
-    private static void Legs(Canvas c, Who w, FigurePose pose, bool walking)
+    private static void Legs(Canvas c, Who w, FigurePose pose, bool walking, int beat)
     {
         const float hip = -0.42f, lw = 0.068f;
         if (pose == FigurePose.Side)
         {
-            if (walking)
+            if (walking && beat == 1)
+            {
+                // the passing step (A130): the far leg straight under, the near knee lifted, its foot off the ground
+                c.Limb((0f, hip), (0f, -0.03f), lw, w.Hose.Shade(0.85f));
+                c.Poly(new[] { (-0.05f, -0.05f), (0.01f, -0.05f), (0.09f, -0.01f), (-0.05f, 0f) }, Shoe);
+                c.Limb((0f, hip), (0.07f, -0.22f), lw, w.Hose);
+                c.Limb((0.07f, -0.22f), (0.02f, -0.10f), lw, w.Hose);
+                c.Poly(new[] { (-0.01f, -0.12f), (0.05f, -0.12f), (0.13f, -0.08f), (-0.01f, -0.07f) }, Shoe);
+            }
+            else if (walking)
             {
                 c.Limb((0f, hip), (0.12f, -0.03f), lw, w.Hose.Shade(0.85f));
                 c.Limb((0f, hip), (-0.10f, -0.03f), lw, w.Hose);
@@ -516,22 +550,26 @@ internal static class PersonPainter
             return;
         }
 
+        // Toward or away: one foot lifted mid-step, the left (beat 0) or the right (beat 1). ⚠️ A93's lift was 0.03 and
+        // the other step changed 19 screen pixels at the closest zoom (6 in a long gown, 4 for an elder) against 50–107 from
+        // the side — Joe saw *"their legs look stationary"* (A130) — so the step is higher and a long gown's shoes alternate.
         if (w.Length == Length.Ankle)
         {
-            c.Ell(-0.055f, -0.015f, 0.05f, 0.026f, Shoe);
-            c.Ell(0.055f, -0.015f, 0.05f, 0.026f, Shoe);
+            float l = walking && beat == 0 ? 0.04f : 0f, r = walking && beat == 1 ? 0.04f : 0f;
+            c.Ell(-0.055f, -0.015f - l, 0.05f, 0.026f, Shoe);
+            c.Ell(0.055f, -0.015f - r, 0.05f, 0.026f, Shoe);
             return;
         }
 
         const float spread = 0.06f;
-        float lift = walking ? 0.03f : 0f;
+        float lift = walking && beat == 0 ? 0.05f : 0f, rift = walking && beat == 1 ? 0.05f : 0f;
         c.Limb((-0.05f, hip), (-spread, -0.04f - lift), lw, w.Hose);
-        c.Limb((0.05f, hip), (spread, -0.04f), lw, w.Hose.Shade(0.9f));
+        c.Limb((0.05f, hip), (spread, -0.04f - rift), lw, w.Hose.Shade(0.9f));
         c.Poly(new[] { (-spread - 0.045f, -0.05f - lift), (-spread + 0.04f, -0.05f - lift), (-spread + 0.02f, -lift), (-spread - 0.06f, -0.005f - lift) }, Shoe);
-        c.Poly(new[] { (spread - 0.04f, -0.05f), (spread + 0.045f, -0.05f), (spread + 0.06f, -0.005f), (spread - 0.02f, 0f) }, Shoe);
+        c.Poly(new[] { (spread - 0.04f, -0.05f - rift), (spread + 0.045f, -0.05f - rift), (spread + 0.06f, -0.005f - rift), (spread - 0.02f, -rift) }, Shoe);
     }
 
-    private static float Gown(Canvas c, Who w, FigurePose pose)
+    private static float Gown(Canvas c, Who w, FigurePose pose, float hemSwing = 0f)
     {
         float hem = Hem[w.Length];
         bool side = pose == FigurePose.Side;
@@ -539,7 +577,7 @@ internal static class PersonPainter
         float lean = w.Stoop + w.Sway;
         float sh = side ? 0.10f : 0.15f;
         float flare = (w.Length switch { Length.Ankle => 0.22f, Length.Calf => 0.20f, _ => 0.17f }) * (side ? 0.72f : 1f);
-        float hs = -w.Sway * 0.6f;
+        float hs = (-w.Sway * 0.6f) + hemSwing;
         c.Poly(new[] { (-sh + lean, top), (sh + lean, top), (0.12f + (lean * 0.5f), -0.52f), (flare + hs, hem), (-flare + hs, hem), (-0.12f + (lean * 0.5f), -0.52f) }, w.Gown);
         if (w.Apron is Rgb apron && pose != FigurePose.Back)
         {
@@ -792,7 +830,8 @@ internal static class PersonPainter
         }
     }
 
-    private static (float X, float Y) Arms(Canvas c, Who w, FigurePose pose, float top, FigureHold hold, bool walking)
+    private static (float X, float Y) Arms(Canvas c, Who w, FigurePose pose, float top, FigureHold hold, bool walking, int beat,
+        (float X, float Y) workHand)
     {
         const float aw = 0.058f, sx = 0.15f;
         Rgb sl = w.Sleeve;
@@ -805,7 +844,8 @@ internal static class PersonPainter
                 return (0.14f, -0.50f);
             }
 
-            float swing = walking ? 0.09f : 0f;
+            // the free arm swings forward on a stride (beat 0) and hangs on the passing step (beat 1)
+            float swing = walking && beat == 0 ? 0.09f : 0f;
             c.Limb((0f, top + 0.03f), (swing, -0.45f), aw, sl);
             c.Ell(swing, -0.45f, 0.032f, 0.032f, w.Skin);
             return (swing, -0.45f);
@@ -834,16 +874,25 @@ internal static class PersonPainter
 
                 return (0f, -0.6f);
             case FigureHold.Talk when pose == FigurePose.Front:
+            {
+                // the palm raised (beat 0, A93's) or lowered to the chest (beat 1): speaking, then a pause
+                float k = beat == 1 ? 1f : 0f;
+                (float X, float Y) elbow = (0.22f - (0.02f * k), -0.60f + (0.06f * k));
+                (float X, float Y) palm = (0.20f - (0.07f * k), -0.75f + (0.15f * k));
                 c.Limb((-sx, top + 0.03f), (-0.185f, -0.45f), aw, sl);
                 c.Ell(-0.185f, -0.45f, 0.032f, 0.032f, w.Skin);
-                c.Limb((sx, top + 0.03f), (0.22f, -0.60f), aw, sl);
-                c.Limb((0.22f, -0.60f), (0.20f, -0.72f), aw, sl);
-                c.Ell(0.20f, -0.75f, 0.034f, 0.045f, w.Skin);
-                return (0.20f, -0.75f);
+                c.Limb((sx, top + 0.03f), elbow, aw, sl);
+                c.Limb(elbow, (palm.X, palm.Y + 0.03f), aw, sl);
+                c.Ell(palm.X, palm.Y, 0.034f, 0.045f - (0.01f * k), w.Skin);
+                return palm;
+            }
         }
 
-        (float, float) right = hold == FigureHold.Tool ? (0.21f, -0.46f) : (0.185f, -0.45f);
-        (float, float) left = (-0.185f, -0.45f);
+        // Walking toward or away, the hand opposite the stepping foot comes up a little (A130, after play).
+        float rightUp = walking && hold == FigureHold.None && beat == 0 ? 0.045f : 0f;
+        float leftUp = walking && hold == FigureHold.None && beat == 1 ? 0.045f : 0f;
+        (float, float) right = hold == FigureHold.Tool ? workHand : (0.185f - (rightUp * 0.4f), -0.45f - rightUp);
+        (float, float) left = (-0.185f + (leftUp * 0.4f), -0.45f - leftUp);
         c.Limb((-sx, top + 0.03f), left, aw, sl);
         c.Limb((sx, top + 0.03f), right, aw, sl);
         if (pose == FigurePose.Front)
@@ -1105,6 +1154,63 @@ internal static class PersonPainter
         }
     }
 
+    // ------------------------------------------------------------------ the work's two poses (A130, villager-animation.md §1)
+    /// <summary>
+    /// How a tool that swings is held in its two working poses: the hand moved from where A93 holds it (0.21, -0.46) and
+    /// the tool turned about the hand, degrees clockwise on screen. Beat 1 is the tool raised, beat 2 the stroke —
+    /// <c>anim.py</c>'s <c>WORK</c> frames 1 and 2, as mocked on Joe's Hollowmere.
+    /// </summary>
+    private static (float Dx, float Dy, float Degrees)? WorkPose(Tool tool, int beat) => (tool, beat) switch
+    {
+        (Tool.Axe or Tool.Pick, 1) => (-0.04f, -0.30f, 28f),
+        (Tool.Axe or Tool.Pick, 2) => (-0.13f, 0.10f, -150f),
+        (Tool.Hammer, 1) => (-0.02f, -0.24f, 22f),
+        (Tool.Hammer, 2) => (-0.09f, 0.03f, -105f),
+        (Tool.Fork, 1) => (0f, -0.12f, 14f),
+        (Tool.Fork, 2) => (0f, 0.05f, -22f),
+        (Tool.Spade, 1) => (0f, -0.10f, -18f),
+        (Tool.Spade, 2) => (0f, 0.07f, 0f),
+        (Tool.Rod, 1) => (0f, -0.02f, 3f),
+        (Tool.Rod, 2) => (0f, 0.02f, -7f),
+        (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
+        (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
+        (Tool.Saw, 1) => (0.05f, -0.02f, 0f),
+        (Tool.Saw, 2) => (-0.04f, 0.02f, 0f),
+        (Tool.Peel, 1) => (0.03f, -0.04f, 10f),
+        (Tool.Peel, 2) => (0.06f, 0f, -12f),
+        (Tool.Bow, 1) => (-0.03f, -0.18f, -60f),
+        (Tool.Bow, 2) => (-0.03f, -0.20f, -80f),
+        _ => null,
+    };
+
+    /// <summary>The trade's tool as a person of this age holds it: none for a child, the stick for an elder.</summary>
+    private static Tool ToolOf(JobKind? trade, LifeStage stage) =>
+        stage == LifeStage.Child ? Tool.None : stage == LifeStage.Elder ? Tool.Stick : LookOf(trade).Tool;
+
+    /// <summary>
+    /// Seconds a swing of this person's tool takes at the game's 1× (§1): the axe and the pick 1.6, the hammer 1.2, the saw
+    /// 0.96, the rod's dip 4.8, the rest 2.4; 0 when their tool has no working poses (the crook, the book, a child, an
+    /// elder's stick, a trade with no tool).
+    /// </summary>
+    internal static float SwingSeconds(JobKind? trade, LifeStage stage) => ToolOf(trade, stage) switch
+    {
+        Tool.Axe or Tool.Pick => 1.6f,
+        Tool.Hammer => 1.2f,
+        Tool.Saw => 0.96f,
+        Tool.Rod => 4.8f,
+        Tool.Fork or Tool.Spade or Tool.Basket or Tool.Peel or Tool.Bow => 2.4f,
+        _ => 0f,
+    };
+
+    /// <summary>How far the body bends into the stroke, as a share of its height (picking, digging, pitching).</summary>
+    internal static float StoopOf(JobKind? trade, LifeStage stage) => ToolOf(trade, stage) switch
+    {
+        Tool.Basket => 0.06f,
+        Tool.Spade => 0.03f,
+        Tool.Fork => 0.02f,
+        _ => 0f,
+    };
+
     // ------------------------------------------------------------------ one person
     /// <summary>Paints one person <see cref="BakeHeight"/> pixels tall (an adult; a child and an elder less).</summary>
     internal static PaintedFigure Paint(FigureKey f)
@@ -1113,6 +1219,11 @@ internal static class PersonPainter
         float hk = BakeHeight * w.K;
         var c = new Canvas(hk) { Flip = f.Flip };
         FigurePose pose = f.Pose;
+
+        // At work facing us with a tool that swings, beats 1 and 2 move the hand and turn the tool about it (A130).
+        (float Dx, float Dy, float Degrees)? swung = f.Hold == FigureHold.Tool && !f.Walking && pose == FigurePose.Front
+            ? WorkPose(w.Tool, f.Beat) : null;
+        (float X, float Y) workHand = swung is (float dx, float dy, _) ? (0.21f + dx, -0.46f + dy) : (0.21f, -0.46f);
 
         if (pose != FigurePose.Side)
         {
@@ -1123,12 +1234,20 @@ internal static class PersonPainter
         LoadBehind(c, w, pose);
         if (f.ToolOut)
         {
-            ToolBehind(c, w, pose, pose != FigurePose.Side ? (w.Elder ? (0.185f, -0.45f) : (0.21f, -0.46f)) : (0.09f, -0.45f));
+            if (swung is (_, _, float turned))
+            {
+                c.TurnAbout(workHand, turned);
+            }
+
+            ToolBehind(c, w, pose, swung is not null ? workHand : pose != FigurePose.Side ? (w.Elder ? (0.185f, -0.45f) : (0.21f, -0.46f)) : (0.09f, -0.45f));
+            c.Turn = null;
         }
 
-        Legs(c, w, pose, f.Walking);
-        float top = Gown(c, w, pose);
-        (float, float) hand = Arms(c, w, pose, top, f.Hold, f.Walking);
+        Legs(c, w, pose, f.Walking, f.Beat);
+        // Walking toward or away, the hem swings toward the stepping leg (A130, after play: the legs alone barely moved there).
+        float hemSwing = f.Walking && pose != FigurePose.Side ? (f.Beat == 0 ? -0.03f : 0.03f) : 0f;
+        float top = Gown(c, w, pose, hemSwing);
+        (float, float) hand = Arms(c, w, pose, top, f.Hold, f.Walking, f.Beat, workHand);
         CoatFront(c, w, pose, top);
         bool logsUnderHead = w.Good == Goods.Logs && pose != FigurePose.Side;
         if (logsUnderHead)
@@ -1139,7 +1258,13 @@ internal static class PersonPainter
         HeadOf(c, w, pose, top);
         if (f.ToolOut)
         {
+            if (swung is (_, _, float turned))
+            {
+                c.TurnAbout(hand, turned);
+            }
+
             ToolFront(c, w, pose, hand);
+            c.Turn = null;
         }
 
         if (!logsUnderHead)
@@ -1153,14 +1278,21 @@ internal static class PersonPainter
         }
 
         ShiverMarks(c, w, pose, top);
-        return Finish(c, hk);
+        return Finish(c, hk, shadowOnly: false);
     }
 
     /// <summary>
-    /// The light from the upper left as a soft darkening to the right, the ink outline round the whole silhouette, the
-    /// shadow on the ground to the lower right; then the supersample averaged down.
+    /// ⭐ The shadow on the ground, painted once on its own (A130): an adult's, on an adult's canvas, so it lies at the feet
+    /// of any person's picture drawn the same way and scales with them. It is drawn under a person and not moved with them,
+    /// so a step's rise and a lean read against the ground. Until A130 it was part of every person's painting.
     /// </summary>
-    private static PaintedFigure Finish(Canvas c, float hk)
+    internal static PaintedFigure PaintShadow() => Finish(new Canvas(BakeHeight), BakeHeight, shadowOnly: true);
+
+    /// <summary>
+    /// The light from the upper left as a soft darkening to the right, the ink outline round the whole silhouette; or,
+    /// alone, the shadow on the ground to the lower right; then the supersample averaged down.
+    /// </summary>
+    private static PaintedFigure Finish(Canvas c, float hk, bool shadowOnly)
     {
         int W = c.W, H = c.H;
         int r = Math.Max(1, (int)MathF.Round(Supersample * 0.5f));
@@ -1206,21 +1338,24 @@ internal static class PersonPainter
         float S = c.S;
         float sx = (FeetFromLeft + 0.10f) * S, sy = (FeetFromTop + 0.02f) * S;
         float srx = 0.22f * S, sry = 0.065f * S;
-        var shadow = new float[W * H];
-        for (int y = 0; y < H; y++)
+        var shadow = new float[shadowOnly ? W * H : 0];
+        if (shadowOnly)
         {
-            for (int x = 0; x < W; x++)
+            for (int y = 0; y < H; y++)
             {
-                float dx = (x + 0.5f - sx) / srx, dy = (y + 0.5f - sy) / sry;
-                if ((dx * dx) + (dy * dy) <= 1f)
+                for (int x = 0; x < W; x++)
                 {
-                    shadow[(y * W) + x] = 105f / 255f;
+                    float dx = (x + 0.5f - sx) / srx, dy = (y + 0.5f - sy) / sry;
+                    if ((dx * dx) + (dy * dy) <= 1f)
+                    {
+                        shadow[(y * W) + x] = 105f / 255f;
+                    }
                 }
             }
-        }
 
-        BoxBlur(shadow, W, H, Math.Max(1, (int)(0.035f * S)));
-        BoxBlur(shadow, W, H, Math.Max(1, (int)(0.035f * S)));
+            BoxBlur(shadow, W, H, Math.Max(1, (int)(0.035f * S)));
+            BoxBlur(shadow, W, H, Math.Max(1, (int)(0.035f * S)));
+        }
 
         // compose at the supersample, then average each Supersample² block, premultiplied
         int ow = (W + Supersample - 1) / Supersample, oh = (H + Supersample - 1) / Supersample;
@@ -1253,7 +1388,7 @@ internal static class PersonPainter
                     rr = Ink.R;
                     gg = Ink.G;
                     bb = Ink.B;
-                    aa = shadow[k];
+                    aa = shadowOnly ? shadow[k] : 0f;
                 }
 
                 int o = (((y / Supersample) * ow) + (x / Supersample)) * 4;
