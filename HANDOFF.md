@@ -1,5 +1,8 @@
-# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS, W2 (MORALE). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
+# Handoff — bclone: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), NOT PUSHED; NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS, HIS ORDER — W3 OR HIS SEVEN PLAY NOTES. ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **⭐ MERGED INTO `main` AT JOE'S WORD (D810, 2026-11-21: *"the amber warning did show up. approved."*, *"merge it"*),
+> `8b85c02`, NOT PUSHED; `slice/morale` DELETED. Freezing people do not leave before they die (his call). Suite
+> 2173 / 0 / 5 of 2178 in 16m48; probe 173 lines, 134 ✅, 0 ⛔, bar 183 everywhere, tile centres ✅, new game ✅, walk out ✅, log trim ✅, done.. ⏸️ PUSH AT HIS WORD; NEXT FOR SYSTEMS HIS ORDER — W3 OR THE SEVEN PLAY NOTES.**
 > **🔨 `slice/morale` — W2, MORALE (2026-11-19, Joe: *"start morale on its own slice in a new nested session. but i want to
 > weigh the pros and cons between it being "morale," "health," or "happiness.""*). The name first, put to him; then
 > `specs/morale.md` (D207) re-read against today's code, spec first, his calls, then the code.**
@@ -10757,7 +10760,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   0**. Only Penret Croft was ready to leave (8 seasons, the cold winter and the fire out), and Penret was held by a
   partner who was not unsettled, which is checklist item 5 working as built. **All 30 then died of the cold within 25
   ticks** (autosave-2, tick 16,800). Nobody left. **The neglect killed before it unsettled**: the same thing D808 found
-  with the no-house pose. ⏸️ **His to call (a design tension, not a bug):** whether people who are freezing should leave
+  with the no-house pose. ✅ **Answered (D810): *"freezing villagers should not leave before they die"*** — nothing changes. *(Was: his to call, a design tension, not a bug:)* whether people who are freezing should leave
   before they die rather than after two years. And for now, whether to see 5b with the leaving keys shortened for a
   test play (`data/sim.config.json`: `contentment_thinking_of_leaving_seasons` 4 → 1, `contentment_leaving_seasons`
   8 → 2, put back after).
@@ -10783,8 +10786,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   there or read his save. Expect goldens to need a look only if a harness places on steep ground. Unclaimed; his order
   with the other six.
 
-- ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), UNPLAYED; HIS EYES, THEN IT MERGES WITH THE
-  SLICE AT HIS WORD.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,
+- ⏸️ **THE PAUSE SCREEN'S HITCH — BUILT ON `slice/morale` (D805, 2026-11-20), ✅ MERGED WITH THE SLICE (D810), UNPLAYED;
+  HIS EYES STILL OWED.** What to look for, in his own village from the main checkout (`.\run.bat`): **Esc pauses at once,
   no freeze and no villagers popping in**; *Load…* opens its list (it reads his saves as it opens — a blink, not
   seconds) and lists the save he just made; old-format saves still greyed. A save cut short now lists and is refused
   in words when picked (`title-and-pause.md §5.2`).
