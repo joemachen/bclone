@@ -1,7 +1,8 @@
 # Spec: A second crop — barley (W7)
 
-> Status: **📝 SPECCED (D822, 2026-11-21) on `slice/w7-barley` — ⏸️ FIVE CALLS JOE'S (§9), each with a recommendation.
-> Nothing built.** *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
+> Status: **📝 SPECCED (D822, 2026-11-21) on `slice/w7-barley`; ✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as
+> recommended"*); ⏸️ CALL 1 REOPENED BY JOE — barley learned from the wild, by foraging (§9.1). Nothing built.**
+> *(Read "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
 > Phase 6, W7 of the workplan (`systems-complete.md §5.1`), moved ahead of W3 at Joe's word (D821, *"Yes, barley first"*).
 >
 > Neighbours: `crops-and-orchards.md` (the farm, the field, the calendar — D161/D162), D348 (a crop is a `CropRow`),
@@ -128,7 +129,9 @@ stalks in barley's colour (§6) — never drawn as nothing. Also: barley's colou
 - **Save format**: `grows` added with a default, so an older save loads (its farms grow wheat); the format number bumps
   only if the reader needs it to (D510: a save is read whole or refused).
 
-## 9. ⏸️ Joe's calls — in plain words
+## 9. Joe's calls — in plain words
+
+**✅ Calls 2–5 as recommended (D823, 2026-11-21, *"I like all as recommended"*). ⏸️ Call 1 reopened by him — §9.1.**
 
 1. **Can a new village grow barley from the start, or does it have to learn it?** *Recommended: from the start.* It is a
    field choice, not a new building, and it is the answer to a blight W8 will bring — a gate in front of an answer is a
@@ -144,6 +147,34 @@ stalks in barley's colour (§6) — never drawn as nothing. Also: barley's colou
    each to trade (wheat's)?** *Recommended: yes, wheat's numbers.* You tune both in play.
 5. **The mill grinds wheat only — no barley flour, and barley does not count toward learning the mill?** *Recommended:
    yes.* Wheat's chain stays wheat's (bread), barley's is beer (W3). That is D821's whole reason for barley.
+
+### 9.1 ⏸️ Call 1, reopened — barley found wild by a forager (Joe, D823)
+
+Joe: *"if barley is available from the start, then beer should be available from the start, and bars/pubs, brewers? it
+feels like a lot and should be unlocked somehow … is there wild barley? could a forager "discover" barley after X forage
+units harvested"*.
+
+- **Barley first does not mean beer first.** Wheat is sown from the founding and the mill is learned after 5,000 wheat
+  reaped (D523); W3 can give the brewery the same kind of gate on barley. So the brewery's unlock is W3's call either way.
+- **Wild barley is real, and his idea is how barley actually began.** Wild barley grows wild across the Near East, and
+  people gathered it for thousands of years before anyone sowed it; it was one of the first crops ever farmed. A forager
+  bringing home wild barley and the village learning to sow it is history compressed, and 5,000 wheat to a mill is
+  compressed the same way.
+- **It matches every learned-by-doing gate the game has**: the smithy after 50 iron, the tailor after 50 leather, the
+  quarry after 200 stone, the workshop after 1,500 logs, the mill after 5,000 wheat. Barley: **`barley_unlock_forage`**
+  units gathered by foragers, counted where they are gathered (`ForageEverGathered`, `StoneEverDug`'s shape), a
+  *learned* moment (*"A forager has brought home wild barley …"*), and *Lore* shows the road to it.
+- **Blight then waits for barley.** §0.1 admits a pressure once its answer exists, so W8 strikes a field only in a village
+  that knows barley. That keeps the gate honest.
+- **The number is measured, not picked** (D16): how much forage the harness villages gather a year, and the year a
+  played village would reach it. Proposed aim: **well before the mill** (Year 14), because beer is contentment's first
+  lever — the number is put to Joe with the measurement.
+- **Before it is known**, the farm card's *Grows* shows barley greyed: *"Not known yet — a forager may find it growing
+  wild (412 of 1,000 gathered)."*
+- **Goldens:** the unattended villages forage, so they will learn barley; the learned flag is hashed, so goldens move
+  once, each proven by ablation (the gate set out of reach reproduces today's).
+
+*Recommended now: the forager's find* (his idea), over barley from the founding.
 
 ## 10. How it is built and tested, once the calls are in
 
