@@ -2,7 +2,7 @@
 
 > **Status: ✍️ specced and mocked (A129, 2026-11-20); ✅ B picked, every call as recommended (A130, *"B, all as
 > recommended"*); 🔨 BUILT on `art` (A130, §8), after-play fixes A131 (§8a), A132 (§8b) and A133
-> (`villager-art.md §8a`); ✅ MERGED INTO `main` at his word (A134, *"They show, merge"*, `cc8feb9`); not pushed.** Joe, 2026-11-20: *"Can we
+> (`villager-art.md §8a`); ✅ MERGED INTO `main` at his word (A134, *"They show, merge"*, `cc8feb9`) and pushed (A135, *"Push main"*).** Joe, 2026-11-20: *"Can we
 > work on villager animations next?"* The painted people (A93, mock E, `villager-art.md §8`) stand in one painted pose
 > and glide from tick to tick; `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. This is
 > that piece.
