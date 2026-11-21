@@ -9544,7 +9544,7 @@ public partial class VillageMap : Control
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
-            if (!villager.Alive || (PaintsPeople && !ShownAsAPerson(villager.State)))
+            if (!villager.Alive || (PaintsPeople && !ShownOnTheMap(world, villager)))
             {
                 continue;
             }

@@ -32,18 +32,50 @@ public partial class VillageMap
             // Indoors and out of sight (A90 call 3): resting at home, at school, teaching; everyone else on the map.
             foreach (VillagerState s in new[] { VillagerState.Resting, VillagerState.AtSchool, VillagerState.Teaching })
             {
-                if (ShownAsAPerson(s))
+                if (ShownAsAPerson(s, housed: true))
                 {
-                    faults.Add($"{s} is drawn (want indoors, not drawn)");
+                    faults.Add($"{s}, housed, is drawn (want indoors, not drawn)");
                 }
             }
 
             foreach (VillagerState s in new[] { VillagerState.Cutting, VillagerState.TravelingHome, VillagerState.SeekingShelter, VillagerState.Idle, VillagerState.WalkingToSchool })
             {
-                if (!ShownAsAPerson(s))
+                if (!ShownAsAPerson(s, housed: true) || !ShownAsAPerson(s, housed: false))
                 {
                     faults.Add($"{s} is not drawn (want drawn)");
                 }
+            }
+
+            // ⭐ Joe's new village (A133): four founders with no house and nothing to do, resting in the open — on the map.
+            if (!ShownAsAPerson(VillagerState.Resting, housed: false))
+            {
+                faults.Add("resting in the open, no house yet, is not drawn (want drawn: they are not indoors)");
+            }
+
+            // ⭐ And asked of a real founder, as drawing and clicking ask it: the new game's first villager, no house yet, set
+            // resting for the question and put back at once.
+            if (_world is { } founded && founded.Villagers.FirstOrDefault(v => v.Alive && !founded.HouseholdOf(v).HasHome) is { } founder)
+            {
+                VillagerState stateBefore = founder.State;
+                founder.State = VillagerState.Resting;
+                bool shown;
+                try
+                {
+                    shown = ShownOnTheMap(founded, founder);
+                }
+                finally
+                {
+                    founder.State = stateBefore;
+                }
+
+                if (!shown)
+                {
+                    faults.Add($"founder {founder.Id}, resting with no house yet, is not on the map (want drawn and clickable)");
+                }
+            }
+            else
+            {
+                faults.Add("no founder without a house in the new game to ask (want one)");
             }
 
             // The poses (§3a): toward, away, from the side and mirrored for the left; at work facing us with the tool out.
@@ -165,7 +197,7 @@ public partial class VillageMap
 
             string moving = ThePeopleMoveHold();
             return faults.Count == 0
-                ? $"[widths] painted villagers: ✅ painted only with the tick; resting, at school and teaching indoors and not drawn; toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
+                ? $"[widths] painted villagers: ✅ painted only with the tick; resting at home, at school and teaching indoors and not drawn, resting in the open before the first house on the map (a founder asked); toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
                 : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}\n{moving}";
         }
         catch (System.Exception e)

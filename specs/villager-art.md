@@ -196,7 +196,7 @@ table in §3.
 ## 8. ✅ As built (A93) — E, at Joe's word: *"Yes, build E"*
 
 Every §6a call as recommended: **E**; **people standing up** on the top-down map; **0.72 of a tile** tall (never under
-11 px); **indoors not drawn** (resting, at school, teaching — and not clickable there either); **the teacher in the
+11 px); **indoors not drawn** (resting **at home** — A133, §8a: resting in the open before the first house is on the map —, at school, teaching — and not clickable there either); **the teacher in the
 library's blue deepened** — ⚠️ held in the painter's own trade table, not in `TradeGlyph.cs` (the systems lane's file),
 so the Professions panel's teacher is still the modder's grey: a one-line systems ask, `art-inventory.md §6`.
 
@@ -223,6 +223,21 @@ so the Professions panel's teacher is still the modder's grey: a one-line system
   **Red-checked, nine breaks in one run, nine reds** — ⚠️ the child's check scored **zero** as first written (it measured
   a child from an adult's feet; a child is painted on a smaller canvas) and was fixed to measure each from its own feet,
   then red alone.
+
+### 8a. ✅ Resting in the open is not indoors (A133) — Joe, on a new Hollowmere: *"the villagers flashed on for a moment when i unpaused and then disappeared. they arent visible at all."*
+
+**Read his save first:** a per-person log on a copy of his autosave (Day 7, Spring, Year 1; four founders, no house, three
+sites waiting on logs) — all four `Resting` for every frame of 150-odd ticks, and the painter drawing **none**. A villager
+with nothing to do rests (`Decide` → `Resting`), and before the first house is up they rest **in the open** at the camp —
+their card says *"resting in the open — no house yet"*. Call 3's *"indoors not drawn"* was written as `Resting` = indoors,
+so a new village with nothing to do vanished entirely (the moment's flash he saw is not explained — no frame of my logs, every tenth over 150-odd ticks, had anyone out of `Resting`).
+**Not A130–A132's:** the rule is A93's, and the dots (tick off) always drew them.
+**Fixed:** `ShownAsAPerson(state, housed)` — at school and teaching indoors as before; resting indoors only when the
+household has a house; `ShownOnTheMap` is the one answer the drawing and the click test ask (the household asked only of
+someone resting). Seen in a render of his save: the four founders standing fanned out at their camp.
+**Guarded:** `painted villagers:` — resting, housed, indoors; resting with no house drawn; and asked of the new game's own
+first founder, set resting for the question and put back. **Red-check: 3 mutants, 3 red** (resting always indoors; the
+map asking as if housed; resting never indoors).
 - **Measured.** By the gown's colour alone **5 of 171 trade pairs look alike** (ΔE < 10): woodcutter/marketer,
   marketer/carpenter, quarrier/labourer, miner/herdsman, miller/baker (both in linen aprons) — every pair apart by the
   hat or the tool; the probe holds it at 5. **A painting is 3.95 ms** warm in Release (a console bench of the same file),
