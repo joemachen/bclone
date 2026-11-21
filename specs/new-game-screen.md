@@ -584,6 +584,8 @@ over it, not a second painter — but **the game's own map**, so the preview is 
   mattered; a preview map per valley loads both every time, and the collector could take a look Godot's cache still
   named — the next load came back null, and the finaliser killed the game. **Fixed as `ValleyWatercolourLook.Current`
   already was:** each loaded once and kept for the game's life (`GrassLook.cs`, `GrassLabTerrain.cs`, the art lane's).
+  *(A155: and a fourth, `NodeSpriteBands.Current` — the deposits' bands — missed here and found by this guard on `main`
+  at the merge; now kept too.)*
   Nothing writes to either; the lab's Reset reads its file by its own path. **Guard:** `new game:` makes twenty
   previews in a row with the collector run between them and not waited for. **Reds:** with the terrain look loaded
   and dropped again the probe **died** at `Watercolour.cs:1048`; with the grass look, green on the first run and

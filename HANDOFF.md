@@ -10741,6 +10741,8 @@ wrapper while Godot's cache still names it, and the next load returns null, then
 (`_x ??= GD.Load<T>(path)`). **A crash that needs the collector at the wrong moment is reproduced by a tight loop with
 `GC.Collect()` between steps and NOT `WaitForPendingFinalizers`** — waiting closes the window; 120 real drags never
 hit it, twenty looped previews did within seconds. And it is a race: one mutant run green, the next died.
+*(A155: A151 fixed the two that crashed and missed a fourth, `NodeSpriteBands.Current`, which killed the probe on `main`
+at the merge. **Sweep by kind, not by crash:** `grep ": Resource"` for every scripted resource, then every loader of each.)*
 **Also paid for:** a reverse mutation whose text appears twice is refused (`mutate.py` counts) and the mutant stays in —
 twice today. Check `git diff --stat` after every restore, and write mutants whose *reverse* text is unique too.
 (70) **A probe that poses the screen before it looks never sees the screen as it opens** (A152): Joe's new-valley map

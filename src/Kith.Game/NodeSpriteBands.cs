@@ -18,5 +18,12 @@ public sealed partial class NodeSpriteBands : Resource
     public Godot.Collections.Dictionary Bands { get; set; } = new();
 
     /// <summary>The bands as they stand in <see cref="Path"/>, or null where the file is missing.</summary>
-    internal static NodeSpriteBands? Current => ResourceLoader.Exists(Path) ? GD.Load<NodeSpriteBands>(Path) : null;
+    /// <remarks>
+    /// ⛔ <b>Loaded once and kept for the life of the game</b> (A155), as <see cref="GrassLook.Approved"/> is (A151): the
+    /// fourth C#-scripted resource loaded afresh and dropped, missed by A151's sweep. Every preview map asks for it, and
+    /// the probe's twenty previews died on <c>main</c> at the merge — <c>gchandle.is_released()</c>, the atlas's bands null.
+    /// </remarks>
+    internal static NodeSpriteBands? Current => _current ??= ResourceLoader.Exists(Path) ? GD.Load<NodeSpriteBands>(Path) : null;
+
+    private static NodeSpriteBands? _current;
 }
