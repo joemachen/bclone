@@ -10603,7 +10603,30 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ 🔨 **being built on `art`** (2026-11-20, Joe: *"Can we work on villager animations next?"*). **THE VILLAGERS MOVE — a walk,
+- ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE, NOTHING CLAIMED, HIS ORDER.** Recorded
+  so they outlive the chat (A136). Each is a piece of its own; the first commit on a branch claims it here.
+  - 🐞 **P0, systems — a crash:** native `0xC0000005` in `RichTextLabel.Clear()` from `Main.AppendNewLogLines` (the village
+    log trimming itself past `MaxLogLines × 2` = 800 lines), tick 5,995, his Ravenscar Y13 (`logsun_20261120_203730.log`
+    in the art folder). Not reproduced. `Main.cs` — the systems lane's; onto the open slice (CLAUDE.md: a bug found while a
+    slice is open goes on it).
+  - **Systems (`Main*.cs`, the settings, the data):** a **full-screen** option in Settings, on by default; **F5 quicksave,
+    F7 quickload**; Professions — *"Laborers are the spare hands…"* to a **tooltip on "Laborers: n"**; the village roster's
+    **sort headers jump** and shift the panel; the top bar **drops the labourer count** (it is in Professions) — maybe a
+    children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
+    (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
+  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps; (b)
+    **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
+    (c) **every trade and action** with varied work animations (stone gathering named); (d) **stockpiles show piles** of
+    each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
+    block; (e) **chimney smoke** while a building burns firewood (`art-inventory.md` B11, *"none anywhere"*); (f) **people
+    go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
+    on the building (D45); (g) **berry bushes / gathering resources** and **animals for hunting**, animated (`art-inventory.md`
+    §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
+    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph).
+  - ✅ **Answered, not a piece:** the coloured bar down a card's left edge is `chrome/sheet-selected.png` — *"an
+    illuminated bar… the card being worked with"* (`ui-assets.md`, the selected card's sheet). Intentional; dropping it is
+    his call.
+- ✅ **MERGED INTO `main` (A134) AND PUSHED (A135)** (2026-11-20, Joe: *"Can we work on villager animations next?"*). **THE VILLAGERS MOVE — a walk,
   the work swings, carrying, an idle sway, the pushed cart.** The painted people (A93) stand still in one painted pose and glide;
   `villager-art.md §5` left *"walk cycles or swing animations"* out of that piece. View only: it reads the sim, never writes it.
   ✍️ **Specced and mocked (A129): three looks on his Hollowmere — A breathing (no new paintings), B two poses, C full cycle;
