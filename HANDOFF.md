@@ -11031,8 +11031,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
     (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
   - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps —
-    🔨 **being built on `art`** (2026-11-21, moved ahead of (h) at his word; spec `specs/path-crossfade.md`; ⏸️ his calls
-    on a mock before anything is built); (b)
+    🔨 **being built on `art`** (2026-11-21, moved ahead of (h) at his word; ✍️ specced and mocked A168, `specs/path-crossfade.md`,
+    `D:\Projects\brushes\paths\crossfade\path_crossfade_mock.gif`; ⏸️ his four calls (§6) before anything is built; the
+    prototype the mock was rendered from is uncommitted, saved as `prototype.patch` beside the GIF); (b)
     **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
     (c) **every trade and action** with varied work animations (stone gathering named); (d) ✅ **MERGED INTO `main` (A160, `a2dd441`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A161)** (2026-11-21, *"Start piles"*; specced and mocked A158, `specs/stock-piles.md`; ✅ his calls *"A, all as recommended"*; built A159; played and approved; renders `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg`, before beside after) — **stockpiles show piles** of
     each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
