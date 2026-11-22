@@ -11087,7 +11087,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     piece's call), and the chopping before it is the villager's own swing (A130);
     (l) **the title screen upgrade** — a parchment menu panel, and a four-season composite background captured from the real
     renderer; his amended brief is `D:\Projects\brushes\title-menu\brief.md`. **Queued after (h), Joe's *"After the bridge"*.**
-    🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code).
+    🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code)
+    — ✍️ **specced, part 1 mocked (A179, `specs/title-screen-art.md`; `D:\Projects\brushes\title-menu\title_panel_mock.jpg`);
+    ⏸️ six calls his (§7): no-save menu, his OK for `TitleScreen.cs` and `Main.cs`'s `title:` probe, which village, what follows
+    the forced season, the panel's width, the newest-village backdrop given up. Nothing built.**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
