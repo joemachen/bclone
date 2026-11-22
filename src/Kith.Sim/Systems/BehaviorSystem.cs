@@ -3599,8 +3599,8 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // gets its own sentence rather than one shrug (§1.1). The order matters: a
                 // met limit is the reason the player cannot see from the farm's own panel,
                 // which is D147's finding and why that marker was worth building.
-                Goods grown = world.JobsCatalog.LimitedBy(job.Kind) ?? Goods.Wheat;
-                villager.WorkNote = !world.MayReap() && SeasonRules.IsReaping(world.Clock.Season)
+                Goods? heldBack = SeasonRules.IsReaping(world.Clock.Season) ? world.GrainHeldBackAt(job) : null;
+                villager.WorkNote = heldBack is Goods grown
                     ? $"Not bringing the harvest in at {job.Name} — you asked the village to "
                       + $"keep {world.StockLimits.For(grown)} {world.GoodsCatalog.NameOf(grown)} and it has "
                       + $"{world.HeldAgainstItsLimit(grown)} stored. It stands until the village eats."
@@ -7071,7 +7071,10 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // granary. The forager's household shops like every other now, at half a larder
                 // (D372), and inequality is distance and hands, as D32 asked.
                 villager.Carried.Receive(Goods.Produce, yield);
-                world.RecordFoodProduced(Goods.Produce, yield);
+
+                // ⭐ The ledger and barley's find through one door (W7, D824): `Foraged` records the food and learns
+                // barley where the count crosses `barley_unlock_forage`.
+                world.Foraged(yield);
                 villager.TotalGathers++;
                 villager.GathersThisSeason++;
 
@@ -7187,10 +7190,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                 if (SimWorld.IsSowable(world.Map.TerrainAt(sown)))
                 {
                     world.SetTerrain(sown, Terrain.Sown);
-                    // ⭐ The crop is a ROW now (D348). D161 put the id on the tile and
-                    // deferred what it meant; `Crops.TheOne` is what it means until the farm can
-                    // choose.
-                    world.Map.SetCrop(sown, (byte)world.Crops.TheOne.Id);
+                    // ⭐ The crop is a ROW now (D348), and since W7 it is THE FARM'S CHOICE (`barley.md §4`):
+                    // what its card says it grows, read here at the sowing and never at the reap — the tile
+                    // carries what was sown, so a change in summer leaves this year's field what it was.
+                    // A hand with no farm (it cannot sow without one) sows the default.
+                    int choice = WorkplaceOf(world, villager)?.Grows ?? Workplace.DefaultGrows;
+                    world.Map.SetCrop(sown, (byte)choice);
                 }
 
                 villager.ErrandX = 0;

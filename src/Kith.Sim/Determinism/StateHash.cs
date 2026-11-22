@@ -442,6 +442,14 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.MakeGood);
             }
 
+            // ⭐ What a farm sows (W7, `barley.md §4`) — the player's choice decides every field it will sow. Sparse against
+            // the default, `MakeGood`'s rule, so a farm left on wheat mixes nothing and every golden holds; its own tag.
+            if (workplace.Grows != Workplace.DefaultGrows)
+            {
+                hash = MixUInt32(hash, 0xF3u);
+                hash = MixUInt32(hash, (uint)workplace.Grows);
+            }
+
             // The building's handcart and the trips left in it (`handcart.md §13.2`) — it decides whether a worker walks for
             // one and how deep the counter's load is. Sparse under its own tag, so a village whose trades own no cart hashes
             // as it did before they could.
@@ -776,6 +784,15 @@ public static class StateHash
         if (world.SchoolLearned)
         {
             hash = MixByte(hash, 0x87);
+        }
+
+        // ⭐ Whether the village has learned barley (W7, D824) — the workshop's shape (D676): a tag byte when true, set where
+        // the forage count crosses the gate. ⚠️ THE GAP, STATED: the count beneath it (`FoodEverProducedOf(Produce)`) is a
+        // statistic and stays unmixed — every village forages from day one, and mixing it would move every golden for a
+        // difference below the gate that nothing reads. `BarleyTests` asserts the gap on purpose.
+        if (world.BarleyLearned)
+        {
+            hash = MixByte(hash, 0x88);
         }
 
         // ⭐ The houses the family tree has taught, and what the village builds its homes as (`house-tiers.md §7`, D721) —

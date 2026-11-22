@@ -503,6 +503,22 @@ public sealed class Workplace
     public const Goods DefaultMakeGood = Goods.Handcart;
 
     /// <summary>
+    /// ⭐ What a farm sows — a crop row's id, the player's choice on its card, <b>wheat unless they say otherwise</b> (W7,
+    /// `barley.md §4`; Joe, call 3, D823: one crop a farm, from the next spring). Ignored by every other workplace.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="MakeGood"/>'s shape a third time: set through <c>SimWorld.SetGrows</c>, which refuses a crop no row
+    /// defines and one the village has not learned. <b>Read at the sowing, never at the reap</b> — a sown tile carries its
+    /// own crop id (D161), so a change in summer leaves this year's field what it was. Hashed sparsely against
+    /// <see cref="DefaultGrows"/>, so a farm left on wheat mixes nothing; saved as <c>grows</c>, and a save from before
+    /// it reads wheat.
+    /// </remarks>
+    public int Grows { get; set; } = DefaultGrows;
+
+    /// <summary>What a farm sows before anybody touches it — wheat, crop 1. <see cref="Determinism.StateHash"/> tests against this.</summary>
+    public const int DefaultGrows = 1;
+
+    /// <summary>
     /// What a place is set to before anybody touches it. <see cref="Determinism.StateHash"/>
     /// tests against this rather than against a named mode, so that changing the default cannot
     /// silently move every golden in the suite — which is a trap that was walked into and out
@@ -867,6 +883,9 @@ public sealed class Workplace
         ["mode"] = SaveWriter.Enum(Mode),
         ["forge_good"] = SaveWriter.Good(ForgeGood),
         ["make_good"] = SaveWriter.Good(MakeGood),
+
+        // Only off its default (W7), so a save of a village that never touched it reads as one from before it existed.
+        ["grows"] = Grows == DefaultGrows ? null : Grows,
         ["workers"] = SaveWriter.Ints(WorkerIds),
         ["construction"] = Construction?.ToSave(),
         ["store"] = Store.ToSave(),
@@ -909,6 +928,7 @@ public sealed class Workplace
             Mode = save.Enum<WorkMode>("mode"),
             ForgeGood = save.Good("forge_good"),
             MakeGood = save.Good("make_good"),
+            Grows = save.NullableInt("grows") ?? DefaultGrows,
             Construction = site is null ? null : ConstructionSite.FromSave(site),
             Store = Stockpile.FromSave(save.Object("store")),
             FieldSixteenthsSown = save.Int("field_sixteenths_sown"),

@@ -128,8 +128,11 @@ public sealed class TechTreeTests
 
             // ⭐ And a handcart waits on the workshop, learned by felling wood (D678).
             bool made = goods == Goods.Handcart;
+
+            // ⭐ And barley waits on a forager's find (W7, D824–D825).
+            bool found = goods == Goods.Barley;
             _output.WriteLine($"day one: {world.GoodsCatalog.NameOf(goods)} {(world.KnowsOf(goods) ? "known" : "unknown")}");
-            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned && !sewn && !made, world.KnowsOf(goods));
+            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned && !sewn && !made && !found, world.KnowsOf(goods));
         }
 
         world.IronEverDug = world.Config.SmithyUnlockIron;
@@ -148,6 +151,9 @@ public sealed class TechTreeTests
         Assert.False(world.KnowsOf(Goods.Handcart), "Handcarts were known before the workshop.");
         world.WorkshopLearned = true;
         Assert.True(world.KnowsOf(Goods.Handcart));
+        Assert.False(world.KnowsOf(Goods.Barley), "Barley was known before a forager found it.");
+        world.BarleyLearned = true;
+        Assert.True(world.KnowsOf(Goods.Barley));
         world.TownHall = new TownHall { Position = Point.CentreOf(world.Map.FoundingSite), Name = "the hall", RaisedAtTick = 1 };
         Assert.All(Enumerable.Range(0, world.GoodsCatalog.Count), g => Assert.True(world.KnowsOf((Goods)g)));
     }

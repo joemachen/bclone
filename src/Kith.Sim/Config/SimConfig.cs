@@ -1593,6 +1593,18 @@ public sealed record SimConfig
     [JsonPropertyName("mill_unlock_wheat")]
     public int MillUnlockWheat { get; init; } = 5000;
 
+    /// <summary>
+    /// Forage the foragers must gather before one of them comes home with wild barley, and the village learns to sow it
+    /// (Joe, D824, *"Yes, the forager's find"*; `barley.md §9.1`).
+    /// </summary>
+    /// <remarks>
+    /// Counted where the gather is (<c>SimWorld.FoodEverProducedOf(Produce)</c> — only a forager's load writes it), so a
+    /// save from before barley carries its count. Measured (D825, `tools/harness/ZzBarley.cs`): his played villages reach
+    /// 5,000 around Year 6–8, the harness's played openings at Year 5 — well before the mill. ⚠️ Joe's to tune in play.
+    /// </remarks>
+    [JsonPropertyName("barley_unlock_forage")]
+    public int BarleyUnlockForage { get; init; } = 5000;
+
     /// <summary>Wheat one grind takes.</summary>
     /// <remarks>
     /// A starting value, sized so one miller keeps up with one farm (~2,000 a year, §8.1) — confirmed by
@@ -1841,7 +1853,7 @@ public sealed record SimConfig
             MakesAnimals = 6,
             Wants = new[]
             {
-                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Barley, 500), new MaterialCost(World.Goods.Flour, 100),
                 new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Fish, 125),
                 new MaterialCost(World.Goods.Firewood, 200),
             },
@@ -1855,7 +1867,7 @@ public sealed record SimConfig
             Makes = new[]
             {
                 new MaterialCost(World.Goods.Produce, 1000), new MaterialCost(World.Goods.Fish, 125),
-                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Flour, 100),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Barley, 500), new MaterialCost(World.Goods.Flour, 100),
                 new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Firewood, 200),
             },
             Wants = new[]
@@ -1889,7 +1901,7 @@ public sealed record SimConfig
             Wants = new[]
             {
                 new MaterialCost(World.Goods.Firewood, 200), new MaterialCost(World.Goods.Bread, 500),
-                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Stone, 100),
+                new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Barley, 500), new MaterialCost(World.Goods.Stone, 100),
             },
         },
     };
@@ -3729,6 +3741,18 @@ public sealed record SimConfig
             // The recipe on the good's row, the smith's shape (D446): a good with a `made_from` is a workshop product.
             MadeFrom = Recipe(new MaterialCost(World.Goods.Logs, LogsPerHandcart)),
         },
+        new GoodRow
+        {
+            // ⭐ THE SECOND CROP (W7, `barley.md §3`): wheat's row to the letter — food at nutrition 1, stored where food is
+            // stored (the birth gate reads granaries) — because the difference between the two is what each one feeds
+            // (Joe, call 2, D823), not what it is worth on a plate.
+            Id = (int)World.Goods.Barley,
+            Category = World.GoodCategory.Food,
+            Name = "barley",
+            SourceName = "the fields",
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
+            Nutrition = 1,
+        },
     };
 
     /// <summary>
@@ -3766,6 +3790,9 @@ public sealed record SimConfig
     public IReadOnlyList<CropRow> Crops { get; init; } = new[]
     {
         new CropRow { Id = 1, Name = "wheat", Yields = World.Goods.Wheat },
+
+        // ⭐ W7 (`barley.md`, D822–D825): sown only once the village has learned it — a forager's find (D824).
+        new CropRow { Id = 2, Name = "barley", Yields = World.Goods.Barley },
     };
 
     /// <summary>
@@ -6437,6 +6464,14 @@ public sealed record SimConfig
         ValidateBuildings();
         ValidateTheRegion();
         TechTree.Validate(TechNodeRows);
+        foreach (TechNodeRow node in TechNodeRows)
+        {
+            if (node.UnlocksCrop is int crop && !Crops.Any(row => row.Id == crop))
+            {
+                throw new SimConfigException($"tech node \"{node.Id}\" unlocks crop {crop}, which no crop row defines.");
+            }
+        }
+
         if (SmithyUnlockIron < 0)
         {
             throw new SimConfigException($"smithy_unlock_iron cannot be negative (got {SmithyUnlockIron}).");
@@ -6549,6 +6584,7 @@ public sealed record SimConfig
         foreach ((string key, int value) in new[]
         {
             ("mill_unlock_wheat", MillUnlockWheat),
+            ("barley_unlock_forage", BarleyUnlockForage),
             ("firewood_per_firing", FirewoodPerFiring),
         })
         {

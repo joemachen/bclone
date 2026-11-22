@@ -1029,6 +1029,13 @@
   // ("1000 wheat should be reapable within one season. that is much too fast"),
   // to be picked off the measurement in food-chain.md 8.4.
   "mill_unlock_wheat": 5000,
+  // BARLEY IS A FORAGER'S FIND (W7, Joe, D824: "Yes, the forager's find"): learned
+  // once the foragers have gathered this much from the wild, and a farm can then be
+  // set to sow it. Measured before it was typed (D825, tools/harness/ZzBarley.cs):
+  // his played villages gather 700-900 a year once a gatherer's hut stands and
+  // reach 5,000 around Year 6-8; the harness's played openings at Year 5. Well
+  // before the mill. Joe's to tune in play.
+  "barley_unlock_forage": 5000,
   // A grind and a bake: the woodcutter's day, four to a stint. STARTING VALUES,
   // sized so one miller and one baker keep up with one farm (~2,000 wheat a
   // year); the post-build arm confirms them (food-chain.md 8, step 3).
@@ -1856,8 +1863,10 @@
   // drift (METHODOLOGY §3, and D48/D49/D50 are what drift costs). To change them,
   // add a "goods" array here and it replaces the list wholesale.
   //
-  // ⭐ The CROPS are the same shape (D348): `SimConfig.Crops` holds the rows, one
-  // today -- { "id": 1, "name": "wheat", "yields": "Wheat" } -- and a "crops" array
+  // ⭐ The CROPS are the same shape (D348): `SimConfig.Crops` holds the rows, two
+  // since W7 -- { "id": 1, "name": "wheat", "yields": "Wheat" } and { "id": 2,
+  // "name": "barley", "yields": "Barley" }, a farm sowing what its card says
+  // (`barley.md`) -- and a "crops" array
   // here replaces them wholesale. A crop's id is what a sown tile carries (0 is bare
   // ground) and `yields` names the good a reaped tile gives; it must be edible and
   // some store must hold it, or the config refuses to load.
@@ -2068,6 +2077,10 @@
   "starting_stock_limits": {
     "forage": 2500,
     "wheat": 2000,
+    // BARLEY 2000, wheat's own (W7, Joe's call 4, D823 -- "I like all as
+    // recommended"), not D697's 50 for an unlocked good: it is a food that stands
+    // beside wheat, and the farm stops reaping it here.
+    "barley": 2000,
     "bread": 1000,
     "flour": 200,
     "fish": 2500,

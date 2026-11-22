@@ -209,11 +209,15 @@ public sealed class StockLimits
         return array;
     }
 
-    /// <summary>The saved limits, read into this (fresh) set. A count that is not the catalogue's is refused.</summary>
+    /// <summary>
+    /// The saved limits, read into this (fresh) set. A count past the catalogue's is refused; ⭐ a shorter one — a save from
+    /// before a good was added (D827) — leaves the new goods as the fresh set has them: the world's at their starting limit
+    /// (barley's 2,000), a market's and the trade's unset.
+    /// </summary>
     internal void ReadSave(SaveReader save, string key)
     {
         JsonArray array = save.Array(key);
-        if (array.Count != _limits.Length)
+        if (array.Count > _limits.Length)
         {
             throw new SaveDataException("a different list of goods", $"{save.Path}.{key}: {array.Count} goods where this game's data has {_limits.Length}.");
         }

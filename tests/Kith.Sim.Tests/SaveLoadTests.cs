@@ -326,7 +326,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
-            "HandcartsEverMade", "WorkshopLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
+            "HandcartsEverMade", "WorkshopLearned", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
@@ -396,7 +396,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Workplace), Kept.Saved, new[]
         {
             "Id", "Kind", "_name", "BornAs", "_position", "Facing", "ExtentWidth", "ExtentHeight", "Capacity",
-            "GatheringRadius", "Mode", "ForgeGood", "MakeGood", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
+            "GatheringRadius", "Mode", "ForgeGood", "MakeGood", "Grows", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
             "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands", "HandcartUses",

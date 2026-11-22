@@ -7179,7 +7179,11 @@ public partial class VillageMap : Control
         }
 
         bool ripe = terrain == Terrain.Ripe;
-        Color stalk = ripe ? GoodsPalette.ColourOf(Goods.Wheat) : SownColour with { G = SownColour.G * 1.35f };
+        // ⭐ The ripe stalks in the crop's own good's colour (W7): wheat gold, barley a paler straw — the flat look every crop
+        // keeps until it has paintings (`painted-crops.md §4`), so a barley field is never drawn as wheat.
+        Color stalk = ripe
+            ? GoodsPalette.ColourOf(_world?.Crops[_world.Map.CropAt(tile)]?.Yields ?? Goods.Wheat)
+            : SownColour with { G = SownColour.G * 1.35f };
         float tall = ripe ? 0.16f : 0.08f;
 
         for (int i = 0; i < StalksOn(tile, ripe); i++)

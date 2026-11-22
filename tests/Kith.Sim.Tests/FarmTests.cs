@@ -559,9 +559,9 @@ public sealed class FarmTests
 
         _output.WriteLine(
             $"one autumn: the farm's store took in {wheat} wheat and {produce} produce; the crop "
-            + $"row yields {world.Crops.TheOne.Yields}");
+            + $"row yields {world.Crops[farm.Grows]!.Yields}");
 
-        Assert.Equal(Goods.Wheat, world.Crops.TheOne.Yields);
+        Assert.Equal(Goods.Wheat, world.Crops[farm.Grows]!.Yields);
         Assert.True(wheat > 0, "The fields were reaped and no wheat reached the farm.");
         Assert.Equal(0, produce);
     }

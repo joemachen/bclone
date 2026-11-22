@@ -2670,9 +2670,8 @@ public sealed partial class SimWorld : IObstacles
         // and since 2026-09-05 that season is AUTUMN, not spring: the limit gates the
         // harvest now, and sowing goes ahead regardless so the year is not thrown away in
         // April on the strength of a number that may be false by August.
-        if (SeasonRules.IsReaping(Clock.Season) && !MayReap())
+        if (SeasonRules.IsReaping(Clock.Season) && GrainHeldBackAt(farm) is Goods grown)
         {
-            Goods grown = JobsCatalog.LimitedBy(JobKind.Farmer) ?? Goods.Wheat;
             return $"{farm.Name} has stopped reaping — you asked the village to keep "
                 + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)} stored. "
                 + "The crop stands until the village eats into it, and winter takes the rest.";
@@ -4176,7 +4175,11 @@ public sealed partial class SimWorld : IObstacles
     /// <see cref="KnowsOf(Goods)"/> with the gates given — the view passes the flags its build bar
     /// latched from <see cref="IsUnlocked"/>, so the bar and its lists cannot disagree.
     /// </summary>
-    public bool KnowsOf(Goods goods, Func<BuildingKind, bool> known)
+    /// <remarks>
+    /// <paramref name="cropKnown"/> answers for a crop's good the way <paramref name="known"/> does for a building's — the
+    /// view passes its own latched flag, so its lists cannot disagree with it; null asks the sim (<see cref="WhyCannotGrow"/>).
+    /// </remarks>
+    public bool KnowsOf(Goods goods, Func<BuildingKind, bool> known, Func<int, bool>? cropKnown = null)
     {
         ArgumentNullException.ThrowIfNull(known);
         if ((int)goods < 0 || (int)goods >= GoodsCatalog.Count)
@@ -4207,7 +4210,24 @@ public sealed partial class SimWorld : IObstacles
             return known(BuildingKind.Barn);
         }
 
-        return true;
+        // ⭐ A good only a crop yields waits on the crop (W7, D825): barley is unknown until a forager finds it, so no store,
+        // limit or market sets room aside for it first — its 1,000 at every market would have taken an eighth of the room
+        // from the founding. Asked of the rows: known once any crop that yields it may be sown; a good no crop yields is not
+        // a crop's to hide.
+        bool aCropYieldsIt = false;
+        for (int id = 1; id < Crops.Count; id++)
+        {
+            if (Crops[id] is CropRow crop && crop.Yields == goods)
+            {
+                aCropYieldsIt = true;
+                if (cropKnown?.Invoke(id) ?? WhyCannotGrow(id) is null)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return !aCropYieldsIt;
     }
 
     /// <summary>
@@ -4636,6 +4656,167 @@ public sealed partial class SimWorld : IObstacles
     /// we currently have in-game"* — 2,500 (D676), then 1,500 once he had played it (D682: *"it took me too long"*).
     /// </remarks>
     public bool WorkshopLearned { get; internal set; }
+
+    /// <summary>
+    /// ⭐ Whether the village has learned barley — <b>a forager's find</b> (W7, Joe, D824: *"Yes, the forager's find"*;
+    /// `barley.md §9.1`): set where the forage count crosses <c>barley_unlock_forage</c> (<see cref="Foraged"/>), read by
+    /// <see cref="WhyCannotGrow"/> and the <c>barley</c> node in Lore.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>State, hashed sparsely</b> (a tag byte when true) — <see cref="WorkshopLearned"/>'s shape exactly (D676): it
+    /// decides what a farm may sow. The count beneath it is <see cref="FoodEverProducedOf"/> for produce, a statistic
+    /// that every save already carries — so a save from before barley learns it at its next gather if it is past the gate.
+    /// Saved as <c>barley_learned</c>; a save without the key reads false.
+    /// </remarks>
+    public bool BarleyLearned { get; internal set; }
+
+    /// <summary>
+    /// A forager has brought <paramref name="amount"/> forage home — counted in the food ledger, and barley learned when
+    /// the produce ever gathered crosses <c>barley_unlock_forage</c> (D824): a stop like the workshop's, no gift.
+    /// </summary>
+    /// <remarks>
+    /// ⭐ <b>The one door a forager's load comes through</b>, and the latch is set here and only here — checked where the
+    /// counter moves, never per tick (CLAUDE.md's rule).
+    /// </remarks>
+    internal void Foraged(int amount)
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        RecordFoodProduced(Goods.Produce, amount);
+        int gathered = FoodEverProducedOf(Goods.Produce);
+        if (!BarleyLearned && gathered >= Config.BarleyUnlockForage)
+        {
+            BarleyLearned = true;
+
+            // The crop the find unlocks is the node's (data), so the moment names what the data says was found.
+            string found = CropFoundWild() ?? "barley";
+            LearnedByDoing(
+                $"A forager found wild {found}",
+                $"The village's foragers have gathered {gathered} from the wild, and one of them has come home with an armful "
+                + $"of wild {found}. {WhatTheFindMeansHere(found)} {Clock.SeasonAndYear()}.");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ The find's sentence, by what the village has (Joe, 2026-11-21: <i>"if the player has not already built a farm …
+    /// reference that … now you can build a farm, plant barley … if the player already has a farm built … the villagers are
+    /// excited for you to plant it at a farm"</i>). A farm marked but not yet raised counts as one: the player has chosen
+    /// where the fields go, and "build a farm" would tell them to do what they have done.
+    /// </summary>
+    /// <remarks>
+    /// ⚠️ <b>No beer yet, on purpose</b> (legibility, §1.1): the brewery is W3's, and a moment that promises beer the
+    /// player cannot make sends them looking for a building that is not there. W3 adds the brewing clause when the brewery
+    /// exists (`barley.md §11.4`).
+    /// </remarks>
+    private string WhatTheFindMeansHere(string found)
+    {
+        Workplace? only = null;
+        int farms = 0;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Kind == JobKind.Farmer)
+            {
+                farms++;
+                only ??= Workplaces[i];
+            }
+        }
+
+        if (farms == 0)
+        {
+            return $"The villagers are excited: build a farm, and it can sow {found} as well as wheat — choose it on the "
+                + "farm's card, and it goes in the ground the next spring.";
+        }
+
+        string where = farms == 1 ? only!.Name : "the village's farms";
+        return $"The villagers are excited to see it sown at {where} — choose {found} on a farm's card, and it goes in the "
+            + "ground the next spring.";
+    }
+
+    /// <summary>The name of the crop the forager's find unlocks — the first <c>ForageGathered</c> node's — or null.</summary>
+    private string? CropFoundWild()
+    {
+        IReadOnlyList<TechNodeRow> nodes = Config.TechNodeRows;
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].Condition == TechCondition.ForageGathered && nodes[i].UnlocksCrop is int crop && Crops[crop] is CropRow row)
+            {
+                return row.Name;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Why a farm may not be set to sow this crop — or null when it may (W7, `barley.md §4`). One sentence, read by the
+    /// card and by <see cref="SetGrows"/>.
+    /// </summary>
+    public string? WhyCannotGrow(int cropId)
+    {
+        if (Crops[cropId] is not CropRow crop)
+        {
+            return "A farm grows only a crop the village knows of.";
+        }
+
+        // ⭐ A CROP A NODE UNLOCKS WAITS FOR THE NODE (W7, `barley.md §9.1`) — barley's is a forager's find (D824), and the
+        // sentence reads the counter and the knob so the player can see how far. Data, not a name: a modder's oats behind a
+        // node of their own wait the same way, and a crop no node names is sown from the founding, as wheat is.
+        IReadOnlyList<TechNodeRow> nodes = Config.TechNodeRows;
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            if (nodes[i].UnlocksCrop != cropId || TechTree.StateOf(this, nodes[i]).State == TechState.Known)
+            {
+                continue;
+            }
+
+            return nodes[i].Condition == TechCondition.ForageGathered
+                ? $"Nobody here has sown {crop.Name} yet — a forager may find it growing wild once the village has "
+                  + $"gathered {Config.BarleyUnlockForage} from the wild ({FoodEverProducedOf(Goods.Produce)} so far)."
+                : $"Nobody here has sown {crop.Name} yet — Lore shows what it will take ({nodes[i].Name}).";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ⭐ Set what a farm sows from its next sowing (W7, `barley.md §4`; Joe, call 3, D823) — the workshop's
+    /// <see cref="SetMakeGood"/> a third time. Refuses a building that is not a farm and a crop the village cannot sow.
+    /// </summary>
+    public PlacementVerdict SetGrows(Workplace farm, int cropId)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        if (farm.Kind != JobKind.Farmer)
+        {
+            return PlacementVerdict.No($"{farm.Name} is not a farm; nothing is sown there.");
+        }
+
+        if (WhyCannotGrow(cropId) is string why)
+        {
+            return PlacementVerdict.No(why);
+        }
+
+        if (farm.Grows != cropId)
+        {
+            farm.Grows = cropId;
+            if (Logs(LogLevel.Info))
+            {
+                Log(LogLevel.Info, "labour", $"{farm.Name} is set to sow {Crops[cropId]!.Name} from its next spring — {Clock}.");
+            }
+        }
+
+        return PlacementVerdict.Fine;
+    }
+
+    /// <summary>The good a farm's choice of crop yields (W7) — what its limit is read against, and its sentences name.</summary>
+    public Goods GoodGrownAt(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+        return Crops.GoodOf((byte)farm.Grows);
+    }
 
     /// <summary>
     /// Whether the village has learned the school (D754, `school-and-education.md §11.3` call 1) — <b>a latch, set where a
@@ -5197,8 +5378,94 @@ public sealed partial class SimWorld : IObstacles
     /// (<c>limited_by</c>, wheat today), not a total over every food. D348's wheat row already meant
     /// *"what stops the farmers"*; the food total that stood beside it is gone.
     /// </para>
+    /// <para>
+    /// ⭐ <b>And the crop's own good since W7</b> (`barley.md §4.1`): asked of the grain a tile carries, so a barley farm
+    /// stops at the barley limit and a wheat farm beside it reaps on. The row's <c>limited_by</c> now says only <i>whether</i>
+    /// farms are limited — null, and they never stop.
+    /// </para>
     /// </remarks>
-    public bool MayReap() => JobsCatalog.LimitedBy(JobKind.Farmer) is not Goods grown || MayTake(grown);
+    public bool MayReap(Goods grain) => JobsCatalog.LimitedBy(JobKind.Farmer) is null || MayTake(grain);
+
+    /// <summary>
+    /// The grain a farm has ripe and may not reap for its limit — the first such tile's — or null when every ripe tile may
+    /// be taken (W7): what the farm's card and its farmers' note name.
+    /// </summary>
+    public Goods? GrainHeldBackAt(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        var limits = new ReapLimits(this);
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        for (int i = 0; i < owned.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(owned[i]);
+            if (Map.TerrainAt(at) == Terrain.Ripe && !limits.May(Map.CropAt(at)))
+            {
+                return Crops.GoodOf(Map.CropAt(at));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The crop id standing on a farm's field — the first sown or ripe tile's — or null when nothing stands (W7): what the
+    /// card compares against the farm's choice to say a change lands next spring.
+    /// </summary>
+    public int? CropStandingAt(Workplace farm)
+    {
+        ArgumentNullException.ThrowIfNull(farm);
+
+        IReadOnlyList<int> owned = Zones.WorkGroundOf(farm.Id);
+        for (int i = 0; i < owned.Count; i++)
+        {
+            GridPos at = Zones.PositionOf(owned[i]);
+            if (IsStandingCrop(Map.TerrainAt(at)))
+            {
+                return Map.CropAt(at);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// <see cref="MayReap"/> asked once per crop id within one call — a farm's tiles are read one by one, and the limit
+    /// sums the stores (W7). A struct on the stack: nothing is kept between calls, so nothing goes stale.
+    /// </summary>
+    private struct ReapLimits
+    {
+        private readonly SimWorld _world;
+        private ulong _asked;
+        private ulong _allowed;
+
+        public ReapLimits(SimWorld world)
+        {
+            _world = world;
+            _asked = 0;
+            _allowed = 0;
+        }
+
+        public bool May(byte crop)
+        {
+            if (crop >= 64)
+            {
+                return _world.MayReap(_world.Crops.GoodOf(crop));
+            }
+
+            ulong bit = 1UL << crop;
+            if ((_asked & bit) == 0)
+            {
+                _asked |= bit;
+                if (_world.MayReap(_world.Crops.GoodOf(crop)))
+                {
+                    _allowed |= bit;
+                }
+            }
+
+            return (_allowed & bit) != 0;
+        }
+    }
 
     /// <summary>
     /// Seats at farmhouses the year still has work for — <b>the village's demand for farmers</b>.
@@ -5242,7 +5509,8 @@ public sealed partial class SimWorld : IObstacles
         // ⚠️ AND THE HARVEST ARM ANSWERS TO THE LIMIT (2026-09-05, Joe). Without this the
         // gate below never bites: `StoppedByAStockLimit` asks for a met limit AND no ground
         // to work, so a standing crop kept the seats open and the cap stopped nothing.
-        bool reaping = MayReap();
+        // ⭐ Asked of each tile's own crop since W7 (`barley.md §4.1`), once per crop per call.
+        var limits = new ReapLimits(this);
         int seats = 0;
 
         for (int i = 0; i < Workplaces.Count; i++)
@@ -5260,7 +5528,8 @@ public sealed partial class SimWorld : IObstacles
 
                 // Bare ground in spring is a year waiting to be committed; a standing crop
                 // in any season is this year's food, and somebody has to be here to take it.
-                if ((sowing && IsSowable(here)) || (reaping && IsStandingCrop(here)))
+                if ((sowing && IsSowable(here))
+                    || (IsStandingCrop(here) && limits.May(Map.CropAt(Zones.PositionOf(owned[t])))))
                 {
                     seats += farm.Places;
                     break;
@@ -5302,11 +5571,15 @@ public sealed partial class SimWorld : IObstacles
         }
 
         bool sowing = SeasonRules.IsSowing(Clock.Season);
-        bool reaping = SeasonRules.IsReaping(Clock.Season) && MayReap();
+        bool reaping = SeasonRules.IsReaping(Clock.Season);
         if (!sowing && !reaping)
         {
             return null;
         }
+
+        // ⭐ The limit asked of each ripe tile's own crop (W7, `barley.md §4.1`) — a barley farm stops at the barley limit
+        // and a wheat field beside it is reaped on. Once per crop per call, never once per tile.
+        var limits = new ReapLimits(this);
 
         // ⭐⭐ A FARM SOWS ONLY WHAT IT CAN BRING IN (Joe, 2026-08-16: *"2x farmers planted 20
         // fields in the spring, and harvested only 9 in the fall"*).
@@ -5359,7 +5632,7 @@ public sealed partial class SimWorld : IObstacles
             GridPos at = Zones.PositionOf(owned[i]);
             Terrain here = Map.TerrainAt(at);
 
-            bool wanted = sowing ? IsSowable(here) : here == Terrain.Ripe;
+            bool wanted = sowing ? IsSowable(here) : here == Terrain.Ripe && limits.May(Map.CropAt(at));
             if (!wanted)
             {
                 continue;
@@ -15228,6 +15501,9 @@ public sealed partial class SimWorld : IObstacles
             ["coats_ever_sewn"] = CoatsEverSewn,
             ["handcarts_ever_made"] = HandcartsEverMade,
             ["workshop_learned"] = WorkshopLearned,
+
+            // Only when learned (W7), so a save of a village before it reads as one from before barley existed.
+            ["barley_learned"] = BarleyLearned ? true : null,
             ["school_learned"] = SchoolLearned,
             ["schools_are_full"] = SchoolsAreFull,
             ["cottage_learned"] = CottageLearned,
@@ -15405,7 +15681,7 @@ public sealed partial class SimWorld : IObstacles
         NeedsMoreResidentialLand = save.Bool("needs_more_residential_land");
         WorkIsGoingUndone = save.Bool("work_is_going_undone");
         WorkSeenUndoneOnce = save.Bool("work_seen_undone_once");
-        save.BoolsInto("said_there_is_nowhere_for", _saidThereIsNowhereFor);
+        save.GoodsBoolsInto("said_there_is_nowhere_for", _saidThereIsNowhereFor);
         foreach ((int Villager, int Skill) said in save.Pairs("said_knowledge_is_at_risk"))
         {
             _saidKnowledgeIsAtRisk.Add(said);
@@ -15440,6 +15716,7 @@ public sealed partial class SimWorld : IObstacles
         CoatsEverSewn = save.Int("coats_ever_sewn");
         HandcartsEverMade = save.Int("handcarts_ever_made");
         WorkshopLearned = save.Bool("workshop_learned");
+        BarleyLearned = save.HasValue("barley_learned") && save.Bool("barley_learned");
 
         // ⚠️ A save from before the school (D754) has no key, and may already have a library standing: the latch is the
         // library's, so it is set here from what stands rather than read as false (the knob-lowered load's shape, §4.1a).
@@ -15485,8 +15762,10 @@ public sealed partial class SimWorld : IObstacles
 
         for (int i = 0; i < neighbours.Count; i++)
         {
+            // ⭐ A save from before a good was added (D827) holds fewer: those read, and the new good keeps what a fresh
+            // neighbour holds of it (the lowlands' barley). More than the data's goods is a good gone, and refused.
             List<int> held = neighbours[i].Ints("held");
-            if (held.Count != NeighbourStocks[i].Held.Length)
+            if (held.Count > NeighbourStocks[i].Held.Length)
             {
                 throw new SaveFormatException(
                     $"Neighbour {i} in the save holds {held.Count} goods and today's data has {NeighbourStocks[i].Held.Length}.");

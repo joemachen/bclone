@@ -1,5 +1,43 @@
 # Handoff — Kith: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), ✅ PUSHED AT HIS WORD (D811, `origin/main` = ecbeaa0); NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS: W7, A SECOND CROP — BARLEY — THEN W3, BEER BREWED FROM BARLEY (D821, *"Yes, barley first"*). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
+> (`specs/barley.md`), Joe's calls before code. The only systems branch open; `art` is the other.**
+> **✅ BUILT (D825), AND THE FIND'S SENTENCE BY WHAT THE VILLAGE HAS (D826, Joe's ask; the beer clause waits for W3).
+> UNPLAYED. Nine goldens moved, each proven by ablation. ⛔ The probe's `ui icons:` reads "no file for goods/barley" until
+> the art lane paints it (asked, at Joe's word). ⏸️ HIS PLAY (`.\run.bat`: forage past 5,000 → the moment; a farm's card
+> → Grows: barley; next spring, barley sown; autumn, barley reaped and eaten), then the merge at his word.**
+> - **⛔ TRAP (D825): a new good is "known" from the founding unless something says otherwise** — `SimWorld.KnowsOf`
+>   answers for stores, limits and every market's starting room. Barley took an eighth of every market before anyone had
+>   found it; only `MarketLimitsTests` noticed. A good behind a gate needs `KnowsOf` taught the gate.
+>   ⚠️ And the VIEW latches each gate in a flag of its own (`_workshopKnown`, `_barleyKnown`, …) so its lists cannot
+>   disagree with its bar; the probe's `spoilers:` poses those flags, so a new gate needs one there too.
+> **✅ D829 — barley's colour `#cbbb7c` (Joe's, A162/A163, via the art lane).** ⚠️ **DEBT: `tools/legibility/check.py` crashes**
+> (`KeyError: 'colour'` at `read_colours`) on `main` before W7 too — the colour checker has not run since; not fixed here.
+> **✅ D828 — PLAYED AND APPROVED (*"they work as expected and delivered the expected outcomes"*); his logs 0 `ERROR`, the find, the
+> card's change and a barley harvest all in them. ⏸️ THE MERGE AT HIS WORD — `main` into the slice first (it has moved).**
+> **✅ D827 — OLD SAVES OPEN AGAIN (Joe: *"Yes, make them open"*):** barley had made every save refuse (*"a different list of
+> goods"*). A save's per-good lists may now be shorter than the data's, never longer (`save-load.md §15`); 252 of his 252
+> readable saves open. For his play: `saves/barley-test-no-farm/barley-no-farm-year-6.save` and
+> `saves/barley-test-with-farm/barley-with-farm-year-18.save` (copies; the originals untouched). Suite 2204 / 0 / 5 of 2209.
+> ⚠️ **`main` has moved** (stock piles, A158–A160, `32bad45`): it touches `VillageMap.cs` (the heaps) and `VillageMap.Yards.cs`
+> (`YardState`), as this slice does (the ripe stalks' colour, the farm yard's grain) — merge `main` into the slice first, then
+> the four checks again, at the merge. The art lane has barley's paintings queued after piles (its reply, 2026-11-21).
+> - **⛔ TRAP (D827): A NEW GOOD USED TO BREAK EVERY SAVE, AND A MEASUREMENT TAKEN BEFORE THE GOOD EXISTED CANNOT SEE IT.**
+>   ZzBarley read 252 of his saves happily — on the build without barley. Open his saves on the build WITH the change
+>   before saying they work. And the load list shows *"Village — Season, Year · file"*, never the folder: a save named by
+>   its folder cannot be found by him (fourteen villages are called Stonebridge).
+> - **⛔ TRAP (D825): a companion golden hides behind its first.** `FarmGoldenTests` and `PhaseFiveGoldenTests` each assert
+>   a second hash after the first; a re-take shows only the first red, and the ablation of the second needs the first put
+>   back to its old value for the run, or the test never reaches it.
+> **✅ EVERY CALL ANSWERED: 2–5 AS RECOMMENDED (D823), 1 THE FORAGER'S FIND (D824, *"Yes, the forager's find"*). 🔨 THE
+> BUILD, `barley.md §10`; the gate's number measured before it is typed.** *(Read "⏸️ CALL 1 REOPENED" at D823.)* *(Read "📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S" at D822.)*
+> **📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S (`barley.md §9`); nothing built. The art lane's barley paintings are a
+> ⏸️ request in the open list.**
+> - **⛔ TRAP (D822): a farm's stock limit is the TRADE's, not the farm's.** `SimWorld.MayReap()` asks the farmer row's
+>   one `limited_by` (wheat) with no farm in the question, and the sowing writes `CropsCatalog.TheOne` — *"until the farm
+>   can choose"*. A second crop row alone would sow nothing new and stop a barley farm when the WHEAT is full. The row is
+>   the easy half; every `LimitedBy(JobKind.Farmer)` and `MayReap()` caller is the work.
+
 > **📝 D821 (2026-11-21): W7 MOVES AHEAD OF W3 — THE SECOND CROP IS BARLEY AND BEER IS BREWED FROM IT** (*"Yes, barley first"*). Hops are a Phase 7 technique, not the recipe. Nothing claimed; the next systems slice is W7.
 > - **⛔ TRAP (D821): the W labels keep their numbers when the order changes** — W7 now comes before W3. Read the order from DESIGN §4's arrows, never from the numerals.
 
@@ -10831,6 +10869,34 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   still wait on his own word. **Act on exactly what the calls listed; ask for the rest.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
+  spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,
+  and that W3's brewery takes barley (W3 is not this slice). Joe's calls before any code.
+  **📝 SPECCED (D822). ⏸️ FIVE CALLS JOE'S (`barley.md §9`), each recommended:** (1) barley from the founding, not
+  learned; (2) the same harvest and seasons as wheat; (3) one crop per farm, picked on its card, from the next spring;
+  (4) a starting limit of 2000 and the three neighbours growing 500 each — wheat's numbers *(⚠️ corrected at the build,
+  D825: only the lowlands grow wheat; the other two want it — barley is traded exactly as wheat)*; (5) the mill grinds wheat only
+  and learns from wheat only. Nothing built until he answers.
+  **✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as recommended"*). ⏸️ CALL 1 REOPENED BY HIM** — a forager finds
+  barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. ✅ **HIS WORD
+  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D827), ✅ PLAYED AND APPROVED (D828) — ⏸️ THE MERGE
+  AT HIS WORD.** His to tune in play: `barley_unlock_forage` 5,000.
+
+- ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
+  `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
+  `painted-crops.md §4`'s shape: 1024² at 128 px a tile, seamless, rows east–west, the hue families measured as wheat's.
+  Barley reads apart from wheat by its **long bristled awns, nodding heads and a paler, silvery straw** when ripe.
+  ⛔ **And its UI icon, `textures/ui/icons/goods/barley.png`** (the goods set's shape, as `wheat.png`) — the probe's
+  `ui icons:` line is ⛔ *"no file for goods/barley"* until it lands; the game shows barley's glyph meanwhile (D825). And a
+  colour for the carried sheaf (`PersonPainter`). ~~⚠️ The watercolour's bake names wheat's paintings by crop id
+  (`VillageMap.Watercolour.cs`, the `(1, "young", …)` rows) — barley's need rows of their own (id 2) when they land, or the
+  folder is never read there.~~ *(Wrong, D825: `TheCropPainting` reads the folder by the crop row's name, so
+  `textures/crops/barley/` is picked up with no code; the `(1, "young", …)` rows are only `ThePaintedCropsHold`'s probe list,
+  which should gain barley's rows when they land.)* Until then a barley field draws its flat fill and stalks in
+  `GoodsPalette`'s barley (a paler straw, `#cfcc9e`-ish) and the carried sheaf `#d2cc9c` — **both placeholders for the
+  art lane to judge**. Not claimed; the art lane's to take when Joe says. ✅ **Asked of the art lane at his word (2026-11-21, *"ask the art lane for
+  the barley art you need"*), sent to the art lane's running session; theirs to claim here.**
 
 - ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
   log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing

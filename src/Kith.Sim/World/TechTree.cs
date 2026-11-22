@@ -60,6 +60,12 @@ public enum TechCondition
     /// set where a library is raised. Not learned by doing with the hands, so it does not introduce the map.
     /// </summary>
     LibraryStands,
+
+    /// <summary>
+    /// ⭐ Forage gathered from the wild — barley's road (W7, D824): known on <c>SimWorld.BarleyLearned</c>, the latch set
+    /// where the count crosses <c>barley_unlock_forage</c>; the bar reads the count and the knob.
+    /// </summary>
+    ForageGathered,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -89,6 +95,13 @@ public sealed record TechNodeRow
     /// <summary>The building it puts in the menu, or none for a horizon node.</summary>
     [JsonPropertyName("unlocks")]
     public BuildingKind? Unlocks { get; init; }
+
+    /// <summary>
+    /// ⭐ The crop it lets a farm sow — a crop row's id — or none (W7, `barley.md §9.1`). A node unlocks a building or a
+    /// crop; a horizon node neither. A crop no known node unlocks is sown from the founding, as wheat is.
+    /// </summary>
+    [JsonPropertyName("unlocks_crop")]
+    public int? UnlocksCrop { get; init; }
 
     /// <summary>What it waits on.</summary>
     [JsonPropertyName("condition")]
@@ -211,6 +224,13 @@ public static class TechTree
             Requires = new[] { "library" },
             Says = "With a library standing, somebody thinks to teach the young — years at school that pay out for forty.",
         },
+        new TechNodeRow
+        {
+            // ⭐ W7 (`barley.md §9.1`, Joe, D824: *"Yes, the forager's find"*) — a crop, not a building, so it unlocks none;
+            // the farm's card is where it is used. One sentence: the tree's card is 160 tall (`tech tree:`).
+            Id = "barley", Name = "Barley", UnlocksCrop = 2, Condition = TechCondition.ForageGathered,
+            Says = "Gather enough from the wild, and a forager comes home with wild barley — a second grain for the fields.",
+        },
     };
 
     /// <summary>A node's state, and its progress against what it takes (`tech-tree-map.md §3.2–§3.3`).</summary>
@@ -228,6 +248,7 @@ public static class TechTree
             TechCondition.CottageFamilyTree => world.CottageLearned,
             TechCondition.ManorFamilyTree => world.ManorLearned,
             TechCondition.LibraryStands => world.SchoolLearned,
+            TechCondition.ForageGathered => world.BarleyLearned,
             _ => of > 0 && progress >= of,
         };
 
@@ -275,6 +296,8 @@ public static class TechTree
                 return (world.LeatherEverHeld, world.Config.TailorUnlockLeather);
             case TechCondition.LogsFelled:
                 return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
+            case TechCondition.ForageGathered:
+                return (world.FoodEverProducedOf(Goods.Produce), world.Config.BarleyUnlockForage);
             case TechCondition.VillageSize:
                 return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
             case TechCondition.CrossingsWalked:
@@ -334,7 +357,7 @@ public static class TechTree
     public static bool IntroducesTheMap(TechCondition condition) =>
         condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
             or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled
-            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree;
+            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree or TechCondition.ForageGathered;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)
@@ -381,10 +404,16 @@ public static class TechTree
                 }
             }
 
-            if (node.Unlocks is null != (node.Condition == TechCondition.NotYet))
+            bool unlocksSomething = node.Unlocks is not null || node.UnlocksCrop is not null;
+            if (unlocksSomething == (node.Condition == TechCondition.NotYet))
             {
                 throw new SimConfigException(
-                    $"tech node \"{node.Id}\" must unlock a building unless it is on the horizon (not_yet), and only then.");
+                    $"tech node \"{node.Id}\" must unlock a building or a crop unless it is on the horizon (not_yet), and only then.");
+            }
+
+            if (node.Unlocks is not null && node.UnlocksCrop is not null)
+            {
+                throw new SimConfigException($"tech node \"{node.Id}\" unlocks a building and a crop; a node unlocks one thing.");
             }
         }
 

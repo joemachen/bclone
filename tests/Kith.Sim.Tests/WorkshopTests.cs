@@ -660,7 +660,8 @@ public sealed class WorkshopTests
     {
         SimWorld world = SimFactory.CreatePhase0(ShippedConfig.Load(), new InMemoryLogSink()).World;
         Assert.False(world.WorkshopLearned);
-        Assert.Equal((int)Goods.Handcart, world.GoodsCatalog.Count - 1);
+        Assert.Equal((int)Goods.Handcart + 1, (int)Goods.Barley); // the handcart was the last good until barley (D825)
+        Assert.Equal((int)Goods.Barley, world.GoodsCatalog.Count - 1);
         Assert.Equal(50, world.StockLimits.For(Goods.Handcart)); // D697: a set limit, hashed — the shipped goldens moved for it and say so
         Assert.Equal(0, world.InStores(Goods.Handcart));
         Assert.All(world.Workplaces, w => Assert.Equal(Goods.Handcart, w.MakeGood));
@@ -775,7 +776,7 @@ public sealed class WorkshopTests
     }
 
     /// <summary>A modder's second workshop product — planks, three logs each — above every built-in good.</summary>
-    private static Goods Planks => (Goods)16;
+    private static Goods Planks => (Goods)17; // 16 since D678; 17 since barley took 16 (D825).
 
     private static SimConfig ConfigWithPlanks() => SimConfigLoader.Parse(PlanksJson("""[{ "goods": "Logs", "amount": 3 }]"""), "<modded>");
 
@@ -803,7 +804,8 @@ public sealed class WorkshopTests
         { "id": 14, "name": "clothing", "category": "Materials", "coat_winters": 3, "stored_by": ["Warehouse", "Cart", "Pile"] },
         { "id": 15, "name": "handcarts", "category": "Materials", "trade_worth": 20, "source_name": "the workshop", "stored_by": ["Warehouse", "Cart", "Pile"],
           "made_from": [{ "goods": "Logs", "amount": 10 }] },
-        { "id": 16, "name": "planks", "category": "Materials", "trade_worth": 4, "source_name": "the workshop", "stored_by": ["Warehouse", "Pile"],
+        { "id": 16, "name": "barley", "category": "Food",   "source_name": "the fields",   "nutrition": 1, "stored_by": ["Granary", "Market", "Cart"] },
+        { "id": 17, "name": "planks", "category": "Materials", "trade_worth": 4, "source_name": "the workshop", "stored_by": ["Warehouse", "Pile"],
           "made_from": {{{madeFrom}}} }
       ]
     }

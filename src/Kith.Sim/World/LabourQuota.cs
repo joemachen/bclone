@@ -1030,7 +1030,8 @@ public readonly record struct LabourQuota
         // shape: a met food limit stops the sowing (`SimWorld.MaySow`), and a farm with a crop
         // still standing has work a cap has no business cancelling — so a professions number
         // the player typed must not be overruled while it does.
-        JobKind.Farmer => StoppedByItsOwnLimit(world, kind)
+        // ⭐ Since W7 the limit is each farm's own crop's (`barley.md §4.1`) — the smith's shape below.
+        JobKind.Farmer => EveryFarmIsAtItsLimit(world)
             && world.FarmerSeatsWithGroundToWork() == 0,
 
         // ⭐ AND A HUNTER ONLY WHILE NO LODGE IS SWOLLEN (D683). The forester's and the farmer's shape a
@@ -1103,12 +1104,55 @@ public readonly record struct LabourQuota
     }
 
     /// <summary>
+    /// Whether every standing farm's crop is at its limit — the row's limit when none stands yet (W7, `barley.md §4.1`):
+    /// <see cref="EverySmithyIsAtItsLimit"/>'s shape, with the farm's <c>Grows</c> for the smithy's <c>ForgeGood</c>. The
+    /// row's <c>limited_by</c> still says whether farms are limited at all.
+    /// </summary>
+    private static bool EveryFarmIsAtItsLimit(SimWorld world)
+    {
+        if (world.JobsCatalog.LimitedBy(JobKind.Farmer) is null)
+        {
+            return false;
+        }
+
+        bool anyStanding = false;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace farm = world.Workplaces[i];
+            if (farm.Kind != JobKind.Farmer || farm.IsSite)
+            {
+                continue;
+            }
+
+            anyStanding = true;
+            if (!world.LimitIsMet(world.GoodGrownAt(farm)))
+            {
+                return false;
+            }
+        }
+
+        return anyStanding || StoppedByItsOwnLimit(world, JobKind.Farmer);
+    }
+
+    /// <summary>
     /// The good a trade's limit is read against, for the sentence that names it: the row's
-    /// <c>limited_by</c>, except a smith's, which is what the first standing smithy is set to (§9.3).
+    /// <c>limited_by</c>, except a smith's, which is what the first standing smithy is set to (§9.3), and a farmer's, which
+    /// is what the first standing farm grows (W7).
     /// </summary>
     public static Goods? GoodTheTradeMakes(SimWorld world, JobKind kind)
     {
         ArgumentNullException.ThrowIfNull(world);
+
+        if (kind == JobKind.Farmer && world.JobsCatalog.LimitedBy(kind) is not null)
+        {
+            for (int i = 0; i < world.Workplaces.Count; i++)
+            {
+                if (world.Workplaces[i] is { Kind: JobKind.Farmer, IsSite: false } farm)
+                {
+                    return world.GoodGrownAt(farm);
+                }
+            }
+        }
 
         if (kind == JobKind.Smith)
         {
