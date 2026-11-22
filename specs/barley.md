@@ -278,6 +278,13 @@ can build a farm" - instead it should say the villagers are excited for you to p
   built** — *"… and brew beer from it at a brewery"* — in `SimWorld.WhatTheFindMeansHere`. *"Excited"* rather than *"happy"*:
   the moment is flavour, and contentment (W2) reads no cause from it, so it must not sound like one.
 
+### 11.5 His saves open on the barley build (D827)
+
+Barley made every save before it refuse (*"a different list of goods"*); Joe: *"Yes, make them open"*. `save-load.md §15`:
+a save's per-good lists may be shorter than the data's — the new good held nowhere, its limit the starting 2,000, let into
+a filtered store. A loaded old village past 5,000 forage learns barley at its next gather: *"… gathered 6087 from the
+wild …"* on his Stonebridge in Spring, Year 7, opened in winter.
+
 ### 11.3 Proved by
 
 `BarleyTests` (20), and the lists that grew by one good (`ModdedGoodTests`, `EdibleGoodsTests`, `WorkshopTests`,

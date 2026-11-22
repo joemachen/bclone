@@ -197,7 +197,10 @@ name and the seed, so two Ashfords are two folders. Autosaves are `autosave-1.sa
 | No saves yet | *Continue* is not offered. Nothing is said. |
 | A different `format` | Refused: *"Saved by build 0.0.3, whose saves this build cannot read."* It stays on the list, greyed, so the player can see it was not lost. |
 | Not gzip / not JSON / a key missing / a wrong type / a duplicate key | Refused: *"This save can't be read — it's damaged. A copy was kept as ashford-1.save.bad."* The file is **copied to `<file>.bad` first**, `KeepTheBrokenFile`'s pattern (`PlayerSettings.cs:271`). **Never half-loaded**: the world is built whole, or not at all. The detail (which key, which byte) goes to the audit log, not the sentence. |
-| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused: *"This save holds “Smokehouse”, which this game no longer has, so it can't be opened."* — the thing named as the save spells it (`SaveDataException.What`): a kind by its name, a good by its id (*"good 12"*), or *"a different list of goods"* when the catalogue itself changed. Not damage: no `.bad` copy. A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
+| State today's `data/` cannot hold (a building kind or good that no longer exists, a crop id gone) | Refused: *"This save holds “Smokehouse”, which this game no longer has, so it can't be opened."* — the thing named as the save spells it (`SaveDataException.What`): a kind by its name, a good by its id (*"good 12"*), or *"a different list of goods"* when the catalogue itself changed. ⭐ **Since D827 (Joe, 2026-11-21: *"Yes, make them open"*) a
+save from before a good was ADDED opens**: goods are appended and never renumbered, so a shorter list lines up slot for
+slot — the new good held nowhere, its limit the starting one, a filter letting it in, a neighbour holding what a fresh
+one does (§15). Only a list LONGER than the data's — a good gone — is refused. Not damage: no `.bad` copy. A modder changed the data, and the player should hear that rather than see a village quietly missing a building. |
 | *Save* or the autosave on a faulted village | Refused: *"The village stopped on an error, so it can't be saved. The last autosave is from Year 12."* |
 | The first tick after a load throws | **D364's door**, unchanged: `Main.HaltTheVillage`. The load was sound and the sim was not, so that is a fault, not a corrupt save. |
 | The disk will not take the write | Said in the village log and Godot's error stream. The game carries on, and the previous autosave stands (the atomic write never touched it). |
@@ -362,3 +365,22 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
 - Both keys are ignored while the pause screen or a stopping moment is up (the keyboard is theirs then).
 - Probe line `quicksave:` — F5 writes one that reads back (into a scratch folder), F7 with none says so. ⚠️ F7 with one
   reloads the scene, which no probe survives: that half is Joe's to play.
+
+## 15. A save from before a good was added opens (D827, 2026-11-21)
+
+Joe, when barley (W7) made every one of his saves refuse with *"a different list of goods"*: *"Yes, make them open"*. The
+handcart had done the same in D675, when he chose a new game.
+
+- **The rule**: a per-good list in a save may be **shorter** than today's catalogue, never longer. Goods are appended and
+  never renumbered (`Goods`' own rule), so the slots line up; a list longer than the data's holds a good that is gone, and
+  is refused as before.
+- **What the new good starts as**: held nowhere (`Stockpile.FromSave` pads with nothing); the world's limit as the fresh
+  world sets it — the starting limit, barley's 2,000 — and a market's and the trade's unset (`StockLimits.ReadSave` leaves
+  the rest as the fresh set has them); **let into a filtered store** (`StoreBuilding.AllowingGoodsTheSaveNeverHad`: the
+  player could not have kept out a good that did not exist); a neighbour holding what a fresh one does; the packed
+  *"said there is nowhere for"* bits false (`SaveReader.GoodsBoolsInto`).
+- **Proved on his saves** (`tools/harness/ZzBarley.cs`): of 477, the 252 that opened before barley open again, the other
+  225 refused only for their build (v0.0.1), as before; two played on a year past barley's find. **Guards**:
+  `BarleyTests.ASaveFromBeforeBarleyOpensAndPlaysOn` (today's save cut back to sixteen goods) and
+  `ASaveWithAGoodTheDataLacksIsStillRefused`; six mutants, six red.
+- ⚠️ **No format bump**: nothing about the format changed, only what it forgives.

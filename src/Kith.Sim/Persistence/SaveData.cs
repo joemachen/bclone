@@ -246,6 +246,33 @@ internal sealed class SaveReader
         }
     }
 
+    /// <summary>
+    /// A bool a good, packed as <see cref="BoolsInto"/> — ⭐ and a save from before a good was added reads (D827): the bytes
+    /// it has are read, a good past them is false. More bytes than the data's goods is a good gone, and refused.
+    /// </summary>
+    public void GoodsBoolsInto(string key, bool[] into)
+    {
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(String(key));
+        }
+        catch (FormatException ex)
+        {
+            throw new SaveFormatException($"{Path}.{key}: not base64.", ex);
+        }
+
+        if (bytes.Length > (into.Length + 7) / 8)
+        {
+            throw new SaveDataException("a different list of goods", $"{Path}.{key}: {bytes.Length} bytes where this game's goods fill {(into.Length + 7) / 8}.");
+        }
+
+        for (int i = 0; i < into.Length; i++)
+        {
+            into[i] = (i >> 3) < bytes.Length && (bytes[i >> 3] & (1 << (i & 7))) != 0;
+        }
+    }
+
     public void BytesInto(string key, byte[] into) => Bytes(key, into.Length).CopyTo(into, 0);
 
     public void IntsInto(string key, int[] into)

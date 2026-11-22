@@ -316,6 +316,25 @@ public sealed class StoreBuilding
     /// </remarks>
     public const long Spoken = 1L << 62;
 
+    /// <summary>
+    /// A saved filter, with every good the save never had let in (D827): a player who filtered a granary before barley
+    /// existed did not keep barley out of it — they could not have. Untouched (0) stays untouched.
+    /// </summary>
+    internal static long AllowingGoodsTheSaveNeverHad(long saved, int goodsInTheSave, int goodsInTheData)
+    {
+        if (saved == 0)
+        {
+            return 0;
+        }
+
+        for (int g = goodsInTheSave; g < goodsInTheData && g < 62; g++)
+        {
+            saved |= 1L << g;
+        }
+
+        return saved;
+    }
+
     /// <summary>Whether the player's filter permits this good. True when they have not said.</summary>
     public bool PlayerAllows(Goods goods) =>
         AllowedGoods == 0 || (AllowedGoods & (1L << (int)goods)) != 0;
@@ -740,7 +759,7 @@ public sealed class StoreBuilding
             ExtentHeight = save.Int("height"),
             Store = Stockpile.FromSave(save.Object("store")),
             Catalog = catalog,
-            AllowedGoods = save.Long("allowed_goods"),
+            AllowedGoods = AllowingGoodsTheSaveNeverHad(save.Long("allowed_goods"), save.Object("store").Ints("held").Count, catalog.Count),
             Stocking = save.Enum<Stocking>("stocking"),
         };
 

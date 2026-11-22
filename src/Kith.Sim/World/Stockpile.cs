@@ -366,13 +366,22 @@ public sealed class Stockpile
         ["produced"] = SaveWriter.Ints(_produced),
     };
 
-    /// <summary>A store as it was saved. ⛔ Its slots must be the catalogue's — a good gone from the data is refused.</summary>
+    /// <summary>
+    /// A store as it was saved. ⛔ A good gone from the data is refused; ⭐ a save from before a good was added reads, the
+    /// new good empty (D827).
+    /// </summary>
+    /// <remarks>
+    /// Goods are appended and never renumbered (<c>Goods</c>' rule), so a save holding fewer goods than the data lines up
+    /// slot for slot: what it holds is what it held, and a good it never heard of — barley in every save before W7 — holds
+    /// nothing. Joe, 2026-11-21: <i>"Yes, make them open"</i>. A save holding MORE goods than the data still cannot be read:
+    /// that good is gone, and there is nowhere honest to put it.
+    /// </remarks>
     internal static Stockpile FromSave(SaveReader save)
     {
         List<int> held = save.Ints("held");
         List<int> produced = save.Ints("produced");
         int slots = save.GoodsCount;
-        if (held.Count != slots || produced.Count != slots)
+        if (held.Count > slots || produced.Count != held.Count)
         {
             throw new SaveDataException("a different list of goods",
                 $"{save.Path}: {held.Count} goods where this game's data has {slots}.");

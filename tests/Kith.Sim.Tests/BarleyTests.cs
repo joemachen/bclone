@@ -251,6 +251,60 @@ public sealed class BarleyTests
         Assert.False(loaded.World.BarleyLearned);
     }
 
+    /// <summary>
+    /// ⭐ D827 (Joe: <i>"Yes, make them open"</i>): a save from before barley — every list a good long, one short — opens,
+    /// and plays on: barley held nowhere, its limit the starting 2,000, a filtered granary letting it in (the player could
+    /// not have kept out a good that did not exist), the lowlands holding what a fresh neighbour does.
+    /// </summary>
+    /// <remarks>
+    /// Posed by cutting today's save back to sixteen goods, the shape every one of Joe's saves has — and proved on them
+    /// by `tools/harness/ZzBarley.cs` (252 of 252 readable saves open, as before barley).
+    /// </remarks>
+    [Fact]
+    public void ASaveFromBeforeBarleyOpensAndPlaysOn()
+    {
+        SimLoop loop = Loop(ShippedConfig.Load());
+        SimWorld world = loop.World;
+        StoreBuilding granary = world.StoreBuildings.First(s => s.Kind == StoreKind.Granary || s.Kind == StoreKind.Cart);
+        Assert.True(world.SetStoreAccepts(granary, Goods.Barley, false).Allowed);
+        Assert.False(granary.PlayerAllows(Goods.Barley), "the premise: the filter is spoken and keeps barley out");
+        int goods = world.GoodsCatalog.Count;
+
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-11-21 12:00", "test");
+        int cut = CutBackAGood(document["world"], goods);
+        _output.WriteLine($"{cut} lists cut back from {goods} goods to {goods - 1}");
+        Assert.True(cut > 10, $"Only {cut} lists were cut: the pose is not a save from before barley.");
+
+        SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null);
+        SimWorld old = loaded.World;
+        Assert.Equal(0, old.InStores(Goods.Barley));
+        Assert.Equal(2000, old.StockLimits.For(Goods.Barley));
+        Assert.True(old.StoreBuildings.Single(s => s.Id == granary.Id).PlayerAllows(Goods.Barley),
+            "A filter saved before barley existed kept barley out.");
+        Assert.Equal(world.NeighbourStocks[1].Held[(int)Goods.Barley], old.NeighbourStocks[1].Held[(int)Goods.Barley]);
+
+        // And it plays on: a year stepped without a fault (an untended founding may not live it out; the step is the claim).
+        ulong opened = old.Tick;
+        loaded.Step(world.Config.TicksPerYear);
+        Assert.Equal(opened + (ulong)world.Config.TicksPerYear, old.Tick);
+    }
+
+    /// <summary>D827: a save holding a good this game no longer has is still refused, in the words it always was.</summary>
+    [Fact]
+    public void ASaveWithAGoodTheDataLacksIsStillRefused()
+    {
+        SimLoop loop = Loop(Config);
+        JsonObject document = SaveGame.Capture(loop, "test", "2026-11-21 12:00", "test");
+        JsonObject store = document["world"]!["stores"]!.AsArray()[0]!["store"]!.AsObject();
+        store["held"]!.AsArray().Add(0);
+        store["produced"]!.AsArray().Add(0);
+
+        SaveDataException refused = Assert.Throws<SaveDataException>(
+            () => SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), loop.World.Config, null));
+        _output.WriteLine(refused.Message);
+        Assert.Contains("goods where this game's data has", refused.Message, StringComparison.Ordinal);
+    }
+
     // ---------------------------------------------------------------
     //  §4.1 — a farm's limit is its own crop's
     // ---------------------------------------------------------------
@@ -579,6 +633,46 @@ public sealed class BarleyTests
         }
 
         throw new Xunit.Sdk.XunitException("Nowhere for a second farm.");
+    }
+
+    /// <summary>
+    /// Cut every per-good list in a saved world back by its last good — a save from the data before it was added: the
+    /// stockpiles' held and produced, the limit lists, and the packed said-there-is-nowhere bits.
+    /// </summary>
+    private static int CutBackAGood(JsonNode? node, int goods)
+    {
+        int cut = 0;
+        if (node is JsonObject obj)
+        {
+            foreach (KeyValuePair<string, JsonNode?> pair in obj.ToList())
+            {
+                if (pair.Value is JsonArray list && list.Count == goods
+                    && pair.Key is "held" or "produced" or "stock_limits" or "limits" or "trade_keep" or "trade_buy")
+                {
+                    list.RemoveAt(goods - 1);
+                    cut++;
+                }
+                else if (pair.Key == "said_there_is_nowhere_for" && pair.Value is JsonValue packed)
+                {
+                    byte[] bytes = Convert.FromBase64String(packed.GetValue<string>());
+                    obj[pair.Key] = Convert.ToBase64String(bytes.AsSpan(0, (goods - 1 + 7) / 8).ToArray());
+                    cut++;
+                }
+                else
+                {
+                    cut += CutBackAGood(pair.Value, goods);
+                }
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (JsonNode? item in array)
+            {
+                cut += CutBackAGood(item, goods);
+            }
+        }
+
+        return cut;
     }
 
     private static int StripKeys(JsonNode? node, params string[] keys)

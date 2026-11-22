@@ -15681,7 +15681,7 @@ public sealed partial class SimWorld : IObstacles
         NeedsMoreResidentialLand = save.Bool("needs_more_residential_land");
         WorkIsGoingUndone = save.Bool("work_is_going_undone");
         WorkSeenUndoneOnce = save.Bool("work_seen_undone_once");
-        save.BoolsInto("said_there_is_nowhere_for", _saidThereIsNowhereFor);
+        save.GoodsBoolsInto("said_there_is_nowhere_for", _saidThereIsNowhereFor);
         foreach ((int Villager, int Skill) said in save.Pairs("said_knowledge_is_at_risk"))
         {
             _saidKnowledgeIsAtRisk.Add(said);
@@ -15762,8 +15762,10 @@ public sealed partial class SimWorld : IObstacles
 
         for (int i = 0; i < neighbours.Count; i++)
         {
+            // ⭐ A save from before a good was added (D827) holds fewer: those read, and the new good keeps what a fresh
+            // neighbour holds of it (the lowlands' barley). More than the data's goods is a good gone, and refused.
             List<int> held = neighbours[i].Ints("held");
-            if (held.Count != NeighbourStocks[i].Held.Length)
+            if (held.Count > NeighbourStocks[i].Held.Length)
             {
                 throw new SaveFormatException(
                     $"Neighbour {i} in the save holds {held.Count} goods and today's data has {NeighbourStocks[i].Held.Length}.");

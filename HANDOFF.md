@@ -11,6 +11,17 @@
 >   found it; only `MarketLimitsTests` noticed. A good behind a gate needs `KnowsOf` taught the gate.
 >   ⚠️ And the VIEW latches each gate in a flag of its own (`_workshopKnown`, `_barleyKnown`, …) so its lists cannot
 >   disagree with its bar; the probe's `spoilers:` poses those flags, so a new gate needs one there too.
+> **✅ D827 — OLD SAVES OPEN AGAIN (Joe: *"Yes, make them open"*):** barley had made every save refuse (*"a different list of
+> goods"*). A save's per-good lists may now be shorter than the data's, never longer (`save-load.md §15`); 252 of his 252
+> readable saves open. For his play: `saves/barley-test-no-farm/barley-no-farm-year-6.save` and
+> `saves/barley-test-with-farm/barley-with-farm-year-18.save` (copies; the originals untouched). Suite 2204 / 0 / 5 of 2209.
+> ⚠️ **`main` has moved** (stock piles, A158–A160, `32bad45`): it touches `VillageMap.cs` (the heaps) and `VillageMap.Yards.cs`
+> (`YardState`), as this slice does (the ripe stalks' colour, the farm yard's grain) — merge `main` into the slice first, then
+> the four checks again, at the merge. The art lane has barley's paintings queued after piles (its reply, 2026-11-21).
+> - **⛔ TRAP (D827): A NEW GOOD USED TO BREAK EVERY SAVE, AND A MEASUREMENT TAKEN BEFORE THE GOOD EXISTED CANNOT SEE IT.**
+>   ZzBarley read 252 of his saves happily — on the build without barley. Open his saves on the build WITH the change
+>   before saying they work. And the load list shows *"Village — Season, Year · file"*, never the folder: a save named by
+>   its folder cannot be found by him (fourteen villages are called Stonebridge).
 > - **⛔ TRAP (D825): a companion golden hides behind its first.** `FarmGoldenTests` and `PhaseFiveGoldenTests` each assert
 >   a second hash after the first; a re-take shows only the first red, and the ablation of the second needs the first put
 >   back to its old value for the run, or the test never reaches it.
