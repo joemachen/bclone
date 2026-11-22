@@ -11055,8 +11055,21 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
     on the building (D45); (g) **berry bushes / gathering resources** and **animals for hunting**, animated (`art-inventory.md`
     §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
-    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph); (i) **trees
-    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
+    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph) — 🔨 **being built
+    on `art`** (A173, 2026-11-22, Joe: *"path wear crossfades is done and pushed to main. next for art: bridges."*; spec
+    first, mocked on copies of his saves in `D:\Projects\brushes\bridges\`, his calls before any code); (i) **trees
+    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation;
+    (j) **trees maturing from saplings to full trees, an animated transition** (A173, Joe, 2026-11-22: *"Add to art's list:
+    animated transition for trees 1) maturing from saplings to full trees and 2) being felled/falling"*) — *what the sim
+    gives the view:* **one step and nothing between** — a `Sapling` tile becomes `Forest` at a regrowth sweep after one
+    `regrowth_period_days` (72) period (a forester's planting waits its full period, `GeneratedMap.IsYoungSapling`), seen
+    as the terrain changing (`SimWorld.TerrainGeneration`); so the transition plays from that tick, the young set
+    (`tree-sprites.md §10`) giving way to the grown one — never a gradual growth the sim does not have;
+    (k) **a tree being felled and falling** (A173, the same words) — *what the sim gives the view:* a forester stands at
+    the tile `Cutting` (a labourer on painted ground, `Clearing`) for the stint, then `SimWorld.Harvest` turns the whole
+    tile `Forest` → `Grass` in one tick, its logs carried off or left beside it as a heap; so the fall plays at that tick
+    from the tile the feller worked (all of the tile's painted trees go at once — which fall and which fade is the
+    piece's call), and the chopping before it is the villager's own swing (A130).
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
