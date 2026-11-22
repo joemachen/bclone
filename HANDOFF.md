@@ -17,7 +17,9 @@
 > "Open of an evening"; it now counts the homes within reach and says when none is (D843). Pupils read *student* in the
 > village panel (D844). ✅ The reach stays 12 at his word (D847, *"Keep 12"*). ✅ `main` MERGED INTO THE SLICE at his
 > word (D848, *"Merge main in"*): the art lane's W3 icons, bridge and crossfade; re-imported; probe 141 ✅, 0 ⛔.
-> ⏸️ THE MERGE INTO `main`, AT HIS WORD.**
+> ⭐ MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*, `64310f8`), NOT PUSHED; `slice/w3-tavern` DELETED. No branch open
+> but `art` — the art lane merges `main` into `art` next. ▶️ NEXT FOR SYSTEMS: W14, THE MARKET STAND, OR WHATEVER HE NAMES.
+> ⏸️ THE PUSH, AT HIS WORD.**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -10952,7 +10954,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC.** A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
 
-- ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
+- ✅ **W3, BEER AND THE TAVERN (D821 order, D834 calls) — MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*), NOT PUSHED.** *(Was: 🔨 being built on `slice/w3-tavern`, 2026-11-22.)* —
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
   3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
   `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep

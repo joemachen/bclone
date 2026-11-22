@@ -1,8 +1,8 @@
 # Spec: Beer and the tavern (W3)
 
-> Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836; ale brewed to its limit and kept in the granary at his word
-> while playing, D838) — STEPS 1–6: THE GATE'S GOLDEN AND THE TAVERN'S ANTI-VACUITY BUILT (D841); ⏸️ JOE'S PLAY OF THE
-> NEW BUILD, THEN THE MERGE AT HIS WORD (`main` INTO THE SLICE FIRST).** Three goldens moved, each proven by ablation (§7). Two things changed at the build
+> Status: **✅ SHIPPED — MERGED INTO `main` AT JOE'S WORD (D849, 2026-11-22, *"Merge it"*).** Built D836; ale brewed to its
+> limit and kept in the granary at his word (D838); the gate's golden (D841); played, the card's count of homes in reach
+> (D843) and the reach kept at 12 (D847). Three goldens moved, each proven by ablation (§7). Two things changed at the build
 > and he kept both (§5.2's firewood, §5.3's limit — D837, *"Keep both"*), and the keeper never drinks at their own tavern (§5.4a).
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
 > except for who runs the tavern. B: a tavern keeper"*, and the three follow-ups the keeper raised, *"All as
