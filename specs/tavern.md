@@ -1,9 +1,9 @@
 # Spec: Beer and the tavern (W3)
 
-> Status: **🔨 BEING BUILT ON `slice/w3-tavern` (2026-11-22, D834) — EVERY CALL ANSWERED, NOTHING BUILT YET.**
+> Status: **🔨 BEING BUILT ON `slice/w3-tavern` (2026-11-22, D834) — EVERY CALL ANSWERED, STEP 1 MEASURED (§8.1, D835).**
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
 > except for who runs the tavern. B: a tavern keeper"*, and the three follow-ups the keeper raised, *"All as
-> recommended"* (§10.1). Next: §8 step 1, the measurement, before any number is typed.
+> recommended"* (§10.1). Next: §8 step 2, ale and the brewery.
 > Phase 6, W3 of the workplan (`systems-complete.md §5.1`): **barley → ale at a brewery (W1's batch row), drunk at a tavern;
 > contentment's first lever (W2, `morale.md`).** W1 and W7 were its prerequisites (D789, D821); both are in `main`.
 >
@@ -217,6 +217,39 @@ exactly one cause's slack — the walk, a cold winter, a death in the family —
 5. **The words** — the find's clause, the moment, the log lines, the probe's lines (the brewery and tavern cards, the
    spoilers line learned with the rest), the art lane's request in HANDOFF.
 6. **The gate's golden, the four checks, Joe's play** (a checklist like `morale.md §15`).
+
+### 8.1 Step 1, measured (D835) — `tools/harness/ZzTavern.cs`
+
+Joe's saves, the newest of each of 175 folders (a copy): **105 open**, 70 saved by v0.0.1 and refused (`ZZX`); **33 have a
+home with an adult in it**, nine of them ten adults or more. A tavern stood, for the measure, beside the **home whose walk to
+every adult's home, summed, is least** (the medoid in the one cost field — not the market, which half of them lack).
+
+| Walk from home to the tavern | ≤ 4 | 5–8 | 9–12 | 13–16 | 17–24 | 25+ |
+|---|---|---|---|---|---|---|
+| every adult (313) | 33 % | 43 % | 13 % | 6 % | 3 % | 1 % |
+| in villages of 10+ adults (201) | 20 % | 49 % | 16 % | 10 % | 4 % | 1 % |
+
+- **Reach:** 12 tiles takes in **89 %** of adults (85 % in the big villages); 8 takes 76 %, 16 takes 95 %. ⭐ **12 is
+  recommended** — nine in ten without a tavern on every street, and the far walk to work is a cause only at 24 (D800), so
+  a tavern's reach is half the distance the village already calls *far*.
+- **How often the evening is offered:** a rest spell begun at home — the well's spot — comes **0.51 a working adult-day**
+  (median village 0.48, p25 0.21; two years on the 33). **`tavern_every_days` 5** → an adult within reach goes about
+  **three evenings a season** (the p25 village two), so the comfort's **`at` 1** is met by anyone who can go at all.
+- **What a tavern would ease** (four years on, W2's read as shipped): of 5,325 adult-seasons, 170 unsettled (3.2 %) — and
+  **162 of them read exactly the line (2)**, the season one eased cause settles. Within 12 tiles, 143 of 152 unsettled
+  seasons were at the line: **a tavern within reach would have settled 94 % of the unsettled seasons there.** Nobody left
+  in these four years (W2 measured 4 in 120 over ten years, all Hollowmere's), so *who it would keep* is not in these
+  saves — the posed golden (§8 step 4) is where it is shown.
+- **The keeper's walk** from that home to the nearest warehouse: median **9** tiles, p90 15 (25 villages with one).
+- **The brewery's numbers, to D666's bar:** ten adults × three evenings × four seasons = **120 ale a year**. At **20 barley
+  → 10 ale** a brew (brewing boils away; the mill's batch of 20 in), that is 240 barley — **an eighth of one farm's ~2,000**
+  (`food-chain.md §8`, a farm's two seats). A stint is the mill's, 4 brews of 4 ticks: **40 ale a stint**, so one brewer
+  makes a year's drinking for ten in three stints — the 2:1 margin many times over, and the rest of the barley is eaten.
+- **`tavern_stock` 20** — what the keeper keeps in: two brews, a fortnight of evenings for ten; **`tavern_sit_ticks` 2** —
+  half a day, a rest spell's length less one, so an evening out is shorter than a night in.
+
+⏸️ **Joe's to tune in play** (his call 5, *"measure first"*): reach 12, every 5 days, `at` 1, 20 → 10 a brew, a stock of
+20. Each is one key in `data/sim.config.json`.
 
 ## 9. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request, not drawn here
 
