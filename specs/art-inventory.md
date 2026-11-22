@@ -95,7 +95,7 @@ These are what decide *what kind* of art each row needs. Most rows below cannot 
 | Wheat field — sown | Sown fill + 5–7 short shoots | Growth through the season | B6 | 🟨 |
 | Wheat field — ripe | Ripe fill + 10–12 stalks in the wheat goods colour (`VillageMap.cs:6423–6514`) | Reaped stubble, winter rot (`crops-and-orchards.md §5–5.1`) | B6 | 🟨 |
 | A trail worn through a field | Extra trail mesh (`VillageMap.cs:6312`) | — | — | 🟨 |
-| Other crops | ⬜ — wheat is the only crop; **barley's three stages and icon ✍️ painted and mocked (A162, `painted-crops.md §9`), ⏸️ his calls, landing with W7** | 6 exotic crops in `TECH-EXAMPLE.md` | — | 💭 |
+| Other crops | ⬜ — wheat is the only crop; **barley's three stages and icon ✅ approved and in `textures/` (A162–A163, `painted-crops.md §9`), drawn once W7's crop merges** | 6 exotic crops in `TECH-EXAMPLE.md` | — | 💭 |
 | Orchards | ⬜ | Growth, blossom, fruit | — | 💭 deferred (`crops-and-orchards.md §8`) |
 | Blighted field | ⬜ | — | B11 | 💭 |
 

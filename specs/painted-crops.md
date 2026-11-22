@@ -9,8 +9,8 @@ below — are drawn on **their own layer behind the map** (`VillageMap.Watercolo
 track can be cut out of the crop and the valley's painted track show through (`painted-paths.md §3.7`). Nothing about how
 a crop is painted changed; tick off, the map draws the fields as ever, byte for byte.
 
-**A162 (2026-11-21, on `art`):** barley's three stages and its icon painted and mocked (§9) — ⏸️ three calls his; they land
-with W7 (`slice/w7-barley`), whose data holds the crop.
+**A162–A163 (2026-11-21, on `art`):** barley's three stages and its icon painted and mocked (§9); ✅ his calls *"All as
+recommended"* (A163) and the files in. They are drawn once W7 (`slice/w7-barley`), whose data holds the crop, merges.
 
 ---
 
@@ -161,7 +161,7 @@ agrees.
   a snow draw and its edge, against the flat look's fill plus a line or 5–12 stalks per tile.
 - **Red-check:** 8 mutants, 6 red (bare ground ploughed all year; sown ground never young; a painting every four tiles; the paintings not repeating; the crop's own folder never read; the crops never painted). **Two zeros, written down:** the fields drawn flat with the tick on, and no snow on the fields. Both are draw-time only (`_Draw`, never headless), and the year's renders are their evidence. The harness crashed once, on a Windows file lock mid-restore. It left C3's mutant in place, which was found by its anchor count and reversed by its own text; the harness now retries a locked write.
 
-## 9. Barley (A162, 2026-11-21) — ✍️ PAINTED AND MOCKED, ⏸️ THREE CALLS JOE'S
+## 9. Barley (A162–A163, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; THE FILES IN; DRAWN WHEN W7 MERGES
 
 W7's request (`barley.md §7` on `slice/w7-barley`; D821, D825), at his *"Start barley art"*. Painted the way wheat was:
 `D:\Projects\brushes\barley\build_barley_stages.py` imports wheat's painter (`build_crop_stages.py`, never re-run, so
@@ -195,9 +195,17 @@ seamless by construction, rows east–west four to a tile. Ploughed, stubble and
   colour is one line in `GoodsPalette.cs` and one in `PersonPainter.cs`, both the slice's — W7's to change on its branch, or
   the art lane's after the merge, at his word.
 
-**His calls:**
+**His calls — ✅ answered *"All as recommended"* (A163):**
 1. **Ripe barley — warm or pale?** Pale is the brief's silvery straw but fades into the ploughed ground under the
-   watercolour; warm keeps the silver awns and nodding heads and reads as ripe. ⭐ **Warm.**
+   watercolour; warm keeps the silver awns and nodding heads and reads as ripe. ⭐ **Warm.** ✅
 2. **Barley's colour — `#cbbb7c` or keep the stand-in `#cfcc9e`?** The chip, the pile's sacks, the carried sheaf, the icon.
-   ⭐ **`#cbbb7c`** — it matches the painted field as wheat's does, and stands further off the parchment.
-3. **The icon — heads hanging over the sides with awns?** ⭐ **Yes.**
+   ⭐ **`#cbbb7c`** — it matches the painted field as wheat's does, and stands further off the parchment. ✅
+3. **The icon — heads hanging over the sides with awns?** ⭐ **Yes.** ✅
+
+**As landed (A163):** `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (the warm ripe) and
+`textures/ui/icons/goods/barley.png` (`#cbbb7c`), each imported lossless with mipmaps as wheat's are (their `.import`
+templated on wheat's; the import's 200 line-ending rewrites and 73 `.uid`s put back, trap 67). Nothing draws them yet: the
+game has no barley crop or good until W7 merges. The colour's two lines (`GoodsPalette.cs`, `PersonPainter.cs`) are in on
+`slice/w7-barley` (`a4bd596`, D829), put there by W7 at his words. ⏸️ **After both are in `main`:** barley's three rows in `ThePaintedCropsHold`
+(crop 2), red-checked, and a look at a real barley field. Checks: probe 138 ✅ 0 ⛔ (`painted crops:` and `ui icons:` ✅ —
+an icon for a good the game lacks is not asked for), view build 0 warnings, goldens unmoved, suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine).

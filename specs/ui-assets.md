@@ -142,7 +142,7 @@ row taller than today's text line (a layout change in the seam — the build bar
 | `hay.png` | a loose, low stook — must not read as `wheat` (no ears, no tie) |
 | `clothing.png` | a folded coat (the moss mantle, A93) |
 | `handcarts.png` | a two-wheeled handcart, from the side |
-| `barley.png` | wheat's sheaf, but the heads hang over its sides, each trailing long awns — must not read as `wheat` (its ears stand upright) — ✍️ painted A162 (`painted-crops.md §9`), ⏸️ his OK; lands with W7 |
+| `barley.png` | wheat's sheaf, but the heads hang over its sides, each trailing long awns — must not read as `wheat` (its ears stand upright) — ✅ approved and in (A163, `painted-crops.md §9`); shown once W7's good merges |
 
 ### 4.2 Buildings (29) — `icons/buildings/`
 **Two files each:** normal, and **owed** (a gift waiting — today's amber *Stone bridge*, *School*: **a small gold-leaf
