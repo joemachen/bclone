@@ -1,6 +1,6 @@
 # Stock piles — the stockpile's goods, and goods on the ground, drawn as piles (A158, A159)
 
-> **Status: 🔨 BUILT on `art` (A159, 2026-11-21) — ⏸️ JOE'S PLAY.** His five calls answered *"A, all as recommended"*
+> **Status: ✅ MERGED INTO `main` (A160, 2026-11-21) — built A159, played and approved: *"Looks good, merge it"*. Not pushed.** His five calls answered *"A, all as recommended"*
 > (§10). Specced and mocked A158. Art lane (CLAUDE.md *Two tracks*), piece (d) of his play notes (HANDOFF, *"JOE'S PLAY
 > NOTES, 2026-11-20 … SORTED BY LANE"*, his order A137), at his *"Start piles"*. View only: nothing in the sim, `data/` or
 > `tests/` changes. Mocks, rendered by the game itself from copies of his saves: `D:\Projects\brushes\piles\piles_mock.jpg`
