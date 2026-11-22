@@ -166,6 +166,8 @@ uniform float path_snow_clear = 0.65;
 // across the lane, 0 one edge to 2 the other; z their width). Packed ground stays A72's worn footpath (tier III).
 uniform vec4 path_trail = vec4(0.55, 0.5, 0.75, 0.75);
 uniform vec3 path_trail_feet = vec3(0.55, 1.45, 0.22);
+// The paths' fade (art piece (a), `path-crossfade.md`): the old network's field blended to the new one's.
+#include "res://shaders/path_fade.gdshaderinc"
 // ⭐ The snow lying from its snowfalls (A76, `specs/snowfall.md`): snow_amount is now how much has fallen, not the
 // calendar's ramp. A frost first (snow_dust: whole by x, strength y + z where its gentle unevenness is fullest), then drifts
 // whose threshold is read off the land (snow_drift: x a unit of the crest, y the light's tilt, z the year's patch noise,
@@ -604,7 +606,7 @@ void fragment() {
         float path_inside = 0.0;
         float path_packed = 0.0;
         if (paths_on) {
-            vec3 pf = textureLod(path_map, corner / ground_map_tiles, 0.0).rgb;
+            vec3 pf = path_field_faded(corner / ground_map_tiles, tile);
             path_s = mix(path_field_range.x, path_field_range.y, pf.r);
             if (path_s < path_halo_tiles.x + path_halo_tiles.y + path_wobble_tiles) {
                 float on_land = 1.0 - kinds.a;
