@@ -1449,8 +1449,19 @@ public partial class Main : Control
             faults.Add("a settings file that says off is not read as off, or the way back is not on");
         }
 
+        // ⭐ A187 (Joe's note): with a file that says off, the village's tick starts off when its Settings is built — so the
+        // founding never asks for full screen and takes it back a frame later.
+        PlayerSettings held = _settings;
+        _settings = _settings with { Toggles = new Dictionary<string, bool>(_settings.Toggles, StringComparer.Ordinal) { [FullScreenToggle] = false } };
+        bool startsOff = !FullScreenAtTheBuild();
+        _settings = held;
+        if (!startsOff || !FullScreenAtTheBuild())
+        {
+            faults.Add($"with a file that says off the tick is built {(startsOff ? "off" : "on")} (want off), and with none {(FullScreenAtTheBuild() ? "on" : "off")} (want on)");
+        }
+
         return faults.Count == 0
-            ? "[widths] full screen: ✅ the tick is pressed at a founding and asks for full screen; unticked asks for a window; a file's off is read as off; every Settings tick a row of the title's table, and every row a tick"
+            ? "[widths] full screen: ✅ the tick is pressed at a founding and asks for full screen; unticked asks for a window; a file's off is read as off, and the tick is built off from it (no flash at a founding); every Settings tick a row of the title's table, and every row a tick"
             : $"[widths] full screen: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -7350,6 +7361,12 @@ public partial class Main : Control
         // exclusive: the desktop is an Alt-Tab away, as it is in a window.
         var fullScreen = Tick(FullScreenToggle);
         fullScreen.AddThemeFontSizeOverride("font_size", 12);
+
+        // ⭐ As the player left it, not the row's default (A187, Joe: *"even with fullscreen deselected in the settings, the game
+        // goes full screen for a second when founding a new village before reverting back to windowed"*): built at its default
+        // it asked for full screen here, and the settings applied a frame later asked for the window back. The title has
+        // already set the window from the same value (A180), so this asks for the mode the window is in.
+        fullScreen.ButtonPressed = FullScreenAtTheBuild();
         fullScreen.Toggled += SetFullScreen;
         SetFullScreen(fullScreen.ButtonPressed);
         body.AddChild(fullScreen);
