@@ -11103,6 +11103,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     with them on a scratch copy, ⛔ without (all seven named). ⏸️ Two calls his: the icons as drawn, and the colours (ale and the
     brewer `#9a5e14`, the keeper `#8a2f3e`, recommended over W3's stand-ins, which sit under ΔE 10 of bread, the baker and the
     herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
+    ✅ **His *"Yes, merge them"* (the look and the recommended colours) — MERGED INTO `main` (A183, `ddcd161`), not pushed. ▶️ W3
+    takes `main`, sets ale and the brewer to `#9a5e14` and the keeper to `#8a2f3e`, and re-imports. Done for the art lane.**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
