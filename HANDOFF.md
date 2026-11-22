@@ -10947,7 +10947,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
   - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps; (b)
     **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
-    (c) **every trade and action** with varied work animations (stone gathering named); (d) ✅ **MERGED INTO `main` (A160, `a2dd441`) at his *"Looks good, merge it"*; not pushed** (2026-11-21, *"Start piles"*; specced and mocked A158, `specs/stock-piles.md`; ✅ his calls *"A, all as recommended"*; built A159; played and approved; renders `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg`, before beside after) — **stockpiles show piles** of
+    (c) **every trade and action** with varied work animations (stone gathering named); (d) ✅ **MERGED INTO `main` (A160, `a2dd441`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A161)** (2026-11-21, *"Start piles"*; specced and mocked A158, `specs/stock-piles.md`; ✅ his calls *"A, all as recommended"*; built A159; played and approved; renders `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg`, before beside after) — **stockpiles show piles** of
     each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
     block; (e) **chimney smoke** while a building burns firewood (`art-inventory.md` B11, *"none anywhere"*); (f) **people
     go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
