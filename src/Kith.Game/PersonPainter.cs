@@ -222,7 +222,7 @@ internal static class PersonPainter
         Goods.Meat => Rgb.Hex("#a8343a"),
         Goods.Leather => Rgb.Hex("#9a7048"),
         Goods.Wheat => Rgb.Hex("#dcb84e"),
-        Goods.Barley => Rgb.Hex("#d2cc9c"), // W7: a paler straw than wheat's sheaf — the art lane's to tune
+        Goods.Barley => Rgb.Hex("#cbbb7c"), // W7: the painted ripe barley's straw, Joe's on the art lane (A162/A163)
         Goods.IronTools => Rgb.F(0.50f, 0.52f, 0.58f),
         Goods.Flour => Linen,
         Goods.Bread => Rgb.Hex("#b87a3a"),

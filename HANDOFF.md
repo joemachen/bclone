@@ -11,6 +11,8 @@
 >   found it; only `MarketLimitsTests` noticed. A good behind a gate needs `KnowsOf` taught the gate.
 >   ⚠️ And the VIEW latches each gate in a flag of its own (`_workshopKnown`, `_barleyKnown`, …) so its lists cannot
 >   disagree with its bar; the probe's `spoilers:` poses those flags, so a new gate needs one there too.
+> **✅ D829 — barley's colour `#cbbb7c` (Joe's, A162/A163, via the art lane).** ⚠️ **DEBT: `tools/legibility/check.py` crashes**
+> (`KeyError: 'colour'` at `read_colours`) on `main` before W7 too — the colour checker has not run since; not fixed here.
 > **✅ D828 — PLAYED AND APPROVED (*"they work as expected and delivered the expected outcomes"*); his logs 0 `ERROR`, the find, the
 > card's change and a barley harvest all in them. ⏸️ THE MERGE AT HIS WORD — `main` into the slice first (it has moved).**
 > **✅ D827 — OLD SAVES OPEN AGAIN (Joe: *"Yes, make them open"*):** barley had made every save refuse (*"a different list of
