@@ -10908,6 +10908,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC.** A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
+
 - ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
   3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
