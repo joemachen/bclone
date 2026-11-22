@@ -103,6 +103,9 @@ public partial class Main
         return new CheckBox { Text = row.Label, ButtonPressed = row.Default };
     }
 
+    /// <summary>What the village's full-screen tick starts at when its Settings is built (A187): the player's, never the row's default.</summary>
+    private bool FullScreenAtTheBuild() => TickValue(FullScreenToggle);
+
     /// <summary>A tick as the player last left it, with no village open: the file's, else its row's default.</summary>
     private bool TickValue(string key) => _settings.Toggles.TryGetValue(key, out bool on) ? on : TickRow(key).Default;
 

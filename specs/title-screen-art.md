@@ -1,7 +1,7 @@
 # The title screen, painted — a parchment menu, and the valley in four seasons behind it (A178, A179)
 
 > **Status: ✅ PART 1 MERGED INTO `main` (A186, `1678471`, his *"it all looks good. merge it."*); built A180 — Joe: *"All as recommended - and add a 'settings' option to the title
-> screen"*; ⏸️ HIS PLAY OF PART 1 (§9), then part 2 once he has played his save to maturity.** Specced and part 1 mocked A179.
+> screen"*; played and approved; the full-screen flash he found fixed (A187, his eyes). ⏸️ Part 2 once he has played his save to maturity.** Specced and part 1 mocked A179.
 > Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
