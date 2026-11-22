@@ -3303,7 +3303,13 @@ public partial class VillageMap : Control
         // ⚠️ Over the buildings, because a heap beside a full warehouse is the whole point:
         // the overview says *"Stone 0 (+12 on the ground — no room in store)"* and until now
         // there was nowhere on screen to find the twelve.
-        DrawHeaps();
+        // ⭐ Under the painted canopy everything waits, but a heap waits until after it (A159, Joe's call 4: goods on the ground
+        // mean a store is full — the one thing the player must find, D134, D371). With the trees off, or the tick, as before.
+        bool heapsOverTheTrees = _paintedTrees && _treesShown;
+        if (!heapsOverTheTrees)
+        {
+            DrawHeaps();
+        }
 
         // The households' handcarts, parked beside their doors (Slice H) — a chip in the heaps' geometry, over the
         // houses and under the people, as the heaps are.
@@ -3330,6 +3336,10 @@ public partial class VillageMap : Control
         if (canopyOver)
         {
             DrawThePaintedCanopy();
+            if (heapsOverTheTrees)
+            {
+                DrawHeaps();
+            }
 
             // ⭐ A building site shows through the leaves as a dashed outline (A53): placement must never be lost under a tree.
             DrawTheSitesThroughTheCanopy();
@@ -4030,6 +4040,12 @@ public partial class VillageMap : Control
             // ⭐ With its yard (A86, `building-yards.md`): its stock read from its own store, in levels.
             RoofLook? storeLook = RoofOf(building.Kind);
             YardState storeYard = PaintsBuildings && storeLook is RoofLook sl ? YardStateOf(building, sl.Yard) : default;
+            // ⭐ A stockpile's goods are piles on its yard (A159, `stock-piles.md §6`), laid again only when a size moves.
+            bool piled = PaintsBuildings && building.Kind == StoreKind.Pile;
+            if (piled)
+            {
+                storeYard = storeYard with { Piles = PileSizesOf(building.Store, world.GoodsCatalog.Count) };
+            }
             if (!DrawPaintedBuilding(storeLook, centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, colour, worn, world.DoorOf(building), building.Id, yard: storeYard))
             {
                 DrawFootprint(
@@ -4043,7 +4059,8 @@ public partial class VillageMap : Control
                 DrawDoor(centre, building.ExtentWidth * 0.8f, building.ExtentHeight * 0.8f, building.Facing.Raw, world.DoorOf(building), DoorColour);
             }
 
-            if (ShowsItsStock(building))
+            // Its bars, then, only for every other store (Joe: *"the bars stay on other buildings for now"*).
+            if (ShowsItsStock(building) && !piled)
             {
                 foreach ((Goods goods, Vector2[] crate) in CratesIn(building, ShelfOf(world, building)))
                 {
@@ -8578,6 +8595,13 @@ public partial class VillageMap : Control
             return;
         }
 
+        // ⭐ With the watercolour on, each heap is its good's pile (A159, `stock-piles.md §7`).
+        if (PaintsBuildings)
+        {
+            DrawPiledHeaps();
+            return;
+        }
+
         foreach ((GroundStack heap, Rect2 box) in EveryHeapChip())
         {
             DrawRect(box, GoodsPalette.ColourOf(heap.Goods));
@@ -8586,6 +8610,26 @@ public partial class VillageMap : Control
     }
 
     private readonly Dictionary<GridPos, int> _heapsOnTile = new();
+
+    /// <summary>How far along its tile the next painted heap lies, in pixels (A159): the widths of the heaps before it.</summary>
+    private readonly Dictionary<GridPos, float> _heapAlongOnTile = new();
+
+    /// <summary>The painted heaps placed so far in this pass, and their tiles (A159).</summary>
+    private readonly List<(GridPos Tile, Rect2 Box)> _heapsLaidOut = new();
+
+    /// <summary>Whether a painted heap's box lies on one placed before it on the same tile.</summary>
+    private bool LiesOnAnEarlierHeap(GridPos tile, Rect2 box)
+    {
+        foreach ((GridPos t, Rect2 b) in _heapsLaidOut)
+        {
+            if (t == tile && b.Intersects(box))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// ⭐ A household's handcart stands at its door when nobody is pushing it (Slice H, `handcart.md §8`; Joe: <i>"i would
@@ -8873,6 +8917,8 @@ public partial class VillageMap : Control
     private IEnumerable<(GroundStack Heap, Rect2 Box)> EveryHeapChip()
     {
         _heapsOnTile.Clear();
+        _heapAlongOnTile.Clear();
+        _heapsLaidOut.Clear();
         for (int i = 0; i < _world!.GroundStacks.Count; i++)
         {
             GroundStack heap = _world.GroundStacks[i];
@@ -8883,6 +8929,26 @@ public partial class VillageMap : Control
 
             int nth = _heapsOnTile.GetValueOrDefault(heap.Position);
             _heapsOnTile[heap.Position] = nth + 1;
+
+            if (PaintsBuildings)
+            {
+                // ⭐ A pile is as wide as its size, and pushed past its building by it (A159, `stock-piles.md §7`); a second
+                // good on the tile lies beside the first by the first's width, not a chip's.
+                // Stepped on from where the last heap on this tile lay until it is clear of every heap before it.
+                float width = HeapWidthOf(PileLevel(heap.Amount));
+                float along = _heapAlongOnTile.GetValueOrDefault(heap.Position);
+                Rect2 piled = HeapRectOf(heap.Position, width, along);
+                for (int step = 0; step < 80 && LiesOnAnEarlierHeap(heap.Position, piled); step++)
+                {
+                    along += piled.Size.X * 0.1f;
+                    piled = HeapRectOf(heap.Position, width, along);
+                }
+
+                _heapAlongOnTile[heap.Position] = along;
+                _heapsLaidOut.Add((heap.Position, piled));
+                yield return (heap, piled);
+                continue;
+            }
 
             Rect2 box = HeapRectOf(heap.Position);
             box.Position += new Vector2(box.Size.X * 1.15f * nth, 0f);
@@ -8927,9 +8993,13 @@ public partial class VillageMap : Control
     /// a dark outline that reads on any fill, at every zoom.
     /// </para>
     /// </remarks>
-    private Rect2 HeapRectOf(GridPos tile)
+    /// <remarks>
+    /// <paramref name="further"/> (pixels, A159): how far past the heaps before it on the same tile a painted heap lies —
+    /// beside them on open ground, further out from the building at a door, so a second pile never steps back over the roof.
+    /// </remarks>
+    private Rect2 HeapRectOf(GridPos tile, float sizeInTiles = HeapSize, float further = 0f)
     {
-        float size = Mathf.Max(3f, _pixelsPerTile * HeapSize);
+        float size = Mathf.Max(3f, _pixelsPerTile * sizeInTiles);
         Vector2 tileCentre = ToScreen(tile);
         Vector2 centre = tileCentre + (Vector2.One * (_pixelsPerTile * HeapOffset));
 
@@ -8949,7 +9019,11 @@ public partial class VillageMap : Control
             float toEdgeX = Mathf.Abs(away.X) < 1e-6f ? float.MaxValue : (box.Size.X / 2f) / Mathf.Abs(away.X);
             float toEdgeY = Mathf.Abs(away.Y) < 1e-6f ? float.MaxValue : (box.Size.Y / 2f) / Mathf.Abs(away.Y);
             float toEdge = Mathf.Min(toEdgeX, toEdgeY);
-            centre = buildingCentre + (away * (toEdge + (size * 0.75f)));
+            centre = buildingCentre + (away * (toEdge + (size * 0.75f) + further));
+        }
+        else
+        {
+            centre += new Vector2(further, 0f);
         }
 
         return new Rect2(centre - (Vector2.One * size / 2f), new Vector2(size, size));
