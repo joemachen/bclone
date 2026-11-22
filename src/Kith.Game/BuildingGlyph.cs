@@ -92,6 +92,8 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.TradingPost => TradeGlyph.ColourOf(JobKind.Merchant),
         BuildingKind.TailorShop => TradeGlyph.ColourOf(JobKind.Tailor),
         BuildingKind.Workshop => TradeGlyph.ColourOf(JobKind.Carpenter),
+        BuildingKind.Brewery => TradeGlyph.ColourOf(JobKind.Brewer),
+        BuildingKind.Tavern => TradeGlyph.ColourOf(JobKind.TavernKeeper),
 
         _ => Unchosen,
     };

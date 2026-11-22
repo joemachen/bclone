@@ -397,6 +397,18 @@ public sealed class Villager
     /// <summary>Whether the last season's read put them past the line — the card's <i>Unsettled</i> (W2 step 3).</summary>
     public bool IsUnsettled => SeasonsUnsettled > 0;
 
+    /// <summary>The day (<see cref="SimWorld.Today"/>) of their last evening at the tavern (W3); 0 if never. Saved; hashed sparsely.</summary>
+    public int LastTavernDay { get; set; }
+
+    /// <summary>Evenings at the tavern this season (W3) — read at the season's turn by contentment, then cleared. Saved; hashed sparsely.</summary>
+    public int TavernEveningsThisSeason { get; set; }
+
+    /// <summary>
+    /// The comforts that eased a held cause at the last season's read, one bit a <see cref="ContentmentComfort"/> (W3) — what the
+    /// card says. Nought with no cause held. Saved; hashed sparsely.
+    /// </summary>
+    public int ContentmentComforts { get; set; }
+
 
     public VillagerState State { get; set; } = VillagerState.Idle;
 
@@ -988,6 +1000,11 @@ public sealed class Villager
                 : "digging iron at the mine face",
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
+            VillagerState.WalkingToTheTavern => "walking to the tavern",
+            VillagerState.AtTheTavern => "spending the evening at the tavern",
+            VillagerState.FetchingAle => "fetching ale for the tavern",
+            VillagerState.CarryingAle => "carrying ale to the tavern",
+            VillagerState.KeepingTheTavern => $"keeping {where}",
             VillagerState.WalkingToTheRiver => "walking to the river for water",
             VillagerState.DrawingAtTheRiver => "drawing water at the river",
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
@@ -1043,6 +1060,10 @@ public sealed class Villager
             ["commute_tiles"] = CommuteTiles != 0 ? CommuteTiles : null,
             ["contentment_causes"] = ContentmentCauses != 0 ? ContentmentCauses : null,
             ["seasons_unsettled"] = SeasonsUnsettled != 0 ? SeasonsUnsettled : null,
+            // W3's (D834) — optional keys, so a save from before reads nobody who has been to a tavern.
+            ["last_tavern_day"] = LastTavernDay != 0 ? LastTavernDay : null,
+            ["tavern_evenings_this_season"] = TavernEveningsThisSeason != 0 ? TavernEveningsThisSeason : null,
+            ["contentment_comforts"] = ContentmentComforts != 0 ? ContentmentComforts : null,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
             ["founder"] = Founder,
             ["arrived_at"] = SaveWriter.Hex(ArrivedAtTick),
@@ -1115,6 +1136,9 @@ public sealed class Villager
             CommuteTiles = save.HasValue("commute_tiles") ? save.Int("commute_tiles") : 0,
             ContentmentCauses = save.HasValue("contentment_causes") ? save.Int("contentment_causes") : 0,
             SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
+            LastTavernDay = save.HasValue("last_tavern_day") ? save.Int("last_tavern_day") : 0,
+            TavernEveningsThisSeason = save.HasValue("tavern_evenings_this_season") ? save.Int("tavern_evenings_this_season") : 0,
+            ContentmentComforts = save.HasValue("contentment_comforts") ? save.Int("contentment_comforts") : 0,
             BirthTick = save.Long("birth_tick"),
             Founder = save.Bool("founder"),
             ArrivedAtTick = save.ULong("arrived_at"),

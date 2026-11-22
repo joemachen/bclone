@@ -1,5 +1,48 @@
 # Handoff — Kith: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), ✅ PUSHED AT HIS WORD (D811, `origin/main` = ecbeaa0); NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS: W7, A SECOND CROP — BARLEY — THEN W3, BEER BREWED FROM BARLEY (D821, *"Yes, barley first"*). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/w3-tavern` — W3, BEER AND THE TAVERN (2026-11-22, D834), CUT FROM `main` (82ed888) IN THE MAIN CHECKOUT.
+> The only systems branch open; `art` is the other. Spec `specs/tavern.md`, every call Joe's answered (D834): the tavern a
+> comfort that eases one held cause (1A), brewing learned with barley at the find (2A), **a tavern keeper** (his 3B) who
+> carries the ale in, one a tavern, asked for by the village and stood down in famine. 📏 Measured (D835): reach 12, an
+> evening every 5 days, 20 barley → 10 ale. ✅ BUILT (D836) — suite 2227 / 0 / 5 of 2232 in 17m19; view 0 warnings; probe
+> 138 ✅, 1 ⛔ (`ui icons:` — the art lane's, asked below), bar 183; three goldens moved, each proven by ablation. ⏸️ Owed:
+> the gate's posed golden (a village kept by a tavern) and HIS PLAY (`.\run.bat`: a barley farm and a brewery, a tavern
+> among the homes; watch the keeper carry a cask, adults walk over of an evening, a person's card say the tavern made up for
+> a worry). ✅ His two build-time calls kept (D837, *"Keep both"*): the brewery burns no firewood; the brewing rule reads
+> under his limit. ⭐ D838, his while playing: ale brewed to its stock limit, tavern or not (the tavern rule deleted), and
+> kept in the granary beside its barley. ⭐ D841: the gate's golden — seed 9 with a tavern, a comfort settling what W2
+> unsettled (1 season thinking of leaving against 12); nobody leaves in either arm, so a departure prevented is not shown.
+> ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).
+> 🐞 His play (2026-11-22): *"only the tavernkeeper goes in"* — his tavern stood out of every home's reach and the card said
+> "Open of an evening"; it now counts the homes within reach and says when none is (D843). Pupils read *student* in the
+> village panel (D844). ✅ The reach stays 12 at his word (D847, *"Keep 12"*). ✅ `main` MERGED INTO THE SLICE at his
+> word (D848, *"Merge main in"*): the art lane's W3 icons, bridge and crossfade; re-imported; probe 141 ✅, 0 ⛔.
+> ⏸️ THE MERGE INTO `main`, AT HIS WORD.**
+> - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
+>   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
+> - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
+>   `ModdedGoodTests`' "pitch" sat at 17 when ale took 17, and every test stayed green: the validator checks only that each
+>   built-in id is PRESENT. Found by reading the file for the move. **When you append to an enum, grep the tests' JSON for
+>   the id you just took** (`"id": 17`), not only for the casts.
+> - **⛔ TRAP (D836): a pose built by "cut back one good" now cuts the newest good.** `BarleyTests`' save from before barley
+>   cut ale instead and went red for a reason that was not barley's. A pose that names a good by position must say which.
+> - **⛔ TRAP (D836): a batch's firing comes from the store that holds its input** (D713's one walk). Barley lives in
+>   granaries, firewood never does — a brewery with a firing could never have brewed, and nothing would have said why
+>   but the card. Check `StoredBy` of the input against the firewood's before giving a batch row a `Firing`.
+> - **⛔ TRAP (D838): ONE NON-FOOD GOOD IN A GRANARY'S `StoredBy` HALVES EVERY GRANARY'S FOOD ROOM.** A store that may hold
+>   food and anything else is a *shared roof* (D361/D409, the cart's rule): half kept for each side. Ale in the granary
+>   moved nine tests in villages that never brew. A good row's `kept_with_food` puts it on food's side of the split
+>   (never a count of food). Before adding a store kind to any good's `StoredBy`, ask what that store's split becomes.
+> - **⛔ TRAP (D836): `if (false)` is not a mutant here** — CS0162 fails the build, the old DLL runs, and the reds are the last
+>   group's. Mutate with a runtime-false (`&& Tick == ulong.MaxValue`), and read `0 Error(s)` before reading a red.
+> - **⛔ TRAP (D843): A REACH MEASURED FROM WHERE A BUILDING WOULD STAND SAYS NOTHING ABOUT WHERE THE PLAYER PUTS IT.**
+>   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
+>   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
+>   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D836): the fixture has few drinkers.** Four adults, two within reach, one of them the keeper (who never drinks at
+>   their own tavern) — so a per-season rule like `tavern_every_days` never bites in `VillageFixtures.Village`. Pose the rule's
+>   own extreme (a wait past the run) to make it bite.
+
 > **⭐ W7, BARLEY, MERGED INTO `main` AT JOE'S WORD (D830, *"Merge it"*, `c720171`), ✅ PUSHED AT HIS WORD (D831, `origin/main` =
 > db28631); `slice/w7-barley` DELETED.
 > Four checks on the merged tree: suite 2204 / 0 / 5 of 2209; view build 0 warnings; probe 219 lines, 139 ✅, 0 ⛔ (barley's icon
@@ -10840,6 +10883,10 @@ the wear done: a quick look for one is `list_bridges.py` in `D:\Projects\brushes
 `Enum.GetValues<RoofMaterial>()` and draws every value as a roof, and `RoofTexturePaths` is checked at 384 × 128 — a deck
 added there turns `painted buildings:` red for a texture that is right. The bridge reuses the roofs' runs (`RoofRuns`) and
 draws its one textured run in its own deck (`DrawBridgeRuns`); a later piece that wants the roofs' cache does the same.
+(79) **The suite is skipped only when its diff is empty — and a `data/` edit is not art** (D846): `CLAUDE.md`'s
+*Verification* skips the suite when no file under `src/Kith.Sim`, `tests`, `data` (or the build's own files) differs from
+the last green commit. A palette or icon row in `data/` is the sim's input and runs the suite — barley's colour (D829) went
+on the systems branch for this reason. Say *"suite skipped"* in the record with the commit and its count, never silently.
 
 **▶️ The terrain shader, in the lab (`specs/terrain-shader.md`; ✅ MERGED INTO `main` (D710, 2026-11-07) from `claude/nostalgic-panini-a63043`, whose worktree is removed — the art's standing worktree is `.claude/worktrees/art`, branch `art`).** Specced A1. **Built: piece 1 of 4, the fake coverage map (A2); piece 2, world-anchored grain and drag to pan (A3, at Joe's "build the grain next"); piece 3, snow (A4, at his "build snow next"); piece 4, splat blending and edge bleed (A5, at his "build piece 4"). All four are built. ⭐ He approved splat and bleed at 5.5, 0.33 and 0.30 tiles (A7, after tuning them, A6); ⭐ he approved the grain and snow at his tuning too (A8–A9: grain 0.065 tiles, under the village; snow Lerp, `#f8f6f1`, patchiness 0.03, patch 3 tiles); the coverage map is the lab's fake. ⭐ The approved look's *Paper grain* is 0.12 at his word (A10; was 0.15). ⚠️ **Debt:** `art/grass/`'s nine reference JPEGs were rendered at 0.15 — `tools/grass/lab_render.gd` then `lab_check.py shots` remakes them, but `art/` and `tools/` are not the art lane's to commit without his word.** `.\run.bat grass` from the worktree; on the *Terrain* panel tick *Coverage map* and move *Coverage fade*; tick *World-anchored grain*, drag the land, move *Grain scale* and the zoom; *Grain under the village* compares the grain's place; put the left panel's *Season* on winter (3), tick *Snow*, move *Snow amount* and try the three *Snow blend*s (Lerp is the recommendation; Lighten fringes purple round bare patches), *Snow patchiness* and *Snow patch size*; with *Coverage map* on, the river stays clear. With *Coverage map* on, tick *Splat blending* and move *Splat sharpness* (48 hard, 2 a wash), tick *Edge bleed* and move *Bleed reach* and *Bleed scale* — they open at Joe's approved values, 5.5, 0.33 and 0.30 tiles (A6–A7), switches still off; his look was coverage map, world grain, splat and bleed on, snow off; the river's edge stays hard under both, by construction (A5 changed the spec: the splat no longer softens the water). **The GPU bar is 1 ms a frame at 4K for the whole stack** (A11, `terrain-shader.md §3.3`): everything on is +0.64–0.80 ms, inside it; measure again in the wired valley and bake the snow's threshold and the bleed's warp (§5) only if it goes over. ⚠️ **Merge: D700 was taken twice** — `worktree-slice-cart-home` (systems) has its own D700; whichever lands second renumbers its entries, and every `Dnnn` in its specs, HANDOFF and code comments with them. **Joe, 2026-11-07: "Systems first."** This branch waits for `worktree-slice-cart-home` to reach main, then renumbers D700–D710 (✅ done at the merge, D710: the art takes its own A-series, A1–A11) (commit messages keep the old ones), re-runs the four checks, and goes to Joe for his `--no-ff`. The session stops after each piece for his eyes. `grass_approved.tres` and `GrassLook.cs` are unchanged; the options start from `looks/terrain_lab.tres`, all switches off, and with every switch off the lab's renders are byte-identical to before the slice. **Waits for house tiers:** everything in `terrain-shader.md §5`: the bake's coverage channel, `VillageMap` drawing through the shader, the grain's overlay in the game, what happens to `Dressed`'s noise. ✍️ **House tiers merged (D724); the wiring is specced (A22, 2026-11-09): `terrain-shader.md §5` — what the valley does today (§5.1), six calls for Joe (§5.2, also the first ⏸️ line), what is settled without asking (§5.3), three pieces after his answers (§5.4). Nothing built.** The lane table's left column now also holds `VillageMap.cs` and `ValleyTexture.cs` for this slice (the banner, D724); `Main.cs` is still the systems', and call 5 asks Joe for the six lines of the switch. ✅ **Answered (A23), all as recommended — the tick in `Main.cs` at his OK, a before/after slider beside it.** 🔨 **Piece 1 built (A24):** `ValleyTexture(withWeights: true)` keeps the mix (RGBA8 grass/wood/seam/water + RG8 young/iron shares, 8 px a tile, 3.7 MB); the default bake keeps none, so the game is unchanged until piece 2's tick; the colour bake byte-identical; the probe's `valley mix:` line — 99.85 % of boundary pixels agree with the colour, water within 1 px of the bake's bank — and `logs/valley-mix.png` to look at. ⚠️ Several seams in the founding valley are one tile thin: where piece 2 checks A7's bleed first. 🔨 **Piece 2 built (A25):** `shaders/valley_terrain.gdshader` + `VillageMap.Watercolour.cs` (a layer behind the map; `_Draw` skips the Beyond, parchment and bake with the tick on) + two ticks in `Main.cs`; probe `watercolour:`; tick off byte-identical to the pre-piece-2 build in windowed renders at two zooms; 4K +1.35 / +1.73 ms. Scratch tools (not committed — `tools/` is not the lane's): `render.gd` (frame-sample door, tree paused at founding, shots), `measure4k.gd` (the game in a 4K SubViewport, alternating rounds). ⏸️ **Joe's eyes next.** ✅ **He played it (2026-11-10) and set an art direction toward the concept (A26, `terrain-shader.md §7`): five pieces — ink and pooling, calmer ground, the river drawn and flowing, winter with structure, decorative relief.** 🔨 **Ink and pooling built (A27):** a pen line where each kind's share crosses a half, constant on screen, drawn on the *unbled* edge so the wash bleeds past it (on the bled edge it came out ragged — A7's fray); pooling inside each wash; values in `looks/valley_watercolour.tres` (`ValleyWatercolourLook.cs`), none approved yet.
 
@@ -10900,6 +10947,30 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   still wait on his own word. **Act on exactly what the calls listed; ask for the rest.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
+
+- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC.** A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
+
+- ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
+  `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
+  3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
+  `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep
+  both"*):** the brewery burns no firewood; ~~the brewing rule is read under his ale limit~~ — the rule itself gone at his
+  word (D838): ale brews to its limit, tavern or not, and is kept in the granary. 🐞 **His play (D843):** his tavern stood
+  14–26 tiles' walk from every home, so nobody came and the card still said "Open of an evening"; the card now counts the
+  homes within reach. ✅ **His call (D847, *"Keep 12"*): `tavern_reach_tiles` stays 12 — the tavern goes among the homes.**
+
+- ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
+  the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while
+  anybody sits inside — `VillageMap.Indoors` already hides drinkers and the keeper indoors); **ale**'s UI icon
+  (`ui icons:` reads ⛔ until it is in `main`, barley's precedent) and its colour in `GoodsPalette` (a stand-in amber
+  `#b07a2a` now); the keeper's **cask** in the arms; the brewer's and keeper's figures (stand-ins in `PersonPainter`,
+  their trade colours in `TradeGlyph` stand-ins too). Until then both buildings draw in the generic workshop look.
+  ✅ **The seven UI icons are in `main`** (the art lane's A181–A183, ddcd161, at Joe's word *"Yes, merge them"*; not pushed):
+  `ui icons:` reads ✅ once `main` is merged into the slice — re-import then (art trap 1: delete the untracked `.uid` files by
+  list, check out the LF-only `.import` rewrites by name). Their colours taken on the slice (D845): ale and the brewer
+  `#9a5e14`, the keeper `#8a2f3e`. Still asked: the two buildings on the map, the cask, the figures.
 
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,

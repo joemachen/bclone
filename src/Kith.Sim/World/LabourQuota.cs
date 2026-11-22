@@ -355,6 +355,7 @@ public readonly record struct LabourQuota
 
         needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
         needed[(int)JobKind.Merchant] = MerchantsWanted(world);
+        needed[(int)JobKind.TavernKeeper] = KeepersWanted(world);
 
         // ⭐ The village never asks for a teacher by itself (D754): a school is the player's decision, so the want is
         // nobody and only the number he types stands — the merchant's shape without a want of its own.
@@ -430,6 +431,10 @@ public readonly record struct LabourQuota
 
         // Trade waits while food comes first (D594), as every trade that is not food does.
         int merchantsWanted = foodComesFirst ? 0 : MerchantsWanted(world);
+
+        // ⭐ THE TAVERN KEEPERS (W3, Joe's call 3b, D834): one a tavern while there is ale to pour — and none while food comes
+        // first, the tavern shut and saying why (a need before a comfort).
+        int keepersWanted = foodComesFirst ? 0 : KeepersWanted(world);
 
         // ---- Survival first, in the order things kill you -------------
         //
@@ -681,6 +686,10 @@ public readonly record struct LabourQuota
         TakeTheBand(world, QuotaBand.AfterStone, batchWanted, batchTaken, ref free);
         int herdsmen = Take(ref free, Cap(herdsmenWanted, TotalCapacityFor(world, JobKind.Herdsman)));
         int merchants = Take(ref free, Cap(merchantsWanted, TotalCapacityFor(world, JobKind.Merchant)));
+
+        // The keepers after the merchants (W3): a comfort, out of what feeding, warming, building and trade leave. Their slot
+        // rides in the by-job array, as the batch trades' do.
+        batchTaken[(int)JobKind.TavernKeeper] = Take(ref free, Cap(keepersWanted, TotalCapacityFor(world, JobKind.TavernKeeper)));
         int teachers = 0;
 
         // And the market, last of all, out of hands nobody else needs (D14).
@@ -864,6 +873,7 @@ public readonly record struct LabourQuota
         herdsmen = Asked(world, JobKind.Herdsman, herdsmen, hands);
         merchants = Asked(world, JobKind.Merchant, merchants, hands);
         teachers = Asked(world, JobKind.Teacher, teachers, hands);
+        batchTaken[(int)JobKind.TavernKeeper] = Asked(world, JobKind.TavernKeeper, batchTaken[(int)JobKind.TavernKeeper], hands);
         foreach (BatchRow row in world.Batches.Rows)
         {
             batchTaken[(int)row.Trade] = Asked(world, row.Trade, batchTaken[(int)row.Trade], hands);
@@ -894,6 +904,7 @@ public readonly record struct LabourQuota
         herdsmen = AtLeastPinned(world, JobKind.Herdsman, herdsmen);
         merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
         teachers = AtLeastPinned(world, JobKind.Teacher, teachers);
+        batchTaken[(int)JobKind.TavernKeeper] = AtLeastPinned(world, JobKind.TavernKeeper, batchTaken[(int)JobKind.TavernKeeper]);
         foreach (BatchRow row in world.Batches.Rows)
         {
             batchTaken[(int)row.Trade] = AtLeastPinned(world, row.Trade, batchTaken[(int)row.Trade]);
@@ -1816,6 +1827,28 @@ public readonly record struct LabourQuota
     /// <summary>The hands one batch trade is wanted for, by its trade — the named readers' way in (D218).</summary>
     private static int BatchHandsWanted(SimWorld world, JobKind trade) =>
         BatchHandsWanted(world, world.Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade"));
+
+    /// <summary>
+    /// ⭐ Tavern keepers the taverns want (W3, `tavern.md §5.4a`; Joe's call 3b): every seat of a standing tavern while there is
+    /// ale to pour — in the tavern, or in a store a keeper can fetch it from. The famine stand-down is the caller's
+    /// (<c>foodComesFirst</c>), as the merchant's is.
+    /// </summary>
+    public static int KeepersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace tavern = world.Workplaces[i];
+            if (tavern.Kind == JobKind.TavernKeeper && !tavern.IsSite && !tavern.Closed
+                && (tavern.Store[Goods.Ale] > 0 || world.StoreHoldingAle(tavern.Tile) is not null))
+            {
+                wanted += tavern.Places;
+            }
+        }
+
+        return wanted;
+    }
 
     /// <summary>Millers the village wants — every seat of every standing mill with work to do (D522), by the row.</summary>
     public static int MillersWanted(SimWorld world) => BatchHandsWanted(world, JobKind.Miller);

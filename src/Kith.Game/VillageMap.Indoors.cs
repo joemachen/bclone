@@ -29,6 +29,9 @@ public partial class VillageMap
     internal static bool Indoors(VillagerState state, bool housed, bool inADooredBuilding) => state switch
     {
         VillagerState.AtSchool or VillagerState.Teaching => true,
+
+        // ⭐ An evening at the tavern, and its keeper at work (W3, `tavern.md §9`): inside, the lit window the art lane draws.
+        VillagerState.AtTheTavern or VillagerState.KeepingTheTavern => true,
         VillagerState.Resting => housed,
         _ => GoesInByTheDoor(state) && inADooredBuilding,
     };

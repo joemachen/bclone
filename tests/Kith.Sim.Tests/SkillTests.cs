@@ -389,7 +389,8 @@ public sealed class SkillTests
     // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 2133452663258429047.
     // RE-TAKEN (D804) — contentment is hashed (W2 step 4: its tallies, causes and seasons unsettled, sparsely), now the births gate reads it. ⭐ PROVEN BY ABLATION: with those fields unmixed the old value passes, and with the longer wait off (`contentment_birth_interval_percent` 100) the new one is unchanged — the hash moved, the village did not. Was 5396889957682360957 (shipped).
     // RE-TAKEN (D825) — barley is learned (the gate, 5,000 forage) AND the shipped config carries barley's starting limit (2,000, hashed) (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate out of reach the value still moves; with barley's limit taken out of the data as well, the old value passes. Was 14763770332352500071.
-    [InlineData(true, 4249411989524692174UL)]
+    // RE-TAKEN (D836) — the shipped config carries ale's starting limit (50, hashed) (W3, `tavern.md §5.3`). ⭐ PROVEN BY ABLATION: with that one line taken out of the data the old value passes, the neighbours' ale left in; the brewery, the tavern, the keeper, the evening and the comfort move nothing here (no harness village raises either). Was 4249411989524692174.
+    [InlineData(true, 8939515603746120149UL)]
     public void FiftyYearsOfVillageAndOnlyTheCountersMoved(bool shipped, ulong beforeSkills)
     {
         // ⭐⭐ POSED, WITH MASTERY SWITCHED OFF — AND §10 SAID SO IN ADVANCE: *"it must be posed

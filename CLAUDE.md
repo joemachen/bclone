@@ -73,6 +73,17 @@ If a request — from Joe or your own inference — would violate a Non-Negotiab
 ## Verification — before saying anything is done
 
 ⛔ **All four, every time. "The tests passed" is not a verdict on this project.**
+⭐ **One written exception, for the suite only (D846, Joe: *"yes, edit claude.md for the suite rule"*):** it runs when
+
+```bash
+git diff --quiet <last-green> HEAD -- src/Kith.Sim tests data Directory.Build.props Kith.sln VERSION .editorconfig
+```
+
+exits **1**. When it exits **0**, the suite is skipped and the record says so — *"suite skipped: no sim, data or test file
+differs from `<last-green>` (its suite N / 0 / 5)"* — never silently, never on a guess. `<last-green>` is the commit named in
+the last §7 entry that ran the suite; on a merge of `art` into `main`, it is `main`'s tip. The determinism test is never
+exempted by hand: it is skipped only when that diff is empty. The view build, the probe and the goldens grep still run
+every time. ⚠️ **A `data/` edit is not art** — a palette or icon row there runs the suite.
 
 ```bash
 dotnet test Kith.sln --nologo -v q          # the suite, including determinism

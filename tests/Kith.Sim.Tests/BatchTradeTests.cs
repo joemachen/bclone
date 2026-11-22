@@ -160,7 +160,7 @@ public sealed class BatchTradeTests
             }
         }
 
-        Assert.Equal(new[] { JobKind.Tailor, JobKind.Carpenter, JobKind.Miller, JobKind.Baker }.Order(), batched.Order());
+        Assert.Equal(new[] { JobKind.Tailor, JobKind.Carpenter, JobKind.Miller, JobKind.Baker, JobKind.Brewer }.Order(), batched.Order());
     }
 
     // ---------------------------------------------------------------
@@ -493,6 +493,7 @@ public sealed class BatchTradeTests
                 "Carpenter: EveryHouseholdCarted, ShortfallOverAYear, AfterTools, famine works, the product's recipe",
                 "Miller: FedFirst, OvensSupplied, EverySeatWithWork, AfterStone, famine works",
                 "Baker: None, EverySeatWithWork, AfterStone, famine works",
+                "Brewer: FedFirst, EverySeatWithWork, AfterStone, famine stands down",
             },
             Config.BatchRows.Select(Rule));
     }
@@ -616,7 +617,8 @@ public sealed class BatchTradeTests
         Assert.Equal(At(JobKind.Carpenter) + 1, At(JobKind.Quarrier));
         Assert.Equal(At(JobKind.Miner) + 1, At(JobKind.Miller));
         Assert.Equal(At(JobKind.Miller) + 1, At(JobKind.Baker));
-        Assert.Equal(At(JobKind.Baker) + 1, At(JobKind.Herdsman));
+        Assert.Equal(At(JobKind.Baker) + 1, At(JobKind.Brewer));
+        Assert.Equal(At(JobKind.Brewer) + 1, At(JobKind.Herdsman));
     }
 
     /// <summary>

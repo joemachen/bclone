@@ -11,8 +11,19 @@ namespace Kith.Game;
 /// </summary>
 public partial class Main
 {
-    /// <summary>Wide enough for the materials of a two-material site and a name of a dozen letters; a longer one trims.</summary>
-    private const float BuildQueueWidth = 400f;
+    /// <summary>
+    /// Wide enough for the materials of a two-material site and a name as long as <see cref="BuildQueueTypicalName"/>; only a
+    /// longer one trims, its whole name in the tooltip.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ <b>400 until 2026-11-22</b> (Joe: <i>"I cant read any of the sites in the build queue - they are truncated/hidden"</i>,
+    /// "the Car…", "iron mi…"): the Site column is the one that clips, so in a grid its minimum is nought and the fixed columns
+    /// beside it took the room — worse once the art lane's taller fonts came (A119/A120).
+    /// </remarks>
+    private const float BuildQueueWidth = 540f;
+
+    /// <summary>The name the Site column is sized to read whole — a long ordinary one, measured in the row's own font.</summary>
+    private const string BuildQueueTypicalName = "the Carpenter's workshop";
 
     /// <summary>The most the rows stand before they scroll: about ten rows, logical px.</summary>
     private const float BuildQueueHeight = 260f;
@@ -139,8 +150,8 @@ public partial class Main
             row.SiteId = place.Id;
             row.Place.Text = (i + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
             row.Name.Text = place.Name;
-            string doing = site.Repairing ? "Being repaired" : site.RebuildsHome ? "Being rebuilt" : "Being built";
-            row.Name.TooltipText = $"{doing} — open its card";
+            string doing = site.Repairing ? "being repaired" : site.RebuildsHome ? "being rebuilt" : "being built";
+            row.Name.TooltipText = $"{place.Name}, {doing} — open its card";
             row.Materials.Text = MaterialsOf(world, site);
             row.Materials.TooltipText = site.HasMaterials
                 ? "Everything is delivered."
@@ -193,6 +204,10 @@ public partial class Main
         };
         name.AddThemeFontSizeOverride("font_size", RowSize);
 
+        // ⭐ A REAL MINIMUM FOR THE COLUMN THAT CLIPS (Joe, 2026-11-22): measured from the theme's font at the row's size, so the
+        // art lane's next font sizes it too; the button's own side margins on top.
+        name.CustomMinimumSize = new Vector2(SiteNameRoom(name), 0);
+
         Label materials = Body(string.Empty);
         materials.ClipText = true;
         materials.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
@@ -223,6 +238,15 @@ public partial class Main
         }
 
         _buildQueueRows.Add(row);
+    }
+
+    /// <summary>The Site column's room: <see cref="BuildQueueTypicalName"/> in the button's font and size, and its margins.</summary>
+    private static float SiteNameRoom(Button name)
+    {
+        Font font = name.GetThemeFont("font");
+        float text = font.GetStringSize(BuildQueueTypicalName, HorizontalAlignment.Left, -1, RowSize).X;
+        StyleBox box = name.GetThemeStylebox("normal");
+        return Mathf.Ceil(text + box.GetMargin(Side.Left) + box.GetMargin(Side.Right)) + 2f;
     }
 
     /// <summary>A site's name clicked: its card, and the map centred on it.</summary>
@@ -318,6 +342,42 @@ public partial class Main
             }
         }
 
+        // ⭐ THE SITE COLUMN READS A NAME WHOLE (Joe, 2026-11-22: "I cant read any of the sites in the build queue"). Asked of
+        // the column's minimum, which is what a grid gives a clipping column and what the window's width must hold: every row's
+        // name, measured in its own font, fits it — one row renamed to the typical long name for the run, put back after.
+        string named = "no row to name";
+        float room = 0f;
+        float widest = 0f;
+        if (rows.Count > 0 && world.FindWorkplace(rows[0].SiteId) is Workplace longest)
+        {
+            string was = longest.Name;
+            world.Rename(longest, BuildQueueTypicalName);
+            _buildQueueAsked++;
+            Refresh();
+            room = rows[0].Name.GetCombinedMinimumSize().X;
+            foreach (BuildQueueRow row in rows)
+            {
+                Font font = row.Name.GetThemeFont("font");
+                StyleBox box = row.Name.GetThemeStylebox("normal");
+                float needs = font.GetStringSize(row.Name.Text, HorizontalAlignment.Left, -1, RowSize).X
+                    + box.GetMargin(Side.Left) + box.GetMargin(Side.Right);
+                widest = Math.Max(widest, needs);
+                if (row.Name.GetCombinedMinimumSize().X + 0.5f < needs)
+                {
+                    faults.Add($"\"{row.Name.Text}\" needs {needs:F0}px and its column may be squeezed to {row.Name.GetCombinedMinimumSize().X:F0}");
+                }
+            }
+
+            named = $"\"{rows[0].Name.Text}\"";
+            world.Rename(longest, was);
+            _buildQueueAsked++;
+            Refresh();
+        }
+        else
+        {
+            faults.Add("no row to measure a name in");
+        }
+
         if (rows.Count > 0 && (!rows[0].Up.Disabled || !rows[^1].Down.Disabled))
         {
             faults.Add("▲ on the first row or ▼ on the last is not disabled");
@@ -389,7 +449,7 @@ public partial class Main
         Refresh();
 
         return faults.Count == 0
-            ? $"[widths] build queue: ✅ ticked, it lists the {shownRows} sites queued ({posed.Count} posed) in the sim's order, each cell as the sim says it; the ends disabled and no button takes focus; ▼ and ▲ moved {moved} one place and back, and a card's ▲ Sooner showed with no tick between; unticked, it hides"
+            ? $"[widths] build queue: ✅ ticked, it lists the {shownRows} sites queued ({posed.Count} posed) in the sim's order, each cell as the sim says it; the ends disabled and no button takes focus; ▼ and ▲ moved {moved} one place and back, and a card's ▲ Sooner showed with no tick between; every name reads whole — {named} needs {widest:F0}px and its column keeps {room:F0}; unticked, it hides"
             : $"[widths] build queue: ⛔ {string.Join("; ", faults)}";
     }
 }

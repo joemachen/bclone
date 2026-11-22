@@ -212,6 +212,20 @@ public enum JobKind
     /// player saying how many and never who (D51); no skill of their own (§11.3 call 5). <b>Appended at 17.</b>
     /// </summary>
     Teacher = 17,
+
+    /// <summary>
+    /// The brewer (W3, `tavern.md §5.2`, D834) — barley into ale at the brewery, W1's batch row a fifth time. Every seat with
+    /// work is wanted until the ale limit (Joe, D838), the oven's shape; stood down while the village is short of food (barley is food).
+    /// <b>Appended at 18.</b>
+    /// </summary>
+    Brewer = 18,
+
+    /// <summary>
+    /// The tavern keeper (W3, `tavern.md §5.4a`; Joe's call 3B, D834) — carries ale from the stores into the tavern and keeps
+    /// it open: a tavern with no keeper is shut. One a tavern, asked for by the village while there is ale to pour; no skill.
+    /// <b>Appended at 19.</b>
+    /// </summary>
+    TavernKeeper = 19,
 }
 
 /// <summary>
@@ -687,6 +701,12 @@ public sealed class Workplace
     /// </summary>
     public bool Closed { get; set; }
 
+    /// <summary>
+    /// A tavern's evenings this season (W3) — the card's count of who came; cleared at the season's turn. Bookkeeping for the
+    /// card: saved, not hashed (it restates the evenings the villagers' own hashed counts already carry, D335).
+    /// </summary>
+    public int EveningsThisSeason { get; set; }
+
     /// <summary>Whether this year's field is one tile a hand bigger than the farm had proven (D361) — the probe, so a rot can undo it.</summary>
     public bool FieldProbedThisYear { get; set; }
 
@@ -897,6 +917,9 @@ public sealed class Workplace
         ["raised_at"] = SaveWriter.Hex(RaisedAtTick),
         ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
         ["closed"] = Closed,
+
+        // W3's card count (D836) — an optional key, so a save from before reads a tavern nobody has come to yet.
+        ["evenings_this_season"] = EveningsThisSeason != 0 ? EveningsThisSeason : null,
         ["field_probed_this_year"] = FieldProbedThisYear,
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
@@ -939,6 +962,7 @@ public sealed class Workplace
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
             Closed = save.HasValue("closed") && save.Bool("closed"),
+            EveningsThisSeason = save.HasValue("evenings_this_season") ? save.Int("evenings_this_season") : 0,
             FieldProbedThisYear = save.Bool("field_probed_this_year"),
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),

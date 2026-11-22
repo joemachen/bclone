@@ -165,7 +165,8 @@ public sealed class HearthSystem : ISimSystem
         for (int i = 0; i < world.Workplaces.Count; i++)
         {
             Workplace school = world.Workplaces[i];
-            if (school.Kind != JobKind.Teacher || school.IsSite || school.WorkerIds.Count == 0)
+            // ⭐ And the tavern's (W3): the school's stove one building over — burnt while its keeper is seated.
+            if (school.Kind is not (JobKind.Teacher or JobKind.TavernKeeper) || school.IsSite || school.WorkerIds.Count == 0)
             {
                 continue;
             }

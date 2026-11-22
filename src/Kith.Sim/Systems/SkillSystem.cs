@@ -298,6 +298,14 @@ public sealed class SkillSystem : ISimSystem
         // fetch's walk home always has.
         VillagerState.WalkingToTheWell => false,
         VillagerState.DrawingWater => false,
+
+        // The tavern (W3): an evening is nobody's trade; the keeper's legs and day are theirs (the teacher's shape — it counts,
+        // and grows nothing, the keeper having no skill row).
+        VillagerState.AtTheTavern => false,
+        VillagerState.WalkingToTheTavern => false,
+        VillagerState.FetchingAle => true,
+        VillagerState.CarryingAle => true,
+        VillagerState.KeepingTheTavern => true,
         VillagerState.WalkingToTheRiver => false,
         VillagerState.DrawingAtTheRiver => false,
 
