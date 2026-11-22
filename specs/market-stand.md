@@ -1,8 +1,8 @@
 # Spec: The market stand, learned by the long walk (W14)
 
 > Status: **✅ EVERY CALL ANSWERED (D852, 2026-11-22) — Joe: *"a market stand should have its own marketer - only 1 though.
-> everything else i agree with"* — calls 1, 3, 4, 5 as recommended, call 2 his (§5.3). 🔨 Building, §7's order; nothing built
-> yet.** *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
+> everything else i agree with"* — calls 1, 3, 4, 5 as recommended, call 2 his (§5.3). 🔨 Building, §7's order: ✅ step 1, a marketer's own
+> counter first (D853).** *(Read "🔨 Building … nothing built yet" until D853.)* *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
 > `slice/w14-market-stand` (Joe: *"start the market stand"*). Built from D839, his shape and his unlock (*"The long walk"*).
 > The instrument is `tools/harness/ZzMarketStand.cs` (§4), run on the newest save of each of his 182 folders (a copy) and on
 > 16 unattended valleys. **⚠️ The measurement found that a stand built on today's market code is not stocked** (§4.3), so
@@ -182,10 +182,17 @@ limits each tick **out of the storehouses** (no food made), the most a stand cou
 
 ### 5.2 How it is stocked — call 1
 
-**Recommended (A): a marketer stocks the counter of the market they work at first.** In `OfferMarketRestock`, when the
-marketer's own counter wants stocking, only its shelves are offered; when it is full to its limits, every market's are, as
-today. In `StoreForTheLoad`, a marketer's load goes to **their own counter** when it has room under its limit, and to the
-nearest counter with room otherwise, as today.
+**✅ Answered A (D852): a marketer stocks the counter of the market they work at first — ✅ built (D853).** In
+`OfferMarketRestock`, when the marketer's own counter wants stocking, only its shelves are offered; when it is full to its
+limits, every market's are, as today. **The plan is the whole rule:** the load already goes to their own counter —
+`StockingTheMarket` walks to their workplace and `PutItInTheMarket` puts it on the counter they stand at.
+
+- ⛔ **The first cut also changed `StoreForTheLoad`** (the measurement patch's second half) **and moved a one-market
+  village**: that path is a marketer's OTHER loads — a buffer, a dead larder — and it takes the nearest *store* of any kind
+  with room, so sending them to the marketer's own counter instead changed where an unattended village's buffers went
+  (`MarketTests.TheMarketKeepsLardersFromRunningDry`: a 205-tick dry spell). Ablated half by half: the plan half alone left it
+  green, the load half alone turned it red. Deleted, and written into the rule's comment. ⚠️ So §4.3's own-counter column
+  was measured with both halves; step 5 re-measures with the rule as built.
 
 - **With one market a village — every golden and every save Joe has — this changes nothing**: the marketer's own counter is
   the only counter (§6).

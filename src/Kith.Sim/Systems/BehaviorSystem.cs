@@ -752,6 +752,15 @@ public sealed partial class BehaviorSystem : ISimSystem
     private static Workplace? WorkplaceOf(SimWorld world, Villager villager) =>
         world.FindWorkplace(villager.WorkplaceId);
 
+    /// <summary>
+    /// The counter of the market a marketer works at (W14, `market-stand.md §5.2`) — the market or the stall on their
+    /// workplace's tile — or null for anyone who is not a marketer.
+    /// </summary>
+    private static StoreBuilding? OwnCounterOf(SimWorld world, Villager villager) =>
+        WorkplaceOf(world, villager) is { Kind: JobKind.Marketer } works && world.StoreAt(works.Tile) is { Kind: StoreKind.Market } counter
+            ? counter
+            : null;
+
     /// <summary>The kind of job an errand implies, so state and job can be compared.</summary>
     /// <remarks>
     /// A lookup rather than a two-branch conditional, because there are three kinds
@@ -2246,10 +2255,27 @@ public sealed partial class BehaviorSystem : ISimSystem
         // the nearest good win every trip while every limit stood far above what was held: Joe's market held 545 of the
         // village's 620 firewood, and no meat, with 2,500 in the granaries.
         int bestShare = int.MaxValue;
+
+        // ⭐⭐ THEIR OWN COUNTER FIRST (W14, `market-stand.md §5.2`, Joe's call 1, D852). While the counter of the market
+        // this marketer works at wants stocking, only its shelves are offered; once it is at its limits, every market's
+        // are, as D601 had it. ⛔ Without it a stall out among the far houses stood with its keeper seated and its shelf
+        // empty — the emptiest shelf of ANY market chose the good, the load went to the counter nearest the granary, and
+        // Oakhaven's far families walked past it more often than they had walked with no stall (§4.3). With one market a
+        // village the two readings are the same counter, which is why no village without a second market moves.
+        // ⚠️ THE PLAN IS THE WHOLE RULE: the load already goes to their own counter — `StockingTheMarket` walks to their
+        // workplace and `PutItInTheMarket` puts it on the counter they stand at. A first cut also sent a marketer's OTHER
+        // loads (a buffer, a dead larder) to their own counter in `StoreForTheLoad`, and moved a one-market village
+        // (`MarketTests.TheMarketKeepsLardersFromRunningDry`): that path takes the nearest STORE of any kind with room.
+        StoreBuilding? own = OwnCounterOf(world, villager);
+        if (own is not null && !world.CounterWantsStocking(own))
+        {
+            own = null;
+        }
+
         for (int i = 0; i < world.StoreBuildings.Count; i++)
         {
             StoreBuilding market = world.StoreBuildings[i];
-            if (market.Kind != StoreKind.Market || market.Store.IsFull)
+            if (market.Kind != StoreKind.Market || market.Store.IsFull || (own is not null && market != own))
             {
                 continue;
             }
