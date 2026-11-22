@@ -1,13 +1,13 @@
 # Spec: Beer and the tavern (W3)
 
 > Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836; ale brewed to its limit and kept in the granary at his word
-> while playing, D838) — STEPS 1–5; ⏸️ STEP 6 (THE GATE'S POSED GOLDEN, A VILLAGE KEPT
-> BY A TAVERN) AND JOE'S PLAY STILL OWED.** Three goldens moved, each proven by ablation (§7). Two things changed at the build
+> while playing, D838) — STEPS 1–6: THE GATE'S GOLDEN AND THE TAVERN'S ANTI-VACUITY BUILT (D841); ⏸️ JOE'S PLAY OF THE
+> NEW BUILD, THEN THE MERGE AT HIS WORD (`main` INTO THE SLICE FIRST).** Three goldens moved, each proven by ablation (§7). Two things changed at the build
 > and he kept both (§5.2's firewood, §5.3's limit — D837, *"Keep both"*), and the keeper never drinks at their own tavern (§5.4a).
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
 > except for who runs the tavern. B: a tavern keeper"*, and the three follow-ups the keeper raised, *"All as
 > recommended"* (§10.1). Built: ale, the brewery, the tavern and its keeper, the evening, the comfort, the find's clause and
-> the cards (D836). Next: §8 step 6 and Joe's play.
+> the cards (D836); the gate's golden (D841). Next: Joe's play.
 > Phase 6, W3 of the workplan (`systems-complete.md §5.1`): **barley → ale at a brewery (W1's batch row), drunk at a tavern;
 > contentment's first lever (W2, `morale.md`).** W1 and W7 were its prerequisites (D789, D821); both are in `main`.
 >
@@ -237,7 +237,12 @@ exactly one cause's slack — the walk, a cold winter, a death in the family —
 batch, modded, save and limit pins moved with the new rows. ✅ Red-checked: 12 mutants, 14 reds — **one zero written down**: the
 adults-only gate (a child never goes) scored nought, because the fixture's founders are all adults and no child stands at a
 door; and the first evening guard scored nought against the 5-day wait (one drinker, three rests a season), so
-`NobodyGoesAgainInsideTheWait` poses it (6 evenings red, 1 green). ⏸️ **Not built:** step 4's village-level anti-vacuity (a
+`NobodyGoesAgainInsideTheWait` poses it (6 evenings red, 1 green). ✅ **Built since (D841):** the village-level anti-vacuity and the gate's golden — `TavernTests.ATavernSettlesWhatContentmentUnsettled`
+and `TheGoldenThatSeesATavernSettleAValley`: the fixture's seed 9 (W2's departure valley) with a tavern by the founding, its
+keeper the village's hire, its ale topped up each season, fifteen years — with the comfort 1 adult-season thinking of
+leaving against 12 without it, and 13 alive against 10. ⚠️ **Nobody leaves that valley in either arm, even in thirty
+years** (partners hold each other), so a departure *prevented* is not shown — written down, not claimed. Red-checked: the
+comfort's easing zeroed, 1 mutant, 2 reds. *(What this line said before D841:)* ⏸️ **Not built:** step 4's village-level anti-vacuity (a
 posed village W2 empties keeps a person with a tavern) and step 6's posed golden — both the gate's, next. ⚠️ The firewood
 stove of §5.4b is the school's (`school_winter_firewood`); the brewery burns none (§5.2).
 

@@ -10,7 +10,9 @@
 > among the homes; watch the keeper carry a cask, adults walk over of an evening, a person's card say the tavern made up for
 > a worry). ✅ His two build-time calls kept (D837, *"Keep both"*): the brewery burns no firewood; the brewing rule reads
 > under his limit. ⭐ D838, his while playing: ale brewed to its stock limit, tavern or not (the tavern rule deleted), and
-> kept in the granary beside its barley.**
+> kept in the granary beside its barley. ⭐ D841: the gate's golden — seed 9 with a tavern, a comfort settling what W2
+> unsettled (1 season thinking of leaving against 12); nobody leaves in either arm, so a departure prevented is not shown.
+> ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**

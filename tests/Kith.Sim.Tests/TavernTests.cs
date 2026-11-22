@@ -335,6 +335,95 @@ public sealed class TavernTests
     }
 
     // -----------------------------------------------------------------
+    //  The gate (§8 steps 4 and 6): a village a tavern settles, and its golden
+    // -----------------------------------------------------------------
+
+    /// <summary>
+    /// The posed village (D841): the fixture's seed 9 — W2's departure golden's valley — with barley known, a tavern raised
+    /// by the founding at once, its keeper the village's own hire, and its ale topped up to 40 each season (no harness village
+    /// brews), fifteen years. <paramref name="comforts"/> false empties <c>contentment_comforts</c>, so the tavern stands and is
+    /// walked to in both arms and only the comfort differs.
+    /// </summary>
+    private static (SimWorld World, int Comforted, int Thinking, int Evenings) ASettledValley(bool comforts)
+    {
+        SimConfig config = comforts ? Config : Config with { ContentmentComforts = Array.Empty<ContentmentComfortRow>() };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), 9UL);
+        SimWorld world = loop.World;
+        world.BarleyLearned = true;
+        Workplace tavern = RaiseATavernNearTheFounding(world) ?? throw new InvalidOperationException("no tavern could stand");
+        int comforted = 0, thinking = 0;
+        var wentAt = new HashSet<(int, int)>();
+        for (int season = 0; season < 15 * 4; season++)
+        {
+            if (tavern.Store[Goods.Ale] < 40)
+            {
+                tavern.Store.Add(Goods.Ale, 40 - tavern.Store[Goods.Ale]);
+            }
+
+            for (int tick = 0; tick < config.TicksPerSeason; tick++)
+            {
+                loop.StepOnce();
+                foreach (Villager v in world.Villagers)
+                {
+                    if (v.LastTavernDay > 0)
+                    {
+                        wentAt.Add((v.Id, v.LastTavernDay));
+                    }
+                }
+            }
+
+            comforted += world.Villagers.Count(v => v.ContentmentComforts != 0);
+            thinking += world.Villagers.Count(v => v.Alive && v.SeasonsUnsettled >= config.ContentmentThinkingOfLeavingSeasons);
+        }
+
+        return (world, comforted, thinking, wentAt.Count);
+    }
+
+    private static readonly Lazy<(SimWorld World, int Comforted, int Thinking, int Evenings)> Settled = new(() => ASettledValley(true));
+    private static readonly Lazy<(SimWorld World, int Comforted, int Thinking, int Evenings)> Unsettled = new(() => ASettledValley(false));
+
+    /// <summary>
+    /// ⭐ ANTI-VACUITY, THE TAVERN'S (§8 step 4): the same valley, the same tavern walked to — with the comfort, its people spend
+    /// far fewer seasons thinking of leaving than without it. Measured (D841): 1 against 12 by Year 15 (8 against 24 by Year
+    /// 30), and 13 alive against 10 (an unsettled couple waits twice as long for a child). ⚠️ Nobody leaves this valley in
+    /// either arm, even in thirty years — partners hold each other (W2's <i>"she stayed for him"</i>) — so the guard is the
+    /// thinking, not a departure prevented: that one is written down, not claimed. Its mirror is W2's own pair, unchanged
+    /// (`ContentmentTests.AVillageThatIgnoresContentmentLosesPeople`, `AKeptVillageLosesNobodyItKeeps`).
+    /// </summary>
+    [Fact]
+    public void ATavernSettlesWhatContentmentUnsettled()
+    {
+        (SimWorld on, int comforted, int thinkingOn, int eveningsOn) = Settled.Value;
+        (SimWorld off, int none, int thinkingOff, int eveningsOff) = Unsettled.Value;
+        _output.WriteLine($"comfort on: {eveningsOn} evenings, {comforted} comforted adult-seasons, {thinkingOn} thinking of leaving, {on.Population} alive");
+        _output.WriteLine($"comfort off: {eveningsOff} evenings, {none} comforted, {thinkingOff} thinking of leaving, {off.Population} alive");
+
+        Assert.True(eveningsOn > 0 && eveningsOff > 0, "the tavern was not walked to in both arms");
+        Assert.True(comforted > 0, "no evening ever eased a cause");
+        Assert.Equal(0, none);
+        Assert.True(thinkingOff > 0, "the premise: without the comfort somebody thinks of leaving");
+        Assert.True(thinkingOn * 2 < thinkingOff, $"the comfort settled too little: {thinkingOn} seasons thinking of leaving against {thinkingOff}");
+    }
+
+    /// <summary>
+    /// ⭐ PHASE 6 GATE ITEM 2 — A GOLDEN THAT REACHES AN EVENING AT THE TAVERN AND A COMFORT (D841): the settled valley above at
+    /// Year 15. Every other golden has no tavern, so this is the one that sees the evening's, the keeper's and the comfort's
+    /// state in the hash.
+    /// </summary>
+    [Fact]
+    public void TheGoldenThatSeesATavernSettleAValley()
+    {
+        (SimWorld world, int comforted, _, int evenings) = Settled.Value;
+        Assert.True(evenings > 0 && comforted > 0, "the golden's valley never reached an evening and a comfort");
+        Assert.Contains(world.Workplaces, w => w.Kind == JobKind.TavernKeeper && w.WorkerIds.Count > 0);
+        _output.WriteLine($"hash {StateHash.Compute(world)}");
+        Assert.Equal(TavernGolden, StateHash.Compute(world));
+    }
+
+    /// <summary>Taken 2026-11-22 (D841), on its first run.</summary>
+    private const ulong TavernGolden = 12596903190904750514UL;
+
+    // -----------------------------------------------------------------
     //  helpers
     // -----------------------------------------------------------------
 
@@ -343,6 +432,43 @@ public sealed class TavernTests
     {
         world.BarleyLearned = true;
         return FoodChainTests.RaiseA(world, BuildingKind.Tavern);
+    }
+
+    /// <summary>
+    /// A tavern raised as near the founding as it may stand — <see cref="FoodChainTests.RaiseA"/>'s walk outward without its
+    /// lent wheat (which would teach the mill and change the village under the pose). The village must already know barley.
+    /// Null if nowhere within thirty tiles takes it.
+    /// </summary>
+    internal static Workplace? RaiseATavernNearTheFounding(SimWorld world)
+    {
+        GridPos site = world.Map.FoundingSite;
+        for (int radius = 3; radius < 30; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var tile = new GridPos(site.X + dx, site.Y + dy);
+                    if (!world.CanBuildAt(BuildingKind.Tavern, tile).Allowed || !world.Mark(BuildingKind.Tavern, tile).Allowed)
+                    {
+                        continue;
+                    }
+
+                    Workplace plan = world.Workplaces.Last(w => w.Construction?.Kind == BuildingKind.Tavern);
+                    BuildFixtures.StockTheSite(plan);
+                    for (int i = 0; i <= plan.Construction!.Recipe.WorkTicks; i++)
+                    {
+                        plan.Construction.Work();
+                    }
+
+                    GridPos stood = plan.Tile;
+                    world.Complete(plan);
+                    return world.Workplaces.Single(w => !w.IsSite && w.Tile == stood && w.Kind == JobKind.TavernKeeper);
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Seat a keeper by hand, the share-out switched off so the pass does not unseat them (the fifth trade's pose).</summary>
