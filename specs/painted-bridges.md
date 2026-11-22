@@ -1,6 +1,7 @@
-# Painted bridges — a wooden bridge, and its stone rebuild, with the buildings' treatment (A174)
+# Painted bridges — a wooden bridge, and its stone rebuild, with the buildings' treatment (A174, A175)
 
-> **Status: ✍️ SPECCED AND MOCKED (A174, 2026-11-22); ⏸️ FIVE CALLS JOE'S (§8). NOTHING BUILT.** Art lane (CLAUDE.md
+> **Status: 🔨 BUILT ON `art` (A175, 2026-11-22) at Joe's *"B, all as recommended"* — every call as §8 recommends; ⏸️ HIS
+> PLAY, THEN THE MERGE AT HIS WORD.** §9 is what was built. Specced and mocked A174. Art lane (CLAUDE.md
 > *Two tracks*), piece (h) of his play notes (HANDOFF, *"JOE'S PLAY NOTES, 2026-11-20 … SORTED BY LANE"*), at his *"next for
 > art: bridges"* (2026-11-22), claimed A173. View only: nothing in the sim, `data/` or `tests/` changes. Mocks, drawn by the
 > game itself from copies of his saves (his folder untouched): `D:\Projects\brushes\bridges\bridges_looks.jpg` (today and
@@ -124,7 +125,7 @@ The foam moving with the river (a later piece with (i), the trees' wind, if he w
 construction stages of a bridge (its band, as every site); snow on the deck; the card's picture; a dock or jetty in the same
 look (the fishing hut's is its yard, `building-yards.md`); boats passing under (the trade boat sails the river, `trade.md`).
 
-## 8. ⏸️ Joe's calls
+## 8. ✅ Joe's calls — *"B, all as recommended"* (A175, 2026-11-22)
 
 1. **Which wooden bridge — A, B or C?** ⭐ **B**, planks with a rail each side.
 2. **How it wears:** ⭐ painted in the same three steps as today — worn silvers the timber, failing loses boards and a run of
@@ -133,3 +134,27 @@ look (the fishing hut's is its yard, `building-yards.md`); boats passing under (
 4. **What stays as it is:** ⭐ the drag ghost, the construction band, the card's picture and the bar's icons.
 5. **His OK for one line in `VillageMap.cs`** (`DrawBridges`, the systems lane's file), the drawing itself in a new
    art-lane file. ⭐ **Yes.**
+
+## 9. 🔨 Built (A175, 2026-11-22)
+
+- **`VillageMap.Bridges.cs`** (new): `BridgeDrawing(signature, isWater)` — pure, the pieces in the view's tiles and in order
+  (§3's eight steps, B's rails and stone's parapets and piers); `DrawnCondition` (stone never wears, closed is fallen in, a ruin
+  kept open is failing); `BridgeSignatureOf`, its seed from where the bridge stands, so the same boards are lost every frame and
+  every load; `CachedBridge` and `DrawPaintedBridge`. The pieces become the roofs' runs (`RoofRuns`, `building-roofs.md §5`) —
+  for a wooden bridge one mesh of fills and pen under the deck, the deck one textured mesh, one mesh over it — drawn through the
+  frame's one transform; the pen laid again only when the zoom moves. Kept per bridge by its near end; forgotten, when
+  `StandingGeneration` moves (raising, setting in stone and pulling down each call `StandingChanged`), if not drawn lately.
+  The decks' paintings are not roof materials — a value added to `RoofMaterial` would be walked by every roof check — so a
+  bridge's textured run is drawn in its own deck (`DrawBridgeRuns`).
+- **`VillageMap.cs`, the one line** (Joe's OK, call 5): `DrawBridges` asks `DrawPaintedBridge` first and draws today's deck
+  when it says no.
+- **Failing loses a sixth of the boards over the water** (`BridgeBoardsLostWhenFailing`), not the mock's quarter.
+- **Textures**: `textures/buildings/deck_planks.png`, `deck_setts.png`, 1536 × 96, lossless, mipmapped, mean 0.8, with their
+  `.import`s; made by `D:\Projects\brushes\bridges\make_deck_textures.py` (its `logs` deck, look C's, is not shipped).
+- **Probe** `painted bridges:` (`VillageMap.BridgesProbe.cs`), riding on `painted buildings:`'s return (art trap 73), each
+  line in its own `try`: §6 as written, on twelve bridges posed at six turns (0°, 30°, 45°, 90°, 135°, 200°) of 3 and 12
+  tiles over a river of the probe's own. **Red-check: 19 mutants, 19 red. The first run scored 18 with one zero written down: the map's own reading of *closed* (`BridgeSignatureOf` passed `false`), unseen because the probe posed signatures — the probe now reads a real `Bridge`, closed and open, and that mutant re-run alone is red. One red is by a throw, not its own message: with the tick-off guard gone the probe's empty world is read (`NullReferenceException`), ⛔ either way (`redcheck175.py`, `red175.log`, `red175b.log` in `D:\Projects\brushes\bridges\`).**
+- **Renders** of the build from copies of his saves: `D:\Projects\brushes\bridges\built\` (Hollowmere rook-hare and Oakhaven, at
+  the closest zoom and further out).
+- **Cost** at 4K (RTX 3070) on his Hollowmere with his bridge in view, today's deck and the painted one alternated inside one run (four rounds of 60 frames a zoom, `measure_ab.gd`): GPU 4.98 against 4.98 ms at the closest zoom and 5.08 against 5.00 three steps out, inside the rounds' own spread (4.56–5.19); render CPU 1.48 / 1.48 and 1.55 / 1.55 ms. The main thread's time swung 15–30 ms in both and is not a reading.
+- **The four checks:** suite 2206 / 0 / 5 of 2211 in 23m14 (no sim, data or test file changed, so the clock is not this piece: 17m11 at D833, 21m58 at A170 with a systems run beside it; this one began on a quiet machine, a windowed Godot open alongside); view build 0 warnings; probe 178 lines, 140 ✅, 0 ⛔, bar 183, tile centres ✅, new game ✅, `done.`; goldens 457, none moved (no test file touched).
