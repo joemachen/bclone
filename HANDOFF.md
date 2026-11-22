@@ -12,7 +12,10 @@
 > under his limit. ⭐ D838, his while playing: ale brewed to its stock limit, tavern or not (the tavern rule deleted), and
 > kept in the granary beside its barley. ⭐ D841: the gate's golden — seed 9 with a tavern, a comfort settling what W2
 > unsettled (1 season thinking of leaving against 12); nobody leaves in either arm, so a departure prevented is not shown.
-> ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).**
+> ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).
+> 🐞 His play (2026-11-22): *"only the tavernkeeper goes in"* — his tavern stood out of every home's reach and the card said
+> "Open of an evening"; it now counts the homes within reach and says when none is (D843). Pupils read *student* in the
+> village panel (D844). ⏸️ Whether `tavern_reach_tiles` 12 is right is his.**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -30,6 +33,10 @@
 >   (never a count of food). Before adding a store kind to any good's `StoredBy`, ask what that store's split becomes.
 > - **⛔ TRAP (D836): `if (false)` is not a mutant here** — CS0162 fails the build, the old DLL runs, and the reds are the last
 >   group's. Mutate with a runtime-false (`&& Tick == ulong.MaxValue`), and read `0 Error(s)` before reading a red.
+> - **⛔ TRAP (D843): A REACH MEASURED FROM WHERE A BUILDING WOULD STAND SAYS NOTHING ABOUT WHERE THE PLAYER PUTS IT.**
+>   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
+>   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
+>   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
 > - **⛔ TRAP (D836): the fixture has few drinkers.** Four adults, two within reach, one of them the keeper (who never drinks at
 >   their own tavern) — so a per-season rule like `tavern_every_days` never bites in `VillageFixtures.Village`. Pose the rule's
 >   own extreme (a wait past the run) to make it bite.
@@ -10924,7 +10931,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
   `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep
   both"*):** the brewery burns no firewood; ~~the brewing rule is read under his ale limit~~ — the rule itself gone at his
-  word (D838): ale brews to its limit, tavern or not, and is kept in the granary.
+  word (D838): ale brews to its limit, tavern or not, and is kept in the granary. 🐞 **His play (D843):** his tavern stood
+  14–26 tiles' walk from every home, so nobody came and the card still said "Open of an evening"; the card now counts the
+  homes within reach. ⏸️ **His call: keep `tavern_reach_tiles` at 12 (place it among the homes) or widen it.**
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while
@@ -10932,6 +10941,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   (`ui icons:` reads ⛔ until it is in `main`, barley's precedent) and its colour in `GoodsPalette` (a stand-in amber
   `#b07a2a` now); the keeper's **cask** in the arms; the brewer's and keeper's figures (stand-ins in `PersonPainter`,
   their trade colours in `TradeGlyph` stand-ins too). Until then both buildings draw in the generic workshop look.
+  ✅ **The seven UI icons are in `main`** (the art lane's A181–A183, ddcd161, at Joe's word *"Yes, merge them"*; not pushed):
+  `ui icons:` reads ✅ once `main` is merged into the slice — re-import then (art trap 1: delete the untracked `.uid` files by
+  list, check out the LF-only `.import` rewrites by name). Their colours taken on the slice (D845): ale and the brewer
+  `#9a5e14`, the keeper `#8a2f3e`. Still asked: the two buildings on the map, the cask, the figures.
 
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,

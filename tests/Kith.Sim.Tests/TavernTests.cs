@@ -208,6 +208,45 @@ public sealed class TavernTests
     }
 
     /// <summary>
+    /// ⭐ AN OPEN TAVERN NOBODY CAN REACH SAYS SO (Joe, playing W3, 2026-11-22: <i>"it never seems to have an evening and it seems
+    /// like only the tavernkeeper goes in"</i>). His Elderwood tavern stood 14 to 26 tiles' walk from every home against a reach
+    /// of 12 — a year run on from his save: 140-odd rests begun at home, no evening — and its card said <i>"Open of an
+    /// evening"</i>. Now the card counts the homes within reach, and with none it is not "working" and says why.
+    /// </summary>
+    [Fact]
+    public void AnOpenTavernBeyondEveryHomeSaysNobodyComes()
+    {
+        SimWorld near = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        Workplace tavern = ATavern(near);
+        Keep(near, tavern);
+        tavern.Store.Add(Goods.Ale, 20);
+        (int within, int homes) = near.HomesWithinReachOf(tavern);
+        (bool working, string sentence) = near.SayTheTavern(tavern);
+        _output.WriteLine($"beside the founding: {within} of {homes} — {sentence}");
+        Assert.True(homes > 0, "The fixture has no lived-in home.");
+        Assert.True(within > 0, "No home is within reach of a tavern raised beside the founding.");
+        Assert.True(working, sentence);
+        Assert.StartsWith("Open of an evening", sentence, StringComparison.Ordinal);
+        Assert.Contains($"{near.Config.TavernReachTiles}-tile walk", sentence, StringComparison.Ordinal);
+
+        SimWorld far = SimFactory.CreatePhase0(Config with { TavernReachTiles = 1 }, new InMemoryLogSink()).World;
+        Workplace beyond = ATavern(far);
+        Keep(far, beyond);
+        beyond.Store.Add(Goods.Ale, 20);
+        Assert.Null(far.WhyTheTavernIsShut(beyond));
+        Assert.Equal((0, homes), far.HomesWithinReachOf(beyond));
+        (working, sentence) = far.SayTheTavern(beyond);
+        _output.WriteLine($"reach 1: {sentence}");
+        Assert.False(working, "An open tavern no home can reach read as working.");
+        Assert.Contains("no home is within a 1-tile walk", sentence, StringComparison.Ordinal);
+
+        // And shut, the shut sentence wins: the reach is no use to a tavern nobody keeps.
+        far.SetJobLimit(JobKind.TavernKeeper, 0);
+        beyond.WorkerIds.Clear();
+        Assert.Equal(far.WhyTheTavernIsShut(beyond), far.SayTheTavern(beyond).Sentence);
+    }
+
+    /// <summary>
     /// ⛔ HANDOFF's D513 trap, both ways: no household's larder ends holding ale (the keeper's armful goes to the tavern, a
     /// broken-off one back to a store), and an evening grows no skill.
     /// </summary>

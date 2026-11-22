@@ -58,7 +58,7 @@ internal static class GoodsPalette
         Goods.Barley => new Color(0.796f, 0.733f, 0.486f),
 
         // ⏳ Ale (W3): a stand-in amber until the art lane takes its colour from the painting, as barley's was (D829).
-        Goods.Ale => new Color("#b07a2a"),
+        Goods.Ale => new Color("#9a5e14"),
 
         // The food chain (D522): flour the pale cream of a sack, bread the brown of a crust — so the
         // two read apart from the wheat they came from and from each other.

@@ -279,6 +279,14 @@ every adult's home, summed, is least** (the medoid in the one cost field — not
 ⏸️ **Joe's to tune in play** (his call 5, *"measure first"*): reach 12, every 5 days, `at` 1, 20 → 10 a brew, a stock of
 20. Each is one key in `data/sim.config.json`.
 
+⚠️ **The reach above was measured from the medoid home — where a tavern *would* stand — not from where a player puts it
+(D843).** Joe's first tavern (Elderwood, Year 33) stood 14 to 26 tiles' walk from every home, so nobody came: a year run on
+from his save, 140-odd rests begun at home and not one evening. The card said *"Open of an evening"*. It now counts the
+homes within reach — *"Open of an evening — 4 of 7 homes are within a 12-tile walk"* — and with none, it is not working
+and says *"Open, but no home is within a 12-tile walk, so nobody comes of an evening. A tavern draws the homes around it:
+build it among them."* (`SimWorld.SayTheTavern`, `HomesWithinReachOf`; the reach is `WalkToTheTavern`, one copy for the
+offer and the count.) ⏸️ Whether 12 is right is still his (HANDOFF's W3 line).
+
 ## 9. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request, not drawn here
 
 - **Buildings:** the **brewery** (a workshop with a copper/kettle, a chimney — it burns firewood) and the **tavern**

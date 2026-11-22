@@ -24,7 +24,6 @@ public sealed partial class SimWorld
             return null;
         }
 
-        int reach = Config.TavernReachTiles * TravelCostField.BaseTileCost;
         Workplace? best = null;
         int bestCost = int.MaxValue;
         for (int i = 0; i < Workplaces.Count; i++)
@@ -35,8 +34,8 @@ public sealed partial class SimWorld
                 continue;
             }
 
-            int cost = TravelCost.Cost(home, tavern.Tile);
-            if (cost != TravelCostField.Unreachable && cost <= reach && cost < bestCost)
+            int cost = WalkToTheTavern(home, tavern);
+            if (cost < bestCost)
             {
                 best = tavern;
                 bestCost = cost;
@@ -44,6 +43,71 @@ public sealed partial class SimWorld
         }
 
         return best;
+    }
+
+    /// <summary>
+    /// The walk from a home to a tavern in the one cost field, or <see cref="int.MaxValue"/> when it is beyond
+    /// <c>tavern_reach_tiles</c> or cannot be walked at all — <b>the one copy of "within reach"</b>, asked by the evening's
+    /// offer and the card's count alike.
+    /// </summary>
+    private int WalkToTheTavern(GridPos home, Workplace tavern)
+    {
+        int cost = TravelCost.Cost(home, tavern.Tile);
+        return cost != TravelCostField.Unreachable && cost <= Config.TavernReachTiles * TravelCostField.BaseTileCost
+            ? cost
+            : int.MaxValue;
+    }
+
+    /// <summary>
+    /// How many lived-in homes are within <c>tavern_reach_tiles</c>' walk of this tavern, of how many there are — the card's
+    /// count (Joe, playing W3: <i>"it seems like only the tavernkeeper goes in"</i> — his tavern stood 14 to 26 tiles' walk
+    /// from every home, and the card said <i>"Open of an evening"</i>).
+    /// </summary>
+    public (int Within, int Homes) HomesWithinReachOf(Workplace tavern)
+    {
+        ArgumentNullException.ThrowIfNull(tavern);
+        int within = 0;
+        int homes = 0;
+        for (int i = 0; i < Households.Count; i++)
+        {
+            Household household = Households[i];
+            if (household.HomeTile is not GridPos home || LivingMembersOf(household) == 0)
+            {
+                continue;
+            }
+
+            homes++;
+            if (WalkToTheTavern(home, tavern) != int.MaxValue)
+            {
+                within++;
+            }
+        }
+
+        return (within, homes);
+    }
+
+    /// <summary>
+    /// ⭐ The tavern's card sentence (W3): why it is shut, or — open — how many homes are near enough to walk over of an
+    /// evening, and when none is, that nobody comes and why. Open and drawing nobody is not "working".
+    /// </summary>
+    public (bool Working, string Sentence) SayTheTavern(Workplace tavern)
+    {
+        if (WhyTheTavernIsShut(tavern) is string shut)
+        {
+            return (false, shut);
+        }
+
+        (int within, int homes) = HomesWithinReachOf(tavern);
+        int reach = Config.TavernReachTiles;
+        if (within == 0)
+        {
+            return (false, $"Open, but no home is within a {reach}-tile walk, so nobody comes of an evening. A tavern draws "
+                + "the homes around it: build it among them.");
+        }
+
+        return (true, within == homes
+            ? $"Open of an evening — every home is within a {reach}-tile walk."
+            : $"Open of an evening — {within} of {homes} homes are within a {reach}-tile walk.");
     }
 
     /// <summary>The standing tavern on this tile (an errand's fixed destination), or null.</summary>

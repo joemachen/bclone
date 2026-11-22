@@ -97,8 +97,8 @@ public sealed partial class TradeGlyph : Control
         JobKind.Merchant => new Color("#5f6f8c"),
 
         // ⏳ W3's two, stand-ins until the art lane chooses (`tavern.md §9`): the brewer an ale amber, the keeper a hearth red.
-        JobKind.Brewer => new Color("#b07a2a"),
-        JobKind.TavernKeeper => new Color("#8a3b2e"),
+        JobKind.Brewer => new Color("#9a5e14"),
+        JobKind.TavernKeeper => new Color("#8a2f3e"),
 
         // ⚠️ A MODDER'S TRADE GETS A MARK RATHER THAN A CRASH, and it is deliberately drab — the
         // same answer `GoodsPalette` gives a good nobody has chosen a colour for.

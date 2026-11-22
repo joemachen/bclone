@@ -253,3 +253,6 @@ against a number from an older commit.
   nearest warehouse, then `ZZ_YEARS` (4) on: rest spells begun at home a working adult-day (`ZZR`), adult-seasons by
   W2's held weight within and beyond R = 8 / 12 / 16 / 24 (`ZZW`), and each leaver's walk and last eight weights (`ZZL`).
   Copy in, `-c Release --filter ZzTavern`, delete.
+- `ZzTavernSave.cs` — D843's diagnosis on one of Joe's saves (`ZZ_SAVE`, a *copy*): each tavern (open, or why shut), each
+  villager's walk from home to it and the tavern within reach, then a year stepped — rests begun at home and evenings by
+  adult. Copy in, `--filter ZzTavernSave`, delete.

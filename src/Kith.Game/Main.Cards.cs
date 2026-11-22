@@ -1610,8 +1610,10 @@ public partial class Main
             }
             else if (place.Kind == JobKind.TavernKeeper)
             {
-                // ⭐ THE TAVERN SAYS WHETHER IT IS OPEN, AND WHY NOT (W3, `tavern.md §4` item 4) — one sentence, the sim's.
-                Status(card, working: world.TavernIsOpen(place), world.WhyTheTavernIsShut(place) ?? "Open of an evening.");
+                // ⭐ THE TAVERN SAYS WHETHER IT IS OPEN, AND WHY NOT (W3, `tavern.md §4` item 4) — one sentence, the sim's —
+                // and, open, how many homes it reaches (Joe, playing W3: his stood out of every home's reach and said "Open").
+                (bool working, string sentence) = world.SayTheTavern(place);
+                Status(card, working, sentence);
                 Number(card, 0, $"{place.Store[Goods.Ale]}", "ale in");
                 Number(card, 1, $"{place.EveningsThisSeason}", "evenings this season");
             }
@@ -3068,6 +3070,12 @@ public partial class Main
 
     private static string TradeWordFor(SimWorld world, Villager villager)
     {
+        // A pupil is a student on the card as in the roster (Joe, 2026-11-22) — the same person never two words.
+        if (villager.IsPupil)
+        {
+            return "student";
+        }
+
         if (!villager.CanWork)
         {
             return villager.LifeStage == LifeStage.Child ? "child" : "elder";
