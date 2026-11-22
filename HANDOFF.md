@@ -15,7 +15,7 @@
 > ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).
 > 🐞 His play (2026-11-22): *"only the tavernkeeper goes in"* — his tavern stood out of every home's reach and the card said
 > "Open of an evening"; it now counts the homes within reach and says when none is (D843). Pupils read *student* in the
-> village panel (D844). ⏸️ Whether `tavern_reach_tiles` 12 is right is his.**
+> village panel (D844). ✅ The reach stays 12 at his word (D847, *"Keep 12"*).**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -10937,7 +10937,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   both"*):** the brewery burns no firewood; ~~the brewing rule is read under his ale limit~~ — the rule itself gone at his
   word (D838): ale brews to its limit, tavern or not, and is kept in the granary. 🐞 **His play (D843):** his tavern stood
   14–26 tiles' walk from every home, so nobody came and the card still said "Open of an evening"; the card now counts the
-  homes within reach. ⏸️ **His call: keep `tavern_reach_tiles` at 12 (place it among the homes) or widen it.**
+  homes within reach. ✅ **His call (D847, *"Keep 12"*): `tavern_reach_tiles` stays 12 — the tavern goes among the homes.**
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while

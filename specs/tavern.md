@@ -285,7 +285,8 @@ from his save, 140-odd rests begun at home and not one evening. The card said *"
 homes within reach — *"Open of an evening — 4 of 7 homes are within a 12-tile walk"* — and with none, it is not working
 and says *"Open, but no home is within a 12-tile walk, so nobody comes of an evening. A tavern draws the homes around it:
 build it among them."* (`SimWorld.SayTheTavern`, `HomesWithinReachOf`; the reach is `WalkToTheTavern`, one copy for the
-offer and the count.) ⏸️ Whether 12 is right is still his (HANDOFF's W3 line).
+offer and the count.) ✅ **12 kept at his word (D847, *"Keep 12"*)** — the tavern is placed among the homes, and the card says
+when it is not.
 
 ## 9. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request, not drawn here
 
