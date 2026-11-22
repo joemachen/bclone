@@ -9560,6 +9560,11 @@ public sealed partial class SimWorld : IObstacles
         // with a corner on the Fletchers' yard and a wall between two of its own tiles. Asked of
         // every tile it would cover, moved or new: a building carried onto a yard is the same shape.
         List<GridPos> onTheGround = FootprintOf(kind, where, facing).CoveredTiles();
+
+        // ⭐ A QUARRY AND A MINE STAND ON STEEP GROUND (D832; Joe: "yes, let quarries and mines stand on steep ground"). Seams
+        // sit on the hills, so the ground in reach of one is steep, and his quarry beside his stone refused every tile. Decided
+        // by the trade working a face — the same test the seam claim reads — never by a list of kinds.
+        bool worksAFace = BuildingsCatalog.EmployedBy(kind) is JobKind faceTrade && JobsCatalog.FaceOf(faceTrade) is not null;
         for (int i = 0; i < onTheGround.Count; i++)
         {
             if (WhoseYard(onTheGround[i]) is string yard)
@@ -9568,8 +9573,8 @@ public sealed partial class SimWorld : IObstacles
             }
 
             // ⛔ NOR ON STEEP GROUND (D814, `heights.md §13`; Joe: "Yes, as proposed"). Asked of every tile it would cover,
-            // moved or new — a building carried onto a ridge is a new placement there.
-            if (TooSteepToBuild(onTheGround[i]))
+            // moved or new — a building carried onto a ridge is a new placement there. Not a quarry or a mine (D832, above).
+            if (!worksAFace && TooSteepToBuild(onTheGround[i]))
             {
                 return PlacementVerdict.No(TooSteepSentence);
             }

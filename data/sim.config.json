@@ -450,7 +450,8 @@
   // Nothing is built on steep ground (Joe, 2026-11-21: "Yes, as proposed"):
   // a building, a house, a field or a pasture refuses a steep tile; gentle
   // ground takes them. Quarries, mines and woods are still worked on any
-  // slope. Only new placements - what stands or is painted stays.
+  // slope, and a quarry or a mine may stand on it too - seams sit on the
+  // hills (Joe, D832). Only new placements - what stands or is painted stays.
   "steep_refuses_building": true,
 
   // RETIRED: forage_site_capacity and forager_catchment_tiles.

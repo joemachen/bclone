@@ -46,6 +46,9 @@
 >   can choose"*. A second crop row alone would sow nothing new and stop a barley farm when the WHEAT is full. The row is
 >   the easy half; every `LimitedBy(JobKind.Farmer)` and `MayReap()` caller is the work.
 
+> **🔨 `slice/steep-quarry` — A QUARRY AND A MINE STAND ON STEEP GROUND (D832, *"yes, let quarries and mines stand on steep ground"*). Built, ⏸️ HIS PLAY, THEN THE MERGE AT HIS WORD.** His quarry beside his stone was refused on every tile in reach — D814's steep rule covered the building as well as the face.
+> - **⛔ TRAP (D832): exempting the work is not exempting the building that does it.** D814 wrote *"quarries and mines are worked on any slope"* and guarded the face, but a quarry must also *stand* within reach of its seam, and seams sit on the hills. When a rule exempts an activity, ask where the building for it has to stand — and pose that placement, not only the work.
+
 > **📝 D821 (2026-11-21): W7 MOVES AHEAD OF W3 — THE SECOND CROP IS BARLEY AND BEER IS BREWED FROM IT** (*"Yes, barley first"*). Hops are a Phase 7 technique, not the recipe. Nothing claimed; the next systems slice is W7.
 > - **⛔ TRAP (D821): the W labels keep their numbers when the order changes** — W7 now comes before W3. Read the order from DESIGN §4's arrows, never from the numerals.
 
