@@ -11087,6 +11087,22 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     piece's call), and the chopping before it is the villager's own swing (A130);
     (l) **the title screen upgrade** — a parchment menu panel, and a four-season composite background captured from the real
     renderer; his amended brief is `D:\Projects\brushes\title-menu\brief.md`. **Queued after (h), Joe's *"After the bridge"*.**
+    🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code)
+    — ✍️ **specced, part 1 mocked (A179, `specs/title-screen-art.md`; `D:\Projects\brushes\title-menu\title_panel_mock.jpg`);
+    ⏸️ six calls his (§7): no-save menu, his OK for `TitleScreen.cs` and `Main.cs`'s `title:` probe, which village, what follows
+    the forced season, the panel's width, the newest-village backdrop given up. Nothing built.**
+    ⏸️ **Parked behind (m), Joe's order (relayed 2026-11-22: *"The art lane should paint the tavern icons so it can build
+    sooner"*)** — his calls were answered here (*"All as recommended - and add a 'settings' option to the title screen"*) and
+    part 1 is built in the worktree, uncommitted, its red-check running; picked up after (m).
+    (m) **W3's icons — the brewery and the tavern (each with its owed form), ale, the brewer and the tavern keeper** — 🔨 **being
+    built on `art`** (A181, 2026-11-22, ahead of (l) at Joe's word). W3's request (`slice/w3-tavern`'s HANDOFF, *"ART LANE — W3'S
+    TAVERN AND BREWERY"*): its `ui icons:` line is ⛔ without them. Barley's pattern (A162–A166): painted by
+    `D:\Projects\brushes\ui\ps\p3_icons.jsx`, mocked for his OK, merged into `main` at his word so W3 can take `main`. Also asked
+    there, not in this piece: the buildings' painted look on the map, the figures, the cask.
+    ✍️ **Painted, in on `art`, mocked (A182; `D:\Projects\brushes\tavern\w3_icons_mock.jpg`); the slice's own `ui icons:` ✅
+    with them on a scratch copy, ⛔ without (all seven named). ⏸️ Two calls his: the icons as drawn, and the colours (ale and the
+    brewer `#9a5e14`, the keeper `#8a2f3e`, recommended over W3's stand-ins, which sit under ΔE 10 of bread, the baker and the
+    herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
