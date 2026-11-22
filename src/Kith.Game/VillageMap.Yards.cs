@@ -145,7 +145,8 @@ public partial class VillageMap
         StockRead.Fish => store[Goods.Fish],
         StockRead.Meat => store[Goods.Meat],
         StockRead.Leather => store[Goods.Leather],
-        StockRead.Wheat => store[Goods.Wheat],
+        // The farmhouse's grain — wheat and barley both since W7, so a barley farm's yard fills as a wheat farm's does.
+        StockRead.Wheat => store[Goods.Wheat] + store[Goods.Barley],
         StockRead.Edible => EdibleIn(store, edible),
         StockRead.Held => store.Held,
         StockRead.HeldLessCarts => store.Held - store[Goods.Handcart],

@@ -17,7 +17,8 @@ namespace Kith.Sim.World;
 /// <b>Joe's ruling (2026-09-11): wheat is a real good, not a rename.</b> <c>Goods.Produce</c> stays
 /// the umbrella a forager fills; a farm grows <see cref="Yields"/>. `food-catalog.md` lists wheat,
 /// barley, oats and corn as *Grain* — **each is a row here the day it is wanted**, and a modder can
-/// write one without touching a line of C#.
+/// write one without touching a line of C#. ⭐ Barley is the second (W7, `barley.md`), and a farm sows what its card
+/// says (<c>Workplace.Grows</c>) — the catalogue no longer answers *"which crop?"* for anybody.
 /// </para>
 /// <para>
 /// ⚠️ <b>Id 0 means "nothing sown"</b> — that is what a bare field carries and what the hash has
@@ -70,30 +71,6 @@ public sealed class CropsCatalog
 
     /// <summary>The row with this id, or null for bare ground and for ids nobody defined.</summary>
     public CropRow? this[int id] => id >= 0 && id < _rows.Length ? _rows[id] : null;
-
-    /// <summary>
-    /// ⭐ The crop a farm sows today — <b>the lowest id that exists</b>, until the farm can choose.
-    /// </summary>
-    /// <remarks>
-    /// One crop, in a model shaped for many. When the farmhouse gets a *"grow…"* control this
-    /// becomes the farm's own choice; nothing else in the sim should ask this catalogue which crop
-    /// to plant.
-    /// </remarks>
-    public CropRow TheOne
-    {
-        get
-        {
-            for (int i = 1; i < _rows.Length; i++)
-            {
-                if (_rows[i] is CropRow row)
-                {
-                    return row;
-                }
-            }
-
-            throw new InvalidOperationException("No crop is defined, so nothing can be sown.");
-        }
-    }
 
     /// <summary>
     /// What a tile carrying this crop id gives when reaped.

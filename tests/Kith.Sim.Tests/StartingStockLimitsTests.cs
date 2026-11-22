@@ -42,6 +42,9 @@ public sealed class StartingStockLimitsTests
             // stone tools 30.
             [Goods.Produce] = 2500,
             [Goods.Wheat] = 2000,
+
+            // Barley at wheat's own (W7, Joe's call 4, D823).
+            [Goods.Barley] = 2000,
             [Goods.Fish] = 2500,
             [Goods.Meat] = 2500,
             [Goods.Logs] = 400,

@@ -50,6 +50,11 @@ internal static class GoodsPalette
         // the Overview agree about what wheat looks like.
         Goods.Wheat => new Color(0.86f, 0.72f, 0.32f),
 
+        // ⭐ Barley (W7, `barley.md §6`): a paler, greyer straw than wheat's gold — ripe barley's silvery awns — so two
+        // fields side by side read apart, and apart from hay's yellow. The colour a ripe barley field's stalks draw in
+        // until the art lane's paintings land. A placeholder the art lane may tune (HANDOFF's barley request).
+        Goods.Barley => new Color(0.81f, 0.80f, 0.62f),
+
         // The food chain (D522): flour the pale cream of a sack, bread the brown of a crust — so the
         // two read apart from the wheat they came from and from each other.
         Goods.Flour => new Color(0.92f, 0.88f, 0.78f),

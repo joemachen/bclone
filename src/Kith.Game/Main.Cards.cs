@@ -157,6 +157,15 @@ public partial class Main
 
         /// <summary>The Makes: dropdown's items, in order — every good with a `made_from` (D678); one today, the handcart.</summary>
         public List<Goods> MakeGoods { get; } = new();
+
+        /// <summary>A farm's <i>Grows:</i> row (W7, `barley.md §4`): the crop dropdown and the line saying when a change lands.</summary>
+        public VBoxContainer? GrowsRow { get; set; }
+        public Label? GrowsLabel { get; set; }
+        public OptionButton? Grows { get; set; }
+        public Label? GrowsNote { get; set; }
+
+        /// <summary>The Grows: dropdown's items, in order — every crop row's id (W7).</summary>
+        public List<int> GrowsCrops { get; } = new();
         public VBoxContainer? QueueRow { get; set; }
         public Label? QueueLabel { get; set; }
 
@@ -968,6 +977,17 @@ public partial class Main
                 c.Make.ItemSelected += index => Act(card, () => SetSelectedMakeGood((int)index));
                 makeControls.AddChild(c.Make);
 
+                // ⭐ What a farm sows (W7, `barley.md §4`; Joe, call 3, D823) — the Makes: dropdown's shape a third time,
+                // every crop row, a crop not yet learned greyed with its sentence; the note under it says when a change lands.
+                c.GrowsLabel = Muted("Grows:");
+                (c.GrowsRow, HFlowContainer growsControls) = InspectorRow(body, c.GrowsLabel);
+                c.Grows = new OptionButton { FitToLongestItem = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
+                c.Grows.ItemSelected += index => Act(card, () => SetSelectedGrows((int)index));
+                growsControls.AddChild(c.Grows);
+                c.GrowsNote = Wrapped(Muted(string.Empty));
+                c.GrowsNote.Visible = false;
+                c.GrowsRow.AddChild(c.GrowsNote);
+
                 // The build queue, for a site.
                 c.QueueLabel = Muted("Build queue:");
                 (c.QueueRow, HFlowContainer queueControls) = InspectorRow(body, c.QueueLabel);
@@ -1139,6 +1159,12 @@ public partial class Main
                     FillMake(world, c, place);
                 }
 
+                c.GrowsRow!.Visible = built && place.Kind == JobKind.Farmer;
+                if (c.GrowsRow.Visible)
+                {
+                    FillGrows(world, c, place);
+                }
+
                 c.QueueRow!.Visible = place.IsSite;
                 if (place.IsSite)
                 {
@@ -1218,6 +1244,60 @@ public partial class Main
             c.Make.Select(selected);
         }
     }
+
+    /// <summary>
+    /// The farm's dropdown (W7): every crop row, the one this farm sows selected, a crop not yet learned greyed with its
+    /// sentence as the tooltip; and the note when the field standing is not what the farm will sow next spring.
+    /// </summary>
+    private static void FillGrows(SimWorld world, CardControls c, Workplace farm)
+    {
+        if (c.GrowsCrops.Count == 0)
+        {
+            for (int id = 1; id < world.Crops.Count; id++)
+            {
+                if (world.Crops[id] is CropRow row)
+                {
+                    c.Grows!.AddItem(Capitalise(row.Name));
+                    c.GrowsCrops.Add(id);
+                }
+            }
+        }
+
+        // Greyed while the village cannot sow it — re-asked each fill, since a forager's find lights it mid-game.
+        for (int i = 0; i < c.GrowsCrops.Count; i++)
+        {
+            CropRow row = world.Crops[c.GrowsCrops[i]]!;
+            string? why = world.WhyCannotGrow(c.GrowsCrops[i]);
+            string text = why is null ? Capitalise(row.Name) : $"{Capitalise(row.Name)} (not known yet)";
+            if (c.Grows!.GetItemText(i) != text)
+            {
+                c.Grows.SetItemText(i, text);
+            }
+
+            c.Grows.SetItemDisabled(i, why is not null);
+            c.Grows.SetItemTooltip(i, why ?? $"{Capitalise(row.Name)}: sown in spring, reaped in autumn; it yields {world.GoodsCatalog.NameOf(row.Yields)}.");
+        }
+
+        int selected = c.GrowsCrops.IndexOf(farm.Grows);
+        if (c.Grows!.Selected != selected)
+        {
+            c.Grows.Select(selected);
+        }
+
+        string? note = GrowsNoteFor(world, farm);
+        c.GrowsNote!.Visible = note is not null;
+        if (note is not null && c.GrowsNote.Text != note)
+        {
+            c.GrowsNote.Text = note;
+        }
+    }
+
+    /// <summary>What the farm's card says while the field standing is not what it will sow next (W7, `barley.md §4`).</summary>
+    private static string? GrowsNoteFor(SimWorld world, Workplace farm) =>
+        world.CropStandingAt(farm) is int standing && standing != farm.Grows
+        && world.Crops[standing] is CropRow now && world.Crops[farm.Grows] is CropRow next
+            ? $"Sows {next.Name} from next spring — this year's {now.Name} is still in the ground."
+            : null;
 
     /// <summary>The dropdown's items, once: every good row with a `made_from`, in row order, so the handcart (the default) leads.</summary>
     private static void AddMakeItems(SimWorld world, CardControls c)
@@ -3165,7 +3245,8 @@ public partial class Main
         var unknownGoods = Enumerable.Range(0, world.GoodsCatalog.Count).Select(g => (Goods)g).Where(g => !GoodKnown(g)).ToList();
         var unknownTrades = System.Enum.GetValues<JobKind>().Where(t => !TradeKnown(t)).ToList();
         if (!unknownGoods.Contains(Goods.IronTools) || !unknownGoods.Contains(Goods.Flour) || !unknownGoods.Contains(Goods.Bread)
-            || !unknownGoods.Contains(Goods.Clothing) || !unknownGoods.Contains(Goods.Handcart))
+            || !unknownGoods.Contains(Goods.Clothing) || !unknownGoods.Contains(Goods.Handcart)
+            || !unknownGoods.Contains(Goods.Barley))
         {
             faults.Add($"the founding knows goods it should not: unknown are only {string.Join(", ", unknownGoods)}");
         }
@@ -3230,10 +3311,13 @@ public partial class Main
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (true, true, true, true, true, true, true, true);
         bool school = _schoolKnown;
         _schoolKnown = true;
+        bool barley = _barleyKnown;
+        _barleyKnown = true;
         RefreshTheStrip();
         Ask("all learned", learned: true);
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         _schoolKnown = school;
+        _barleyKnown = barley;
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);
@@ -3447,6 +3531,92 @@ public partial class Main
         return faults.Count == 0
             ? $"[widths] workshop: ✅ Makes: reads Handcarts ({c.Make!.ItemCount} item), the idle sentences fit a {withinCard:F0} card, the Works row is {with:F0} with the button and {without:F0} without"
             : $"[widths] workshop: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// The probe's <c>barley:</c> line (W7, `barley.md §6`): a farm's card posed with the Grows: row — every crop offered,
+    /// <i>Wheat</i> selected, barley greyed with its sentence before the find and lit after it, the "from next spring" note
+    /// inside the card's width. Posed in the view: the learned half on a copy of the village read back from a save with
+    /// <c>barley_learned</c> set — the view cannot set the sim's latch, and the running village is never touched.
+    /// </summary>
+    private string TheFarmSaysWhatItGrows()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        Workplace? place = world.Workplaces.Count > 0 ? world.Workplaces[0] : null;
+        if (place is null)
+        {
+            return "barley: ⛔ no workplace to pose the card on";
+        }
+
+        OpenCard(new CardSubject(CardKind.Workplace, place.Id));
+        Card card = _selectedCard!;
+        CardControls c = card.Controls;
+        card.SettingsToggle.ButtonPressed = true;
+        card.Settings.Visible = true;
+        c.GrowsRow!.Visible = true;
+
+        // A workplace that is not a farm still carries the rows; its Grows is the default, so the pose reads wheat.
+        if (world.BarleyLearned)
+        {
+            faults.Add("the probe's village has already learned barley, so the greyed half cannot be posed");
+        }
+
+        FillGrows(world, c, place);
+        int crops = world.Config.Crops.Count;
+        if (c.Grows!.ItemCount != crops)
+        {
+            faults.Add($"the Grows: dropdown offers {c.Grows.ItemCount} crops of {crops}");
+        }
+
+        if (c.Grows.Selected < 0 || c.Grows.GetItemText(c.Grows.Selected) != "Wheat")
+        {
+            faults.Add($"the Grows: dropdown reads '{(c.Grows.Selected < 0 ? "" : c.Grows.GetItemText(c.Grows.Selected))}' where it should read 'Wheat'");
+        }
+
+        int barley = c.GrowsCrops.FindIndex(id => world.Crops[id]?.Yields == Goods.Barley);
+        if (barley < 0)
+        {
+            faults.Add("the Grows: dropdown does not offer barley");
+        }
+        else
+        {
+            if (!c.Grows.IsItemDisabled(barley) || !c.Grows.GetItemTooltip(barley).Contains("from the wild", StringComparison.Ordinal))
+            {
+                faults.Add($"barley is not greyed with its sentence before the find ('{c.Grows.GetItemTooltip(barley)}')");
+            }
+
+            System.Text.Json.Nodes.JsonObject document = Kith.Sim.Persistence.SaveGame.Capture(_loop, "probe", "probe", "probe");
+            document["world"]!["barley_learned"] = true;
+            SimWorld learned = Kith.Sim.Persistence.SaveGame.Load(
+                System.Text.Json.Nodes.JsonNode.Parse(Kith.Sim.Persistence.SaveFile.TextOf(document))!.AsObject(), world.Config, null).World;
+            if (!learned.BarleyLearned)
+            {
+                faults.Add("the posed save did not read barley as learned");
+            }
+
+            FillGrows(learned, c, learned.Workplaces.Single(w => w.Id == place.Id));
+            if (c.Grows.IsItemDisabled(barley) || c.Grows.GetItemText(barley) != "Barley")
+            {
+                faults.Add($"barley is still greyed after the find ('{c.Grows.GetItemText(barley)}')");
+            }
+        }
+
+        // The longest note, posed.
+        c.GrowsNote!.Text = "Sows barley from next spring — this year's wheat is still in the ground.";
+        c.GrowsNote.Visible = true;
+        ForceUpdateTransform();
+        float wants = card.Panel.GetCombinedMinimumSize().X;
+        if (wants > CardWidth + 1f)
+        {
+            faults.Add($"the Grows: note widens the card to {wants:F0}");
+        }
+
+        int offered = c.Grows.ItemCount;
+        CloseCard(card);
+        return faults.Count == 0
+            ? $"barley: ✅ Grows: reads Wheat ({offered} crops), barley greyed with its sentence until the find and lit after, the note fits a {wants:F0} card"
+            : $"barley: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardSaysTheCoat()

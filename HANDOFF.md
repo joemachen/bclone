@@ -2,6 +2,18 @@
 
 > **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
 > (`specs/barley.md`), Joe's calls before code. The only systems branch open; `art` is the other.**
+> **✅ BUILT (D825), AND THE FIND'S SENTENCE BY WHAT THE VILLAGE HAS (D826, Joe's ask; the beer clause waits for W3).
+> UNPLAYED. Nine goldens moved, each proven by ablation. ⛔ The probe's `ui icons:` reads "no file for goods/barley" until
+> the art lane paints it (asked, at Joe's word). ⏸️ HIS PLAY (`.\run.bat`: forage past 5,000 → the moment; a farm's card
+> → Grows: barley; next spring, barley sown; autumn, barley reaped and eaten), then the merge at his word.**
+> - **⛔ TRAP (D825): a new good is "known" from the founding unless something says otherwise** — `SimWorld.KnowsOf`
+>   answers for stores, limits and every market's starting room. Barley took an eighth of every market before anyone had
+>   found it; only `MarketLimitsTests` noticed. A good behind a gate needs `KnowsOf` taught the gate.
+>   ⚠️ And the VIEW latches each gate in a flag of its own (`_workshopKnown`, `_barleyKnown`, …) so its lists cannot
+>   disagree with its bar; the probe's `spoilers:` poses those flags, so a new gate needs one there too.
+> - **⛔ TRAP (D825): a companion golden hides behind its first.** `FarmGoldenTests` and `PhaseFiveGoldenTests` each assert
+>   a second hash after the first; a re-take shows only the first red, and the ablation of the second needs the first put
+>   back to its old value for the run, or the test never reaches it.
 > **✅ EVERY CALL ANSWERED: 2–5 AS RECOMMENDED (D823), 1 THE FORAGER'S FIND (D824, *"Yes, the forager's find"*). 🔨 THE
 > BUILD, `barley.md §10`; the gate's number measured before it is typed.** *(Read "⏸️ CALL 1 REOPENED" at D823.)* *(Read "📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S" at D822.)*
 > **📝 SPECCED (D822): ⏸️ FIVE CALLS JOE'S (`barley.md §9`); nothing built. The art lane's barley paintings are a
@@ -10833,20 +10845,28 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   and that W3's brewery takes barley (W3 is not this slice). Joe's calls before any code.
   **📝 SPECCED (D822). ⏸️ FIVE CALLS JOE'S (`barley.md §9`), each recommended:** (1) barley from the founding, not
   learned; (2) the same harvest and seasons as wheat; (3) one crop per farm, picked on its card, from the next spring;
-  (4) a starting limit of 2000 and the three neighbours growing 500 each — wheat's numbers; (5) the mill grinds wheat only
+  (4) a starting limit of 2000 and the three neighbours growing 500 each — wheat's numbers *(⚠️ corrected at the build,
+  D825: only the lowlands grow wheat; the other two want it — barley is traded exactly as wheat)*; (5) the mill grinds wheat only
   and learns from wheat only. Nothing built until he answers.
   **✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as recommended"*). ⏸️ CALL 1 REOPENED BY HIM** — a forager finds
   barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. ✅ **HIS WORD
-  (D824, *"Yes, the forager's find"*). 🔨 Building.**
+  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D826), UNPLAYED — ⏸️ HIS PLAY, THEN THE MERGE AT
+  HIS WORD.** His to tune in play: `barley_unlock_forage` 5,000.
 
 - ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
   `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
   `painted-crops.md §4`'s shape: 1024² at 128 px a tile, seamless, rows east–west, the hue families measured as wheat's.
-  Barley reads apart from wheat by its **long bristled awns, nodding heads and a paler, silvery straw** when ripe. And a
-  colour for the carried sheaf (`PersonPainter`). ⚠️ The watercolour's bake names wheat's paintings by crop id
+  Barley reads apart from wheat by its **long bristled awns, nodding heads and a paler, silvery straw** when ripe.
+  ⛔ **And its UI icon, `textures/ui/icons/goods/barley.png`** (the goods set's shape, as `wheat.png`) — the probe's
+  `ui icons:` line is ⛔ *"no file for goods/barley"* until it lands; the game shows barley's glyph meanwhile (D825). And a
+  colour for the carried sheaf (`PersonPainter`). ~~⚠️ The watercolour's bake names wheat's paintings by crop id
   (`VillageMap.Watercolour.cs`, the `(1, "young", …)` rows) — barley's need rows of their own (id 2) when they land, or the
-  folder is never read there. Until then the systems slice draws a barley field's stalks in barley's own colour. Not
-  claimed; the art lane's to take when Joe says.
+  folder is never read there.~~ *(Wrong, D825: `TheCropPainting` reads the folder by the crop row's name, so
+  `textures/crops/barley/` is picked up with no code; the `(1, "young", …)` rows are only `ThePaintedCropsHold`'s probe list,
+  which should gain barley's rows when they land.)* Until then a barley field draws its flat fill and stalks in
+  `GoodsPalette`'s barley (a paler straw, `#cfcc9e`-ish) and the carried sheaf `#d2cc9c` — **both placeholders for the
+  art lane to judge**. Not claimed; the art lane's to take when Joe says. ✅ **Asked of the art lane at his word (2026-11-21, *"ask the art lane for
+  the barley art you need"*), sent to the art lane's running session; theirs to claim here.**
 
 - ⏸️ **W2 STEP 5b, THE WALK OUT — WHEN (D806).** Leaving is built (5a): a person gone is off the map that tick, with the
   log line. 5b walks them from where they stood to the valley's edge (D573's walk-in reversed, view only), drawing

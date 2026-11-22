@@ -148,7 +148,10 @@ public partial class TechTreeView : Control
 
         if (state == TechState.Known)
         {
-            box.AddChild(Line(node.Unlocks is null ? "Known." : "Known — it is in the build menu.", 12));
+            box.AddChild(Line(
+                node.Unlocks is not null ? "Known — it is in the build menu."
+                : node.UnlocksCrop is not null ? "Known — a farm's card can sow it."
+                : "Known.", 12));
         }
         else if (node.Condition == TechCondition.NotYet)
         {
@@ -181,6 +184,7 @@ public partial class TechTreeView : Control
         TechCondition.FoundersGone => $"{progress} of {of} founders gone",
         TechCondition.LeatherHeld => $"{progress} of {of} leather handled",
         TechCondition.LogsFelled => $"{progress} of {of} logs felled",
+        TechCondition.ForageGathered => $"{progress} of {of} gathered from the wild",
         _ => string.Empty,
     };
 

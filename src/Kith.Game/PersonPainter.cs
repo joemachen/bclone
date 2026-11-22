@@ -222,6 +222,7 @@ internal static class PersonPainter
         Goods.Meat => Rgb.Hex("#a8343a"),
         Goods.Leather => Rgb.Hex("#9a7048"),
         Goods.Wheat => Rgb.Hex("#dcb84e"),
+        Goods.Barley => Rgb.Hex("#d2cc9c"), // W7: a paler straw than wheat's sheaf — the art lane's to tune
         Goods.IronTools => Rgb.F(0.50f, 0.52f, 0.58f),
         Goods.Flour => Linen,
         Goods.Bread => Rgb.Hex("#b87a3a"),
@@ -231,7 +232,7 @@ internal static class PersonPainter
     };
 
     /// <summary>Carried on the shoulder or the back, leaving the hands free.</summary>
-    internal static bool OnTheShoulder(Goods good) => good is Goods.Logs or Goods.Firewood or Goods.Wheat or Goods.Hay
+    internal static bool OnTheShoulder(Goods good) => good is Goods.Logs or Goods.Firewood or Goods.Wheat or Goods.Barley or Goods.Hay
         or Goods.Flour or Goods.Meat or Goods.Tools or Goods.IronTools;
 
     /// <summary>Whether a trade has a tool to hold out at work.</summary>
@@ -1009,7 +1010,7 @@ internal static class PersonPainter
 
     private static void LoadBehind(Canvas c, Who w, FigurePose pose)
     {
-        if (w.Good is not (Goods.Firewood or Goods.Hay or Goods.Wheat))
+        if (w.Good is not (Goods.Firewood or Goods.Hay or Goods.Wheat or Goods.Barley))
         {
             return;
         }
@@ -1037,7 +1038,7 @@ internal static class PersonPainter
 
     private static void LoadFront(Canvas c, Who w, FigurePose pose, float top)
     {
-        if (w.Good is not Goods g || g is Goods.Firewood or Goods.Hay or Goods.Wheat)
+        if (w.Good is not Goods g || g is Goods.Firewood or Goods.Hay or Goods.Wheat or Goods.Barley)
         {
             return;
         }

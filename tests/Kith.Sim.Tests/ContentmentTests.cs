@@ -1070,7 +1070,8 @@ public sealed class ContentmentTests
     }
 
     /// <summary>Taken 2026-11-20 (D808), on its first run: four gone in Year 13, the village still standing at 15.</summary>
-    private const ulong LeavingGolden = 593170502162136593UL;
+    // RE-TAKEN (D825) — barley is learned when the foragers have gathered `barley_unlock_forage` (5,000), a tag byte in the hash and Lore introduced (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate set out of reach (`barley_unlock_forage` 2147483647) the old value passes. Was 593170502162136593.
+    private const ulong LeavingGolden = 16825038126313242079UL;
 
     /// <summary>⭐ The departure is saved and hashed sparsely (§13.2 item 8); a save without it reads as never gone.</summary>
     [Fact]

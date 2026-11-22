@@ -930,4 +930,14 @@ public enum Goods
     /// store, and the two must not be confused in code.
     /// </remarks>
     Handcart = 15,
+
+    /// <summary>
+    /// ⭐ <b>Barley</b> — the second crop (W7, `specs/barley.md`, D821–D825): eaten raw like wheat, and the grain W3's
+    /// brewery will brew. Learned when the foragers have gathered <c>barley_unlock_forage</c> from the wild (D824).
+    /// </summary>
+    /// <remarks>
+    /// Appended, never renumbered. Food at nutrition 1, stored where wheat is (the birth gate reads granaries). ⚠️ A second
+    /// <i>grain</i>, not a second food group: wheat's chain (the mill, bread) stays wheat's (call 5).
+    /// </remarks>
+    Barley = 16,
 }

@@ -64,8 +64,8 @@ public sealed class EdibleGoodsTests
         SimConfig edibleLogs = config with { GoodsList = rows };
         SimWorld world = SimFactory.CreatePhase0(edibleLogs, new InMemoryLogSink()).World;
 
-        // Produce, fish, meat, wheat (D348) and bread (D522) ship edible; the posed logs make six.
-        Assert.Equal(6, world.GoodsCatalog.EdibleGoods.Count);
+        // Produce, fish, meat, wheat (D348), bread (D522) and barley (D825) ship edible; the posed logs make seven.
+        Assert.Equal(7, world.GoodsCatalog.EdibleGoods.Count);
 
         int before = world.FoodTheVillageHolds();
         StoreBuilding granary = world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);
@@ -131,6 +131,6 @@ public sealed class EdibleGoodsTests
 
         // ⭐ Best first (`food-chain.md §3.3`): bread, then the foods worth one in id order.
         Assert.Equal(
-            new[] { Goods.Bread, Goods.Produce, Goods.Fish, Goods.Meat, Goods.Wheat }, world.GoodsCatalog.EdibleGoods);
+            new[] { Goods.Bread, Goods.Produce, Goods.Fish, Goods.Meat, Goods.Wheat, Goods.Barley }, world.GoodsCatalog.EdibleGoods);
     }
 }

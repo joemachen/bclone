@@ -1,9 +1,11 @@
 # Spec: A second crop — barley (W7)
 
-> Status: **📝 SPECCED (D822, 2026-11-21) on `slice/w7-barley`; ✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as
-> recommended"*); ✅ CALL 1: BARLEY IS FOUND WILD BY A FORAGER (D824, *"Yes, the forager's find"*, §9.1) —
-> every call answered; 🔨 the build (§10), the gate's number measured before it is typed.** *(Read "⏸️ call 1 reopened" at D823,
-> "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
+> Status: **✅ BUILT on `slice/w7-barley` (D825–D826, 2026-11-21), UNPLAYED — §11 is what was built. ⏸️ Joe's play, then
+> the merge at his word; ⏸️ his to tune in play: `barley_unlock_forage` (5,000, measured §11.2); ⛔ the probe's `ui icons:`
+> waits on the art lane's barley icon (§7).** History: 📝 specced (D822);
+> ✅ calls 2–5 as recommended (D823, *"I like all as recommended"*); ✅ call 1, barley found wild by a forager (D824,
+> *"Yes, the forager's find"*, §9.1). *(Read "🔨 the build (§10), the gate's number measured before it is typed" at D824,
+> "⏸️ call 1 reopened" at D823, "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*
 > Phase 6, W7 of the workplan (`systems-complete.md §5.1`), moved ahead of W3 at Joe's word (D821, *"Yes, barley first"*).
 >
 > Neighbours: `crops-and-orchards.md` (the farm, the field, the calendar — D161/D162), D348 (a crop is a `CropRow`),
@@ -95,7 +97,7 @@ on past a full barley store.
 | The mill grinds it, and learns from it (`mill_unlock_wheat`) | ✅ | ⛔ (call 5) — wheat's chain stays wheat's |
 | The brewery brews it (W3) | ⛔ | ✅ — W3's spec takes it from here |
 | Its own stock limit | ✅ 2000 | ✅ 2000 (call 4) |
-| The neighbours grow it (trade, D587: a good joins the day its system lands) | ✅ 500 each | ✅ **500 each, as wheat** (call 4) |
+| The neighbours trade it (trade, D587: a good joins the day its system lands) | ✅ the lowlands grow 500; the hills and the grazing country want 500 each | ✅ **exactly as wheat** (call 4; ⚠️ the spec read *"500 each"* until D825 — only the lowlands grow wheat) |
 | Counts toward the birth gate, the food limit, the obituary's lifetime food | ✅ | ✅ — through `EdibleGoods`, nothing new |
 
 **The herd is untouched**: hay is cut on a pasture; *"wheat's"* in its config comment is the number it borrowed, not the good.
@@ -108,7 +110,9 @@ on past a full barley store.
   `painted-crops.md §4`), so two fields side by side are told apart in the summer's end without hovering.
 - **The farmer**: *"Sowing barley at Ashford Farm"*; a sheaf of barley on the shoulder, as wheat's.
 - **The stock limits panel, the Overview's food lines, the stores' cards**: barley as a row, wherever wheat is.
-- **The log**, once, on a change: *"Ashford Farm will sow barley from next spring."*
+- **The log**, once, on a change: *"Ashford Farm will sow barley from next spring."* *(As built, D825: an Info line in the
+  game log — the workshop's `SetMakeGood` shape — not a village-log narration: the player made the change and the card
+  already says it.)*
 - **The probe**: a `barley:` line — the card's *Grows* row read at a posed farm, and a barley field's ripe colour told
   apart from wheat's.
 
@@ -145,7 +149,8 @@ stalks in barley's colour (§6) — never drawn as nothing. Also: barley's colou
    build two farms. (The alternatives: half a field of each, painted — a second brush; or a farm that alternates crops
    every year — rotation, which is better kept for W8 if blight wants it.)
 4. **Barley's numbers in the shipped game: a starting stock limit of 2000 (wheat's), and the three neighbours growing 500
-   each to trade (wheat's)?** *Recommended: yes, wheat's numbers.* You tune both in play.
+   each to trade (wheat's)?** *(⚠️ Corrected at the build, D825: only the lowlands grow wheat (500); the hills and the
+   grazing country WANT 500 each. "Wheat's numbers" is what was called, so barley is traded exactly as wheat is.)* *Recommended: yes, wheat's numbers.* You tune both in play.
 5. **The mill grinds wheat only — no barley flour, and barley does not count toward learning the mill?** *Recommended:
    yes.* Wheat's chain stays wheat's (bread), barley's is beer (W3). That is D821's whole reason for barley.
 
@@ -163,7 +168,8 @@ units harvested"*.
   compressed the same way.
 - **It matches every learned-by-doing gate the game has**: the smithy after 50 iron, the tailor after 50 leather, the
   quarry after 200 stone, the workshop after 1,500 logs, the mill after 5,000 wheat. Barley: **`barley_unlock_forage`**
-  units gathered by foragers, counted where they are gathered (`ForageEverGathered`, `StoneEverDug`'s shape), a
+  units gathered by foragers, counted where they are gathered (`ForageEverGathered`, `StoneEverDug`'s shape — *as built,
+  D825: the count already existed, `FoodEverProducedOf(Produce)`, saved in every save*), a
   *learned* moment (*"A forager has brought home wild barley …"*), and *Lore* shows the road to it.
 - **Blight then waits for barley.** §0.1 admits a pressure once its answer exists, so W8 strikes a field only in a village
   that knows barley. That keeps the gate honest.
@@ -176,7 +182,8 @@ units harvested"*.
   once, each proven by ablation (the gate set out of reach reproduces today's).
 
 *Recommended: the forager's find* (his idea), over barley from the founding. ✅ **Taken (D824).** Shape: a
-`BarleyLearned` latch, hashed as a tag byte when set and saved as `barley_learned`; `ForageEverGathered` an unhashed,
+`BarleyLearned` latch, hashed as a tag byte when set and saved as `barley_learned`; `ForageEverGathered` *(as built:
+`FoodEverProducedOf(Produce)`, which only a forager's load writes — D825)* an unhashed,
 saved statistic beside it — the workshop's shape exactly (D676/D678), because every village forages from day one and
 hashing the counter would move every golden for a difference below the gate that nothing reads. A tech node `barley`
 (`TechCondition.ForageGathered`) shows the road in *Lore*; the moment is a learned-by-doing stop (D442).
@@ -202,3 +209,80 @@ Spec first, then the failing tests, then the code (METHODOLOGY §2–§3). Each 
 
 **Done** = §10's steps, the four CLAUDE.md checks read, a D-entry per decision, the art lane's request in HANDOFF, and
 Joe's play. **W3 (the brewery and the tavern) is the next slice, not this one.**
+
+## 11. ✅ As built (D825)
+
+### 11.1 What is in
+
+- **The good and the row**: `Goods.Barley = 16`, its `GoodRow` (wheat's to the letter), crop row 2 in `SimConfig.Crops`.
+  ⚠️ Two modded-good test files held a modder's good at 16 (`ModdedGoodTests`' pitch, `WorkshopTests`' planks) — moved to
+  17, the sixth time that remark records.
+- **The farm's choice**: `Workplace.Grows` (default `DefaultGrows` = 1, wheat), set only through `SimWorld.SetGrows`, refused
+  by `WhyCannotGrow` (no such crop; a crop whose node is not known). Saved as `grows` only off the default; hashed sparsely
+  (tag `0xF3`). The sowing reads the farm's choice; **`CropsCatalog.TheOne` is deleted**.
+- **The limit per crop** (§4.1): `MayReap(Goods)`; `NextFieldToWork` and `FarmerSeatsWithGroundToWork` ask each tile's own
+  crop through a stack-only `ReapLimits` (the limit once per crop per call, nothing kept between calls);
+  `GrainHeldBackAt(farm)` names the crop held back in the farm's card and its farmers' note; the quota's farmer arm is
+  `EveryFarmIsAtItsLimit` (the smith's shape) and `GoodTheTradeMakes(Farmer)` is the first standing farm's crop. The
+  farmer row's `limited_by` now says only *whether* farms are limited.
+- **The forager's find** (§9.1): `SimWorld.Foraged` is the one door a forager's load comes through — the food ledger and the
+  latch `BarleyLearned` (tag byte `0x88`, saved as `barley_learned` only when true). The count is the existing
+  `FoodEverProducedOf(Produce)`, so **every older save carries it**: a village past the gate learns barley at its next
+  gather. A learned-by-doing moment, *"A forager found wild barley"*; the Lore node `barley`.
+- **⭐ A tech node may unlock a crop** — `TechNodeRow.UnlocksCrop` (`unlocks_crop`, a crop id), validated against the crop
+  rows; a node unlocks a building or a crop, never both. `WhyCannotGrow` asks the nodes, not a name: **a crop no node
+  unlocks is sown from the founding** (wheat), and a modder's oats behind a node of their own wait the same way. The Lore
+  card says *"Known — a farm's card can sow it."* and its bar *"n of 5000 gathered from the wild"*.
+- **The view**: the farm card's **Grows:** dropdown (the workshop's Makes: shape), barley greyed *"Barley (not known
+  yet)"* with its sentence as the tooltip until the find; the note *"Sows barley from next spring — this year's wheat is
+  still in the ground."* while the field disagrees; ripe stalks in the crop's own colour (`GoodsPalette` barley, a paler
+  straw); a sheaf of barley carried on the shoulder as wheat's; the farmhouse yard's grain counts both. The probe's
+  `barley:` line poses the card (the learned half on a copy read back from a save with `barley_learned` set — the view
+  cannot set the latch, and the running village is never touched).
+- **The shipped numbers** (call 4): `barley_unlock_forage` 5,000; a starting limit of 2,000; the lowlands grow 500, the
+  hills and the grazing country want 500 each — exactly wheat's trade.
+- **Not changed, on purpose**: the mill grinds and learns from wheat only (`SimWorld.Reaped` already counted wheat alone —
+  call 5 needed no code, only `ReapedBarleyDoesNotTeachTheMill`); the watercolour reads a crop's paintings by its row's
+  name, so barley falls back to the flat fill until `textures/crops/barley/` exists — no code waits on the art.
+
+### 11.2 The gate's number, measured (D825, `tools/harness/ZzBarley.cs`)
+
+Forage ever gathered (`FoodEverProducedOf(Produce)`) read off **252 of Joe's saves** (a copy; 225 older-format saves
+refused) and **twenty valleys** (seeds 200–219, the shipped config, `ColdStartTests.PlayTheOpening`, thirty years):
+
+| | Year 3 | Year 4 | Year 5 | Year 6 | Year 8 | a year, once a hut stands |
+|---|---|---|---|---|---|---|
+| his saves, median | 468 | 2,660 | 3,012 | 5,136 | 5,523 | 700–900 |
+| the valleys, median | 3,732 | 4,638 | 5,444 | 6,429 | 8,466 | ~1,100–1,500 |
+
+**5,000** reaches the valleys at Year 5 (p10–p90: 5–7; one seed never) and his villages around Year 6–8. 3,000 would come
+at Year 3 in the valleys and Year 5 in his. **The mill in his saves is learned at Year 44 and 69** (two villages), so
+5,000 forage sits well before it. One valley in twenty and five of his saves past Year 3 never forage: those villages
+never learn barley — and since W8's blight strikes only a village that knows barley, nothing is asked of them that they
+cannot answer.
+
+### 11.4 The find says what it means here (Joe, 2026-11-21)
+
+Joe, after the build: *"the barley 'discovery' popup should have dynamic text. if the player has not already built a farm
+by the time barley is discovered, then the popup should reference that the villagers are happy because now you can build a
+farm, plant barley, and brew beer. if the player already has a farm built, it should say the same thing excluding "now you
+can build a farm" - instead it should say the villagers are excited for you to plant it at a farm."*
+
+- **No farm** (none standing or marked): *"… one of them has come home with an armful of wild barley. The villagers are
+  excited: build a farm, and it can sow barley as well as wheat — choose it on the farm's card, and it goes in the ground
+  the next spring."*
+- **A farm** (one standing or marked — the player has already chosen where the fields go): *"… The villagers are excited to
+  see it sown at Ashford Farm — choose barley on a farm's card …"*; with two or more, *"at the village's farms"*.
+- ⚠️ **The beer clause waits for W3**, the one part of his words not built: the brewery does not exist yet, and a moment
+  that promises beer sends the player looking for a building that is not there (§1.1). **W3 adds it when the brewery is
+  built** — *"… and brew beer from it at a brewery"* — in `SimWorld.WhatTheFindMeansHere`. *"Excited"* rather than *"happy"*:
+  the moment is flavour, and contentment (W2) reads no cause from it, so it must not sound like one.
+
+### 11.3 Proved by
+
+`BarleyTests` (20), and the lists that grew by one good (`ModdedGoodTests`, `EdibleGoodsTests`, `WorkshopTests`,
+`StartingStockLimitsTests`, `SaveLoadTests.Fields`, `TechTreeTests`' goods unknown on day one). **Red-checked: 18 mutants,
+18 red** (D326) — six rewritten to compile after the analysers refused them as first written (unreachable code, an unread
+field), and one first scored zero (the quota's every-farm arm) until `TheFarmersStopSentenceNamesTheFarmsOwnCrop` closed it. **Nine goldens moved, each proven by ablation** (D825): the gate
+alone moved seven; barley's limit one more; the neighbours' barley the Phase 5 pair. ⛔ **Found by the suite:** `KnowsOf`
+called barley known from the founding, so markets set room aside for it — fixed, `BarleyIsUnknownUntilItIsFound`.

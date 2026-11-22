@@ -565,6 +565,7 @@ public partial class Main : Control
         GD.Print(TheWordsReadOnParchment());
         GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
+        GD.Print(TheFarmSaysWhatItGrows());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
@@ -2516,6 +2517,10 @@ public partial class Main : Control
         // The workshop, learned by felling wood (D678, `workshop-and-the-carpenter.md §4.1a`) — paid for, lit until the first is marked.
         RefreshALearnedButton(world, BuildingKind.Workshop, JobKind.Carpenter, _workshopButton, ref _workshopKnown, ref _workshopTried);
 
+        // ⭐ Barley, a forager's find (W7, D824) — a crop, not a building, so no button to light: the flag the stock limits,
+        // the cart and the bar's more ▾ read (`KnowsOf`'s crop answer), latched as the others are, so they cannot disagree.
+        _barleyKnown |= world.BarleyLearned;
+
         // The school, learned once a library stands (D755, `school-and-education.md §12.1`) — paid for, lit until the first is marked.
         RefreshALearnedButton(world, BuildingKind.School, JobKind.Teacher, _schoolButton, ref _schoolKnown, ref _schoolTried);
 
@@ -2576,6 +2581,9 @@ public partial class Main : Control
     private bool _tailorTried;
     private bool _workshopKnown;
     private bool _workshopTried;
+
+    /// <summary>Barley learned (W7) — latched from <c>SimWorld.BarleyLearned</c>; the spoilers probe poses it with the rest.</summary>
+    private bool _barleyKnown;
     private bool _schoolKnown;
     private bool _schoolTried;
     private bool _bridgeKnown;
@@ -5467,6 +5475,20 @@ public partial class Main : Control
         RefreshInspector(_loop.World);
     }
 
+    /// <summary>Set what the selected farm sows from its next spring, from its card's dropdown (W7, `barley.md §4`) — the workshop's twin.</summary>
+    private void SetSelectedGrows(int index)
+    {
+        if (SelectedWorkplace() is not { IsSite: false, Kind: JobKind.Farmer } farm
+            || _selectedCard?.Controls.GrowsCrops is not { } crops
+            || index < 0 || index >= crops.Count)
+        {
+            return;
+        }
+
+        Warn(_loop.World.SetGrows(farm, crops[index]));
+        RefreshInspector(_loop.World);
+    }
+
     private void ToggleSelectedMode()
     {
         if (SelectedWorkplace() is not { IsSite: false } workplace)
@@ -5708,7 +5730,7 @@ public partial class Main : Control
         for (int g = 0; g < goods.Length; g++)
         {
             // The bar's latched flags (the smithy, the mill, the bakery), so its lists cannot disagree with it.
-            goods[g] = world.KnowsOf((Goods)g, kind => EarnedYet(kind));
+            goods[g] = world.KnowsOf((Goods)g, kind => EarnedYet(kind), crop => _barleyKnown || world.WhyCannotGrow(crop) is null);
         }
 
         var trades = new bool[JobLimits.Kinds.Count];
