@@ -5,6 +5,10 @@ order things were marked, and the player can reorder it), D380 (a window, its Se
 D706 (no button keeps keyboard focus), D721 (a house's rebuild waits behind every other site).
 **Status:** ✅ **BUILT (D730), MERGED INTO `main` AT JOE'S WORD (D731, 2026-11-12).** View only;
 the probe's `build queue:` line is its test (§4).
+**⭐ D840 (2026-11-22), on `slice/w3-tavern`:** the site names read whole — Joe: *"I cant read any of the sites in the build
+queue - they are truncated/hidden"* ("the Car…", "iron mi…"). The Site column clips, so in the grid its minimum was nought
+and the fixed columns took the room. It now keeps the width of *"the Carpenter's workshop"* in its own font, the window is
+540 wide (was 400), and a name's tooltip says it whole; the probe's line measures every row's name against that room.
 
 ---
 
