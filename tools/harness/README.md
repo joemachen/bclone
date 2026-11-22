@@ -65,6 +65,16 @@ against a number from an older commit.
   possible), kept (as shipped) and kept with the water answered — who left, who died, who is alive, the first departure,
   each leaver's causes — and Phase 0's village of one, season by season, with leaving on. Copy in, `--filter ZzLeaving`,
   delete.
+- `ZzMarketStand.cs` (+ `market_stand_own_counter.py`) — D851's measurement for `specs/market-stand.md §4`: on Joe's saves
+  (`ZZ_SAVES` a copy, the newest per folder, `ZZ_YEARS` 5, `ZZ_SHARD=k/n` for parallel processes) every shopping round trip —
+  elapsed and planned, its store and good (ZZM / ZZY / ZZP / ZZF / ZZL), and the distinct households past each length with the
+  year they reached 3 / 5 / 8 (ZZH); `ZZ_SEEDS` the same on the unattended harness valley (`OnTheHarness`, 50 years). With
+  `ZZ_POSE=1` a stall is posed — a finished market raised among the far homes (`ZZ_FARDAYS` 8, `ZZ_FARHOMES` 2), told 4,000 room,
+  500 a good, one seat, a cart — and the save stepped again (ZZS / ZZQ / ZZK); `ZZ_LIFT=1` raises a typed marketer number by one,
+  `ZZ_SHELF=full` keeps the stall topped up out of the storehouses (the ceiling), `ZZ_OWN=1` needs the patch script applied to the
+  sim first (a TEMPORARY rule — back up `BehaviorSystem.cs`, apply, build, run, copy the backup back). ⚠️ `dotnet test` on a
+  copied build must run from under the repo (`RepoRoot()` walks up to `DESIGN.md`) — a copy under `tools/harness/bin/` (ignored)
+  works, one in the scratchpad does not. Copy in, `-c Release`, delete.
 - `ZzTimberSeeds.cs` — D804's table for `WoodTests.TimberGatesGrowthWithoutStoppingIt`: the fixture's seeds 1–12, alive at
   Year 120, gated (30 logs a house) and free, with contentment's longer wait on (200) and off (100) — alive / born /
   unsettled adult-seasons, in parallel (~3 minutes). Copy in, `--filter ZzTimberSeeds`, delete. Re-run it when that test's

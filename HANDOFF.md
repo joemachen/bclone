@@ -19,6 +19,12 @@
 > word (D848, *"Merge main in"*): the art lane's W3 icons, bridge and crossfade; re-imported; probe 141 ✅, 0 ⛔.
 > ⭐ MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*, `64310f8`), ✅ PUSHED AT HIS WORD (D850, *"Push main"*); `slice/w3-tavern` DELETED. No branch open
 > but `art` — the art lane merges `main` into `art` next. ▶️ NEXT FOR SYSTEMS: W14, THE MARKET STAND, OR WHATEVER HE NAMES.
+> 🔨 **`slice/w14-market-stand` — W14, THE MARKET STAND (2026-11-22, Joe: *"start the market stand"*), cut from `main` (c42a065).**
+> 📏 Measured and 📝 specced (D851, `specs/market-stand.md`); ⏸️ **FIVE CALLS HIS (§9), nothing built:** (1) a marketer fills
+> their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
+> *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
+> (home → store, planned) by 5 different households; (4) 2×1, 18 logs, 15 stone; (5) still wanted, knowing its keeper walks
+> about twice what the far families save.
 **
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
@@ -41,6 +47,14 @@
 >   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
 >   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
 >   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D851): A MARKETER'S LOAD GOES TO THE COUNTER NEAREST THE STOREHOUSE, NOT THE ONE THAT ASKED.** `OfferMarketRestock`
+>   picks the emptiest shelf of *any* market; `StoreForTheLoad` puts the load on the counter nearest where the marketer
+>   stands. With one market they agree; with two, a counter far from the granary is filled last. Found posing a stall in
+>   Oakhaven-sumac: seat filled, shelf empty, far families walking past it. **Pose a second market before trusting any rule
+>   about "the market".**
+> - **⛔ TRAP (D851): `TicksPerYear` is 480 on the shipped config, not the class default's 240** (`days_per_season` 30 in
+>   `sim.config.json`, 15 in `SimConfig`). A per-year figure from a harness read against 240 is out by two — the spec's
+>   first draft compared the keeper's year at 240 and said "a wash" where it is twice. Read the shipped number.
 > - **⛔ TRAP (D836): the fixture has few drinkers.** Four adults, two within reach, one of them the keeper (who never drinks at
 >   their own tavern) — so a per-season rule like `tavern_every_days` never bites in `VillageFixtures.Village`. Pose the rule's
 >   own extreme (a wait past the run) to make it bite.
@@ -10960,7 +10974,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
 
-- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — 🔨 being built on `slice/w14-market-stand` (2026-11-22, Joe: *"start the market stand"*) — measured on his saves first, then `specs/market-stand.md` and his calls; nothing built until he answers.** *(Read "QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC" until 2026-11-22.)* A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
+- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — 🔨 being built on `slice/w14-market-stand` (2026-11-22, Joe: *"start the market stand"*) — 📏 measured and 📝 specced (D851, `specs/market-stand.md`); ⏸️ FIVE CALLS HIS (§9), each with a recommendation; nothing built until he answers.** *(Read "measured on his saves first, then `specs/market-stand.md` and his calls" until D851.)* *(Read "QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC" until 2026-11-22.)* A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
 
 - ✅ **W3, BEER AND THE TAVERN (D821 order, D834 calls) — MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*), PUSHED AT HIS WORD (D850).** *(Was: 🔨 being built on `slice/w3-tavern`, 2026-11-22.)* —
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
@@ -11193,6 +11207,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
     ✅ **His *"Yes, merge them"* (the look and the recommended colours) — MERGED INTO `main` (A183, `ddcd161`), pushed at his *"Push main"* (A184, `origin/main` = `a35d65c`). ▶️ W3
     takes `main`, sets ale and the brewer to `#9a5e14` and the keeper to `#8a2f3e`, and re-imports. Done for the art lane.**
+  - 🎨 **ART LANE — W14'S MARKET STALL** (asked 2026-11-22 by the W14 systems session; ⏸️ **waits on Joe's calls 4 and 5** in
+    `specs/market-stand.md §9` — its size, and whether it is built at all; nothing to paint until he answers): the stall, 2×1
+    recommended, in the market's family but plainly smaller (an awning and a counter, not a hall), and its build-bar icon beside
+    the market's. No new villager state (its keeper is a marketer) and no new good. `market-stand.md §8`.
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
