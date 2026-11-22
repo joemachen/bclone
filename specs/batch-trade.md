@@ -165,6 +165,11 @@ Traced (the order-sensitive details, each with its guard in §6):
    trade nobody is seated at. **So W3's brewer, a shipped trade, needs in the batch path: a `JobKind` and a
    `BuildingKind` value, its rows (job, building, skill, batch), and its place in `KindsInOrder`** — nothing else. Making
    the allocator's order data is Phase 7's (with the rows moving into the data file), and every modded trade's.
+   ✅ **Proved by W3 (D836):** the brewer took exactly that — `JobKind.Brewer`, `BuildingKind.Brewery`, the four rows and its
+   place after the baker — plus one named demand rule (`TavernsSupplied`), and is hired by the village
+   (`BreweryTests.TheVillageHiresABrewerAndBrewsAle`, red with it out of `KindsInOrder`). ⚠️ And one thing the batch path
+   could not do: a firing needs the input and the firewood in ONE store, and no store a batch may use holds both barley and
+   firewood — so the brewery burns none (`tavern.md §5.2`).
    *(As specced:)* **The proof that a trade is now a row:** a test adds a fifth `BatchRow` (and its job and building rows) through
    config alone — no sim code — and watches a villager hired, walk, work, deliver, be described and grow its skill.
    ⚠️ **If the job or building catalogue cannot take a row past the built-ins** (they are C# enums underneath — Phase 7's

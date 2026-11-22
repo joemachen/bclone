@@ -131,8 +131,11 @@ public sealed class TechTreeTests
 
             // ⭐ And barley waits on a forager's find (W7, D824–D825).
             bool found = goods == Goods.Barley;
+
+            // ⭐ And ale waits on the brewery, learned with barley (W3, D834).
+            bool brewed = goods == Goods.Ale;
             _output.WriteLine($"day one: {world.GoodsCatalog.NameOf(goods)} {(world.KnowsOf(goods) ? "known" : "unknown")}");
-            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned && !sewn && !made && !found, world.KnowsOf(goods));
+            Assert.Equal((!forged || goods == Goods.Tools) && !milled && !barned && !sewn && !made && !found && !brewed, world.KnowsOf(goods));
         }
 
         world.IronEverDug = world.Config.SmithyUnlockIron;

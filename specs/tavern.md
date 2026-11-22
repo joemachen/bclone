@@ -1,9 +1,12 @@
 # Spec: Beer and the tavern (W3)
 
-> Status: **🔨 BEING BUILT ON `slice/w3-tavern` (2026-11-22, D834) — EVERY CALL ANSWERED, STEP 1 MEASURED (§8.1, D835).**
+> Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836) — STEPS 1–5; ⏸️ STEP 6 (THE GATE'S POSED GOLDEN, A VILLAGE KEPT
+> BY A TAVERN) AND JOE'S PLAY STILL OWED.** Three goldens moved, each proven by ablation (§7). Two things changed at the build
+> and are his to overrule (§5.2's firewood, §5.3's limit), and the keeper never drinks at their own tavern (§5.4a).
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
 > except for who runs the tavern. B: a tavern keeper"*, and the three follow-ups the keeper raised, *"All as
-> recommended"* (§10.1). Next: §8 step 2, ale and the brewery.
+> recommended"* (§10.1). Built: ale, the brewery, the tavern and its keeper, the evening, the comfort, the find's clause and
+> the cards (D836). Next: §8 step 6 and Joe's play.
 > Phase 6, W3 of the workplan (`systems-complete.md §5.1`): **barley → ale at a brewery (W1's batch row), drunk at a tavern;
 > contentment's first lever (W2, `morale.md`).** W1 and W7 were its prerequisites (D789, D821); both are in `main`.
 >
@@ -99,11 +102,16 @@ tools and clothing — ⚠️ the row's own name for the heading), stored by **w
 and the tavern 32 — the modded buildings sit at 10 and `NextFreeId` and do not move.
 
 ```
-Trade Brewer · Input Barley × N · Output Ale × M · Firing (the oven's, a little firewood a stint — brewing is boiling)
+Trade Brewer · Input Barley × 20 · Output Ale × 10 · no Firing (D836 — see below)
 Verb "brew" · OneOf "a brew" · WalkTo "the brewery" · Working "brewing ale" · StintWord "brew" · FirstBatch "mashing the barley"
 Stop FedFirst | TavernsSupplied · Hands ShortfallOverAYear · QuotaBand AfterStone · StandsDownInFamine true
 ```
 
+- ⚠️ **No firewood (D836, changed at the build — call 6 had said *"a little firewood like the oven"*).** A batch takes its
+  input and its firing from **one** store (D713: one walk, priced), and barley is kept where food is (granary, market,
+  cart) while firewood is not — the only store holding both is the market, which a batch never uses. A copper lit with
+  firewood would never have brewed. ⏸️ Joe's to overrule: firewood back means barley in the warehouse too, or a second
+  walk the stint does not price.
 - **`FedFirst`** — barley is food, so the brewer stands down while the village is short of food (the miller's rule, D522).
 - **`ShortfallOverAYear`** — the tailor's shape: hands for the shortfall over what one brewer brews in a year.
 - **N, M and the ticks are measured before typed** (§8 step 1), to Joe's bar (D666): **one barley farm and one brewery
@@ -111,9 +119,12 @@ Stop FedFirst | TavernsSupplied · Hands ShortfallOverAYear · QuotaBand AfterSt
 
 ### 5.3 `TavernsSupplied` — the brewery's demand rule (new, named)
 
-With no limit set by the player: brew while the stores **and the taverns' own stock** hold less than **a season's
-drinking** for the adults within reach of a standing tavern; **no tavern standing, nothing to brew for** (and the card says so). With a limit set, the limit, as
-every batch trade. One method, read by the stop, the quota and the card — never three copies (D370's lesson).
+Brew while the stores **and the taverns' own stock** hold less than **a season's drinking** for the adults within reach
+of a standing tavern; **no tavern standing, nothing to brew for** (and the card says so). The player's limit is the
+ceiling over it, read first (D62's derived default under the ceiling). ⚠️ *Changed at the build (D836):* the draft read
+the rule only with no limit set, as the tailor's is — but every good ships with a starting limit (D697), so it would never
+have run, and a village with no tavern would have brewed its 50 for nobody. Ale starts at **50** (D697's number); the
+lowlands make 25 and the hills want 25 (D594's half). One method, read by the stop, the quota and the card — never three copies (D370's lesson).
 
 ### 5.4 The tavern and the evening there
 
@@ -125,7 +136,7 @@ tavern's store, never from the warehouse — the keeper is the only way ale reac
 
 - **Their day** (call 3a): while the tavern holds less than `tavern_stock` ale, carry an armful from the **nearest
   reachable store holding ale** (D713's one question) into the tavern — `FetchingAle` → `CarryingAle` → the tavern's store;
-  otherwise `KeepingTheTavern` at the building, a stint the teacher's lesson's length. ⚠️ **A small errand of its own, not
+  otherwise `KeepingTheTavern` at the building, a day, then home (the teacher's lesson's shape). ⚠️ **A small errand of its own, not
   `WorkTheMarket`** — the marketer's loop is cart-shaped (D693, `handcart.md §13.2`) and a tavern has no cart.
 - **Who asks for them** (call 3b): the village wants **one keeper per standing tavern while there is ale to pour**
   (in a store within reach, or in the tavern), the builder's-hut shape of "a want equal to its seats", after the brewer in
@@ -147,7 +158,8 @@ is within **`tavern_reach_tiles`** of an **open** tavern (kept, with ale in it),
 **`tavern_every_days`**, after the household's water (the jar first — a need before a comfort), hunger and cold above it by
 structure. `WalkingToTheTavern` → `AtTheTavern` for `tavern_sit_ticks`, **one ale drunk** (from the tavern's store), then
 home. ⚠️ Shut on the walk there (the keeper stood down, the last ale drunk) — they turn for home, and the card says why.
-Warm while inside, as the school is. The day counted on the villager (`TavernEveningsThisSeason`, cleared at the season's
+Warm while inside, **by the school's own stove** (`HearthSystem`, `ShelterAt`): a fire while a keeper is seated and its
+pile holds wood (`school_winter_firewood`, taken by nobody carrying), a roof otherwise — so the warmth is paid for. The day counted on the villager (`TavernEveningsThisSeason`, cleared at the season's
 read).
 
 - **Within reach** is the home's walk, in the one cost field (§2.6) — not a ring drawn on the map (D120 deleted rings; a
@@ -217,6 +229,14 @@ exactly one cause's slack — the walk, a cold winter, a death in the family —
 5. **The words** — the find's clause, the moment, the log lines, the probe's lines (the brewery and tavern cards, the
    spoilers line learned with the rest), the art lane's request in HANDOFF.
 6. **The gate's golden, the four checks, Joe's play** (a checklist like `morale.md §15`).
+
+**Where it stands (D836):** steps 1–5 built in one commit after step 1's. ✅ Tests: `BreweryTests` (6), `TavernTests` (16), the
+batch, modded, save and limit pins moved with the new rows. ✅ Red-checked: 12 mutants, 14 reds — **one zero written down**: the
+adults-only gate (a child never goes) scored nought, because the fixture's founders are all adults and no child stands at a
+door; and the first evening guard scored nought against the 5-day wait (one drinker, three rests a season), so
+`NobodyGoesAgainInsideTheWait` poses it (6 evenings red, 1 green). ⏸️ **Not built:** step 4's village-level anti-vacuity (a
+posed village W2 empties keeps a person with a tavern) and step 6's posed golden — both the gate's, next. ⚠️ The firewood
+stove of §5.4b is the school's (`school_winter_firewood`); the brewery burns none (§5.2).
 
 ### 8.1 Step 1, measured (D835) — `tools/harness/ZzTavern.cs`
 

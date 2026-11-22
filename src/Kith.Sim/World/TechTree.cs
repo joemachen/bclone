@@ -231,6 +231,20 @@ public static class TechTree
             Id = "barley", Name = "Barley", UnlocksCrop = 2, Condition = TechCondition.ForageGathered,
             Says = "Gather enough from the wild, and a forager comes home with wild barley — a second grain for the fields.",
         },
+        new TechNodeRow
+        {
+            // ⭐ W3 (`tavern.md §5.5`, Joe's call 2A, D834) — learned with barley, at the find itself; the tavern comes with it,
+            // as the bakery comes with the mill. One sentence each: the tree's card is 160 tall (`tech tree:`).
+            Id = "brewery", Name = "The brewery", Unlocks = BuildingKind.Brewery, Condition = TechCondition.ForageGathered,
+            Requires = new[] { "barley" },
+            Says = "Learned with barley: a copper to brew it into ale — and the tavern comes with it.",
+        },
+        new TechNodeRow
+        {
+            Id = "tavern", Name = "The tavern", Unlocks = BuildingKind.Tavern, Condition = TechCondition.ForageGathered,
+            Requires = new[] { "barley" },
+            Says = "Learned with the brewery: a keeper, a hearth, and somewhere to spend an evening over a cup of ale.",
+        },
     };
 
     /// <summary>A node's state, and its progress against what it takes (`tech-tree-map.md §3.2–§3.3`).</summary>

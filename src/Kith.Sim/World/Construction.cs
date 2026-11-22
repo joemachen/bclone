@@ -426,6 +426,18 @@ public enum BuildingKind
     /// withdrawn). <b>Appended at 30.</b>
     /// </summary>
     School = 30,
+
+    /// <summary>
+    /// The brewery (W3, `tavern.md §5.2`, D834) — the brewer's batch of barley into ale, by the oven's firing. Learned with
+    /// barley, at the forager's find (Joe's call 2A). <b>Appended at 31.</b>
+    /// </summary>
+    Brewery = 31,
+
+    /// <summary>
+    /// The tavern (W3, `tavern.md §5.4`, D834) — kept by a tavern keeper, who carries its ale in; open only while kept and
+    /// holding ale; where adults within reach spend an evening, warm inside. Learned with the brewery. <b>Appended at 32.</b>
+    /// </summary>
+    Tavern = 32,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

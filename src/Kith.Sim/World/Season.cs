@@ -387,6 +387,24 @@ public enum VillagerState
     /// dead. At the end of the list, so no state already saved or hashed changes its number.
     /// </summary>
     Left,
+
+    /// <summary>
+    /// Walking to the tavern of an evening (W3, `tavern.md §5.4b`) — an errand offered where a rest at home would begin, as
+    /// the well's is; or a keeper walking to their tavern. At the end of the list, so no state saved or hashed moves.
+    /// </summary>
+    WalkingToTheTavern,
+
+    /// <summary>An evening at the tavern — <c>tavern_sit_ticks</c>, one ale drunk, warm inside — then home (W3).</summary>
+    AtTheTavern,
+
+    /// <summary>A tavern keeper walking to the store that holds ale, empty-handed (W3, `tavern.md §5.4a`, Joe's call 3a).</summary>
+    FetchingAle,
+
+    /// <summary>A tavern keeper carrying an armful of ale from the store to the tavern (W3, call 3a).</summary>
+    CarryingAle,
+
+    /// <summary>A tavern keeper keeping the tavern — the teacher's lesson's shape, a day, then home (W3).</summary>
+    KeepingTheTavern,
 }
 
 /// <summary>

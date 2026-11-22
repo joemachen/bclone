@@ -152,6 +152,11 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.DrawingWater => "drawing water",
         VillagerState.WalkingToTheRiver => "walking to the river for water",
         VillagerState.DrawingAtTheRiver => "drawing water at the river",
+        VillagerState.WalkingToTheTavern => "walking to the tavern",
+        VillagerState.AtTheTavern => "at the tavern",
+        VillagerState.FetchingAle => "fetching ale for the tavern",
+        VillagerState.CarryingAle => "carrying ale to the tavern",
+        VillagerState.KeepingTheTavern => "keeping the tavern",
         VillagerState.WalkingOutToTend => "walking out to tend the field",
         VillagerState.Tending => "tending the field",
         VillagerState.WalkingBackToTheSteading => "walking back to the steading",
@@ -488,6 +493,36 @@ public sealed partial class BehaviorSystem : ISimSystem
                 Travel(world, villager, bank, VillagerState.DrawingAtTheRiver);
                 return;
             }
+
+            case VillagerState.WalkingToTheTavern:
+            {
+                // To the tavern they set off for (W3), fixed at departure. Shut or gone on the way, and a drinker turns for
+                // home; a keeper's own day is asked again.
+                Workplace? tavern = world.TavernAt(new GridPos(villager.ErrandX, villager.ErrandY));
+                bool keeper = tavern is not null && villager.WorkplaceId == tavern.Id;
+                if (tavern is null || (!keeper && !world.TavernIsOpen(tavern)))
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, tavern.Position, keeper ? VillagerState.KeepingTheTavern : VillagerState.AtTheTavern);
+                return;
+            }
+
+            case VillagerState.FetchingAle:
+            case VillagerState.CarryingAle:
+                // The keeper's legs are asked again from where they stand: the store may have emptied, the tavern filled.
+                if (WorkplaceOf(world, villager) is { Kind: JobKind.TavernKeeper, IsSite: false } kept)
+                {
+                    KeepTheTavern(world, villager, kept);
+                    return;
+                }
+
+                GoHome(world, villager);
+                return;
 
             case VillagerState.WalkingOutToTend:
                 // To the tile they set off for (D511), fixed at departure like every field leg.
@@ -2617,6 +2652,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                 return;
             }
 
+            // ⭐ And an evening at the tavern (W3, `tavern.md §5.4b`) — after the water, a need before a comfort.
+            if (TryGoToTheTavern(world, villager))
+            {
+                return;
+            }
+
             villager.State = VillagerState.Resting;
             villager.ActionTicksRemaining = world.Config.RestTicks;
             return;
@@ -3176,6 +3217,14 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (villager.CanWork && job is { Kind: JobKind.Teacher, IsSite: false })
         {
             GoToSchool(world, villager, job, VillagerState.Teaching);
+            return;
+        }
+
+        // ⭐ THE TAVERN KEEPER (W3, `tavern.md §5.4a`; Joe's call 3B, 3a) — carries ale in from the stores while the tavern is
+        // short of its stock, and otherwise keeps it, a day at a time.
+        if (villager.CanWork && job is { Kind: JobKind.TavernKeeper, IsSite: false })
+        {
+            KeepTheTavern(world, villager, job);
             return;
         }
 
@@ -3849,6 +3898,12 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         // ⭐ And a summer farmhand at the steading tends instead, as a spell ends (D511).
         if (TryTend(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ And an evening at the tavern, as a spell begins at home (W3, `tavern.md §5.4b`) — after the water and the tend.
+        if (TryGoToTheTavern(world, villager))
         {
             return;
         }
@@ -5691,6 +5746,14 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ THE TAVERN (W3): an evening begun, or the keeper's legs — at the store, the armful taken; at the tavern, put in.
+        if (onArrival is VillagerState.AtTheTavern or VillagerState.FetchingAle or VillagerState.CarryingAle
+            or VillagerState.KeepingTheTavern)
+        {
+            ArriveAtTheTavernsErrand(world, villager, onArrival);
+            return;
+        }
+
         if (onArrival == VillagerState.WorkingABatch)
         {
             BeginBatches(world, villager);
@@ -5955,6 +6018,168 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         villager.State = VillagerState.WalkingToSchool;
         Travel(world, villager, school.Position, lesson);
+    }
+
+    /// <summary>
+    /// ⭐ THE TAVERN KEEPER'S DAY (W3, `tavern.md §5.4a`; Joe's calls 3B and 3a): an armful of ale in hand goes into the
+    /// tavern; a tavern short of <c>tavern_stock</c> with ale in a store sends them for it; otherwise they keep the tavern.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ A small errand of its own, not the marketer's loop, which is cart-shaped (D693) — a tavern has no cart. An armful
+    /// broken off on the way home stays in their arms (ale is not food, `UnloadAtHome`) and is taken back to a store.
+    /// </remarks>
+    private static void KeepTheTavern(SimWorld world, Villager villager, Workplace tavern)
+    {
+        if (villager.Carried[Goods.Ale] > 0)
+        {
+            if (villager.Tile == tavern.Tile)
+            {
+                PutTheAleIn(world, villager, tavern);
+            }
+            else
+            {
+                villager.State = VillagerState.CarryingAle;
+                Travel(world, villager, tavern.Position, VillagerState.CarryingAle);
+                return;
+            }
+        }
+
+        if (!villager.IsCarrying && world.TavernWantsAle(tavern) && world.StoreHoldingAle(tavern.Tile) is StoreBuilding store)
+        {
+            villager.ErrandX = store.Tile.X;
+            villager.ErrandY = store.Tile.Y;
+            villager.State = VillagerState.FetchingAle;
+            Travel(world, villager, store.Position, VillagerState.FetchingAle);
+            return;
+        }
+
+        if (villager.Tile == tavern.Tile)
+        {
+            villager.State = VillagerState.KeepingTheTavern;
+            villager.ActionTicksRemaining = world.Config.TicksPerDay;
+            return;
+        }
+
+        villager.ErrandX = tavern.Tile.X;
+        villager.ErrandY = tavern.Tile.Y;
+        villager.State = VillagerState.WalkingToTheTavern;
+        Travel(world, villager, tavern.Position, VillagerState.KeepingTheTavern);
+    }
+
+    /// <summary>The keeper's armful into the tavern's own store — never the household's larder (the D513 trap).</summary>
+    private static void PutTheAleIn(SimWorld world, Villager villager, Workplace tavern)
+    {
+        int held = villager.Carried[Goods.Ale];
+        tavern.Store.Add(Goods.Ale, held);
+        villager.Carried.TryTake(Goods.Ale, held);
+        if (world.Logs(LogLevel.Debug))
+        {
+            world.Log(LogLevel.Debug, "tavern", $"{villager.Name} carried {held} ale into {tavern.Name}.");
+        }
+    }
+
+    /// <summary>
+    /// ⭐ AN EVENING AT THE TAVERN (W3, `tavern.md §5.4b`) — offered where a rest at home would begin, after the water and the
+    /// tend: a working-age adult at their door, empty-handed, whose home is within reach of an open tavern, and who has not
+    /// been for <c>tavern_every_days</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ An errand, never a rest: the walk home after it is the ordinary <see cref="GoHome"/> (HANDOFF's D513 trap). Never
+    /// instead of work — it is asked only where the day's work has already said "home".
+    /// </remarks>
+    private static bool TryGoToTheTavern(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying || villager.State == VillagerState.Left)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        if (!household.HasHome || villager.Tile != world.HomePlaceOf(villager))
+        {
+            return false;
+        }
+
+        if (villager.LastTavernDay > 0 && world.Today - villager.LastTavernDay < world.Config.TavernEveryDays)
+        {
+            return false;
+        }
+
+        // ⛔ Never their own tavern: a keeper's tavern is their work, not their evening out (`tavern.md §5.4a`).
+        if (world.TavernWithinReachOf(villager) is not Workplace tavern || !world.TavernIsOpen(tavern)
+            || tavern.Id == villager.WorkplaceId)
+        {
+            return false;
+        }
+
+        villager.ActionTicksRemaining = 0;
+        villager.ErrandX = tavern.Tile.X;
+        villager.ErrandY = tavern.Tile.Y;
+        villager.State = VillagerState.WalkingToTheTavern;
+        Travel(world, villager, tavern.Position, VillagerState.AtTheTavern);
+        return true;
+    }
+
+    /// <summary>Arrived on a tavern's errand (W3): a drinker sits down to a cup; the keeper takes an armful or puts it in.</summary>
+    private static void ArriveAtTheTavernsErrand(SimWorld world, Villager villager, VillagerState onArrival)
+    {
+        switch (onArrival)
+        {
+            case VillagerState.AtTheTavern:
+            {
+                Workplace? tavern = world.TavernAt(new GridPos(villager.ErrandX, villager.ErrandY));
+                if (tavern is null || !world.TavernIsOpen(tavern))
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    GoHome(world, villager);
+                    return;
+                }
+
+                tavern.Store.TryTake(Goods.Ale, 1);
+                tavern.EveningsThisSeason++;
+                villager.LastTavernDay = world.Today;
+                villager.TavernEveningsThisSeason++;
+                villager.State = VillagerState.AtTheTavern;
+                villager.ActionTicksRemaining = world.Config.TavernSitTicks;
+                return;
+            }
+
+            case VillagerState.FetchingAle:
+            {
+                StoreBuilding? store = world.StoreAt(new GridPos(villager.ErrandX, villager.ErrandY));
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                if (store is not null && WorkplaceOf(world, villager) is { Kind: JobKind.TavernKeeper, IsSite: false } tavern)
+                {
+                    int room = world.Config.TavernStock - tavern.Store[Goods.Ale];
+                    int take = Math.Min(Math.Min(room, world.Config.CarryCapacity), store.Store[Goods.Ale]);
+                    if (take > 0 && store.Store.TryTake(Goods.Ale, take))
+                    {
+                        villager.Carried.Add(Goods.Ale, take);
+                    }
+
+                    KeepTheTavern(world, villager, tavern);
+                    return;
+                }
+
+                GoHome(world, villager);
+                return;
+            }
+
+            case VillagerState.CarryingAle:
+            case VillagerState.KeepingTheTavern:
+                if (WorkplaceOf(world, villager) is { Kind: JobKind.TavernKeeper, IsSite: false } kept)
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    KeepTheTavern(world, villager, kept);
+                    return;
+                }
+
+                GoHome(world, villager);
+                return;
+        }
     }
 
     /// <summary>A lesson at the school (D754) — a pupil's or a teacher's, <c>school_lesson_ticks</c> long.</summary>
@@ -7591,6 +7816,26 @@ public sealed partial class BehaviorSystem : ISimSystem
             // A lesson is a day's (D754): then home, as the smith goes home after a stint.
             case VillagerState.AtSchool:
             case VillagerState.Teaching:
+                villager.State = VillagerState.TravelingHome;
+                return;
+
+            // ⭐ An evening spent (W3): home, the ordinary way — `GoHome`, never a rest at the tavern (HANDOFF's D513 trap: a
+            // rest begun away from home unloads there and counts as work).
+            case VillagerState.AtTheTavern:
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
+                return;
+
+            // The keeper's day kept: asked again — the ale may want fetching; otherwise home, as the teacher goes.
+            case VillagerState.KeepingTheTavern:
+                if (WorkplaceOf(world, villager) is { Kind: JobKind.TavernKeeper, IsSite: false } keeping
+                    && world.TavernWantsAle(keeping) && world.StoreHoldingAle(keeping.Tile) is not null && !villager.IsCarrying)
+                {
+                    KeepTheTavern(world, villager, keeping);
+                    return;
+                }
+
                 villager.State = VillagerState.TravelingHome;
                 return;
 

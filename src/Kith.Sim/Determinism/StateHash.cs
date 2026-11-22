@@ -1434,6 +1434,12 @@ public static class StateHash
         hash = MixSparse(hash, 18u, villager.ContentmentCauses);
         hash = MixSparse(hash, 19u, villager.SeasonsUnsettled);
 
+        // ⭐ THE TAVERN (W3, D834): the last evening and this season's count, sparse and tagged — a village with no tavern
+        // hashes as it did before there was one.
+        hash = MixSparse(hash, 21u, villager.LastTavernDay);
+        hash = MixSparse(hash, 22u, villager.TavernEveningsThisSeason);
+        hash = MixSparse(hash, 23u, villager.ContentmentComforts);
+
         // Gone from the valley (W2 step 5): sparse, so a village nobody has left hashes as it did. The state is mixed above.
         if (villager.LeftAtTick is ulong left)
         {

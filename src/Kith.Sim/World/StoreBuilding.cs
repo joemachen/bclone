@@ -959,4 +959,11 @@ public enum Goods
     /// <i>grain</i>, not a second food group: wheat's chain (the mill, bread) stays wheat's (call 5).
     /// </remarks>
     Barley = 16,
+
+    /// <summary>
+    /// ⭐ <b>Ale</b> — brewed from barley at a brewery and drunk at a tavern (W3, `specs/tavern.md`, D834). Nobody eats it: a
+    /// good, not a food, so it never counts toward a meal, the floor or the birth gate.
+    /// </summary>
+    /// <remarks>Appended at 17, never renumbered; a save from before it opens with none held anywhere (D827).</remarks>
+    Ale = 17,
 }

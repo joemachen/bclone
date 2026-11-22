@@ -78,7 +78,8 @@ public sealed class PhaseFiveGoldenTests
     // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 11880347252707744900.
     // RE-TAKEN (D804), BOTH — contentment is hashed AND an unsettled couple waits twice the interval (W2 step 4): this posed village has unsettled parents, so a child comes later. ⭐ PROVEN BY ABLATION: with the fields unmixed it still moves (18337630040874823943 — the births changed), and with the wait off as well the old value passes. Was 8844724117288582951.
     // RE-TAKEN (D825) — barley is learned (the gate), the shipped config carries barley's limit, and the neighbours trade it as they do wheat — the lowlands grow 500, the hills and the grazing country want 500 (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate out of reach and the limit out, the value still moves; with the neighbours' barley taken out as well, the old value passes. Was 445368129225179064.
-    private const ulong PhaseFiveGoldenHash = 7531960130798403897UL;
+    // RE-TAKEN (D836) — ale's starting limit (50, hashed) and the neighbours trade it — the lowlands brew 25, the hills want 25 (W3, `tavern.md §5.3`). ⭐ PROVEN BY ABLATION: with the limit out and the neighbours' ale in, the value still moves (15036542233002265202); with the neighbours' ale out as well, the old value passes. The rest of W3 moves nothing here: the whole tree reads the same as the slice's step 2 alone. Was 7531960130798403897.
+    private const ulong PhaseFiveGoldenHash = 17547705163985531949UL;
 
     // Was 6069163189267979265 before D661; 9357705984530611765 before D678 (the neighbour's handcarts, as above).
     // Was 16129168920486327744 before D697 (the two starting limits, as above); 9909556109334633121 before D711 (hay's limit, as above).
@@ -91,7 +92,8 @@ public sealed class PhaseFiveGoldenTests
     // RE-TAKEN (D782), with its golden above, for the same reason and the same ablation: D781's water rule put back, the old value passes. Was 13179634247122399127.
     // RE-TAKEN (D804), BOTH — contentment is hashed AND an unsettled couple waits twice the interval (W2 step 4): this posed village has unsettled parents, so a child comes later. ⭐ PROVEN BY ABLATION: with the fields unmixed it still moves (18337630040874823943 — the births changed), and with the wait off as well the old value passes. Was 6070121895935123193.
     // RE-TAKEN (D825) — barley is learned (the gate), the shipped config carries barley's limit, and the neighbours trade it as they do wheat — the lowlands grow 500, the hills and the grazing country want 500 (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate out of reach and the limit out, the value still moves; with the neighbours' barley taken out as well, the old value passes. Was 15333510983062186004.
-    private const ulong PhaseFiveBeforeAnybodyGotBetter = 7492117756545715779UL;
+    // RE-TAKEN (D836), with its golden above, for the same reasons and the same ablation (with the limit out alone, 6964392450488988208). Was 7492117756545715779.
+    private const ulong PhaseFiveBeforeAnybodyGotBetter = 15668389185294869277UL;
 
     // One run for both facts: twenty posed years are the dearest thing in this file, and determinism makes sharing them safe.
     private static readonly Lazy<(ulong Hash, ulong WithoutSkills, Coverage Seen)> Run = new(PoseAndStep);

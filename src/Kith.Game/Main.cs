@@ -2356,6 +2356,8 @@ public partial class Main : Control
     private Button? _tailorButton;
     private Button? _workshopButton;
     private Button? _schoolButton;
+    private Button? _breweryButton;
+    private Button? _tavernButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2524,6 +2526,10 @@ public partial class Main : Control
         // The school, learned once a library stands (D755, `school-and-education.md §12.1`) — paid for, lit until the first is marked.
         RefreshALearnedButton(world, BuildingKind.School, JobKind.Teacher, _schoolButton, ref _schoolKnown, ref _schoolTried);
 
+        // ⭐ The brewery and the tavern, learned with barley at the forager's find (W3, Joe's call 2A, D834) — lit until marked.
+        RefreshALearnedButton(world, BuildingKind.Brewery, JobKind.Brewer, _breweryButton, ref _breweryKnown, ref _breweryTried);
+        RefreshALearnedButton(world, BuildingKind.Tavern, JobKind.TavernKeeper, _tavernButton, ref _tavernKnown, ref _tavernTried);
+
         // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
@@ -2586,6 +2592,10 @@ public partial class Main : Control
     private bool _barleyKnown;
     private bool _schoolKnown;
     private bool _schoolTried;
+    private bool _breweryKnown;
+    private bool _breweryTried;
+    private bool _tavernKnown;
+    private bool _tavernTried;
     private bool _bridgeKnown;
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
@@ -4162,6 +4172,8 @@ public partial class Main : Control
         JobKind.Baker => "flour is baked into bread here",
         JobKind.Tailor => "leather is sewn into coats here",
         JobKind.Carpenter => "logs are made into handcarts here",
+        JobKind.Brewer => "barley is brewed into ale here",
+        JobKind.TavernKeeper => "the village spends an evening here over a cup of ale",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -8126,6 +8138,14 @@ public partial class Main : Control
             {
                 _schoolButton = button;
             }
+            else if (kind == BuildingKind.Brewery)
+            {
+                _breweryButton = button;
+            }
+            else if (kind == BuildingKind.Tavern)
+            {
+                _tavernButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -8333,6 +8353,9 @@ public partial class Main : Control
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge
                 or BuildingKind.Mill or BuildingKind.Bakery or BuildingKind.Barn => BuildCategory.Food,
 
+            // ⭐ The brewery beside the mill and the oven (W3): barley in, ale out — a food chain's workshop.
+            BuildingKind.Brewery => BuildCategory.Food,
+
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
                 or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
 
@@ -8353,6 +8376,9 @@ public partial class Main : Control
             // The hall is not a knowledge building with extras, and putting it under Knowledge
             // would say the opposite of what D251 settled.
             BuildingKind.TownHall => BuildCategory.Civic,
+
+            // ⭐ The tavern with the hall (W3): where the village spends an evening — a civic building, not a trade's.
+            BuildingKind.Tavern => BuildCategory.Civic,
 
             // ⭐ The well sits with the homes (D427): it is where a neighbourhood gathers, placed
             // beside the paint the houses go into — not a store, not a trade.
@@ -8485,6 +8511,10 @@ public partial class Main : Control
 
         // ⛔ The school's arm (D755): without it `_ => true` offers a school at the founding — the workshop's lesson again.
         BuildingKind.School => _schoolKnown,
+
+        // ⛔ The brewery's and the tavern's arms (W3) — without them `_ => true` offers both at the founding.
+        BuildingKind.Brewery => _breweryKnown,
+        BuildingKind.Tavern => _tavernKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

@@ -195,7 +195,7 @@ nothing**, so the marker and the panel cannot disagree.
 | **Departure** | ⛔ **Nothing in the game removes a living villager.** The dead stay in `Villagers` with `Alive` false and a `CauseOfDeath`. Leaving is the one genuinely new mechanism: a fate beside death (alive, gone), a walk to the map's edge — **the nomads' walk-in reversed** (D573) — and the household's house, goods and seats let go |
 | **Arrivals / nomads** | ✅ Built, played and merged (D563–D584) — **the valve has its other end** (§10's old call 2, answered) |
 | **The cemetery** | ⛔ W4 (D395). Its two causes ride with it (§4.1) |
-| **The tavern, ale** | 🔨 W3, on `slice/w3-tavern` (D834, `tavern.md`). Contentment's first lever — a comfort, not a cause |
+| **The tavern, ale** | ✅ W3, built on `slice/w3-tavern` (D836, `tavern.md`) — `contentment_comforts`, an evening easing one held cause. Contentment's first lever — a comfort, not a cause |
 | **The town hall** | ✅ Slice 1 (the gift). The distribution view (§3.1) is W13, the hall's tabs |
 
 ---

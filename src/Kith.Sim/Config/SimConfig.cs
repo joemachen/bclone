@@ -1683,6 +1683,90 @@ public sealed record SimConfig
     public int BakeryCapacity { get; init; } = 2;
 
     // ---------------------------------------------------------------
+    //  BEER AND THE TAVERN (W3, `specs/tavern.md`, D834–D835)
+    // ---------------------------------------------------------------
+    // ⭐ Measured before typed (D835, `tools/harness/ZzTavern.cs` on Joe's saves, `tavern.md §8.1`). ⚠️ Joe's to tune in play.
+
+    /// <summary>Barley one brew takes — the mill's batch of twenty in (`tavern.md §8.1`).</summary>
+    [JsonPropertyName("barley_per_brew")]
+    public int BarleyPerBrew { get; init; } = 20;
+
+    /// <summary>Ale one brew makes — half its barley: brewing boils away (D835).</summary>
+    /// <remarks>
+    /// Sized to Joe's D666 bar: ten adults drink about 120 a year (three evenings a season each), 240 barley at 20 → 10 —
+    /// an eighth of one farm's ~2,000. A stint of four brews makes 40.
+    /// </remarks>
+    [JsonPropertyName("ale_per_brew")]
+    public int AlePerBrew { get; init; } = 10;
+
+    /// <summary>Ticks one brew takes at the brewery — a day, the mill's grind.</summary>
+    [JsonPropertyName("brew_ticks")]
+    public int BrewTicks { get; init; } = 4;
+
+    /// <summary>Brews a brewer makes before walking home — the stint.</summary>
+    [JsonPropertyName("brews_per_stint")]
+    public int BrewsPerStint { get; init; } = 4;
+
+    /// <summary>Logs a brewery takes to raise — the bakery's.</summary>
+    [JsonPropertyName("brewery_logs")]
+    public int BreweryLogs { get; init; } = 25;
+
+    /// <summary>Stone in a brewery — the copper's hearth, less than an oven's.</summary>
+    [JsonPropertyName("brewery_stone")]
+    public int BreweryStone { get; init; } = 12;
+
+    /// <summary>Ticks of a builder's work a brewery takes.</summary>
+    [JsonPropertyName("brewery_work_ticks")]
+    public int BreweryWorkTicks { get; init; } = 40;
+
+    /// <summary>How many brewers a brewery seats.</summary>
+    [JsonPropertyName("brewery_capacity")]
+    public int BreweryCapacity { get; init; } = 2;
+
+    /// <summary>Logs a tavern takes to raise — a home's room and a hall's beams.</summary>
+    [JsonPropertyName("tavern_logs")]
+    public int TavernLogs { get; init; } = 30;
+
+    /// <summary>Stone in a tavern — its hearth.</summary>
+    [JsonPropertyName("tavern_stone")]
+    public int TavernStone { get; init; } = 12;
+
+    /// <summary>Ticks of a builder's work a tavern takes.</summary>
+    [JsonPropertyName("tavern_work_ticks")]
+    public int TavernWorkTicks { get; init; } = 40;
+
+    /// <summary>How many keepers a tavern seats — one (Joe's call 3c, D834).</summary>
+    [JsonPropertyName("tavern_capacity")]
+    public int TavernCapacity { get; init; } = 1;
+
+    /// <summary>
+    /// How far a home may be from a tavern, in tiles of the one cost field, for its adults to go of an evening (W3,
+    /// `tavern.md §5.4b`). The walk, never a ring on the map (D120).
+    /// </summary>
+    /// <remarks>
+    /// Measured (D835): 89 % of Joe's adults live within 12 tiles of the home a tavern would stand beside, 76 % within 8,
+    /// 95 % within 16 — and 12 is half the walk to work the village already calls far (D800's 24). ⚠️ Joe's to tune.
+    /// </remarks>
+    [JsonPropertyName("tavern_reach_tiles")]
+    public int TavernReachTiles { get; init; } = 12;
+
+    /// <summary>Days an adult waits after an evening at the tavern before the next is offered.</summary>
+    /// <remarks>
+    /// Measured (D835): a rest spell begins at home about every two days (0.51 a working adult-day), so 5 is about three
+    /// evenings a season. ⚠️ Joe's to tune.
+    /// </remarks>
+    [JsonPropertyName("tavern_every_days")]
+    public int TavernEveryDays { get; init; } = 5;
+
+    /// <summary>Ticks an evening at the tavern lasts — half a day, a rest spell less one tick.</summary>
+    [JsonPropertyName("tavern_sit_ticks")]
+    public int TavernSitTicks { get; init; } = 2;
+
+    /// <summary>Ale a keeper keeps in the tavern before the carrying stops — two brews, a fortnight of evenings for ten.</summary>
+    [JsonPropertyName("tavern_stock")]
+    public int TavernStock { get; init; } = 20;
+
+    // ---------------------------------------------------------------
     //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
     // ---------------------------------------------------------------
     // ⚠️ PROVISIONAL, EVERY ONE, AND SAID SO: the rows need a price to exist, and nothing can raise either building
@@ -1856,6 +1940,9 @@ public sealed record SimConfig
                 new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Barley, 500), new MaterialCost(World.Goods.Flour, 100),
                 new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Fish, 125),
                 new MaterialCost(World.Goods.Firewood, 200),
+
+                // ⭐ Ale (W3, D834 call 6): the hills want what the lowlands brew — half its starting limit of 50 (D594's size).
+                new MaterialCost(World.Goods.Ale, 25),
             },
         },
 
@@ -1869,6 +1956,9 @@ public sealed record SimConfig
                 new MaterialCost(World.Goods.Produce, 1000), new MaterialCost(World.Goods.Fish, 125),
                 new MaterialCost(World.Goods.Wheat, 500), new MaterialCost(World.Goods.Barley, 500), new MaterialCost(World.Goods.Flour, 100),
                 new MaterialCost(World.Goods.Bread, 500), new MaterialCost(World.Goods.Firewood, 200),
+
+                // ⭐ Ale (W3, D834 call 6), brewed from their barley — half its starting limit of 50 (D594's size).
+                new MaterialCost(World.Goods.Ale, 25),
             },
             Wants = new[]
             {
@@ -3139,6 +3229,16 @@ public sealed record SimConfig
     };
 
     /// <summary>
+    /// ⭐ The comforts (W3, `tavern.md §6`; Joe's call 1A, D834) — each takes its <c>eases</c> off the causes held at the season's
+    /// read, never below nought. Shipped: an evening at the tavern in the season eases one cause. An empty list: no comforts.
+    /// </summary>
+    [JsonPropertyName("contentment_comforts")]
+    public IReadOnlyList<ContentmentComfortRow> ContentmentComforts { get; init; } = new[]
+    {
+        new ContentmentComfortRow { Comfort = ContentmentComfort.TavernEvening, At = 1, Eases = 1 },
+    };
+
+    /// <summary>
     /// The weight of causes held at once that makes a villager unsettled at a season's turn — <b>2</b>, two causes at once
     /// (Joe, D800 call 1: one cause took a fifth of every village; two takes 4 of his 120 adults in ten years).
     /// </summary>
@@ -3753,6 +3853,19 @@ public sealed record SimConfig
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
         },
+
+        // ⭐ ALE (W3, `tavern.md §5.1`, D834) — brewed from barley, drunk at a tavern. ⛔ NOT FOOD: no nutrition, so it never
+        // counts toward a meal, the floor or the birth gate. Stored where flour is — the warehouse, beside the copper's
+        // firewood — and never the market's counter: nobody takes it home; the keeper carries it to the tavern.
+        new GoodRow
+        {
+            Id = (int)World.Goods.Ale,
+            Category = World.GoodCategory.FuelAndGoods,
+            Name = "ale",
+            TradeWorth = 2,
+            SourceName = "the brewery",
+            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart },
+        },
     };
 
     /// <summary>
@@ -4027,6 +4140,29 @@ public sealed record SimConfig
             WorksAt = BuildingKind.School,
         },
 
+        // ⭐ BEER AND THE TAVERN (W3, `tavern.md §5.2`, `§5.4a`, D834). The brewer is the miller's shape, one grain over; the
+        // keeper the teacher's — no skill (nothing they do gets faster), no tool, nothing made.
+        new JobRow
+        {
+            Id = (int)JobKind.Brewer,
+            Name = "brewer",
+            Plural = "brewers",
+            Doing = "brewing ale",
+            WorksAt = BuildingKind.Brewery,
+
+            // A met ale limit lets the copper go cold (D139).
+            LimitedBy = World.Goods.Ale,
+            UsesTool = true,
+        },
+        new JobRow
+        {
+            Id = (int)JobKind.TavernKeeper,
+            Name = "tavern keeper",
+            Plural = "tavern keepers",
+            Doing = "keeping the tavern",
+            WorksAt = BuildingKind.Tavern,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
         // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
         new JobRow
@@ -4118,7 +4254,7 @@ public sealed record SimConfig
     public IReadOnlyList<BatchRow> BatchRows => BatchTrades ?? DefaultBatchRows();
 
     /// <summary>
-    /// The built-in four, in hiring order — which, inside a <see cref="QuotaBand"/>, is the order the quota takes them.
+    /// The built-in five, in hiring order — which, inside a <see cref="QuotaBand"/>, is the order the quota takes them.
     /// </summary>
     private IReadOnlyList<BatchRow> DefaultBatchRows() => new[]
     {
@@ -4157,6 +4293,21 @@ public sealed record SimConfig
             PerStint = BakesPerStint, Verb = "bake", OneOf = "a bake", WalkTo = "the bakery", Working = "baking bread",
             StintWord = "batch", FirstBatch = "lighting the oven",
             Stop = BatchStop.None, Hands = BatchHands.EverySeatWithWork, QuotaBand = QuotaBand.AfterStone,
+        },
+
+        // ⭐ THE BREWER (W3, `tavern.md §5.2`, D834) — the fifth row, the mill's grain. ⛔ NO FIRING (D836): a batch takes its
+        // input and its firewood from ONE store (D713's one walk), and barley is kept where food is (granary, market, cart)
+        // while firewood is not — no store a batch may use holds both, so a copper lit with firewood would never brew. ⛔ FedFirst:
+        // barley is food, so the copper is cold while the village is short of it (the miller's rule, D522), and the brewer
+        // stands down in famine (the tailor's). Brews toward the taverns' season of drinking (`TavernsSupplied`).
+        new BatchRow
+        {
+            Trade = JobKind.Brewer, Input = World.Goods.Barley, InputPerBatch = BarleyPerBrew,
+            Output = World.Goods.Ale, OutputPerBatch = AlePerBrew, Ticks = BrewTicks,
+            PerStint = BrewsPerStint, Verb = "brew", OneOf = "a brew", WalkTo = "the brewery", Working = "brewing ale",
+            StintWord = "brew", FirstBatch = "mashing the barley",
+            Stop = BatchStop.FedFirst | BatchStop.TavernsSupplied, Hands = BatchHands.ShortfallOverAYear,
+            QuotaBand = QuotaBand.AfterStone, StandsDownInFamine = true,
         },
     };
 
@@ -4653,6 +4804,38 @@ public sealed record SimConfig
             ExtentHeight = 2,
         },
 
+        // ⭐ BEER AND THE TAVERN (W3, `tavern.md §5.2`, `§5.4`, D834) — learned together with barley, at the forager's find
+        // (Joe's call 2A). The brewery is the bakery's size and order of cost; the tavern a hall's two by two with one
+        // keeper's seat. ⏳ Their costs typed, not measured — the bakery's and the school's, beside them.
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Brewery,
+            Name = "brewery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, BreweryLogs),
+                new MaterialCost(World.Goods.Stone, BreweryStone),
+            },
+            WorkTicks = BreweryWorkTicks,
+            Seats = BreweryCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.Tavern,
+            Name = "tavern",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, TavernLogs),
+                new MaterialCost(World.Goods.Stone, TavernStone),
+            },
+            WorkTicks = TavernWorkTicks,
+            Seats = TavernCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 2,
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
         // call 1). The barn is the market's shape: a store and a workplace in one building (Joe, D588: one barn).
         new BuildingRow
@@ -4873,6 +5056,15 @@ public sealed record SimConfig
             YearsPhrase = "as a carpenter",
             MasteryLine = "{0} has made the village's carts for {1} years. "
                 + "A wheel is true before it is fitted.",
+        },
+        new SkillRow
+        {
+            Id = 11,
+            Name = "brewing",
+            GrownBy = JobKind.Brewer,
+            YearsPhrase = "as a brewer",
+            MasteryLine = "{0} has brewed the village's ale for {1} years. "
+                + "The mash is judged by its smell.",
         },
 
         // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
@@ -6131,6 +6323,17 @@ public sealed record SimConfig
                 $"seek_shelter_percent must be between 0 and 100 (got {SeekShelterPercent}).");
         }
 
+        var comforts = new HashSet<ContentmentComfort>();
+        foreach (ContentmentComfortRow row in ContentmentComforts)
+        {
+            if (!Enum.IsDefined(row.Comfort) || !comforts.Add(row.Comfort) || row.Eases <= 0 || row.At <= 0)
+            {
+                throw new SimConfigException(
+                    $"contentment_comforts: each row names a comfort once, with an at and an eases above nought (got {row.Comfort}, "
+                    + $"at {row.At}, eases {row.Eases}).");
+            }
+        }
+
         if (ContentmentUnsettledAt <= 0)
         {
             throw new SimConfigException(
@@ -6564,6 +6767,11 @@ public sealed record SimConfig
             ("trade_boat_sail_days", TradeBoatSailDays), ("trade_boat_dock_days", TradeBoatDockDays),
             ("trade_boat_hold", TradeBoatHold), ("trade_boat_gap_years_floor", TradeBoatGapYearsFloor),
             ("pasture_fence_logs_per_edge", PastureFenceLogsPerEdge), ("pasture_fence_work_ticks_per_edge", PastureFenceWorkTicksPerEdge),
+            ("barley_per_brew", BarleyPerBrew), ("ale_per_brew", AlePerBrew), ("brew_ticks", BrewTicks),
+            ("brews_per_stint", BrewsPerStint), ("brewery_logs", BreweryLogs), ("brewery_work_ticks", BreweryWorkTicks),
+            ("brewery_capacity", BreweryCapacity), ("tavern_logs", TavernLogs), ("tavern_work_ticks", TavernWorkTicks),
+            ("tavern_capacity", TavernCapacity), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
+            ("tavern_sit_ticks", TavernSitTicks), ("tavern_stock", TavernStock),
         })
         {
             if (value < 1)
@@ -7402,11 +7610,11 @@ public sealed record SimConfig
             }
 
             if (row.Hands == BatchHands.ShortfallOverAYear
-                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted)) == 0)
+                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted | BatchStop.TavernsSupplied)) == 0)
             {
                 throw new SimConfigException(
-                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed or "
-                    + "EveryHouseholdCarted) — there would be nothing to divide.");
+                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed, "
+                    + "EveryHouseholdCarted or TavernsSupplied) — there would be nothing to divide.");
             }
 
             if (string.IsNullOrWhiteSpace(row.Verb) || string.IsNullOrWhiteSpace(row.OneOf)

@@ -271,8 +271,13 @@ public sealed class BarleyTests
         int goods = world.GoodsCatalog.Count;
 
         JsonObject document = SaveGame.Capture(loop, "test", "2026-11-21 12:00", "test");
+
+        // ⚠️ Cut back past ale first (D836): the last good is ale now, and a save "from before barley" lacks both. Cutting one
+        // good went on posing a save from before ALE, and the barley filter's claim went red for a reason that was not barley's.
+        int cutAle = CutBackAGood(document["world"], goods);
+        goods--;
         int cut = CutBackAGood(document["world"], goods);
-        _output.WriteLine($"{cut} lists cut back from {goods} goods to {goods - 1}");
+        _output.WriteLine($"{cutAle} lists cut back past ale, then {cut} from {goods} goods to {goods - 1}");
         Assert.True(cut > 10, $"Only {cut} lists were cut: the pose is not a save from before barley.");
 
         SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), world.Config, null);
@@ -468,7 +473,7 @@ public sealed class BarleyTests
 
     /// <summary>
     /// §11.4 (Joe, 2026-11-21): the find's sentence follows what the village has — no farm, and it says to build one; a
-    /// farm, and it names it; and it promises no beer before the brewery exists.
+    /// farm, and it names it; and — since W3 (D834, Joe's call 2A: the brewery learned with the find) — it says the brewery.
     /// </summary>
     [Fact]
     public void TheFindSaysBuildAFarmOnlyWhereThereIsNone()
@@ -483,7 +488,7 @@ public sealed class BarleyTests
         _output.WriteLine(none.Body);
         Assert.Contains("build a farm", none.Body, StringComparison.Ordinal);
         Assert.Contains("excited", none.Body, StringComparison.Ordinal);
-        Assert.DoesNotContain("beer", none.Body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("build a brewery to make ale", none.Body, StringComparison.Ordinal);
 
         SimWorld farmed = Loop(config).World;
         Workplace farm = FarmFixtures.RaiseAFarm(farmed);
@@ -494,7 +499,7 @@ public sealed class BarleyTests
         Assert.DoesNotContain("build a farm", one.Body, StringComparison.Ordinal);
         Assert.Contains($"sown at {farm.Name}", one.Body, StringComparison.Ordinal);
         Assert.Contains("excited", one.Body, StringComparison.Ordinal);
-        Assert.DoesNotContain("beer", one.Body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("a tavern to drink it in", one.Body, StringComparison.Ordinal);
     }
 
     /// <summary>

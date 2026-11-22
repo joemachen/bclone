@@ -70,6 +70,9 @@ public sealed class StartingStockLimitsTests
             // (`ClothingWanted`, `HandcartsWanted`); 50 is the ceiling over them.
             [Goods.Clothing] = 50,
             [Goods.Handcart] = 50,
+
+            // ⭐ Ale at D697's 50 (W3, D836): a ceiling on what is held, never on what is drunk.
+            [Goods.Ale] = 50,
         };
 
         for (int id = 0; id < world.GoodsCatalog.Count; id++)

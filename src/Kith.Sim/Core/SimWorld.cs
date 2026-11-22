@@ -2147,7 +2147,8 @@ public sealed partial class SimWorld : IObstacles
         for (int i = 0; i < Villagers.Count; i++)
         {
             Villager villager = Villagers[i];
-            if (villager.Alive && villager.State is VillagerState.HaulingToStore or VillagerState.HaulingToFarm)
+            if (villager.Alive && villager.State is VillagerState.HaulingToStore or VillagerState.HaulingToFarm
+                or VillagerState.CarryingAle)
             {
                 held += villager.Carried[goods];
             }
@@ -4094,6 +4095,12 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ THE MINE WAITS ON THE SMITH'S FIRST IRON TOOL (Joe, D449; `iron-mine.md §3.4`).
         // ⭐ THE MILL AND THE BAKERY ARE LEARNED TOGETHER, ON REAPED WHEAT (Joe, D523: *"the mill and bakery
         // should unlock together. it doesnt make sense to mill something … and then unlock the bakery"*).
+        // ⭐ THE BREWERY AND THE TAVERN ARE LEARNED WITH BARLEY, AT THE FORAGER'S FIND (W3, Joe's call 2A, D834) — the latch,
+        // never the counter, as the workshop's: it is what is hashed.
+        BuildingKind.Brewery or BuildingKind.Tavern when !BarleyLearned =>
+            "Nobody here brews yet — it comes with barley, once the foragers find it growing wild "
+            + $"({FoodEverProducedOf(Goods.Produce)} of the {Config.BarleyUnlockForage} gathered).",
+
         BuildingKind.Mill or BuildingKind.Bakery when WheatEverReaped < Config.MillUnlockWheat =>
             $"Nobody here mills or bakes yet — the village has reaped {WheatEverReaped} of the "
             + $"{Config.MillUnlockWheat} wheat it takes to learn.",
@@ -4547,6 +4554,27 @@ public sealed partial class SimWorld : IObstacles
                 + $"({HeldAgainstItsLimit(batch.Output)} stored).";
         }
 
+        // ⭐ THE BREWER BREWS TOWARD THE TAVERNS' SEASON (`tavern.md §5.3`, W3): a season's drinking for every adult within
+        // reach of a standing tavern — and with no tavern, nothing to brew for. One method, `LabourQuota.AleWanted`, read by
+        // this stop, the hiring and the card. ⚠️ UNDER the player's limit, never instead of it (D62's derived default under
+        // the ceiling): every good ships with a starting limit (D697), so a rule read only with no limit set would never run,
+        // and a village with no tavern would brew its limit for nobody — barley somebody could have eaten.
+        if ((stop & BatchStop.TavernsSupplied) != 0)
+        {
+            int wanted = LabourQuota.AleWanted(this);
+            if (wanted == 0)
+            {
+                return $"{nothing} — no tavern stands with anybody near enough to drink the "
+                    + $"{GoodsCatalog.NameOf(batch.Output)}.";
+            }
+
+            if (HeldAgainstItsLimit(batch.Output) >= wanted)
+            {
+                return $"{nothing} — the taverns have {GoodsCatalog.NameOf(batch.Output)} enough for the season "
+                    + $"({HeldAgainstItsLimit(batch.Output)} held).";
+            }
+        }
+
         // ⛔ The oven never takes firewood the homes still want (§5 rule 2, the forge's rule).
         if (batch.Firing > 0 && LabourQuota.FirewoodShortfall(this) > 0)
         {
@@ -4707,12 +4735,16 @@ public sealed partial class SimWorld : IObstacles
     /// where the fields go, and "build a farm" would tell them to do what they have done.
     /// </summary>
     /// <remarks>
-    /// ⚠️ <b>No beer yet, on purpose</b> (legibility, §1.1): the brewery is W3's, and a moment that promises beer the
-    /// player cannot make sends them looking for a building that is not there. W3 adds the brewing clause when the brewery
-    /// exists (`barley.md §11.4`).
+    /// ⭐ <b>And the brewing clause (W3, `tavern.md §5.5`, D834)</b> — Joe's D826 words, <i>"plant barley, and brew beer"</i> —
+    /// said only when the brewery is learned with the find (his call 2A), read off the brewery's gate, so the moment never
+    /// promises a building the village cannot yet place (legibility, §1.1: no moment sends the player looking for a building that is not there).
     /// </remarks>
     private string WhatTheFindMeansHere(string found)
     {
+        string brew = IsUnlocked(BuildingKind.Brewery)
+            ? $" And {found} brews: build a brewery to make ale of it, and a tavern to drink it in."
+            : string.Empty;
+
         Workplace? only = null;
         int farms = 0;
         for (int i = 0; i < Workplaces.Count; i++)
@@ -4727,12 +4759,12 @@ public sealed partial class SimWorld : IObstacles
         if (farms == 0)
         {
             return $"The villagers are excited: build a farm, and it can sow {found} as well as wheat — choose it on the "
-                + "farm's card, and it goes in the ground the next spring.";
+                + $"farm's card, and it goes in the ground the next spring.{brew}";
         }
 
         string where = farms == 1 ? only!.Name : "the village's farms";
         return $"The villagers are excited to see it sown at {where} — choose {found} on a farm's card, and it goes in the "
-            + "ground the next spring.";
+            + $"ground the next spring.{brew}";
     }
 
     /// <summary>The name of the crop the forager's find unlocks — the first <c>ForageGathered</c> node's — or null.</summary>
@@ -14588,7 +14620,9 @@ public sealed partial class SimWorld : IObstacles
             // ⭐ A WARM SCHOOL (Joe, D764: "Warm, burns firewood"; `school-and-education.md §12.6`): a roof, and a fire while
             // a teacher is seated and its pile holds wood — the home's own test, one building over. D757 found it open
             // ground, and the teacher standing in the weather all winter.
-            if (workplace.Kind == JobKind.Teacher && !workplace.IsSite)
+            // ⭐ AND A WARM TAVERN (W3, `tavern.md §5.4b`: "warm inside, like the school") — the school's stove, one building
+            // over: a fire while its keeper is seated and its pile holds wood, a roof otherwise.
+            if (workplace.Kind is JobKind.Teacher or JobKind.TavernKeeper && !workplace.IsSite)
             {
                 return workplace.WorkerIds.Count > 0 && workplace.Store.Firewood > 0 ? Shelter.Fire : Shelter.Roof;
             }

@@ -1064,6 +1064,31 @@
   "bakery_work_ticks": 40,
   "bakery_capacity": 2,
 
+  // BEER AND THE TAVERN (W3, tavern.md, D834-D835): barley brewed into ale at a
+  // brewery (the mill's batch, the oven's firing), drunk of an evening at a tavern
+  // kept by a tavern keeper (Joe, D834: "B: a tavern keeper"). Learned with barley,
+  // at the forager's find. MEASURED BEFORE TYPED on his saves (D835,
+  // tools/harness/ZzTavern.cs): 89% of adults live within 12 tiles of the home a
+  // tavern would stand beside; a rest begins at home about every two days, so an
+  // evening every 5 days is about three a season. Ten adults drink ~120 ale a year
+  // = 240 barley, an eighth of one farm. Every number his to tune in play.
+  "barley_per_brew": 20,
+  "ale_per_brew": 10,
+  "brew_ticks": 4,
+  "brews_per_stint": 4,
+  "brewery_logs": 25,
+  "brewery_stone": 12,
+  "brewery_work_ticks": 40,
+  "brewery_capacity": 2,
+  "tavern_logs": 30,
+  "tavern_stone": 12,
+  "tavern_work_ticks": 40,
+  "tavern_capacity": 1,
+  "tavern_reach_tiles": 12,
+  "tavern_every_days": 5,
+  "tavern_sit_ticks": 2,
+  "tavern_stock": 20,
+
   // THE TAILOR'S SHOP (clothing.md 3.5-3.6, D659): leather to coats, the mill's
   // batch shape. Half a hunt's hide a coat; a sew between a bake (4) and a hunt
   // (15); two a stint. Learned at fifty leather handled -- about five hunts, the
@@ -1654,6 +1679,12 @@
     { "cause": "DryJar", "at": 3 },
     { "cause": "DeathInTheFamily", "held_seasons": 4 },
   ],
+  // W3's comfort (tavern.md 6, Joe's call 1A, D834): an evening at the tavern this
+  // season takes one held cause off at the read -- never below nought, and nothing
+  // at all with nothing held. A village with no tavern reads exactly as W2.
+  "contentment_comforts": [
+    { "comfort": "TavernEvening", "at": 1, "eases": 1 },
+  ],
   "contentment_unsettled_at": 2,
   "contentment_birth_interval_percent": 200,
   "contentment_thinking_of_leaving_seasons": 4,
@@ -2103,6 +2134,10 @@
     // over them, as every row here is.
     "clothing": 50,
     "handcarts": 50,
+    // ALE 50 (W3, D834): D697's number for an unlocked good. A ceiling on what is
+    // held, never on what is drunk -- the brewer brews again as the taverns draw it
+    // down, toward a season's drinking for the adults within reach (tavern.md 5.3).
+    "ale": 50,
     // ⭐ D711 -- HAY 2,000 (Joe, 2026-11-07: "Hay at 2,000"). Unlimited until now
     // (D590). NOT 50 like the other unlocked goods: a met hay row stops the cutting
     // (D139), and one full barn's winter is 1,728 -- 2 herdsmen x 8 head x 108 hay a

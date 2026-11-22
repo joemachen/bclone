@@ -38,9 +38,36 @@ public sealed partial class SimWorld
             return $"{villager.Name} is thinking of leaving — {listed}.";
         }
 
+        // ⭐ THE COMFORT SAID BY NAME (W3, `tavern.md §4` item 6): what eased a cause, or what was not enough.
+        if (ComfortsSaid(villager) is string comfort)
+        {
+            return villager.IsUnsettled
+                ? $"{villager.Name} is unsettled — {listed}; {comfort} were not enough."
+                : $"{villager.Name} is content — {listed}, but {comfort} make up for it.";
+        }
+
         return villager.IsUnsettled
             ? $"{villager.Name} is unsettled — {listed}."
             : $"{villager.Name} is content, though {listed}.";
+    }
+
+    /// <summary>The comforts that eased a cause at the last read, in the data file's order (W3) — or null for none.</summary>
+    private string? ComfortsSaid(Villager villager)
+    {
+        var said = new List<string>();
+        foreach (ContentmentComfortRow row in Config.ContentmentComforts)
+        {
+            if ((villager.ContentmentComforts & (1 << (int)row.Comfort)) != 0)
+            {
+                said.Add(row.Comfort switch
+                {
+                    ContentmentComfort.TavernEvening => "the evenings at the tavern",
+                    _ => $"{row.Comfort}",
+                });
+            }
+        }
+
+        return said.Count == 0 ? null : string.Join(" and ", said);
     }
 
     /// <summary>
