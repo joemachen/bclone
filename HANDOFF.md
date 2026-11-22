@@ -10955,8 +10955,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
     (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph); (i) **trees
     swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
-  - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word; next after (d), not
-    claimed): barley's three crop stages `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (1024², 128 px a
+  - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
+    `art`** (2026-11-21, Joe's *"Start barley art"*): barley's three crop stages `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (1024², 128 px a
     tile, seamless, rows east–west, as wheat's `build_crop_stages.jsx`; barley's rows in `ThePaintedCropsHold`); its goods
     icon `textures/ui/icons/goods/barley.png` (⚠️ `ui icons:` is ⛔ without it once `slice/w7-barley` merges); and a
     judgement on its two placeholder colours, `GoodsPalette` barley `Color(0.81, 0.80, 0.62)` and the painted sheaf
