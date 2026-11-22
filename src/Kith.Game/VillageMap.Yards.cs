@@ -39,10 +39,10 @@ internal enum YardKind
 /// <summary>
 /// What a building's yard depends on, from the sim — in its <see cref="VillageMap.RoofSignature"/>, so the yard is laid again
 /// only when one of these moves (`building-yards.md §2`): two stock levels (0–4, <see cref="VillageMap.YardLevel"/>), whether
-/// it is working, the side its water is on (−1 none, 0 −y, 1 +x, 2 +y, 3 −x), and a ground counter (the plot's or the
-/// terrain's edits).
+/// it is working, the side its water is on (−1 none, 0 −y, 1 +x, 2 +y, 3 −x), a ground counter (the plot's or the
+/// terrain's edits), and a stockpile's goods by size (<see cref="VillageMap.PileSizesOf"/>, `stock-piles.md §5`).
 /// </summary>
-internal readonly record struct YardState(byte Stock = 0, byte Stock2 = 0, bool Working = false, sbyte Water = -1, int Ground = 0);
+internal readonly record struct YardState(byte Stock = 0, byte Stock2 = 0, bool Working = false, sbyte Water = -1, int Ground = 0, string? Piles = null);
 
 /// <remarks>
 /// ⭐⭐ THE YARDS AND THE PEN (A86, `specs/building-yards.md`; Joe: *"a 'yard' for each building to add some visual
