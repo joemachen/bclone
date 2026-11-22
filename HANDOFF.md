@@ -11,6 +11,8 @@
 >   found it; only `MarketLimitsTests` noticed. A good behind a gate needs `KnowsOf` taught the gate.
 >   ⚠️ And the VIEW latches each gate in a flag of its own (`_workshopKnown`, `_barleyKnown`, …) so its lists cannot
 >   disagree with its bar; the probe's `spoilers:` poses those flags, so a new gate needs one there too.
+> **✅ D828 — PLAYED AND APPROVED (*"they work as expected and delivered the expected outcomes"*); his logs 0 `ERROR`, the find, the
+> card's change and a barley harvest all in them. ⏸️ THE MERGE AT HIS WORD — `main` into the slice first (it has moved).**
 > **✅ D827 — OLD SAVES OPEN AGAIN (Joe: *"Yes, make them open"*):** barley had made every save refuse (*"a different list of
 > goods"*). A save's per-good lists may now be shorter than the data's, never longer (`save-load.md §15`); 252 of his 252
 > readable saves open. For his play: `saves/barley-test-no-farm/barley-no-farm-year-6.save` and
@@ -10861,8 +10863,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   and learns from wheat only. Nothing built until he answers.
   **✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as recommended"*). ⏸️ CALL 1 REOPENED BY HIM** — a forager finds
   barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. ✅ **HIS WORD
-  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D826), UNPLAYED — ⏸️ HIS PLAY, THEN THE MERGE AT
-  HIS WORD.** His to tune in play: `barley_unlock_forage` 5,000.
+  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D827), ✅ PLAYED AND APPROVED (D828) — ⏸️ THE MERGE
+  AT HIS WORD.** His to tune in play: `barley_unlock_forage` 5,000.
 
 - ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
   `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
