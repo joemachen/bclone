@@ -583,6 +583,7 @@ public partial class VillageMap
                 break;
             case RoofForm.Yard:
                 Yard(pieces, frame, hw, hd, colour, fallenIn);
+                PilesOnTheYard(new YardKit(pieces, frame), hw, hd, yard.Piles, seed);
                 break;
             case RoofForm.Mill:
                 YardUnder(pieces, frame, look.Yard, layout, yard, seed);

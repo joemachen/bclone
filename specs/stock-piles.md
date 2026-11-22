@@ -1,10 +1,11 @@
-# Stock piles — the stockpile's goods, and goods on the ground, drawn as piles (A158)
+# Stock piles — the stockpile's goods, and goods on the ground, drawn as piles (A158, A159)
 
-> **Status: ✍️ SPECCED AND MOCKED (A158, 2026-11-21) — ⏸️ FIVE CALLS JOE'S (§10). Nothing built.** Art lane (CLAUDE.md
-> *Two tracks*), piece (d) of his play notes (HANDOFF, *"JOE'S PLAY NOTES, 2026-11-20 … SORTED BY LANE"*, his order A137),
-> at his *"Start piles"*. View only: nothing in the sim, `data/` or `tests/` changes. Mocks, rendered by the game itself
-> from copies of his saves: `D:\Projects\brushes\piles\piles_mock.jpg` (today / A / B in six scenes) and
-> `piles_catalogue.jpg` (every good at every size, A beside B).
+> **Status: 🔨 BUILT on `art` (A159, 2026-11-21) — ⏸️ JOE'S PLAY.** His five calls answered *"A, all as recommended"*
+> (§10). Specced and mocked A158. Art lane (CLAUDE.md *Two tracks*), piece (d) of his play notes (HANDOFF, *"JOE'S PLAY
+> NOTES, 2026-11-20 … SORTED BY LANE"*, his order A137), at his *"Start piles"*. View only: nothing in the sim, `data/` or
+> `tests/` changes. Mocks, rendered by the game itself from copies of his saves: `D:\Projects\brushes\piles\piles_mock.jpg`
+> (today / A / B in six scenes) and `piles_catalogue.jpg` (every good at every size, A beside B); the build's own renders
+> are §11's.
 
 ## 1. What Joe asked
 
@@ -95,14 +96,16 @@ watercolour on; **every other store keeps its bars** (his *"the bars stay on oth
 ## 7. Goods on the ground
 
 - **Where:** today's place — the tile's corner, or just past a building's edge on the tile's side (D371) — but pushed out
-  by the pile's own size, so a big heap never lies over the building whose door it is at; two goods on one tile side by
-  side by their drawn widths (the mock does neither yet: at Hollowmere's granary its 1,472 food lies over the 129 meat
-  and the roof's corner).
+  by the pile's own size, so a big heap never lies over the building whose door it is at. A second good on the same tile
+  steps on from the first (out from the building, or along the tile) a tenth of its own width at a time until it is clear
+  of every heap before it on that tile (`EveryHeapChip`, `LiesOnAnEarlierHeap`) — the mock's 1,472 food over the 129 meat
+  and the granary's corner is gone.
 - **The spill** (A only, recommended, call 2): a wash of the good's colour under the things, with a soft ink edge — so
   a heap still reads as a spot of that good's colour from across the valley, as the chip did, and *"something is lying
   out"* is never quieter than it was. Without it, 68 meat at Hollowmere was three small joints that are easy to miss.
-- **Its size:** the spill is about a third of a tile at the first size and grows to about three quarters at the sixth;
-  never drawn smaller than today's chip on screen (3 px). Far out, below a few pixels, it is the spill alone.
+- **Its size:** the spill is about a third of a tile at the first size and grows to about seven tenths at the sixth
+  (`HeapWidthOf`: 2.1 × (0.12 + 0.035 × size) tiles). **Far out, a heap narrower than 7 px on screen is today's chip**
+  (`SmallestPilePixels`) — the things would be specks, and the chip in the good's colour is what reads at that size.
 - **Clicked as today** (D396): the click's rectangle is the pile's drawn bounds, decided in the one place the draw asks.
 - **Tidy and tumbled:** a stockpile's things are laid square to its posts; a heap's are tumbled a little (turned by its
   seed) — stored against set down.
@@ -122,27 +125,50 @@ exactly while its goods are. With the watercolour off the map is today's to the 
   piles). ⚠️ **And three small places in `VillageMap.cs`** (call 5): `DrawStores` packs the stockpile's goods into its yard
   state and skips its bars; `DrawHeaps` draws the painted heaps; `EveryHeapChip` / `HeapRectOf` size and space the heap
   by its pile.
-- **Probe `stock piles:`** (named from this spec, traps 17 and 25): a stockpile's pile present for each good it holds
+- **Probe `stock piles:`** (named from this spec, traps 17 and 25; ⚠️ printed on the line after `building yards:`,
+  riding on its return, because the list of probe lines is `Main.cs`, the systems lane's): a stockpile's pile present
+  for each good it holds
   and absent at zero; its bays inside its yard and apart; a good's bay unmoved when a neighbour grows; the sizes' edges
   (9 → 10 … 399 → 400); a good the painters do not name drawn as sacks; the stockpile laid again when a size moves and
   not when an amount moves within one; a heap clear of its building and of a second heap on its tile; the click's
-  rectangle the drawn bounds; never under 3 px; watercolour off, the bars and chips as before. `store stock:` keeps
-  asking every other store for its bars.
+  rectangle the drawn bounds; laid once a size; watercolour off, the bars and chips as before. `store stock:` keeps
+  asking every other store for its bars. ⚠️ **What it cannot see** (draw-time, the probe calls the pieces, not `_Draw`):
+  the bars skipped on a stockpile, the sizes handed to its yard at the draw site, the heaps drawn above the canopy, the
+  chip below 7 px, the heap cache forgetting what is off screen — §11's renders are their evidence.
 - **Cost:** the stockpile rides the roof cache (one mesh run more, laid on a size change); the heaps are cached per heap
   (position, good, size), never laid per frame. Measured at 4K on Hollowmere before and after, as A86 did.
 
-## 10. ⏸️ Joe's calls
+## 10. ✅ Joe's calls — answered *"A, all as recommended"* (2026-11-21)
 
 1. **The look — A or B?** A: each good as itself — logs stacked, firewood corded, stone heaped, fish in creels, flour in
    sacks. B: every good a mound in its colour. ⭐ **A** — B's mounds tell logs, leather, meat and bread apart by colour
-   alone, and four of them are brown.
+   alone, and four of them are brown. ✅ **A.**
 2. **Goods on the ground: a wash of the good's colour under the pile?** It keeps a heap as easy to spot as today's square.
-   ⭐ **Yes.**
+   ⭐ **Yes.** ✅ **Yes.**
 3. **How piles grow — the same picture for the same amount everywhere** (six sizes, 1–9 up to 400+), or each good on a
    stockpile sized by its share of the stockpile? ⭐ **The same everywhere**; the full ring already says *full*.
+   ✅ **The same everywhere.**
 4. **Goods on the ground under trees.** Today the canopy covers them (your *"everything under"*, A36): at Hollowmere
    year 72, 1,472 food, 129 meat and 295 fish lie hidden. Goods on the ground mean a store is full — the one thing the
    player most needs to find (D134, D371). Draw ground heaps above the trees? ⭐ **Yes** — only the heaps; stockpiles
-   and buildings stay under.
+   and buildings stay under. ✅ **Yes** — with the painted trees on, the heaps are drawn after the canopy.
 5. **Three small edits in `VillageMap.cs`** (the stockpile's bars, the heap draw, the heap's place) — the systems lane's
-   file by the lane table. OK to touch them?
+   file by the lane table. OK to touch them? ✅ **Yes.**
+
+## 11. As built (A159)
+
+- **Files:** `VillageMap.Piles.cs` (new: `PileLevel`, `PileSizesOf`, `PileBays`, `PilesOnTheYard`, `PileOf` — a painter
+  per good — `HeapDrawing`, the heap cache, `DrawPiledHeaps`); `VillageMap.PilesProbe.cs` (new, the probe);
+  `VillageMap.Yards.cs` (`YardState.Piles`); `VillageMap.Roofs.cs` (one line); `VillageMap.YardsProbe.cs` (the line it
+  rides on); `VillageMap.cs` (`DrawStores`, `DrawHeaps`, `EveryHeapChip` / `HeapRectOf`, `_Draw`'s order — his call 5).
+- **Probe:** 138 ✅, 0 ⛔; `stock piles:` ✅ — two heaps at the founders' cart's door 26 and 33 px wide, clear of it and of
+  each other, each the click's, laid once a size; `heaps:`, `building yards:`, `store stock:` unchanged and ✅; bar
+  height 183, tile centres ✅, new game ✅.
+- **Red-check (D326): 16 of 16 red**, each on its own clause (`brushes\piles\redcheck159.py`, `red159.log`): the 9/10
+  edge, a skipped size, bays shifted and too wide, every bay the first good, the stone's seed taken from its neighbour, a
+  new good drawing nothing, size 5 one thing, the spill in the wrong colour, a heap a chip's width, no stepping apart, a
+  heap over its building, a heap laid every amount, piles with the tick off, a stockpile drawn with nothing, sizes
+  written as amounts. **Zeros, written down:** the five draw-time behaviours in §9 the probe cannot reach.
+- **Suite** 2,182 passed, 5 skipped, 16 m 42 s; no golden moved (`git diff`, 448 lines); game build 0 warnings.
+- **Cost:** **none measured.** The map's own `_Draw` time over 300 frames after 60 to warm, paused, at the closest zoom in his 2560 × 1440 window, this build against `HEAD`'s, alternated (`brushes\piles\measure.sh`, `cost.log`): Hollowmere year 72 over its food, meat and fish heaps and two stockpiles, medians 9.37, 9.14, 9.33, 9.34 ms before against 8.91, 9.11, 8.76, 8.84 after; Larkspur year 2 over its two full stockpiles and two log heaps, 2.66, 2.32, 2.43 ms before against 2.37, 2.32, 2.59 after. Inside the noise both ways: the stockpile rides the roof cache and the heaps their own, each laid once a size.
+- **Renders** of the build from copies of his saves: `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg` — before (`HEAD`) beside after, the same shots, close to far (`render_final.sh`, `compose_final.py`). Larkspur year 2: its two full stockpiles' logs, firewood and stone as stacks, a cord and a mound, its two log heaps beside them. Ravenscar: two stockpiles, a firewood heap at the woodcutter's. Hollowmere year 72: the 1,472 food, 129 meat and 295 fish that were under the canopy now lie above it, clear of the granary and of each other; far out every heap is today's chip again.
