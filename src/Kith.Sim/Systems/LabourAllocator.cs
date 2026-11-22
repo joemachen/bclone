@@ -1165,8 +1165,14 @@ internal static class LabourAllocator
         // wanted in a burst when a workshop first stands and rarely after (`workshop-and-the-carpenter.md §4.4`).
         JobKind.Woodcutter, JobKind.Smith, JobKind.Tailor, JobKind.Carpenter, JobKind.Quarrier, JobKind.Miner, JobKind.Miller, JobKind.Baker,
 
+        // The brewer after the baker (W3, D834): the stone band of batch trades, in its rows' order, as the quota takes them.
+        JobKind.Brewer,
+
         // The herdsman after the baker, then the merchant, as the quota takes hands (D593, D594).
         JobKind.Herdsman, JobKind.Merchant,
+
+        // The tavern keeper after the merchant (W3, D834), as the quota takes them: a comfort, out of what is left.
+        JobKind.TavernKeeper,
 
         // The teacher after the merchant (D754): only ever the player's number, so where it sits matters only when hands
         // run short — and then the trades that feed the village come first.

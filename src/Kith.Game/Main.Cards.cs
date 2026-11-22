@@ -1608,6 +1608,15 @@ public partial class Main
                 card.Records.Text = "Open the post's window";
                 card.Records.Visible = true;
             }
+            else if (place.Kind == JobKind.TavernKeeper)
+            {
+                // ⭐ THE TAVERN SAYS WHETHER IT IS OPEN, AND WHY NOT (W3, `tavern.md §4` item 4) — one sentence, the sim's —
+                // and, open, how many homes it reaches (Joe, playing W3: his stood out of every home's reach and said "Open").
+                (bool working, string sentence) = world.SayTheTavern(place);
+                Status(card, working, sentence);
+                Number(card, 0, $"{place.Store[Goods.Ale]}", "ale in");
+                Number(card, 1, $"{place.EveningsThisSeason}", "evenings this season");
+            }
             else if (place.Kind == JobKind.Teacher)
             {
                 // ⭐ THE SCHOOL SAYS ITS PLACES (D765, §6: *"14 of 20 places taken"*) — and who waits, and its stove (D764).
@@ -3061,6 +3070,12 @@ public partial class Main
 
     private static string TradeWordFor(SimWorld world, Villager villager)
     {
+        // A pupil is a student on the card as in the roster (Joe, 2026-11-22) — the same person never two words.
+        if (villager.IsPupil)
+        {
+            return "student";
+        }
+
         if (!villager.CanWork)
         {
             return villager.LifeStage == LifeStage.Child ? "child" : "elder";
@@ -3253,7 +3268,8 @@ public partial class Main
 
         if (!unknownTrades.Contains(JobKind.Smith) || !unknownTrades.Contains(JobKind.Quarrier) || !unknownTrades.Contains(JobKind.Miner)
             || !unknownTrades.Contains(JobKind.Miller) || !unknownTrades.Contains(JobKind.Baker) || !unknownTrades.Contains(JobKind.Tailor)
-            || !unknownTrades.Contains(JobKind.Carpenter))
+            || !unknownTrades.Contains(JobKind.Carpenter) || !unknownTrades.Contains(JobKind.Brewer)
+            || !unknownTrades.Contains(JobKind.TavernKeeper))
         {
             faults.Add($"the founding knows trades it should not: unknown are only {string.Join(", ", unknownTrades)}");
         }
@@ -3313,11 +3329,14 @@ public partial class Main
         _schoolKnown = true;
         bool barley = _barleyKnown;
         _barleyKnown = true;
+        (bool brewery, bool tavern) = (_breweryKnown, _tavernKnown);
+        (_breweryKnown, _tavernKnown) = (true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         _schoolKnown = school;
         _barleyKnown = barley;
+        (_breweryKnown, _tavernKnown) = (brewery, tavern);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);

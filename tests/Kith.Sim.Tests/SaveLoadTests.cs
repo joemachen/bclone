@@ -380,6 +380,9 @@ public sealed class SaveLoadTests : IDisposable
 
             // Gone from the valley (W2 step 5) — `left_at`, written only when set (`ContentmentTests.LeavingIsSavedAndHashed`).
             "LeftAtTick",
+
+            // The tavern (W3, D836) — saved and hashed sparsely (`TavernTests.EveryTavernFieldIsHashedAndSaved`).
+            "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
@@ -400,6 +403,7 @@ public sealed class SaveLoadTests : IDisposable
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
             "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands", "HandcartUses",
+            "EveningsThisSeason",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]

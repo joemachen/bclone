@@ -206,6 +206,10 @@ internal static class PersonPainter
         JobKind.Tailor => new(Rgb.F(0.40f, 0.52f, 0.34f), Head.Bare, Tool.None, Length.Ankle),
         JobKind.Carpenter => new(Rgb.F(0.78f, 0.60f, 0.38f), Head.RedCap, Tool.Saw, Length.Knee),
         JobKind.Teacher => new(Rgb.Hex("#4a5ea8"), Head.Scholar, Tool.Book, Length.Ankle),
+
+        // ⏳ W3's stand-ins (`tavern.md §9`): the brewer aproned like the miller, the keeper like the baker — the art lane's to draw.
+        JobKind.Brewer => new(Rgb.Hex("#9a5e14"), Head.Coif, Tool.None, Length.Calf, Apron: Linen),
+        JobKind.TavernKeeper => new(Rgb.Hex("#8a2f3e"), Head.Bare, Tool.None, Length.Calf, Apron: Linen),
         _ => new(Rgb.Hex("#a89a80"), Head.Bare, Tool.None, Length.Knee),
     };
 

@@ -248,3 +248,11 @@ against a number from an older commit.
   one ZZS line a save on a COPY of Joe's saves (`ZZ_SAVES`, read, never stepped: year, alive, forage, wheat reaped, the
   mill known) or one ZZV line a year on seeds 200–219 played from the opening (`ZZ_SEEDS`, `ZZ_YEARS` 30). Copy in,
   `-c Release --filter ZzBarley`, delete.
+- `ZzTavern.cs` — D835's measurement for `specs/tavern.md §8.1`: on Joe's saves (`ZZ_SAVES`, a *copy*; the newest
+  `.save` of each folder), the adults' walk home → the medoid home (where a tavern would stand), the keeper's walk to the
+  nearest warehouse, then `ZZ_YEARS` (4) on: rest spells begun at home a working adult-day (`ZZR`), adult-seasons by
+  W2's held weight within and beyond R = 8 / 12 / 16 / 24 (`ZZW`), and each leaver's walk and last eight weights (`ZZL`).
+  Copy in, `-c Release --filter ZzTavern`, delete.
+- `ZzTavernSave.cs` — D843's diagnosis on one of Joe's saves (`ZZ_SAVE`, a *copy*): each tavern (open, or why shut), each
+  villager's walk from home to it and the tavern within reach, then a year stepped — rests begun at home and evenings by
+  adult. Copy in, `--filter ZzTavernSave`, delete.

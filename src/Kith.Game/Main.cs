@@ -1602,6 +1602,58 @@ public partial class Main : Control
 
         PrintWidths(_professionsPanel, "prof", 0);
         GD.Print(OnlyTheKnownTradesHaveRows());
+        GD.Print(TheProfessionsTableScrollsPastItsCeiling());
+    }
+
+    /// <summary>
+    /// ⭐ The professions table stands no taller than its ceiling and scrolls past it (Joe, 2026-11-22) — <b>a probe line</b>,
+    /// asked with every trade posed learned (the table at its tallest, a village late in the game) and put back after.
+    /// </summary>
+    private string TheProfessionsTableScrollsPastItsCeiling()
+    {
+        if (_professionsScroll is null || _professionsTable is null)
+        {
+            return "[widths] professions height: ⛔ the table is not in a scroll";
+        }
+
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor, bool workshop) =
+            (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown);
+        (bool school, bool brewery, bool tavern) = (_schoolKnown, _breweryKnown, _tavernKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
+            (true, true, true, true, true, true, true, true);
+        (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
+        RefreshTheStrip();
+
+        float table = _professionsTable.GetCombinedMinimumSize().Y;
+        float shown = _professionsScroll.GetCombinedMinimumSize().Y;
+        int rows = _professionRows.Count(r => r.Cells[0].Visible);
+
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
+            (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
+        (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
+        RefreshTheStrip();
+        float founding = _professionsScroll.GetCombinedMinimumSize().Y;
+
+        var faults = new List<string>();
+        if (table <= ProfessionsHeight)
+        {
+            faults.Add($"every trade learned, the table is only {table:F0}px — the pose does not reach the ceiling ({ProfessionsHeight:F0})");
+        }
+
+        if (shown > ProfessionsHeight + 0.5f)
+        {
+            faults.Add($"every trade learned, the table stands {shown:F0}px against a ceiling of {ProfessionsHeight:F0}");
+        }
+
+        if (founding > shown + 0.5f || founding <= 0f)
+        {
+            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] professions height: ✅ every trade learned ({rows} rows), the table wants {table:F0}px and stands "
+                + $"{shown:F0}, scrolling past its ceiling of {ProfessionsHeight:F0}; at the founding it stands {founding:F0}"
+            : $"[widths] professions height: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -2396,6 +2448,8 @@ public partial class Main : Control
     private Button? _tailorButton;
     private Button? _workshopButton;
     private Button? _schoolButton;
+    private Button? _breweryButton;
+    private Button? _tavernButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2564,6 +2618,10 @@ public partial class Main : Control
         // The school, learned once a library stands (D755, `school-and-education.md §12.1`) — paid for, lit until the first is marked.
         RefreshALearnedButton(world, BuildingKind.School, JobKind.Teacher, _schoolButton, ref _schoolKnown, ref _schoolTried);
 
+        // ⭐ The brewery and the tavern, learned with barley at the forager's find (W3, Joe's call 2A, D834) — lit until marked.
+        RefreshALearnedButton(world, BuildingKind.Brewery, JobKind.Brewer, _breweryButton, ref _breweryKnown, ref _breweryTried);
+        RefreshALearnedButton(world, BuildingKind.Tavern, JobKind.TavernKeeper, _tavernButton, ref _tavernKnown, ref _tavernTried);
+
         // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
@@ -2626,6 +2684,10 @@ public partial class Main : Control
     private bool _barleyKnown;
     private bool _schoolKnown;
     private bool _schoolTried;
+    private bool _breweryKnown;
+    private bool _breweryTried;
+    private bool _tavernKnown;
+    private bool _tavernTried;
     private bool _bridgeKnown;
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
@@ -4202,6 +4264,8 @@ public partial class Main : Control
         JobKind.Baker => "flour is baked into bread here",
         JobKind.Tailor => "leather is sewn into coats here",
         JobKind.Carpenter => "logs are made into handcarts here",
+        JobKind.Brewer => "barley is brewed into ale here",
+        JobKind.TavernKeeper => "the village spends an evening here over a cup of ale",
         _ => kind.ToString().ToLowerInvariant(),
     };
 
@@ -5626,7 +5690,38 @@ public partial class Main : Control
         counts.AddChild(_laborerReadout);
         body.AddChild(counts);
 
-        body.AddChild(BuildProfessionsTable());
+        // ⭐ A CEILING AND A SCROLL BAR (Joe, 2026-11-22, playing W3: "The professions tab needs a height limit and a scroll
+        // bar") — the brewer and the tavern keeper took the table past the bottom of his screen. As tall as its rows up to
+        // `ProfessionsHeight`, then it scrolls: the build queue's shape (D730). Re-measured where a row appears
+        // (`ShowTheKnownTrades`), never per frame.
+        _professionsScroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        };
+        _professionsTable = BuildProfessionsTable();
+        _professionsScroll.AddChild(_professionsTable);
+        body.AddChild(_professionsScroll);
+        FitTheProfessionsScroll();
+    }
+
+    /// <summary>The most the professions table stands before it scrolls — about twelve rows, logical px.</summary>
+    private const float ProfessionsHeight = 360f;
+
+    private ScrollContainer? _professionsScroll;
+    private GridContainer? _professionsTable;
+
+    /// <summary>The scroll as tall as the table's shown rows, up to <see cref="ProfessionsHeight"/>.</summary>
+    private void FitTheProfessionsScroll()
+    {
+        if (_professionsScroll is null || _professionsTable is null)
+        {
+            return;
+        }
+
+        float tall = _professionsTable.GetCombinedMinimumSize().Y;
+        _professionsScroll.CustomMinimumSize = new Vector2(0, Math.Min(tall, ProfessionsHeight));
     }
 
     /// <summary>
@@ -5730,6 +5825,9 @@ public partial class Main : Control
                 cell.Visible = known;
             }
         }
+
+        // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
+        FitTheProfessionsScroll();
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
@@ -8158,6 +8256,14 @@ public partial class Main : Control
             {
                 _schoolButton = button;
             }
+            else if (kind == BuildingKind.Brewery)
+            {
+                _breweryButton = button;
+            }
+            else if (kind == BuildingKind.Tavern)
+            {
+                _tavernButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -8365,6 +8471,9 @@ public partial class Main : Control
                 or BuildingKind.FishingHut or BuildingKind.HunterLodge
                 or BuildingKind.Mill or BuildingKind.Bakery or BuildingKind.Barn => BuildCategory.Food,
 
+            // ⭐ The brewery beside the mill and the oven (W3): barley in, ale out — a food chain's workshop.
+            BuildingKind.Brewery => BuildCategory.Food,
+
             BuildingKind.ForesterHut or BuildingKind.WoodcutterHut
                 or BuildingKind.Quarry or BuildingKind.Mine => BuildCategory.Resources,
 
@@ -8385,6 +8494,9 @@ public partial class Main : Control
             // The hall is not a knowledge building with extras, and putting it under Knowledge
             // would say the opposite of what D251 settled.
             BuildingKind.TownHall => BuildCategory.Civic,
+
+            // ⭐ The tavern with the hall (W3): where the village spends an evening — a civic building, not a trade's.
+            BuildingKind.Tavern => BuildCategory.Civic,
 
             // ⭐ The well sits with the homes (D427): it is where a neighbourhood gathers, placed
             // beside the paint the houses go into — not a store, not a trade.
@@ -8517,6 +8629,10 @@ public partial class Main : Control
 
         // ⛔ The school's arm (D755): without it `_ => true` offers a school at the founding — the workshop's lesson again.
         BuildingKind.School => _schoolKnown,
+
+        // ⛔ The brewery's and the tavern's arms (W3) — without them `_ => true` offers both at the founding.
+        BuildingKind.Brewery => _breweryKnown,
+        BuildingKind.Tavern => _tavernKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

@@ -153,7 +153,28 @@ public sealed class ContentmentSystem : ISimSystem
                 }
             }
 
+            // ⭐ THE COMFORTS (W3, `tavern.md §6`): each held takes its eases off — only off a cause held, never below nought.
+            int comforts = 0;
+            if (weight > 0)
+            {
+                foreach (ContentmentComfortRow row in config.ContentmentComforts)
+                {
+                    bool held = row.Comfort switch
+                    {
+                        ContentmentComfort.TavernEvening => villager.TavernEveningsThisSeason >= row.At,
+                        _ => false,
+                    };
+
+                    if (held)
+                    {
+                        weight = Math.Max(0, weight - row.Eases);
+                        comforts |= 1 << (int)row.Comfort;
+                    }
+                }
+            }
+
             villager.ContentmentCauses = causes;
+            villager.ContentmentComforts = comforts;
             villager.SeasonsUnsettled = weight >= config.ContentmentUnsettledAt ? villager.SeasonsUnsettled + 1 : 0;
 
             // A year unsettled: the log says it once a spell (step 5) — a settled season puts the count back to 0.
@@ -169,6 +190,17 @@ public sealed class ContentmentSystem : ISimSystem
         for (int i = 0; i < world.Households.Count; i++)
         {
             world.Households[i].DryDaysThisSeason = 0;
+        }
+
+        // And the tavern's (W3): each person's evenings, and each tavern's count for its card.
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            world.Villagers[i].TavernEveningsThisSeason = 0;
+        }
+
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            world.Workplaces[i].EveningsThisSeason = 0;
         }
 
         if (endedWinter)

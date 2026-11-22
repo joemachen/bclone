@@ -195,7 +195,7 @@ nothing**, so the marker and the panel cannot disagree.
 | **Departure** | ⛔ **Nothing in the game removes a living villager.** The dead stay in `Villagers` with `Alive` false and a `CauseOfDeath`. Leaving is the one genuinely new mechanism: a fate beside death (alive, gone), a walk to the map's edge — **the nomads' walk-in reversed** (D573) — and the household's house, goods and seats let go |
 | **Arrivals / nomads** | ✅ Built, played and merged (D563–D584) — **the valve has its other end** (§10's old call 2, answered) |
 | **The cemetery** | ⛔ W4 (D395). Its two causes ride with it (§4.1) |
-| **The tavern, ale** | ⛔ W3, after W7's barley (D821). Contentment's first lever |
+| **The tavern, ale** | ✅ W3, built on `slice/w3-tavern` (D836, `tavern.md`) — `contentment_comforts`, an evening easing one held cause. Contentment's first lever — a comfort, not a cause |
 | **The town hall** | ✅ Slice 1 (the gift). The distribution view (§3.1) is W13, the hall's tabs |
 
 ---
@@ -329,7 +329,8 @@ gone after two (D798).
 
 ⚠️ **What it means:** with only today's causes W2 is **quiet** — the release valve opens a few times a decade in a big,
 spread village and almost never in a small one. That is the cozy reading of D207 (a valve, not a pressure); the system gets
-its teeth from the causes W3 and W4 add (the tavern's absence, the dead with nowhere to lie) and the anti-vacuity guard
+its teeth from the causes W3 and W4 add (the tavern's absence, the dead with nowhere to lie) *(⚠️ not the tavern's
+absence — Joe's call 1A, D834: the tavern is a **comfort** that eases one held cause, never a cause; `tavern.md §6`)* and the anti-vacuity guard
 (§11 item 4) is a **posed** neglected village, not the unattended harness. ⏸️ These numbers, and the cabin, are Joe's (§14).
 
 ### 13.2 Step 5's rule, read against the code (2026-11-20, before a line of it)

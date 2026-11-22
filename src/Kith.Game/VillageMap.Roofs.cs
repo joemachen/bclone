@@ -166,6 +166,10 @@ public partial class VillageMap
 
         // ⭐ The school's stove (D764) has a chimney now, so its winter fire shows (A139, Joe's call 2: "okay").
         JobKind.Teacher => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1),
+
+        // ⏳ W3 (`tavern.md §9`): the brewery's copper and the tavern's stove each have a chimney — the art lane draws the rest.
+        JobKind.Brewer => new(RoofForm.Roof, RoofMaterial.Tile, Chimneys: 1),
+        JobKind.TavernKeeper => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1),
         JobKind.Woodcutter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Woodcutter),
         JobKind.Builder => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Builder),
         JobKind.Hunter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Hunter),

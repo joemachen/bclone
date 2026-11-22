@@ -62,3 +62,37 @@ public sealed record ContentmentCauseRow
     [JsonPropertyName("held_seasons")]
     public int HeldSeasons { get; init; }
 }
+
+/// <summary>
+/// ⭐ A contentment COMFORT (W3, `tavern.md §6`; Joe's call 1A, D834) — something that takes a held cause off at the season's
+/// read. ⛔ <b>The number is the save's and the bitmask's</b> (<see cref="Villager.ContentmentComforts"/>): append, never reorder.
+/// </summary>
+public enum ContentmentComfort
+{
+    /// <summary>At least <see cref="ContentmentComfortRow.At"/> evenings at the tavern in the season (1).</summary>
+    TavernEvening = 0,
+}
+
+/// <summary>
+/// One comfort and how much it eases (W3, `tavern.md §6`) — <c>contentment_comforts</c> in the data file, a row each.
+/// </summary>
+/// <remarks>
+/// ⭐ <b>A second list, not a negative weight:</b> the causes' validator refuses a weight of nought or less, and every sentence
+/// reads <i>"the causes held"</i> — a cause that is secretly a comfort would make each of them wrong. At the read, <b>the
+/// causes' weight less the comforts' eases, never below nought</b>; a comfort with no cause held does nothing at all, banks
+/// nothing for later, and never makes anybody more than content.
+/// </remarks>
+public sealed record ContentmentComfortRow
+{
+    /// <summary>Which comfort.</summary>
+    [JsonPropertyName("comfort")]
+    public ContentmentComfort Comfort { get; init; }
+
+    /// <summary>The comfort's own threshold: evenings at the tavern in the season.</summary>
+    [JsonPropertyName("at")]
+    public int At { get; init; } = 1;
+
+    /// <summary>The weight it takes off the causes held — more than zero.</summary>
+    [JsonPropertyName("eases")]
+    public int Eases { get; init; } = 1;
+}

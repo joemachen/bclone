@@ -280,9 +280,12 @@ public partial class Main
             // are they doing?". Exactly the distinction the vacancy alert settled: holding a
             // job and being at it this instant are different facts.
             // ⭐ The stage words went with the columns (D616): the age says it, and a child's trade is "child".
+            // ⭐ And a pupil's is "student" (Joe, 2026-11-22: "the village panel should show students' trade as student") —
+            // the top bar's own count (`IsPupil`), sorted with the children, since neither holds a trade.
             bool child = !villager.IsLaborer && !villager.HasJob;
             string work = villager.IsLaborer ? "laborer"
                 : villager.HasJob ? TradeOf(villager)
+                : villager.IsPupil ? "student"
                 : "child";
             rows.Add((
                 new RosterRow(villager.Id, villager.Name, villager.Surname, villager.BirthTick, work, child),
