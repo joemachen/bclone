@@ -10995,7 +10995,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE.** Recorded so they outlive the chat
   (A136). Each is a piece of its own; the first commit on a branch claims it here. **✅ Answered (A137), Joe: *"All of that
   yes"*** — the crash and the six systems asks sent to the morale session (`slice/morale`); *Lore* is the words he sees,
-  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g) —
+  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g)
+  (⭐ **reordered 2026-11-21, Joe: *"move path transition/cross-fade up to the next item and start on that"* — now (d), (a),
+  (h), (b)+(c), (g)**) —
   **and (i) added: *"a gentle wind animation to trees that is a degree or two more intense in the winter. think of how
   the water animates and the visuals used there."***
   - ✅ **merged into `main` (A140, *"Looks right, merge"*, `976212f`), not pushed: (f) people go indoors + (e) chimney smoke** — ✍️ **specced and mocked (A138,
@@ -11028,7 +11030,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     **sort headers jump** and shift the panel; the top bar **drops the labourer count** (it is in Professions) — maybe a
     children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
     (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
-  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps; (b)
+  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps —
+    🔨 **being built on `art`** (2026-11-21, moved ahead of (h) at his word; spec `specs/path-crossfade.md`; ⏸️ his calls
+    on a mock before anything is built); (b)
     **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
     (c) **every trade and action** with varied work animations (stone gathering named); (d) ✅ **MERGED INTO `main` (A160, `a2dd441`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A161)** (2026-11-21, *"Start piles"*; specced and mocked A158, `specs/stock-piles.md`; ✅ his calls *"A, all as recommended"*; built A159; played and approved; renders `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg`, before beside after) — **stockpiles show piles** of
     each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
