@@ -10966,7 +10966,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
-    `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163 — warm ripe, `#cbbb7c` (in on W7's
+    `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
     branch, `a4bd596`, D829), the icon; ⏸️ **after W7 and `art` are both in `main`: barley's three rows in `ThePaintedCropsHold`**): barley's three crop stages `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (1024², 128 px a
     tile, seamless, rows east–west, as wheat's `build_crop_stages.jsx`; barley's rows in `ThePaintedCropsHold`); its goods
     icon `textures/ui/icons/goods/barley.png` (⚠️ `ui icons:` is ⛔ without it once `slice/w7-barley` merges); and a

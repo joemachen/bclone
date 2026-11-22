@@ -161,7 +161,7 @@ agrees.
   a snow draw and its edge, against the flat look's fill plus a line or 5–12 stalks per tile.
 - **Red-check:** 8 mutants, 6 red (bare ground ploughed all year; sown ground never young; a painting every four tiles; the paintings not repeating; the crop's own folder never read; the crops never painted). **Two zeros, written down:** the fields drawn flat with the tick on, and no snow on the fields. Both are draw-time only (`_Draw`, never headless), and the year's renders are their evidence. The harness crashed once, on a Windows file lock mid-restore. It left C3's mutant in place, which was found by its anchor count and reversed by its own text; the harness now retries a locked write.
 
-## 9. Barley (A162–A163, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; THE FILES IN; DRAWN WHEN W7 MERGES
+## 9. Barley (A162–A164, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; IN `main` (A164); DRAWN WHEN W7 MERGES
 
 W7's request (`barley.md §7` on `slice/w7-barley`; D821, D825), at his *"Start barley art"*. Painted the way wheat was:
 `D:\Projects\brushes\barley\build_barley_stages.py` imports wheat's painter (`build_crop_stages.py`, never re-run, so
