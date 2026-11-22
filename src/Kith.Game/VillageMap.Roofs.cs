@@ -956,7 +956,11 @@ public partial class VillageMap
     /// the spec — the files, the table, the chimneys — never read back from the code's own lists (art traps 17, 25).
     /// </summary>
     /// <remarks>⚠️ Nothing is drawn headless (D340): the textures' look, the stripes and the shadows' softness are the renders'.</remarks>
-    internal string ThePaintedBuildingsHold()
+    /// <remarks>⭐ The bridges' line rides on this one's return (A175, art trap 73: the list of lines is `Main.cs`'s), each in
+    /// its own <c>try</c>, so a crash in one never loses the other.</remarks>
+    internal string ThePaintedBuildingsHold() => ThePaintedRoofsHold() + "\n" + ThePaintedBridgesHold();
+
+    private string ThePaintedRoofsHold()
     {
         try
         {

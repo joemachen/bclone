@@ -3990,6 +3990,13 @@ public partial class VillageMap : Control
             Bridge bridge = world.Bridges[i];
             bool stone = bridge.Kind == BuildingKind.StoneBridge;
             Condition worn = world.ConditionOf(bridge);
+
+            // ⭐ Painted with the watercolour tick (A175, `painted-bridges.md`); the deck below otherwise, as it always was.
+            if (DrawPaintedBridge(world, bridge, worn))
+            {
+                continue;
+            }
+
             Color deck = Weathered(stone ? StoneBridgeColour : BridgeColour, worn);
             DrawALine(bridge.Near, bridge.Far, BridgeWidth, deck, Ink, bridge.Closed);
 

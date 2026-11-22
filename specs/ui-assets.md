@@ -144,6 +144,8 @@ row taller than today's text line (a layout change in the seam — the build bar
 | `handcarts.png` | a two-wheeled handcart, from the side |
 | `barley.png` | wheat's sheaf, but the heads hang over its sides, each trailing long awns — must not read as `wheat` (its ears stand upright) — ✅ approved and in (A163, `painted-crops.md §9`); shown once W7's good merges |
 
+| `ale.png` | W3 (A181): a wooden tankard, staved and hooped, a head of foam over its rim and down one side — must not read as `bread` (the nearest colour); ✅ approved and in (A183, *"Yes, merge them"*); shown once W3's good merges |
+
 ### 4.2 Buildings (29) — `icons/buildings/`
 **Two files each:** normal, and **owed** (a gift waiting — today's amber *Stone bridge*, *School*: **a small gold-leaf
 medallion on the building**, at the lowest-rightmost spot where it lies wholly inside the drawing — A106, Joe's *"b"*:
@@ -187,6 +189,9 @@ does not), a call for Joe. Fill colour from the building's map colour.
 | `stone-cottage.png` | a stone cottage (tier 2) |
 | `insulated-manor.png` | a manor (tier 3) |
 
+| `brewery.png` (+ `-owed`) | W3 (A181): a workshop in the brewer's colour with a chimney, a copper on its fire beside it, piped into the wall; ✅ approved and in (A183) |
+| `tavern.png` (+ `-owed`) | W3 (A181): a homely thatched hall in the keeper's colour, its two windows lit, a sign with a tankard hung from a bracket; ✅ approved and in (A183) |
+
 *Every icon is named after its row's name in the data, lower case, apostrophes dropped, words hyphened (A111) — the
 three home tiers were renamed from `cabin`, `cottage` and `manor` so the game finds them with no list of exceptions. A
 modder's building is drawn by adding `<its name>.png` here.*
@@ -206,6 +211,13 @@ the systems lane's one line, A93). Shown on the Professions table, a person's ca
 | `fisher.png` | a fish on a line | `merchant.png` | a balance |
 | `hunter.png` | a bow | `tailor.png` | shears and thread |
 | `carpenter.png` | a cartwheel | `teacher.png` | a slate and stylus |
+| `brewer.png` | W3 (A181): a steaming copper and an ear of barley (a mash paddle read as the baker's peel) — ✅ A183 | `tavern-keeper.png` | W3 (A181): the cask the keeper carries in, its tap dripping — ✅ A183 |
+
+✅ **W3's colours (A181; his *"Yes, merge them"*, A183), the systems lane's two lines on `slice/w3-tavern`, as barley's was (D829):** the stand-ins sit too
+close — ale `#b07a2a` 8.6 ΔE from bread, the brewer the same 8.6 from the baker, the keeper `#8a3b2e` 9.4 from the herdsman.
+Recommended: **ale and the brewer `#9a5e14`** (12.6 from bread and the baker; the brewer wears his good's colour, as the baker
+wears bread's) and **the keeper `#8a2f3e`** (22 from the herdsman). The icons above are painted in them
+(`D:\Projects\brushes\tavern\w3_icons_mock.jpg`, both sets).
 
 ### 4.4 Tools (12) — `icons/tools/`
 Same frame as the icons; drawn in ink with one rubric or gold accent, since they are actions, not things.

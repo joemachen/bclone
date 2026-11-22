@@ -15,7 +15,9 @@
 > ⏸️ HIS PLAY OF THE NEW BUILD, THEN THE MERGE AT HIS WORD — `main` into the slice first (it has moved).
 > 🐞 His play (2026-11-22): *"only the tavernkeeper goes in"* — his tavern stood out of every home's reach and the card said
 > "Open of an evening"; it now counts the homes within reach and says when none is (D843). Pupils read *student* in the
-> village panel (D844). ✅ The reach stays 12 at his word (D847, *"Keep 12"*).**
+> village panel (D844). ✅ The reach stays 12 at his word (D847, *"Keep 12"*). ✅ `main` MERGED INTO THE SLICE at his
+> word (D848, *"Merge main in"*): the art lane's W3 icons, bridge and crossfade; re-imported; probe 141 ✅, 0 ⛔.
+> ⏸️ THE MERGE INTO `main`, AT HIS WORD.**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -10861,7 +10863,27 @@ older saves (formats 2 and 12) died with *"no map"* and a NullReferenceException
 filled `SUITE` with `t.replace` over each whole file, and fifteen DESIGN and twelve HANDOFF headings that already said
 *SUITE* took the suite's sentence (put back, `d450486`). Fill the placeholder in the replacement strings before the edit, or
 use a token like `@@SUITE@@`, and read the commit's `--stat` against what the edit meant to touch before trusting it.
-(76) **The suite is skipped only when its diff is empty — and a `data/` edit is not art** (D846): `CLAUDE.md`'s
+(76) **A GPU measurement that holds a draw-time state from a script must hold ALL of it, or it measures a state the game never
+draws** (A169): the crossfade's first 4K numbers read +1.2–1.6 ms for a fade held at half, because the script set `path_fade`
+and left `path_map_from` unset — a black texture, which the field reads as *inside a track everywhere*, so every pixel of the
+valley blended. Set from the real field, and with the shaders swapped on one material inside one run (`measure_ab.gd` in
+`D:\Projects\brushes\paths\crossfade\built`; across runs the same build read 3.9 and 7.0 ms), it was +0.02–0.06 ms.
+And **a state keyed on "the same world as last time" must be forgotten where the state stops being kept up**: the field is
+not baked while the watercolour tick is off, so on again the first bake would fade from a field seasons stale — reset where
+the tick goes off (`ShowWatercolour`), with a probe step for it. And **GDScript cannot read a C# `internal` member**: a render
+script that must know when the network changed cannot ask the probe's counters; a movie at fixed fps through the known turn
+(trap 59) needs no hook.
+(77) **His one stone bridge is in a save that will not open, so stone and wear are POSED** (A174): the only `StoneBridge`
+in his saves is Stonebridge's, format 12 (trap 74), and every bridge in a format-13 save is wooden and sound or newly
+repaired. The mock posed them from an environment switch inside the scratch draw (`KITH_BRIDGE_WEAR`, `KITH_BRIDGE_STONE`)
+rather than by editing a save — no save format to get wrong — and a posed ruin keeps the people walking on it, which no
+real ruin has (it closes only when nobody is on it). Say "posed" on the sheet, and play a real worn bridge before calling
+the wear done: a quick look for one is `list_bridges.py` in `D:\Projects\brushes\bridges\`.
+(78) **A painting that is not a roof must not become a `RoofMaterial`** (A175): the roofs' probe walks
+`Enum.GetValues<RoofMaterial>()` and draws every value as a roof, and `RoofTexturePaths` is checked at 384 × 128 — a deck
+added there turns `painted buildings:` red for a texture that is right. The bridge reuses the roofs' runs (`RoofRuns`) and
+draws its one textured run in its own deck (`DrawBridgeRuns`); a later piece that wants the roofs' cache does the same.
+(79) **The suite is skipped only when its diff is empty — and a `data/` edit is not art** (D846): `CLAUDE.md`'s
 *Verification* skips the suite when no file under `src/Kith.Sim`, `tests`, `data` (or the build's own files) differs from
 the last green commit. A palette or icon row in `data/` is the sim's input and runs the suite — barley's colour (D829) went
 on the systems branch for this reason. Say *"suite skipped"* in the record with the commit and its count, never silently.
@@ -11067,7 +11089,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **JOE'S PLAY NOTES, 2026-11-20 (after the animations merged) — SORTED BY LANE.** Recorded so they outlive the chat
   (A136). Each is a piece of its own; the first commit on a branch claims it here. **✅ Answered (A137), Joe: *"All of that
   yes"*** — the crash and the six systems asks sent to the morale session (`slice/morale`); *Lore* is the words he sees,
-  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g) —
+  the JSON keys and save fields kept; the art in the order recommended, (f)+(e) first, then (d), (h), (a), (b)+(c), (g)
+  (⭐ **reordered 2026-11-21, Joe: *"move path transition/cross-fade up to the next item and start on that"* — now (d), (a),
+  (h), (b)+(c), (g)**) —
   **and (i) added: *"a gentle wind animation to trees that is a degree or two more intense in the winter. think of how
   the water animates and the visuals used there."***
   - ✅ **merged into `main` (A140, *"Looks right, merge"*, `976212f`), not pushed: (f) people go indoors + (e) chimney smoke** — ✍️ **specced and mocked (A138,
@@ -11100,7 +11124,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     **sort headers jump** and shift the panel; the top bar **drops the labourer count** (it is in Professions) — maybe a
     children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
     (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
-  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps; (b)
+  - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps —
+    ✅ **MERGED INTO `main` (A171, merge `2b222ae`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A172, `origin/main` = `f88956e`)** — built A169 (2026-11-22), moved ahead of (h) at his word; specced and mocked A168 (`specs/path-crossfade.md`,
+    `D:\Projects\brushes\paths\crossfade\path_crossfade_mock.gif`); ✅ his calls *"All as recommended"* (C by patches, half a
+    season, both ways alike, no fade on a load); the two map files at his *"Yes, edit them"*; renders of the build in
+    `D:\Projects\brushes\paths\crossfade\built\`; played and approved); (b)
     **fishing**: the cast, the catch with a splash, several versions shuffled; stand on the dock, or out in the boat;
     (c) **every trade and action** with varied work animations (stone gathering named); (d) ✅ **MERGED INTO `main` (A160, `a2dd441`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A161)** (2026-11-21, *"Start piles"*; specced and mocked A158, `specs/stock-piles.md`; ✅ his calls *"A, all as recommended"*; built A159; played and approved; renders `D:\Projects\brushes\piles\built_lark.jpg`, `built_rav.jpg`, `built_holl.jpg`, before beside after) — **stockpiles show piles** of
     each good they hold (the bars stay on other buildings for now) and **goods on the ground as piles**, not the coloured
@@ -11108,8 +11136,46 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     go inside** rather than standing on the roof — someone *SeekingShelter* stays in that state on arrival and is drawn
     on the building (D45); (g) **berry bushes / gathering resources** and **animals for hunting**, animated (`art-inventory.md`
     §5, §7; B10 *which animals* still open; hunting has no animal in the sim — what is drawn must be true to it);
-    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph); (i) **trees
-    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation.
+    (h) **an authentic wooden bridge** with the buildings' treatment (today a deck quad, a grey glyph) — 🔨 **being built
+    on `art`** (A173, 2026-11-22, Joe: *"path wear crossfades is done and pushed to main. next for art: bridges."*; spec
+    first, mocked on copies of his saves in `D:\Projects\brushes\bridges\`, his calls before any code) — ✍️ **specced and
+    mocked (A174, `specs/painted-bridges.md`; `bridges_looks.jpg`, `bridges_wear.jpg`, `bridges_stone.jpg`); ⏸️ five calls his
+    (§8): which look (⭐ B, planks with a rail each side), the wear painted, stone in the same piece, what stays as it is, his OK
+    for one line of `VillageMap.cs`** — ✅ **his *"B, all as recommended"*; 🔨 BUILT on `art` (A175, `painted-bridges.md §9`),
+    renders `D:\Projects\brushes\bridges\built\`; ✅ played and MERGED INTO `main` at his *"merge it"* (A176, merge
+    `df134f6`), pushed at his *"Push main"* (A177, `origin/main` = `f115aaf`) — done**; (i) **trees
+    swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation;
+    (j) **trees maturing from saplings to full trees, an animated transition** (A173, Joe, 2026-11-22: *"Add to art's list:
+    animated transition for trees 1) maturing from saplings to full trees and 2) being felled/falling"*) — *what the sim
+    gives the view:* **one step and nothing between** — a `Sapling` tile becomes `Forest` at a regrowth sweep after one
+    `regrowth_period_days` (72) period (a forester's planting waits its full period, `GeneratedMap.IsYoungSapling`), seen
+    as the terrain changing (`SimWorld.TerrainGeneration`); so the transition plays from that tick, the young set
+    (`tree-sprites.md §10`) giving way to the grown one — never a gradual growth the sim does not have;
+    (k) **a tree being felled and falling** (A173, the same words) — *what the sim gives the view:* a forester stands at
+    the tile `Cutting` (a labourer on painted ground, `Clearing`) for the stint, then `SimWorld.Harvest` turns the whole
+    tile `Forest` → `Grass` in one tick, its logs carried off or left beside it as a heap; so the fall plays at that tick
+    from the tile the feller worked (all of the tile's painted trees go at once — which fall and which fade is the
+    piece's call), and the chopping before it is the villager's own swing (A130);
+    (l) **the title screen upgrade** — a parchment menu panel, and a four-season composite background captured from the real
+    renderer; his amended brief is `D:\Projects\brushes\title-menu\brief.md`. **Queued after (h), Joe's *"After the bridge"*.**
+    🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code)
+    — ✍️ **specced, part 1 mocked (A179, `specs/title-screen-art.md`; `D:\Projects\brushes\title-menu\title_panel_mock.jpg`);
+    ⏸️ six calls his (§7): no-save menu, his OK for `TitleScreen.cs` and `Main.cs`'s `title:` probe, which village, what follows
+    the forced season, the panel's width, the newest-village backdrop given up. Nothing built.**
+    ⏸️ **Parked behind (m), Joe's order (relayed 2026-11-22: *"The art lane should paint the tavern icons so it can build
+    sooner"*)** — his calls were answered here (*"All as recommended - and add a 'settings' option to the title screen"*) and
+    part 1 is built in the worktree, uncommitted, its red-check running; picked up after (m).
+    (m) **W3's icons — the brewery and the tavern (each with its owed form), ale, the brewer and the tavern keeper** — 🔨 **being
+    built on `art`** (A181, 2026-11-22, ahead of (l) at Joe's word). W3's request (`slice/w3-tavern`'s HANDOFF, *"ART LANE — W3'S
+    TAVERN AND BREWERY"*): its `ui icons:` line is ⛔ without them. Barley's pattern (A162–A166): painted by
+    `D:\Projects\brushes\ui\ps\p3_icons.jsx`, mocked for his OK, merged into `main` at his word so W3 can take `main`. Also asked
+    there, not in this piece: the buildings' painted look on the map, the figures, the cask.
+    ✍️ **Painted, in on `art`, mocked (A182; `D:\Projects\brushes\tavern\w3_icons_mock.jpg`); the slice's own `ui icons:` ✅
+    with them on a scratch copy, ⛔ without (all seven named). ⏸️ Two calls his: the icons as drawn, and the colours (ale and the
+    brewer `#9a5e14`, the keeper `#8a2f3e`, recommended over W3's stand-ins, which sit under ΔE 10 of bread, the baker and the
+    herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
+    ✅ **His *"Yes, merge them"* (the look and the recommended colours) — MERGED INTO `main` (A183, `ddcd161`), pushed at his *"Push main"* (A184, `origin/main` = `a35d65c`). ▶️ W3
+    takes `main`, sets ale and the brewer to `#9a5e14` and the keeper to `#8a2f3e`, and re-imports. Done for the art lane.**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
