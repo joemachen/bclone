@@ -171,6 +171,19 @@ public sealed record GoodRow
     [JsonPropertyName("trade_worth")]
     public int TradeWorth { get; init; } = 1;
 
+    /// <summary>
+    /// ⭐ <b>Kept on food's side of a shared roof</b> (W3, D838; Joe: <i>"ale stays in the granary but counts on the food side of
+    /// that split, so granaries keep all their room for food"</i>) — a good nobody eats that a granary may still hold. It is not
+    /// food (it feeds nobody and no food count reads it); it only does not make the store a mixed one, nor claim the half the
+    /// D361/D409 split keeps for everything else.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Without it, a granary that may hold ale is a shared roof, and its food may fill only half of it — in every village,
+    /// brewing or not (nine goldens moved before this flag existed). Default false: every other good is as it was.
+    /// </remarks>
+    [JsonPropertyName("kept_with_food")]
+    public bool KeptWithFood { get; init; }
+
     /// <summary>Whether anybody can eat it. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool Edible => Nutrition > 0;
@@ -448,6 +461,12 @@ public sealed class GoodsCatalog
 
     /// <summary>Whether anybody can eat it — by id, for goods a mod added.</summary>
     public bool Edible(int id) => id >= 0 && id < _rows.Length && _rows[id].Edible;
+
+    /// <summary>
+    /// Whether it sits on food's side of a shared roof's split — food, or a good kept with it (<see cref="GoodRow.KeptWithFood"/>,
+    /// D838). ⚠️ The store's room only: never a count of food.
+    /// </summary>
+    public bool FoodSideOfTheRoof(int id) => Edible(id) || (id >= 0 && id < _rows.Length && _rows[id].KeptWithFood);
 
     /// <summary>What one unit of it is worth to a hungry person. Zero if nobody can eat it.</summary>
     public int NutritionOf(Goods goods) => _rows[(int)goods].Nutrition;

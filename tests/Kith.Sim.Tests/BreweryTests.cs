@@ -20,17 +20,44 @@ public sealed class BreweryTests
 
     private static SimConfig Config => VillageFixtures.Village;
 
-    /// <summary>Ale is not food, and is kept dry where flour is — never a granary (the birth gate) or the market's counter.</summary>
+    /// <summary>
+    /// Ale is not food, and is kept in the granary beside its barley (Joe, D838) — never the market's counter — and a granary
+    /// holding it counts no more food for it.
+    /// </summary>
     [Fact]
-    public void AleIsNotFoodAndIsKeptInTheWarehouse()
+    public void AleIsNotFoodAndIsKeptInTheGranary()
     {
         var goods = new GoodsCatalog(Config.GoodsCatalog);
         Assert.False(goods.Edible(Goods.Ale));
         Assert.Equal(0, goods[Goods.Ale].Nutrition);
-        Assert.Contains(StoreKind.Warehouse, goods[Goods.Ale].StoredBy);
-        Assert.DoesNotContain(StoreKind.Granary, goods[Goods.Ale].StoredBy);
+        Assert.Contains(StoreKind.Granary, goods[Goods.Ale].StoredBy);
+        Assert.DoesNotContain(StoreKind.Warehouse, goods[Goods.Ale].StoredBy);
+
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        int food = world.FoodInGranaries();
+        TheGranary(world).Store.Add(Goods.Ale, 20);
+        Assert.Equal(food, world.FoodInGranaries());
         Assert.DoesNotContain(StoreKind.Market, goods[Goods.Ale].StoredBy);
         Assert.Equal("ale", goods.NameOf(Goods.Ale));
+    }
+
+    /// <summary>
+    /// ⛔ A granary that may hold ale keeps ALL its room for food (Joe, D838: <i>"counts on the food side of that split"</i>) — ale
+    /// is <c>kept_with_food</c>, so the granary is no shared roof, and food fills it to the brim with ale in it too. Red with the
+    /// flag off: the D361/D409 split keeps half of every granary for everything else, in every village (nine goldens moved).
+    /// </summary>
+    [Fact]
+    public void AGranaryThatMayHoldAleKeepsAllItsRoomForFood()
+    {
+        SimWorld world = SimFactory.CreatePhase0(Config, new InMemoryLogSink()).World;
+        StoreBuilding granary = TheGranary(world);
+        Assert.True(granary.Accepts(Goods.Ale), "the premise: a granary takes ale");
+        granary.Store.Add(Goods.Ale, 20);
+        Assert.Equal(granary.Store.FreeSpace, granary.RoomFor(Goods.Produce));
+        Assert.Equal(granary.Store.FreeSpace, granary.RoomFor(Goods.Ale));
+        int put = granary.Put(Goods.Produce, granary.Store.Capacity);
+        _output.WriteLine($"{put} forage went into a granary holding 20 ale; {granary.Store.FreeSpace} left of {granary.Store.Capacity}");
+        Assert.True(granary.Store.IsFull, "Food could not fill a granary that holds ale.");
     }
 
     /// <summary>The brewer's batch, read off the shipped row: twenty barley to ten ale, no firing (D836).</summary>
@@ -70,12 +97,12 @@ public sealed class BreweryTests
     }
 
     /// <summary>
-    /// ⭐ `TavernsSupplied` (§5.3), its three arms: with no tavern standing there is nothing to brew for; with one and the
-    /// homes near it, the copper runs; with a season's drinking held, it stops — each said in a sentence. Under the
-    /// shipped starting limit, which is the ceiling over it (D836).
+    /// ⭐ Brewed to the player's stock limit, tavern or not (Joe, D838: <i>"i want ale to have a stock limit - not be determined
+    /// by the tavern"</i>): with no tavern standing the copper runs; with the limit held it stops, and says the limit. Red with
+    /// the old tavern rule back (no tavern, nothing to brew).
     /// </summary>
     [Fact]
-    public void TheBreweryBrewsForTheTavernsAndNoMore()
+    public void TheBreweryBrewsToTheLimitTavernOrNot()
     {
         SimConfig config = Config;
         SimWorld world = SimFactory.CreatePhase0(config, new InMemoryLogSink()).World;
@@ -83,24 +110,17 @@ public sealed class BreweryTests
         Workplace brewery = FoodChainTests.RaiseA(world, BuildingKind.Brewery);
         ToolsTests.KeepTheVillageWarmAndFed(world);
         TheGranary(world).Store.Add(Goods.Barley, 200);
+        Assert.True(world.SetStockLimit(Goods.Ale, 30).Allowed);
+        Assert.DoesNotContain(world.Workplaces, w => w.Kind == JobKind.TavernKeeper);
 
-        string? noTavern = world.WhyTheBatchWaits(brewery);
-        _output.WriteLine($"no tavern: {noTavern}");
-        Assert.Contains("no tavern stands", noTavern, StringComparison.Ordinal);
-        Assert.Equal(0, LabourQuota.AleWanted(world));
-
-        FoodChainTests.RaiseA(world, BuildingKind.Tavern);
-        int adults = world.Villagers.Count(v => v.CanWork && world.TavernWithinReachOf(v) is not null);
-        Assert.True(adults > 0, "The premise: homes near the founding are within reach of a tavern beside it.");
-        Assert.Equal(adults * LabourQuota.EveningsASeason(config), LabourQuota.AleWanted(world));
         Assert.Null(world.WhyTheBatchWaits(brewery));
-        Assert.True(LabourQuota.AleShortfall(world) > 0);
+        Assert.True(LabourQuota.BatchHandsWanted(world, world.Batches.For(JobKind.Brewer)!) > 0, "No brewer wanted below the limit.");
 
-        TheWarehouse(world).Store.Add(Goods.Ale, LabourQuota.AleWanted(world));
-        string? enough = world.WhyTheBatchWaits(brewery);
-        _output.WriteLine($"a season held: {enough}");
-        Assert.Contains("enough for the season", enough, StringComparison.Ordinal);
-        Assert.Equal(0, LabourQuota.AleShortfall(world));
+        TheGranary(world).Store.Add(Goods.Ale, 30);
+        string? met = world.WhyTheBatchWaits(brewery);
+        _output.WriteLine($"the limit held: {met}");
+        Assert.Contains("you asked the village to keep 30", met, StringComparison.Ordinal);
+        Assert.Equal(0, LabourQuota.BatchHandsWanted(world, world.Batches.For(JobKind.Brewer)!));
     }
 
     /// <summary>⛔ `FedFirst`: barley is food, so the copper is cold while the village is short of it (the miller's rule).</summary>
@@ -167,9 +187,6 @@ public sealed class BreweryTests
         Assert.True(made > 0, "The brewery made no ale.");
         Assert.Equal(0, made % config.AlePerBrew);
     }
-
-    private static StoreBuilding TheWarehouse(SimWorld world) =>
-        world.StoreBuildings.First(s => s.Kind == StoreKind.Warehouse);
 
     private static StoreBuilding TheGranary(SimWorld world) =>
         world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);

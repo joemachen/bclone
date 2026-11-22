@@ -1,6 +1,7 @@
 # Spec: Beer and the tavern (W3)
 
-> Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836) — STEPS 1–5; ⏸️ STEP 6 (THE GATE'S POSED GOLDEN, A VILLAGE KEPT
+> Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836; ale brewed to its limit and kept in the granary at his word
+> while playing, D838) — STEPS 1–5; ⏸️ STEP 6 (THE GATE'S POSED GOLDEN, A VILLAGE KEPT
 > BY A TAVERN) AND JOE'S PLAY STILL OWED.** Three goldens moved, each proven by ablation (§7). Two things changed at the build
 > and he kept both (§5.2's firewood, §5.3's limit — D837, *"Keep both"*), and the keeper never drinks at their own tavern (§5.4a).
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
@@ -72,9 +73,9 @@ way, read against `ArriveAt`'s tail and `OutOnTheWork` before a line is written.
 2. **The brewery** — a workshop by the fields or the granary. Its card: the brewer, *"brewing ale"*, *"the 2nd brew of the
    day"*; when idle, one sentence why — *"No store within reach has the barley a brew takes"*, *"The village is short of
    food — barley is grain somebody could eat"*, *"No tavern stands to drink it"*, *"The taverns have ale enough"*.
-3. **Ale** — a good on the stock-limits panel, in the warehouse, on the top bar's goods like flour.
+3. **Ale** — a good on the stock-limits panel, in the granary beside its barley (D838), on the top bar's goods.
 4. **The tavern** — placed among the homes, **kept by a tavern keeper** (*"Mira keeps the tavern"*), whom you see carry
-   ale over from the warehouse. Its card: its keeper, how much ale it holds, how many came this season, which homes are
+   ale over from the granary (D838). Its card: its keeper, how much ale it holds, how many came this season, which homes are
    within reach, and when it is shut, why — *"No keeper — the tavern is shut"*, *"The tavern is dry — no store within
    reach has ale"*, *"Shut while the village is short of food"*.
 5. **Of an evening**, adults within reach walk to the tavern instead of straight home, sit a while inside (lit, warm),
@@ -89,7 +90,7 @@ way, read against `ArriveAt`'s tail and `OutOnTheWork` before a line is written.
 ### 5.1 Ale — a good (`Goods.Ale = 17`)
 
 A `GoodRow`: not edible (nutrition 0, so it never counts as food and is never eaten), category *Fuel and goods* (beside
-tools and clothing — ⚠️ the row's own name for the heading), stored by **warehouse and cart** (flour's), a trade worth of
+tools and clothing — ⚠️ the row's own name for the heading), stored by **granary and cart** — *beside its barley, Joe's D838; the draft had the warehouse, flour's* — and **`kept_with_food`**, so a granary that may hold it is no shared roof and keeps all its room for food (D838: without it, every granary's food could fill only half of it) —, a trade worth of
 2–3 (processed, as bread). Appended, never renumbered; D827 opens every older save with it held nowhere. **⚠️ The modded good
 `Planks` in `WorkshopTests` moves 17 → 18** (it moved 16 → 17 for barley).
 
@@ -117,20 +118,22 @@ Stop FedFirst | TavernsSupplied · Hands ShortfallOverAYear · QuotaBand AfterSt
 - **N, M and the ticks are measured before typed** (§8 step 1), to Joe's bar (D666): **one barley farm and one brewery
   comfortably keep about ten adults in ale, with a two-to-one margin**.
 
-### 5.3 `TavernsSupplied` — the brewery's demand rule (new, named)
+### 5.3 The brewery's demand — the player's stock limit (D838)
 
-Brew while the stores **and the taverns' own stock** hold less than **a season's drinking** for the adults within reach
-of a standing tavern; **no tavern standing, nothing to brew for** (and the card says so). The player's limit is the
-ceiling over it, read first (D62's derived default under the ceiling). ⚠️ *Changed at the build (D836):* the draft read
-the rule only with no limit set, as the tailor's is — but every good ships with a starting limit (D697), so it would never
-have run, and a village with no tavern would have brewed its 50 for nobody. ✅ Kept at his word (D837). Ale starts at **50** (D697's number); the
-lowlands make 25 and the hills want 25 (D594's half). One method, read by the stop, the quota and the card — never three copies (D370's lesson).
+**Brew to the ale limit, tavern or not** — the oven's shape: every seat with work wanted, `FedFirst` above it, the limit
+the stop (Joe, D838: *"i want ale to have a stock limit - not be determined by the tavern"*). Ale starts at **50** (D697's
+number); the lowlands make 25 and the hills want 25 (D594's half).
+
+*(Superseded, D838 — kept for the reasoning:)* D834–D837 had a named rule, `TavernsSupplied`: brew toward a season's
+drinking for the adults within reach of a standing tavern, and with no tavern nothing; read under the limit (D836, kept at
+D837). Joe, playing it, wanted the limit alone — a number he sets and can see, not one the taverns derive — so the rule and
+its three methods (`AleWanted`, `AleShortfall`, `EveningsASeason`) were deleted, not left unread.
 
 ### 5.4 The tavern and the evening there
 
 `BuildingKind.Tavern`, a workplace for **`JobKind.TavernKeeper` (19)** — Joe's call 3B. The school's shape: a tavern is
 **open only while it has a keeper** (`WorkerIds.Count > 0`) **and ale in its own `Store`**. Drinkers drink from the
-tavern's store, never from the warehouse — the keeper is the only way ale reaches it.
+tavern's store, never from the granary — the keeper is the only way ale reaches it.
 
 #### 5.4a The keeper
 

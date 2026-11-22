@@ -407,7 +407,8 @@ public sealed class StoreBuilding
         int othersHeld = 0;
         for (int id = 0; id < Catalog.Count; id++)
         {
-            if (Catalog.Edible(id))
+            // ⭐ Food's side includes a good kept with food (ale, D838): it never makes a granary a mixed store.
+            if (Catalog.FoodSideOfTheRoof(id))
             {
                 foodHeld += Store[(Goods)id];
             }
@@ -422,7 +423,7 @@ public sealed class StoreBuilding
         // was full of logs, and no store in the village had room for one log of firewood: seed 2
         // froze in year 9 beside 420 split firewood lying on the ground. Whichever side fills a
         // shared roof, the other still has its half.
-        int owed = (Store.Capacity / 2) - (Catalog.Edible(goods) ? othersHeld : foodHeld);
+        int owed = (Store.Capacity / 2) - (Catalog.FoodSideOfTheRoof((int)goods) ? othersHeld : foodHeld);
         int room = owed <= 0 ? free : free - owed;
         return room < 0 ? 0 : room;
     }
@@ -448,7 +449,7 @@ public sealed class StoreBuilding
                     continue;
                 }
 
-                if (Catalog.Edible(id))
+                if (Catalog.FoodSideOfTheRoof(id))
                 {
                     food = true;
                 }

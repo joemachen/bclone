@@ -166,7 +166,7 @@ Traced (the order-sensitive details, each with its guard in §6):
    `BuildingKind` value, its rows (job, building, skill, batch), and its place in `KindsInOrder`** — nothing else. Making
    the allocator's order data is Phase 7's (with the rows moving into the data file), and every modded trade's.
    ✅ **Proved by W3 (D836):** the brewer took exactly that — `JobKind.Brewer`, `BuildingKind.Brewery`, the four rows and its
-   place after the baker — plus one named demand rule (`TavernsSupplied`), and is hired by the village
+   place after the baker — its demand the ale limit alone since D838 (a named `TavernsSupplied` rule came and went) — and is hired by the village
    (`BreweryTests.TheVillageHiresABrewerAndBrewsAle`, red with it out of `KindsInOrder`). ⚠️ And one thing the batch path
    could not do: a firing needs the input and the firewood in ONE store, and no store a batch may use holds both barley and
    firewood — so the brewery burns none (`tavern.md §5.2`).

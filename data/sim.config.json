@@ -2134,9 +2134,9 @@
     // over them, as every row here is.
     "clothing": 50,
     "handcarts": 50,
-    // ALE 50 (W3, D834): D697's number for an unlocked good. A ceiling on what is
-    // held, never on what is drunk -- the brewer brews again as the taverns draw it
-    // down, toward a season's drinking for the adults within reach (tavern.md 5.3).
+    // ALE 50 (W3, D834): D697's number for an unlocked good -- and THE brewery's
+    // demand (Joe, D838: "i want ale to have a stock limit - not be determined by
+    // the tavern"): the brewer brews to it, tavern or not, as the oven bakes to bread's.
     "ale": 50,
     // ⭐ D711 -- HAY 2,000 (Joe, 2026-11-07: "Hay at 2,000"). Unlimited until now
     // (D590). NOT 50 like the other unlocked goods: a met hay row stops the cutting

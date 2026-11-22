@@ -9,7 +9,8 @@
 > the gate's posed golden (a village kept by a tavern) and HIS PLAY (`.\run.bat`: a barley farm and a brewery, a tavern
 > among the homes; watch the keeper carry a cask, adults walk over of an evening, a person's card say the tavern made up for
 > a worry). ✅ His two build-time calls kept (D837, *"Keep both"*): the brewery burns no firewood; the brewing rule reads
-> under his limit.**
+> under his limit. ⭐ D838, his while playing: ale brewed to its stock limit, tavern or not (the tavern rule deleted), and
+> kept in the granary beside its barley.**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -21,6 +22,10 @@
 > - **⛔ TRAP (D836): a batch's firing comes from the store that holds its input** (D713's one walk). Barley lives in
 >   granaries, firewood never does — a brewery with a firing could never have brewed, and nothing would have said why
 >   but the card. Check `StoredBy` of the input against the firewood's before giving a batch row a `Firing`.
+> - **⛔ TRAP (D838): ONE NON-FOOD GOOD IN A GRANARY'S `StoredBy` HALVES EVERY GRANARY'S FOOD ROOM.** A store that may hold
+>   food and anything else is a *shared roof* (D361/D409, the cart's rule): half kept for each side. Ale in the granary
+>   moved nine tests in villages that never brew. A good row's `kept_with_food` puts it on food's side of the split
+>   (never a count of food). Before adding a store kind to any good's `StoredBy`, ask what that store's split becomes.
 > - **⛔ TRAP (D836): `if (false)` is not a mutant here** — CS0162 fails the build, the old DLL runs, and the reds are the last
 >   group's. Mutate with a runtime-false (`&& Tick == ulong.MaxValue`), and read `0 Error(s)` before reading a red.
 > - **⛔ TRAP (D836): the fixture has few drinkers.** Four adults, two within reach, one of them the keeper (who never drinks at
@@ -10914,7 +10919,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
   3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
   `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep
-  both"*):** the brewery burns no firewood; the brewing rule is read under his ale limit.
+  both"*):** the brewery burns no firewood; ~~the brewing rule is read under his ale limit~~ — the rule itself gone at his
+  word (D838): ale brews to its limit, tavern or not, and is kept in the granary.
+
+- ⏸️ 🎨 **ART LANE — THE PROFESSIONS PANEL WANTS A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3, D838).** With the
+  brewer and the tavern keeper added it runs past the bottom of the screen (his screenshot: Tavern keeper's row at the bar's
+  edge). ⚠️ The panel is drawn in `Main.cs`, which D699's table gives the systems lane — whichever lane takes it, one session.
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while

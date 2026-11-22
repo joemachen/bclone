@@ -214,8 +214,8 @@ public enum JobKind
     Teacher = 17,
 
     /// <summary>
-    /// The brewer (W3, `tavern.md §5.2`, D834) — barley into ale at the brewery, W1's batch row a fifth time. Wanted against
-    /// <c>LabourQuota.AleShortfall</c>, the tailor's shape; stood down while the village is short of food (barley is food).
+    /// The brewer (W3, `tavern.md §5.2`, D834) — barley into ale at the brewery, W1's batch row a fifth time. Every seat with
+    /// work is wanted until the ale limit (Joe, D838), the oven's shape; stood down while the village is short of food (barley is food).
     /// <b>Appended at 18.</b>
     /// </summary>
     Brewer = 18,

@@ -31,7 +31,7 @@ public sealed class TavernTests
     // -----------------------------------------------------------------
 
     /// <summary>
-    /// ⭐ Hired by the village from shipped rows (no hand seated, no number typed) and carrying ale from the warehouse into the
+    /// ⭐ Hired by the village from shipped rows (no hand seated, no number typed) and carrying ale from the granary into the
     /// tavern, up to <c>tavern_stock</c> and no further. Red with the keeper out of <c>KindsInOrder</c>.
     /// </summary>
     [Fact]
@@ -41,7 +41,7 @@ public sealed class TavernTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
         Workplace tavern = ATavern(world);
-        TheWarehouse(world).Store.Add(Goods.Ale, 60);
+        TheGranary(world).Store.Add(Goods.Ale, 60);
         Assert.True(LabourQuota.KeepersWanted(world) > 0, "No keeper wanted with ale in the warehouse.");
 
         bool carried = false;
@@ -219,7 +219,7 @@ public sealed class TavernTests
         SimWorld world = loop.World;
         ToolsTests.KeepTheVillageWarmAndFed(world);
         ATavern(world);
-        TheWarehouse(world).Store.Add(Goods.Ale, 100);
+        TheGranary(world).Store.Add(Goods.Ale, 100);
         loop.Step(2 * config.TicksPerSeason);
 
         Assert.All(world.Households, h => Assert.Equal(0, h.Stockpile[Goods.Ale]));
@@ -359,8 +359,8 @@ public sealed class TavernTests
         hand.WorkplaceId = tavern.Id;
     }
 
-    private static StoreBuilding TheWarehouse(SimWorld world) =>
-        world.StoreBuildings.First(s => s.Kind == StoreKind.Warehouse);
+    private static StoreBuilding TheGranary(SimWorld world) =>
+        world.StoreBuildings.First(s => s.Kind == StoreKind.Granary);
 
     private static SimWorld WorldAtTheTurnOf(int season)
     {

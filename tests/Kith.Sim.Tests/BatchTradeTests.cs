@@ -493,7 +493,7 @@ public sealed class BatchTradeTests
                 "Carpenter: EveryHouseholdCarted, ShortfallOverAYear, AfterTools, famine works, the product's recipe",
                 "Miller: FedFirst, OvensSupplied, EverySeatWithWork, AfterStone, famine works",
                 "Baker: None, EverySeatWithWork, AfterStone, famine works",
-                "Brewer: FedFirst, TavernsSupplied, ShortfallOverAYear, AfterStone, famine stands down",
+                "Brewer: FedFirst, EverySeatWithWork, AfterStone, famine stands down",
             },
             Config.BatchRows.Select(Rule));
     }

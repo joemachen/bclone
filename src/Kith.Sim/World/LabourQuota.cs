@@ -1821,64 +1821,12 @@ public readonly record struct LabourQuota
     private static int BatchShortfall(SimWorld world, BatchRow row) =>
         (row.Stop & BatchStop.EveryoneClothed) != 0 ? ClothingShortfall(world)
         : (row.Stop & BatchStop.EveryHouseholdCarted) != 0 ? HandcartsShortfall(world)
-        : (row.Stop & BatchStop.TavernsSupplied) != 0 ? AleShortfall(world)
         : throw new InvalidOperationException(
             $"The {row.Trade} row is hired by its shortfall and its stop names none — `SimConfig` refuses this at load.");
 
     /// <summary>The hands one batch trade is wanted for, by its trade — the named readers' way in (D218).</summary>
     private static int BatchHandsWanted(SimWorld world, JobKind trade) =>
         BatchHandsWanted(world, world.Batches.For(trade) ?? throw new ArgumentOutOfRangeException(nameof(trade), trade, "not a batch trade"));
-
-    /// <summary>
-    /// ⭐ The ale the brewery brews toward, with no limit of the player's (W3, `tavern.md §5.3`): a season's drinking — an
-    /// evening every <c>tavern_every_days</c> — for every adult whose home is within reach of a standing tavern. Nought with
-    /// no tavern standing, and so nothing to brew for.
-    /// </summary>
-    /// <remarks>
-    /// Read where the work is decided (the stop, the hiring, the card), never per tick: a walk from each adult's home to each
-    /// tavern, through the cost field's cached fields (one a tavern). An adult within reach of two taverns counts once.
-    /// </remarks>
-    public static int AleWanted(SimWorld world)
-    {
-        ArgumentNullException.ThrowIfNull(world);
-        bool aTavernStands = false;
-        for (int i = 0; i < world.Workplaces.Count && !aTavernStands; i++)
-        {
-            aTavernStands = world.Workplaces[i] is { Kind: JobKind.TavernKeeper, IsSite: false };
-        }
-
-        if (!aTavernStands)
-        {
-            return 0;
-        }
-
-        int adults = 0;
-        for (int i = 0; i < world.Villagers.Count; i++)
-        {
-            Villager villager = world.Villagers[i];
-            if (villager.CanWork && villager.State != VillagerState.Left && world.TavernWithinReachOf(villager) is not null)
-            {
-                adults++;
-            }
-        }
-
-        return adults * EveningsASeason(world.Config);
-    }
-
-    /// <summary>Evenings at the tavern a season for one adult who goes whenever offered — the days over the wait, rounded up.</summary>
-    public static int EveningsASeason(Config.SimConfig config)
-    {
-        ArgumentNullException.ThrowIfNull(config);
-        int every = Math.Max(1, config.TavernEveryDays);
-        return (config.DaysPerSeason + every - 1) / every;
-    }
-
-    /// <summary>What the taverns are short of against <see cref="AleWanted"/> — the brewer's shortfall, the tailor's shape.</summary>
-    public static int AleShortfall(SimWorld world)
-    {
-        int shortfall = AleWanted(world) - world.HeldAgainstItsLimit(Goods.Ale);
-        return shortfall <= 0 ? 0 : shortfall;
-    }
 
     /// <summary>
     /// ⭐ Tavern keepers the taverns want (W3, `tavern.md §5.4a`; Joe's call 3b): every seat of a standing tavern while there is

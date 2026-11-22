@@ -4554,27 +4554,6 @@ public sealed partial class SimWorld : IObstacles
                 + $"({HeldAgainstItsLimit(batch.Output)} stored).";
         }
 
-        // ⭐ THE BREWER BREWS TOWARD THE TAVERNS' SEASON (`tavern.md §5.3`, W3): a season's drinking for every adult within
-        // reach of a standing tavern — and with no tavern, nothing to brew for. One method, `LabourQuota.AleWanted`, read by
-        // this stop, the hiring and the card. ⚠️ UNDER the player's limit, never instead of it (D62's derived default under
-        // the ceiling): every good ships with a starting limit (D697), so a rule read only with no limit set would never run,
-        // and a village with no tavern would brew its limit for nobody — barley somebody could have eaten.
-        if ((stop & BatchStop.TavernsSupplied) != 0)
-        {
-            int wanted = LabourQuota.AleWanted(this);
-            if (wanted == 0)
-            {
-                return $"{nothing} — no tavern stands with anybody near enough to drink the "
-                    + $"{GoodsCatalog.NameOf(batch.Output)}.";
-            }
-
-            if (HeldAgainstItsLimit(batch.Output) >= wanted)
-            {
-                return $"{nothing} — the taverns have {GoodsCatalog.NameOf(batch.Output)} enough for the season "
-                    + $"({HeldAgainstItsLimit(batch.Output)} held).";
-            }
-        }
-
         // ⛔ The oven never takes firewood the homes still want (§5 rule 2, the forge's rule).
         if (batch.Firing > 0 && LabourQuota.FirewoodShortfall(this) > 0)
         {

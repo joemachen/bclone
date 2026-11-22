@@ -137,12 +137,6 @@ public enum BatchStop
 
     /// <summary>With no limit set, until every household has a cart and the shelves a spare (the carpenter, D678).</summary>
     EveryHouseholdCarted = 8,
-
-    /// <summary>
-    /// ⭐ The brewer's (W3, `tavern.md §5.3`): with no limit of the player's, brew toward a season's drinking for the adults
-    /// within reach of a standing tavern — <c>LabourQuota.AleWanted</c> — and with no tavern standing, nothing.
-    /// </summary>
-    TavernsSupplied = 16,
 }
 
 /// <summary>How many hands a batch trade is wanted for (`batch-trade.md §3`).</summary>

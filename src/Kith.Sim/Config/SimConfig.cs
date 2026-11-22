@@ -1694,7 +1694,7 @@ public sealed record SimConfig
     /// <summary>Ale one brew makes — half its barley: brewing boils away (D835).</summary>
     /// <remarks>
     /// Sized to Joe's D666 bar: ten adults drink about 120 a year (three evenings a season each), 240 barley at 20 → 10 —
-    /// an eighth of one farm's ~2,000. A stint of four brews makes 40.
+    /// an eighth of one farm's ~2,000. A stint of four brews makes 40. The brewer brews to ale's stock limit (D838).
     /// </remarks>
     [JsonPropertyName("ale_per_brew")]
     public int AlePerBrew { get; init; } = 10;
@@ -3855,8 +3855,9 @@ public sealed record SimConfig
         },
 
         // ⭐ ALE (W3, `tavern.md §5.1`, D834) — brewed from barley, drunk at a tavern. ⛔ NOT FOOD: no nutrition, so it never
-        // counts toward a meal, the floor or the birth gate. Stored where flour is — the warehouse, beside the copper's
-        // firewood — and never the market's counter: nobody takes it home; the keeper carries it to the tavern.
+        // counts toward a meal, the floor or the birth gate (`FoodInGranaries` sums the edible goods only). ⭐ KEPT IN THE
+        // GRANARY, beside the barley it is brewed from (Joe, D838: "stored in the granary for consistency") — it takes a
+        // granary's room, never its count of food. Never the market's counter: nobody takes it home; the keeper carries it.
         new GoodRow
         {
             Id = (int)World.Goods.Ale,
@@ -3864,7 +3865,10 @@ public sealed record SimConfig
             Name = "ale",
             TradeWorth = 2,
             SourceName = "the brewery",
-            StoredBy = new[] { StoreKind.Warehouse, StoreKind.Cart },
+            StoredBy = new[] { StoreKind.Granary, StoreKind.Cart },
+
+            // ⭐ ON FOOD'S SIDE OF THE ROOF (Joe, D838): a granary that may hold ale stays a granary, all its room for food.
+            KeptWithFood = true,
         },
     };
 
@@ -4299,14 +4303,15 @@ public sealed record SimConfig
         // input and its firewood from ONE store (D713's one walk), and barley is kept where food is (granary, market, cart)
         // while firewood is not — no store a batch may use holds both, so a copper lit with firewood would never brew. ⛔ FedFirst:
         // barley is food, so the copper is cold while the village is short of it (the miller's rule, D522), and the brewer
-        // stands down in famine (the tailor's). Brews toward the taverns' season of drinking (`TavernsSupplied`).
+        // stands down in famine (the tailor's). ⭐ BREWS TO THE PLAYER'S STOCK LIMIT, TAVERN OR NOT (Joe, D838: "i want ale to
+        // have a stock limit - not be determined by the tavern") — the oven's shape: every seat with work, until the limit.
         new BatchRow
         {
             Trade = JobKind.Brewer, Input = World.Goods.Barley, InputPerBatch = BarleyPerBrew,
             Output = World.Goods.Ale, OutputPerBatch = AlePerBrew, Ticks = BrewTicks,
             PerStint = BrewsPerStint, Verb = "brew", OneOf = "a brew", WalkTo = "the brewery", Working = "brewing ale",
             StintWord = "brew", FirstBatch = "mashing the barley",
-            Stop = BatchStop.FedFirst | BatchStop.TavernsSupplied, Hands = BatchHands.ShortfallOverAYear,
+            Stop = BatchStop.FedFirst, Hands = BatchHands.EverySeatWithWork,
             QuotaBand = QuotaBand.AfterStone, StandsDownInFamine = true,
         },
     };
@@ -7610,11 +7615,11 @@ public sealed record SimConfig
             }
 
             if (row.Hands == BatchHands.ShortfallOverAYear
-                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted | BatchStop.TavernsSupplied)) == 0)
+                && (row.Stop & (BatchStop.EveryoneClothed | BatchStop.EveryHouseholdCarted)) == 0)
             {
                 throw new SimConfigException(
-                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed, "
-                    + "EveryHouseholdCarted or TavernsSupplied) — there would be nothing to divide.");
+                    $"{at} is hired by its shortfall over a year, and its stop names no shortfall (EveryoneClothed or "
+                    + "EveryHouseholdCarted) — there would be nothing to divide.");
             }
 
             if (string.IsNullOrWhiteSpace(row.Verb) || string.IsNullOrWhiteSpace(row.OneOf)
