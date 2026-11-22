@@ -12,7 +12,7 @@ public sealed partial class TitleScreen
 {
     /// <summary>What a green line says it checked.</summary>
     internal const string WhatTheTitleShowed =
-        "a parchment sheet docked left, Kith in the blackletter, the items in the heading face; with no save Continue and Load… "
+        "the four seasons behind, covering the window, the village right of the panel at 16:10, 16:9 and 21:9; a parchment sheet docked left, Kith in the blackletter, the items in the heading face; with no save Continue and Load… "
         + "hidden and New village the red primary with the keyboard; over a save Continue the primary and New village plain; "
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
         + "ticks as last left, a tick goes to the file, Back returns";
@@ -70,7 +70,37 @@ public sealed partial class TitleScreen
         }
 
         faults.AddRange(TheSettingsWork());
+        faults.AddRange(TheSeasonsBehind());
         return faults;
+    }
+
+    /// <summary>
+    /// The four seasons behind (A190, §4): the committed picture at 3840 × 2160, covering the window centred, and the village
+    /// landing right of the panel and inside the window at 16:10, 16:9 and 21:9.
+    /// </summary>
+    private IEnumerable<string> TheSeasonsBehind()
+    {
+        Texture2D? picture = Backdrop.Texture;
+        if (picture?.ResourcePath != BackdropPath || picture.GetWidth() != 3840 || picture.GetHeight() != 2160)
+        {
+            yield return $"the backdrop is {picture?.ResourcePath ?? "nothing"} at {picture?.GetWidth()} × {picture?.GetHeight()} (want {BackdropPath}, 3840 × 2160)";
+            yield break;
+        }
+
+        if (Backdrop.StretchMode != TextureRect.StretchModeEnum.KeepAspectCovered)
+        {
+            yield return $"the backdrop is laid {Backdrop.StretchMode} (want covering the window, centred)";
+        }
+
+        foreach (Vector2 window in new[] { new Vector2(1280, 800), new Vector2(1920, 1080), new Vector2(2560, 1080) })
+        {
+            Vector2 at = WhereTheVillageLands(new Vector2(3840, 2160), window);
+            float panel = Mathf.Max(window.X * PanelShare, Band.GetCombinedMinimumSize().X);
+            if (at.X < panel + (window.X * 0.05f) || at.X > window.X * 0.9f || at.Y < window.Y * 0.2f || at.Y > window.Y * 0.8f)
+            {
+                yield return $"at {window.X:0} × {window.Y:0} the village lands at {at.X:0}, {at.Y:0} (want right of the {panel:0} px panel, inside the window)";
+            }
+        }
     }
 
     /// <summary>The checks on a title posed over a save, already in the tree.</summary>

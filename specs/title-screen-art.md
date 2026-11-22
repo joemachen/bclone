@@ -1,7 +1,7 @@
 # The title screen, painted — a parchment menu, and the valley in four seasons behind it (A178, A179)
 
 > **Status: ✅ PART 1 MERGED INTO `main` (A186, `1678471`, his *"it all looks good. merge it."*); built A180 — Joe: *"All as recommended - and add a 'settings' option to the title
-> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). ⏸️ Part 2 once he has played his save to maturity.** Specced and part 1 mocked A179.
+> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). Parts 2 and 3 built (A189), on the title with his picks (A190, *"B with ink seams"*) — ⏸️ HIS PLAY.** Specced and part 1 mocked A179.
 > Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
@@ -178,8 +178,22 @@ the composite (part 3).
   phase of the same year, its fields and its smoke; winter shown lies snow with none falling, summer none; the world's hash
   unmoved. **Red-check: 7 mutants, 6 red; one zero written down** — the grass drawn at the real season (a draw; the four
   captures are its evidence).
-- **Not yet:** the composite on the title screen — written to `textures/ui/title/` and shown behind the panel, anchored on the
-  village at 16:10–21:9 — waits on the two picks.
+- ~~**Not yet:** the composite on the title screen … waits on the two picks.~~ Done, A190 below.
+
+## 4b. 🔨 On the title (A190, 2026-11-22) — Joe: *"B with ink seams"*; ⏸️ HIS PLAY
+
+- **The tool's defaults are his picks:** framing B (`VILLAGE` (-2.0, 1.3): the houses' middle at about (0.56, 0.50) of the
+  picture) and the ink seam; a plain run writes the ink composite to **`src/Kith.Game/textures/ui/title/valley_seasons.jpg`**
+  (3840 × 2160, 2.0 MB, imported lossless and mipmapped — the window draws it smaller than 4K), committed with its `.import`.
+  `TITLE_VILLAGE`, `TITLE_SEASONS` and `TITLE_SEAMS` remain for comparisons, and a run with any of them never writes the asset.
+- **`TitleScreen`**: the picture loaded once and held (`_seasons`, art trap 69), covering the window centred
+  (`KeepAspectCovered`); a missing picture is said loudly and the paper floor stands. **The newest save's flat valley is gone**
+  — the bake, its two worlds and their probe fields (`BackdropIsASave`, `BackdropMs`) deleted; the title no longer reads a save
+  to draw itself, and no longer shows the player's own village (his brief's trade-off).
+- **Probe** — `title:` reads *"Kith over the four seasons"* and checks the picture at 3840 × 2160 from its path, laid covering,
+  and the village (`WhereTheVillageLands`, the cover rule) right of the panel and inside the window at 1280 × 800, 1920 × 1080
+  and 2560 × 1080. **Red-check: 4 mutants, 3 red; one zero written down — the cover rule swapped for fit-inside (`WhereTheVillageLands` mirrors Godot's rule rather than reading it, and the village stays in view either way; the renders are its evidence).**
+- **The four checks:** view build 0 warnings; probe 181 lines, 142 ✅, 0 ⛔, bar 183, `title:` ✅, `done.`; goldens 461, none moved; **suite skipped by D846's rule** (no sim, data or test file differs from `main`, nor from `29658ad`, its last green 2231 / 0 / 5). Renders: `D:\Projects\brushes\title-menu\title_four_seasons.jpg`.
 
 ## 5. Order of work
 

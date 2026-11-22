@@ -12,10 +12,14 @@ const SIZE := Vector2i(3840, 2160)
 # spring's trees are summer's — so mid-spring and mid-summer were near-twins; the last days of winter, the snow gone from the
 # grass and lying only on the fields, read as spring at a glance.
 var SEASONS := [["spring", 3.86], ["summer", 1.30], ["autumn", 2.30], ["winter", 3.30]]
-# The village's middle in the view's tiles, and where it should sit: the middle of the area right of the panel (28 % of the
-# width), at the closest zoom (48 px a tile — a house ~40 px wide at 4K). Measured off the first composite: its houses
-# centred 13 tiles west and 3 north of the first guess, (4, 4).
-var VILLAGE := Vector2(-9.2, 1.3)
+# Where the camera puts the village, in the view's tiles, at the closest zoom (48 px a tile — a house ~40 px wide at 4K).
+# ⭐ FRAMING B (Joe, A190: "B with ink seams"): the brief's framing — the village's middle in the middle of the area right
+# of the panel, (-9.2, 1.3) — left the spring band meadow, since the village is half that area's width; 7.2 tiles further
+# right of the camera's centre, every band holds some of it. Its houses' middle lands at about (0.56, 0.50) of the picture
+# (TitleScreen.VillageInPicture, which the title's probe reads).
+var VILLAGE := Vector2(-2.0, 1.3)
+# The picture the title shows, written by the ink composite (the seam he chose).
+const ASSET := "res://textures/ui/title/valley_seasons.jpg"
 const PANEL_SHARE := 0.28
 const PPT := 48.0
 
@@ -170,6 +174,13 @@ func _process(_delta: float) -> bool:
 			if err != OK:
 				return fail("could not write %s (%d)" % [path, err])
 			print("capture: composite (", style, " seams) -> ", path)
+			if style == "ink" and OS.get_environment("TITLE_VILLAGE") == "" and OS.get_environment("TITLE_SEASONS") == "":
+				var asset := ProjectSettings.globalize_path(ASSET)
+				DirAccess.make_dir_recursive_absolute(asset.get_base_dir())
+				err = image.save_jpg(asset, 0.9)
+				if err != OK:
+					return fail("could not write %s (%d)" % [asset, err])
+				print("capture: the title's picture -> ", asset)
 			composer.queue_free()
 			ci += 1
 			phase = "compose"
@@ -211,7 +222,7 @@ void fragment() {
 	COLOR = vec4(col.rgb, 1.0);
 }
 """
-var SEAMS := ["ink", "soft"]
+var SEAMS := ["ink"] if OS.get_environment("TITLE_SEAMS") == "" else Array(OS.get_environment("TITLE_SEAMS").split(","))
 var shots := {}
 var ci := 0
 var composer: SubViewport
