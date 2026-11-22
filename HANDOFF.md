@@ -1,5 +1,13 @@
 # Handoff — Kith: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), ✅ PUSHED AT HIS WORD (D811, `origin/main` = ecbeaa0); NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS: W7, A SECOND CROP — BARLEY — THEN W3, BEER BREWED FROM BARLEY (D821, *"Yes, barley first"*). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
+> **🔨 `slice/w3-tavern` — W3, BEER AND THE TAVERN (2026-11-22, D834), CUT FROM `main` (82ed888) IN THE MAIN CHECKOUT.
+> The only systems branch open; `art` is the other. Spec `specs/tavern.md`, every call Joe's answered (D834): the tavern a
+> comfort that eases one held cause (1A), brewing learned with barley at the find (2A), **a tavern keeper** (his 3B) who
+> carries the ale in, one a tavern, asked for by the village and stood down in famine. Nothing built yet; next, the
+> measurement (`tavern.md §8` step 1) before any number is typed.**
+> - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
+>   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
+
 > **⭐ W7, BARLEY, MERGED INTO `main` AT JOE'S WORD (D830, *"Merge it"*, `c720171`), ✅ PUSHED AT HIS WORD (D831, `origin/main` =
 > db28631); `slice/w7-barley` DELETED.
 > Four checks on the merged tree: suite 2204 / 0 / 5 of 2209; view build 0 warnings; probe 219 lines, 139 ✅, 0 ⛔ (barley's icon
@@ -10880,6 +10888,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   still wait on his own word. **Act on exactly what the calls listed; ask for the rest.**
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
+
+- ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
+  `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
+  3b asked for by the village, 3c one a tavern), 4–6 as recommended. His to tune in play once built: the measured
+  `tavern_reach_tiles`, `tavern_every_days` and the brewery's numbers.
 
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,
