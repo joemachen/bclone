@@ -1,7 +1,7 @@
 # The title screen, painted — a parchment menu, and the valley in four seasons behind it (A178, A179)
 
 > **Status: ✅ PART 1 MERGED INTO `main` (A186, `1678471`, his *"it all looks good. merge it."*); built A180 — Joe: *"All as recommended - and add a 'settings' option to the title
-> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). ⏸️ Part 2 once he has played his save to maturity.** Specced and part 1 mocked A179.
+> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). Parts 2 and 3 built (A189), on the title with his picks (A190, *"B with ink seams"*) — ⏸️ HIS PLAY.** Specced and part 1 mocked A179.
 > Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
@@ -138,6 +138,62 @@ the composite (part 3).
   every aspect from 16:10 to 21:9 (the probe checks the centre's point lands right of the panel at 16:10, 16:9 and 21:9).
 - **⚠️ The trade-off he was told:** the title stops showing his newest village behind it — D517's deliberate touch — and
   shows the committed one instead. The rolled valley for a player with no saves goes too.
+
+## 4a. 🔨 Parts 2 and 3 built (A189, 2026-11-22) — ⏸️ TWO PICKS JOE'S: THE FRAMING AND THE SEAM
+
+- **The village** (Joe: *"add the school and trading post and barn + field and anything else missing … more housing zones that
+  mature to the highest level"*, then *"Use it"*): his honey-harrow Hollowmere, year 84, grown to year 86 on a copy by a scratch
+  harness giving the village a player's orders through the sim's own doors (`Mark`, `PaintResidential`, `PaintWorkGround`,
+  `FenceThePasture`, `SetHomesBuiltAs(Manor)`) — a school, a second farm (30 field tiles) and barn (30 pasture tiles, fenced),
+  a second trading post and bakery, a brewery and a tavern (learnable after one season: the barley find latches at a forager's
+  next gather), every home a manor. **Read for decline before use:** 70 people throughout, none starved or frozen, every old
+  trade with the hands it had, 19 households to 21, all housed; the new trades unstaffed (no barley sown, no pupil yet), which
+  a still picture does not show. The 72 tiles of new housing ground stay empty (no new households in two years). The harness
+  lives outside the repo (`D:\Projects\brushes\title-menu\village\ZzTitleVillage.cs`); the save is
+  `tools/title-capture/village.save`.
+- **The season override** (§3's table, as built): `VillageMap.SeasonShown` (null in play), `SeasonTick` for the grass, the trees
+  and the rock and ore sprites, the fields drawn by `FieldStageShown`, the snow lying by the season shown and none falling, the
+  smoke by `SeasonOnScreen` (one line in `VillageMap.cs`, the homes' hearths). `ShowTheSeason` / `ShowTheRealSeason` and
+  `WorldHashForTheCapture` (the sim's `StateHash`) are the tool's doors.
+- **⭐ Spring is the thaw** (Joe: *"Use the thaw"*): the brief's blocker fired — **the game has no spring tree set**, spring's trees
+  are summer's (`TreeSeasonAt`'s `SetOf`), so mid-spring and mid-summer were near-twins. The last days of winter (3.86 seasons in),
+  pale new grass with the frost still on the fields, read as spring at a glance. *(A spring tree set would give the game its own
+  spring in play too — a piece of its own if he wants it.)*
+- **The tool** (`tools/title-capture/capture.gd`, run by `capture.bat` / `capture.sh`): the save as the only save in a scratch
+  user folder with full screen off; the game in a 3840 × 2160 SubViewport, paused; the furniture hidden by hand (a key does
+  not reach a SubViewport) and the map's markers off; the camera at the closest zoom (48 px a tile — the map is the viewport's
+  3840 wide) with the village's middle placed right of the panel; the four seasons; **the world's hash read before the first
+  and after the last, a difference fails the run**; a save that no longer opens fails it in words. Runs measured: four times,
+  the hash `e2a2ff3c56a3a0c5` unmoved each time.
+- **The composite** (§4): the same command, a shader blending the four in a second SubViewport (8 million pixels in a script
+  take minutes): spring under the panel and in the first of four equal bands right of it, seams tilted 13° (`tan` 0.2309) —
+  the river runs across the picture, so a near-vertical seam is never along it — written as `composite_ink.jpg` (a 4 px line in
+  the map's ink at 85 %) and `composite_soft.jpg` (a 90 px blend). **Alignment holds by construction and is seen:** the
+  river, roads and roofs run straight through every seam.
+- **⏸️ Joe's two picks** (`D:\Projects\brushes\title-menu\composite_choices.jpg`): **the framing** — A, the brief's, the village's
+  middle in the middle of the area right of the panel, which leaves the spring band meadow and woods (the village is about half
+  that area's width); or ⭐ **B**, the village a little left, so every band holds some of it — and **the seam** — ⭐ **ink** (the
+  map's own pen) or soft.
+- **Probe** `season shown:` (riding on `painted trees:`, trap 73): nothing shown draws the real season; a season shown draws that
+  phase of the same year, its fields and its smoke; winter shown lies snow with none falling, summer none; the world's hash
+  unmoved. **Red-check: 7 mutants, 6 red; one zero written down** — the grass drawn at the real season (a draw; the four
+  captures are its evidence).
+- ~~**Not yet:** the composite on the title screen … waits on the two picks.~~ Done, A190 below.
+
+## 4b. 🔨 On the title (A190, 2026-11-22) — Joe: *"B with ink seams"*; ⏸️ HIS PLAY
+
+- **The tool's defaults are his picks:** framing B (`VILLAGE` (-2.0, 1.3): the houses' middle at about (0.56, 0.50) of the
+  picture) and the ink seam; a plain run writes the ink composite to **`src/Kith.Game/textures/ui/title/valley_seasons.jpg`**
+  (3840 × 2160, 2.0 MB, imported lossless and mipmapped — the window draws it smaller than 4K), committed with its `.import`.
+  `TITLE_VILLAGE`, `TITLE_SEASONS` and `TITLE_SEAMS` remain for comparisons, and a run with any of them never writes the asset.
+- **`TitleScreen`**: the picture loaded once and held (`_seasons`, art trap 69), covering the window centred
+  (`KeepAspectCovered`); a missing picture is said loudly and the paper floor stands. **The newest save's flat valley is gone**
+  — the bake, its two worlds and their probe fields (`BackdropIsASave`, `BackdropMs`) deleted; the title no longer reads a save
+  to draw itself, and no longer shows the player's own village (his brief's trade-off).
+- **Probe** — `title:` reads *"Kith over the four seasons"* and checks the picture at 3840 × 2160 from its path, laid covering,
+  and the village (`WhereTheVillageLands`, the cover rule) right of the panel and inside the window at 1280 × 800, 1920 × 1080
+  and 2560 × 1080. **Red-check: 4 mutants, 3 red; one zero written down — the cover rule swapped for fit-inside (`WhereTheVillageLands` mirrors Godot's rule rather than reading it, and the village stays in view either way; the renders are its evidence).**
+- **The four checks:** view build 0 warnings; probe 181 lines, 142 ✅, 0 ⛔, bar 183, `title:` ✅, `done.`; goldens 461, none moved; **suite skipped by D846's rule** (no sim, data or test file differs from `main`, nor from `29658ad`, its last green 2231 / 0 / 5). Renders: `D:\Projects\brushes\title-menu\title_four_seasons.jpg`.
 
 ## 5. Order of work
 

@@ -100,8 +100,10 @@ public partial class VillageMap
     private static double SnowUnit(ulong seed, long year, int salt) => (SnowHash(seed, year, salt) >> 11) * (1.0 / (1UL << 53));
 
     /// <summary>The snow now, as the village's tick and seed give it.</summary>
-    private SnowNow TheSnowNow() =>
-        SnowAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason, _world.Seed, ValleyWatercolourLook.Current);
+    /// <remarks>With a season shown (A189) it lies as that season's, and none falls: flakes are weather, not a season.</remarks>
+    private SnowNow TheSnowNow() => SeasonShown is null
+        ? SnowAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason, _world.Seed, ValleyWatercolourLook.Current)
+        : SnowAt(SeasonTick(), _world!.Config.TicksPerSeason, _world.Seed, ValleyWatercolourLook.Current) with { Falling = 0f };
 
     /// <summary>The drifts' values to the ground's layer, once, as it is built (§3.2).</summary>
     private static void HandTheSnowLookOver(ShaderMaterial material, ValleyWatercolourLook look)
@@ -187,7 +189,7 @@ public partial class VillageMap
     }
 
     /// <summary>The year the tick is in (for the drifts' patch noise, which shifts a little each year).</summary>
-    private long TheSnowYear() => (long)Math.Floor((_world!.Tick + _alpha) / Math.Max(1.0, _world.Config.TicksPerSeason) / 4.0);
+    private long TheSnowYear() => (long)Math.Floor(SeasonTick() / Math.Max(1.0, _world!.Config.TicksPerSeason) / 4.0);
 
     /// <summary>The flakes' clock step: real seconds at the game's speed, capped, while the village runs (§3.3).</summary>
     private void TickTheSnowfall(double delta)

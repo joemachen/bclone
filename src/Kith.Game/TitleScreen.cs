@@ -1,6 +1,4 @@
 using Kith.Sim.Config;
-using Kith.Sim.Core;
-using Kith.Sim.Persistence;
 using Godot;
 
 namespace Kith.Game;
@@ -15,10 +13,11 @@ namespace Kith.Game;
 /// (<c>Main.OpenTheVillage</c>).
 /// </para>
 /// <para>
-/// ⭐ <b>Behind it, the valley of the newest save that opens</b> (Joe, D516): opened and baked whole by the game's
-/// own <see cref="ValleyTexture"/>, clearings, fields and paths and all — then the opened village is dropped. ⛔
-/// <i>Continue</i> does not reuse it: a second door in from disk is how the two would come to differ. With no
-/// save, a valley from a rolled seed — and under the probe there are never saves.
+/// ⭐ <b>Behind it, one village in the four seasons</b> (A190, `title-screen-art.md §4`; Joe: <i>"B with ink seams"</i>): a picture
+/// the game drew of a save of his, grown to its prime — spring (the thaw), summer, autumn and winter in tilted bands right of the
+/// panel — written by <c>tools/title-capture</c> and loaded here, covering the window and centred, so the village stays in view
+/// from 16:10 to 21:9. ⚠️ It replaced D516's touch, the newest save's valley baked flat, by his brief: the title no longer
+/// shows the player's own village.
 /// </para>
 /// <para>
 /// ⭐⭐ <b>A parchment panel docked left</b> (A180, `title-screen-art.md §2`; Joe's brief, <i>"All as recommended"</i>): the dark
@@ -36,13 +35,18 @@ public sealed partial class TitleScreen : Control
     /// <summary>The panel's share of a wide window — the new-valley panel's (A148); never narrower than its contents.</summary>
     internal const float PanelShare = 0.28f;
 
-    /// <summary>The backdrop's bake, a little finer than the new-game preview's: it fills the window.</summary>
-    private const int BackdropPixelsPerTile = 10;
+    /// <summary>The four seasons, written by <c>tools/title-capture</c> (A190): 3840 × 2160.</summary>
+    internal const string BackdropPath = "res://textures/ui/title/valley_seasons.jpg";
+
+    /// <summary>Where the village's houses centre in that picture, as shares of its width and height (the tool's framing B).</summary>
+    internal static readonly Vector2 VillageInPicture = new(0.56f, 0.50f);
+
+    /// <summary>The picture, loaded once and held (art trap 69: a resource is never loaded and dropped).</summary>
+    private static Texture2D? _seasons;
 
     private readonly SimConfig _config;
     private readonly string _build;
     private readonly SettingsDoors _doors;
-    private readonly ValleyTexture _bake = new(BackdropPixelsPerTile);
 
     private TextureRect _backdrop = null!;
     private Label _refusal = null!;
@@ -133,13 +137,10 @@ public sealed partial class TitleScreen : Control
     internal Button SettingsBack { get; private set; } = null!;
 
     /// <summary>For the probe: the backdrop has a valley on it.</summary>
-    internal bool HasABackdrop => _bake.Texture is not null && _backdrop.Texture is not null;
+    internal bool HasABackdrop => _backdrop.Texture is not null;
 
-    /// <summary>For the probe: how long the backdrop took to open and bake, in milliseconds.</summary>
-    internal double BackdropMs { get; private set; }
-
-    /// <summary>For the probe: the backdrop is a save's valley rather than a rolled one.</summary>
-    internal bool BackdropIsASave { get; private set; }
+    /// <summary>For the probe: the picture behind the title.</summary>
+    internal TextureRect Backdrop => _backdrop;
 
     public override void _Ready()
     {
@@ -165,7 +166,7 @@ public sealed partial class TitleScreen : Control
         PlaceThePanel();
         Resized += PlaceThePanel;
         PrimaryItem.CallDeferred(Control.MethodName.GrabFocus);
-        BakeTheBackdrop();
+        ShowTheSeasons();
     }
 
     /// <summary>Esc on the Settings page goes back to the menu, as its <i>Back</i> does.</summary>
@@ -457,40 +458,27 @@ public sealed partial class TitleScreen : Control
         Band.OffsetBottom = 0f;
     }
 
-    /// <summary>The newest save's valley, or a rolled one — never a half-made picture (§3).</summary>
-    private void BakeTheBackdrop()
+    /// <summary>The four seasons behind the title; a missing picture is said loudly and the paper floor stands.</summary>
+    private void ShowTheSeasons()
     {
-        long before = System.Diagnostics.Stopwatch.GetTimestamp();
-        SimWorld world = TheNewestValley() ?? ARolledValley();
-        _bake.BakeAfresh(world);
-        _backdrop.Texture = _bake.Texture;
-        BackdropMs = (System.Diagnostics.Stopwatch.GetTimestamp() - before) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
-    }
-
-    private SimWorld? TheNewestValley()
-    {
-        SaveListing? newest = NewestThatOpens(Saves);
-        if (newest is null)
+        _seasons ??= ResourceLoader.Exists(BackdropPath) ? GD.Load<Texture2D>(BackdropPath) : null;
+        if (_seasons is null)
         {
-            return null;
+            GD.PushError($"[Kith] the title's picture is missing at {BackdropPath}: run tools/title-capture to write it");
+            return;
         }
 
-        SaveOpened opened = SaveFile.Open(newest.Path, _config);
-        if (opened.Loop is null)
-        {
-            // ⚠️ Not swallowed: the reason is said where a developer looks, and the title falls back to a rolled
-            // valley. Continue will say it to the player in words if it is pressed.
-            GD.Print($"[Kith] the title's backdrop could not open {newest.Path}: {opened.Refusal} ({opened.Detail})");
-            return null;
-        }
-
-        BackdropIsASave = true;
-        return opened.Loop.World;
+        _backdrop.Texture = _seasons;
     }
 
-    private SimWorld ARolledValley()
+    /// <summary>
+    /// Pure: where the village lands in a window the picture covers, centred (<c>KeepAspectCovered</c>'s own rule: scaled to the
+    /// larger of the two ratios, the overflow cut evenly from both sides).
+    /// </summary>
+    internal static Vector2 WhereTheVillageLands(Vector2 picture, Vector2 window)
     {
-        NewGameSettings settings = NewGame.Defaults(_config, NewGameScreen.RollASeed(_config, new System.Random()));
-        return SimWorld.Create(NewGame.Apply(_config, settings));
+        float scale = Mathf.Max(window.X / picture.X, window.Y / picture.Y);
+        Vector2 drawn = picture * scale;
+        return ((window - drawn) / 2f) + (VillageInPicture * drawn);
     }
 }

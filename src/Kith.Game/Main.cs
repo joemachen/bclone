@@ -506,7 +506,7 @@ public partial class Main : Control
         _settings = settingsWere;
 
         GD.Print(faults.Count == 0
-            ? $"[widths] title: ✅ {TitleScreen.GameName} over a {(_title.BackdropIsASave ? "saved" : "rolled")} valley ({_title.BackdropMs:F0} ms), the band ends at {ends:F0}px; {TitleScreen.WhatTheTitleShowed}"
+            ? $"[widths] title: ✅ {TitleScreen.GameName} over the four seasons, the band ends at {ends:F0}px; {TitleScreen.WhatTheTitleShowed}"
             : $"[widths] title: ❌ {string.Join("; ", faults)}");
         _title.PressNewVillage();
     }

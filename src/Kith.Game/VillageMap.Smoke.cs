@@ -74,7 +74,7 @@ public partial class VillageMap
 
         if (workplace.Kind == JobKind.Teacher)
         {
-            return world.Clock.Season == Season.Winter && workplace.WorkerIds.Count > 0 && workplace.Store.Firewood > 0;
+            return SeasonOnScreen(world) == Season.Winter && workplace.WorkerIds.Count > 0 && workplace.Store.Firewood > 0;
         }
 
         return _firesLit.Contains(workplace.Id);

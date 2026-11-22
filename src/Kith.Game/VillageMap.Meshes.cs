@@ -483,7 +483,7 @@ public partial class VillageMap
 
         // ⭐ The trees through the year (A41): the season's atlas, the next one over it while the season turns — two
         // textures and a share, never a re-mesh (D338: a uniform, never a re-bake).
-        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        (float season, float _) = TheYearAt(SeasonTick(), _world!.Config.TicksPerSeason);
         (TreeSet from, float fromAlpha, TreeSet to, float toAlpha) = TreeSeasonAt(season);
         DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha, TreeTintFor(from));
         if (toAlpha > 0f)
