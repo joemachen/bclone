@@ -1,7 +1,7 @@
 # The title screen, painted — a parchment menu, and the valley in four seasons behind it (A178, A179)
 
 > **Status: ✅ PART 1 MERGED INTO `main` (A186, `1678471`, his *"it all looks good. merge it."*); built A180 — Joe: *"All as recommended - and add a 'settings' option to the title
-> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). Parts 2 and 3 built (A189), on the title with his picks (A190, *"B with ink seams"*) — ⏸️ HIS PLAY.** Specced and part 1 mocked A179.
+> screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). Parts 2 and 3 built (A189), on the title with his picks (A190, *"B with ink seams"*) — ✅ played and MERGED INTO `main` (A191, `745aee8`, *"merge it"*), not pushed.** Specced and part 1 mocked A179.
 > Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
@@ -180,7 +180,7 @@ the composite (part 3).
   captures are its evidence).
 - ~~**Not yet:** the composite on the title screen … waits on the two picks.~~ Done, A190 below.
 
-## 4b. 🔨 On the title (A190, 2026-11-22) — Joe: *"B with ink seams"*; ⏸️ HIS PLAY
+## 4b. ✅ On the title (A190, 2026-11-22) — Joe: *"B with ink seams"*; played, merged A191 (*"merge it"*)
 
 - **The tool's defaults are his picks:** framing B (`VILLAGE` (-2.0, 1.3): the houses' middle at about (0.56, 0.50) of the
   picture) and the ink seam; a plain run writes the ink composite to **`src/Kith.Game/textures/ui/title/valley_seasons.jpg`**
