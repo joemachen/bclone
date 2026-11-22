@@ -350,7 +350,7 @@ public partial class VillageMap
     /// </summary>
     private void DrawThePaintedNodes(int minX, int maxX, int minY, int maxY)
     {
-        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
+        (float season, float _) = TheYearAt(SeasonTick(), _world!.Config.TicksPerSeason);
         (TreeSet from, float _, TreeSet to, float toAlpha) = TreeSeasonAt(season);
         CanvasTexture? under = TheNodeAtlasFor(from), over = TheNodeAtlasFor(to);
         if (under is null)
@@ -472,8 +472,8 @@ public partial class VillageMap
             return false;
         }
 
-        (float season, float _) = TheYearAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason);
-        (string from, string to, float share) = CropStageAt(stage, season);
+        (float season, float _) = TheYearAt(SeasonTick(), _world!.Config.TicksPerSeason);
+        (string from, string to, float share) = CropStageAt(FieldStageShown(stage, SeasonShown), season);
         CanvasTexture? under = TheCropPainting(crop, from);
         if (under is null)
         {
@@ -651,7 +651,10 @@ public partial class VillageMap
     /// ⚠️ The draw itself (<c>DrawThePaintedTrees</c>) runs only inside <c>_Draw</c>, which never runs headless (D340); what
     /// it draws is these meshes, and a windowed render is its check.
     /// </remarks>
-    internal string ThePaintedTreesHold()
+    /// <remarks>⭐ The season override's line rides on this one's return (A189, art trap 73), each in its own <c>try</c>.</remarks>
+    internal string ThePaintedTreesHold() => ThePaintedTreesAloneHold() + "\n" + TheSeasonShownHolds();
+
+    private string ThePaintedTreesAloneHold()
     {
         if (_world is null)
         {
@@ -1204,7 +1207,7 @@ public partial class VillageMap
         HandTheRiverOver(material, config);
         HandTheHillsOver(material, config);
 
-        (float season, float _) = TheYearAt(_world.Tick + _alpha, config.TicksPerSeason);
+        (float season, float _) = TheYearAt(SeasonTick(), config.TicksPerSeason);
         material.SetShaderParameter("grass_season", season);
 
         // ⭐ The snow from its snowfalls (A76, `snowfall.md`), not the calendar's one ramp: lying to the ground, falling to the flakes.
@@ -1692,6 +1695,69 @@ public partial class VillageMap
     /// which lies as autumn turns, is whole through winter's hold, and melts as winter turns to spring (A23 — Joe: white at
     /// mid-winter). A pure function of the tick, so a place and a time always give the same picture; the sim untouched.
     /// </summary>
+    /// <summary>
+    /// ⭐ THE SEASON SHOWN (A189, `title-screen-art.md §3`): render-only, <b>null in play</b>. Set, it is where in the year the
+    /// view draws — 0 spring … 3 winter, a phase within the real year — and every seasonal thing follows it: the grass, the
+    /// trees and the rock and ore sprites, the fields' paintings, the snow lying (none falls), the chimney smoke. <b>Nothing
+    /// in the sim is touched</b>: the people, the buildings and the paths are as the save holds them. Only the title's
+    /// capture tool sets it (<c>tools/title-capture</c>).
+    /// </summary>
+    internal float? SeasonShown { get; private set; }
+
+    /// <summary>The capture tool's door (GDScript reaches only public members): show the year at this phase.</summary>
+    public void ShowTheSeason(float season)
+    {
+        SeasonShown = season;
+        QueueRedraw();
+    }
+
+    /// <summary>Back to the real season.</summary>
+    public void ShowTheRealSeason()
+    {
+        SeasonShown = null;
+        QueueRedraw();
+    }
+
+    /// <summary>
+    /// The capture tool's proof that the world never moved between its four seasons (A189): the sim's own state hash, as
+    /// text. Read before the first capture and after the last; a difference fails the tool.
+    /// </summary>
+    public string WorldHashForTheCapture() => _world is null ? "none" : Kith.Sim.Determinism.StateHash.Compute(_world).ToString("x16");
+
+    /// <summary>The tick the view draws the year at: the real one, or the season shown within the real year.</summary>
+    private double SeasonTick() => SeasonTickAt(_world!.Tick + _alpha, _world.Config.TicksPerSeason, SeasonShown);
+
+    /// <summary>Pure: <paramref name="shown"/> seasons into the year <paramref name="real"/> falls in, or <paramref name="real"/>.</summary>
+    internal static double SeasonTickAt(double real, int ticksPerSeason, float? shown)
+    {
+        if (shown is not float season)
+        {
+            return real;
+        }
+
+        double perSeason = Math.Max(1, ticksPerSeason);
+        return (Math.Floor(real / (perSeason * 4.0)) * perSeason * 4.0) + (season * perSeason);
+    }
+
+    /// <summary>The season the view draws the smoke for: the season shown, or the village's own.</summary>
+    internal Season SeasonOnScreen(SimWorld world) => SeasonOf(SeasonShown, world.Clock.Season);
+
+    /// <summary>Pure: the season a phase falls in, or <paramref name="real"/> when nothing is shown.</summary>
+    internal static Season SeasonOf(float? shown, Season real) => shown is float s ? (Season)(((int)Math.Floor(s) % 4 + 4) % 4) : real;
+
+    /// <summary>
+    /// Pure: the field's stage as the season shown draws it — sown and young in spring, growing in summer, ripe in autumn,
+    /// stubble in winter — so a forced season repaints every field; the tile's own stage when nothing is forced.
+    /// </summary>
+    internal static Terrain FieldStageShown(Terrain stage, float? shown) => shown is not float s
+        ? stage
+        : (((int)Math.Floor(s) % 4 + 4) % 4) switch
+        {
+            0 or 1 => Terrain.Sown,
+            2 => Terrain.Ripe,
+            _ => Terrain.Field,
+        };
+
     internal static (float Season, float Snow) TheYearAt(double tick, int ticksPerSeason)
     {
         double perSeason = Math.Max(1, ticksPerSeason);

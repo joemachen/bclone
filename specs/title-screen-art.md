@@ -139,6 +139,48 @@ the composite (part 3).
 - **⚠️ The trade-off he was told:** the title stops showing his newest village behind it — D517's deliberate touch — and
   shows the committed one instead. The rolled valley for a player with no saves goes too.
 
+## 4a. 🔨 Parts 2 and 3 built (A189, 2026-11-22) — ⏸️ TWO PICKS JOE'S: THE FRAMING AND THE SEAM
+
+- **The village** (Joe: *"add the school and trading post and barn + field and anything else missing … more housing zones that
+  mature to the highest level"*, then *"Use it"*): his honey-harrow Hollowmere, year 84, grown to year 86 on a copy by a scratch
+  harness giving the village a player's orders through the sim's own doors (`Mark`, `PaintResidential`, `PaintWorkGround`,
+  `FenceThePasture`, `SetHomesBuiltAs(Manor)`) — a school, a second farm (30 field tiles) and barn (30 pasture tiles, fenced),
+  a second trading post and bakery, a brewery and a tavern (learnable after one season: the barley find latches at a forager's
+  next gather), every home a manor. **Read for decline before use:** 70 people throughout, none starved or frozen, every old
+  trade with the hands it had, 19 households to 21, all housed; the new trades unstaffed (no barley sown, no pupil yet), which
+  a still picture does not show. The 72 tiles of new housing ground stay empty (no new households in two years). The harness
+  lives outside the repo (`D:\Projects\brushes\title-menu\village\ZzTitleVillage.cs`); the save is
+  `tools/title-capture/village.save`.
+- **The season override** (§3's table, as built): `VillageMap.SeasonShown` (null in play), `SeasonTick` for the grass, the trees
+  and the rock and ore sprites, the fields drawn by `FieldStageShown`, the snow lying by the season shown and none falling, the
+  smoke by `SeasonOnScreen` (one line in `VillageMap.cs`, the homes' hearths). `ShowTheSeason` / `ShowTheRealSeason` and
+  `WorldHashForTheCapture` (the sim's `StateHash`) are the tool's doors.
+- **⭐ Spring is the thaw** (Joe: *"Use the thaw"*): the brief's blocker fired — **the game has no spring tree set**, spring's trees
+  are summer's (`TreeSeasonAt`'s `SetOf`), so mid-spring and mid-summer were near-twins. The last days of winter (3.86 seasons in),
+  pale new grass with the frost still on the fields, read as spring at a glance. *(A spring tree set would give the game its own
+  spring in play too — a piece of its own if he wants it.)*
+- **The tool** (`tools/title-capture/capture.gd`, run by `capture.bat` / `capture.sh`): the save as the only save in a scratch
+  user folder with full screen off; the game in a 3840 × 2160 SubViewport, paused; the furniture hidden by hand (a key does
+  not reach a SubViewport) and the map's markers off; the camera at the closest zoom (48 px a tile — the map is the viewport's
+  3840 wide) with the village's middle placed right of the panel; the four seasons; **the world's hash read before the first
+  and after the last, a difference fails the run**; a save that no longer opens fails it in words. Runs measured: four times,
+  the hash `e2a2ff3c56a3a0c5` unmoved each time.
+- **The composite** (§4): the same command, a shader blending the four in a second SubViewport (8 million pixels in a script
+  take minutes): spring under the panel and in the first of four equal bands right of it, seams tilted 13° (`tan` 0.2309) —
+  the river runs across the picture, so a near-vertical seam is never along it — written as `composite_ink.jpg` (a 4 px line in
+  the map's ink at 85 %) and `composite_soft.jpg` (a 90 px blend). **Alignment holds by construction and is seen:** the
+  river, roads and roofs run straight through every seam.
+- **⏸️ Joe's two picks** (`D:\Projects\brushes\title-menu\composite_choices.jpg`): **the framing** — A, the brief's, the village's
+  middle in the middle of the area right of the panel, which leaves the spring band meadow and woods (the village is about half
+  that area's width); or ⭐ **B**, the village a little left, so every band holds some of it — and **the seam** — ⭐ **ink** (the
+  map's own pen) or soft.
+- **Probe** `season shown:` (riding on `painted trees:`, trap 73): nothing shown draws the real season; a season shown draws that
+  phase of the same year, its fields and its smoke; winter shown lies snow with none falling, summer none; the world's hash
+  unmoved. **Red-check: 7 mutants, 6 red; one zero written down** — the grass drawn at the real season (a draw; the four
+  captures are its evidence).
+- **Not yet:** the composite on the title screen — written to `textures/ui/title/` and shown behind the panel, anchored on the
+  village at 16:10–21:9 — waits on the two picks.
+
 ## 5. Order of work
 
 1. ⏸️ His calls (§7). 2. **Part 1** built, the four checks, the renders — ⏸️ **his play**. 3. He plays his save to maturity

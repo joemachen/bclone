@@ -8175,7 +8175,7 @@ public partial class VillageMap : Control
             bool roofed = DrawPaintedBuilding(
                 RoofOf(kind), centre, wide, deep, facing, Weathered(DwellingRoofColourOf(kind), worn), worn, world.DoorOf(household), household.Id, alpha,
                 PaintsBuildings ? YardStateOf(household) : default, at => HomeYardTiles(household, at, facing, wide, deep),
-                burning: HearthBurns(world.Clock.Season, occupied, household.Stockpile.Firewood));
+                burning: HearthBurns(SeasonOnScreen(world), occupied, household.Stockpile.Firewood));
             if (!roofed)
             {
                 DrawColoredPolygon(house, weathered with { A = alpha });
