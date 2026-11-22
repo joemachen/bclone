@@ -11044,7 +11044,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     children / in-school count once schools are the player's; **rename the tech tree "Lore"** in the UI and the game files
     (⚠️ ask him: the JSON keys and save fields too, or the words he sees? keys break old saves and mods).
   - **Art (`VillageMap*`, painters):** (a) **paths change too abruptly** — a crossfade when a track's wear steps —
-    ✅ **MERGED INTO `main` (A171, merge `2b222ae`) at his *"Looks good, merge it"*; not pushed** — built A169 (2026-11-22), moved ahead of (h) at his word; specced and mocked A168 (`specs/path-crossfade.md`,
+    ✅ **MERGED INTO `main` (A171, merge `2b222ae`) at his *"Looks good, merge it"*; pushed at his *"Push main"* (A172, `origin/main` = `f88956e`)** — built A169 (2026-11-22), moved ahead of (h) at his word; specced and mocked A168 (`specs/path-crossfade.md`,
     `D:\Projects\brushes\paths\crossfade\path_crossfade_mock.gif`); ✅ his calls *"All as recommended"* (C by patches, half a
     season, both ways alike, no fade on a load); the two map files at his *"Yes, edit them"*; renders of the build in
     `D:\Projects\brushes\paths\crossfade\built\`; played and approved); (b)
