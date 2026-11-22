@@ -161,7 +161,7 @@ agrees.
   a snow draw and its edge, against the flat look's fill plus a line or 5–12 stalks per tile.
 - **Red-check:** 8 mutants, 6 red (bare ground ploughed all year; sown ground never young; a painting every four tiles; the paintings not repeating; the crop's own folder never read; the crops never painted). **Two zeros, written down:** the fields drawn flat with the tick on, and no snow on the fields. Both are draw-time only (`_Draw`, never headless), and the year's renders are their evidence. The harness crashed once, on a Windows file lock mid-restore. It left C3's mutant in place, which was found by its anchor count and reversed by its own text; the harness now retries a locked write.
 
-## 9. Barley (A162–A164, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; IN `main` (A164); DRAWN WHEN W7 MERGES
+## 9. Barley (A162–A165, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; IN `main` (A164); DRAWN SINCE W7 MERGED (D830); PROBED (A165)
 
 W7's request (`barley.md §7` on `slice/w7-barley`; D821, D825), at his *"Start barley art"*. Painted the way wheat was:
 `D:\Projects\brushes\barley\build_barley_stages.py` imports wheat's painter (`build_crop_stages.py`, never re-run, so
@@ -207,5 +207,14 @@ seamless by construction, rows east–west four to a tile. Ploughed, stubble and
 templated on wheat's; the import's 200 line-ending rewrites and 73 `.uid`s put back, trap 67). Nothing draws them yet: the
 game has no barley crop or good until W7 merges. The colour's two lines (`GoodsPalette.cs`, `PersonPainter.cs`) are in on
 `slice/w7-barley` (`a4bd596`, D829), put there by W7 at his words. ⏸️ **After both are in `main`:** barley's three rows in `ThePaintedCropsHold`
-(crop 2), red-checked, and a look at a real barley field. Checks: probe 138 ✅ 0 ⛔ (`painted crops:` and `ui icons:` ✅ —
+(crop 2), red-checked, and a look at a real barley field — ✅ done, A165 (below). Checks: probe 138 ✅ 0 ⛔ (`painted crops:` and `ui icons:` ✅ —
 an icon for a good the game lacks is not asked for), view build 0 warnings, goldens unmoved, suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine).
+
+**A165 (after W7's merge, D830):** `ThePaintedCropsHold` asks crop 2 for `barley/young`, `growing` and `ripe` and the
+shared `stubble`, named from this section (trap 17); its ✅ line says *"wheat's and barley's young, growing and ripe their
+own"*. **Red-check: 3 of 3 red**, each naming barley's row (`brushes\barley\redcheck165.py`, `red165.log`): the lookup sent
+to wheat's folder, barley's young alone answered with wheat's, and barley's ripe missing. **Seen in the game:** copies of
+three of his saves with half their wheat sown as barley (`half_barley.py`; his folder only read) rendered by `main`'s code —
+`barley_real.jpg`: in spring the barley half a denser blue-green beside wheat's paler shoots; in summer the bluer growing;
+in autumn the warm straw beside wheat's gold, apart and plainly ripe. Probe 139 ✅ 0 ⛔ (`ui icons:` 78, barley's among
+them); view build 0 warnings; goldens unmoved; suite 2,204 passed, 5 skipped, 18 m 24 s (W7's 22 new tests among them).

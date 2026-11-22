@@ -2493,6 +2493,12 @@ public partial class VillageMap
             (1, "growing", "res://textures/crops/wheat/growing.png"),
             (1, "ripe", "res://textures/crops/wheat/ripe.png"),
             (1, "ploughed", "res://textures/crops/_ground/ploughed.png"),
+
+            // Barley (W7, A162–A165, `painted-crops.md §9`): its own three, and the shared ground like wheat's.
+            (2, "young", "res://textures/crops/barley/young.png"),
+            (2, "growing", "res://textures/crops/barley/growing.png"),
+            (2, "ripe", "res://textures/crops/barley/ripe.png"),
+            (2, "stubble", "res://textures/crops/_ground/stubble.png"),
         };
         foreach ((byte crop, string stage, string path) in paintings)
         {
@@ -2549,7 +2555,7 @@ public partial class VillageMap
         }
 
         return faults.Count == 0
-            ? "[widths] painted crops: ✅ ploughed, stubble and snow shared, wheat's young, growing and ripe its own, each 1024 × 1024, mipmapped, repeating; a crop with no row keeps its flat fill; the year's stages at nine moments; eight tiles a painting, world-anchored; on with the tick, off without"
+            ? "[widths] painted crops: ✅ ploughed, stubble and snow shared, wheat's and barley's young, growing and ripe their own, each 1024 × 1024, mipmapped, repeating; a crop with no row keeps its flat fill; the year's stages at nine moments; eight tiles a painting, world-anchored; on with the tick, off without"
             : $"[widths] painted crops: ⛔ {string.Join("; ", faults)}";
     }
 

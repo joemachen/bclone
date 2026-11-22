@@ -11041,7 +11041,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
-    branch, `a4bd596`, D829), the icon; ⏸️ **after W7 and `art` are both in `main`: barley's three rows in `ThePaintedCropsHold`**): barley's three crop stages `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (1024², 128 px a
+    branch, `a4bd596`, D829), the icon; ✅ **barley's rows in `ThePaintedCropsHold` after W7's merge, red-checked 3 of 3, a real barley field seen** (A165) — done): barley's three crop stages `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (1024², 128 px a
     tile, seamless, rows east–west, as wheat's `build_crop_stages.jsx`; barley's rows in `ThePaintedCropsHold`); its goods
     icon `textures/ui/icons/goods/barley.png` (⚠️ `ui icons:` is ⛔ without it once `slice/w7-barley` merges); and a
     judgement on its two placeholder colours, `GoodsPalette` barley `Color(0.81, 0.80, 0.62)` and the painted sheaf
