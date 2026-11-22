@@ -11181,7 +11181,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     built in), saved under a name he tells me.**
     ✅ **Played — *"it all looks good. merge it."* — MERGED INTO `main` (A186, `1678471`; `main` merged into `art` first, A185),
     not pushed.** His note: the game flashes full screen for a second at a founding even with full screen off — fixed on `art`
-    (A187). ▶️ Part 2 when he names his save.
+    (A187), merged at his *"merge it"* (A188, `6cc2c39`), not pushed. ▶️ Part 2 when he names his save.
     (m) **W3's icons — the brewery and the tavern (each with its owed form), ale, the brewer and the tavern keeper** — 🔨 **being
     built on `art`** (A181, 2026-11-22, ahead of (l) at Joe's word). W3's request (`slice/w3-tavern`'s HANDOFF, *"ART LANE — W3'S
     TAVERN AND BREWERY"*): its `ui icons:` line is ⛔ without them. Barley's pattern (A162–A166): painted by
