@@ -1,8 +1,9 @@
 # Spec: A second crop — barley (W7)
 
-> Status: **✅ BUILT on `slice/w7-barley` (D825–D827, 2026-11-21), ✅ PLAYED AND APPROVED (D828, *"they work as expected and
-> delivered the expected outcomes"*) — §11 is what was built. ⏸️ The merge at his word; ⏸️ his to tune in play: `barley_unlock_forage` (5,000, measured §11.2); ⛔ the probe's `ui icons:`
-> waits on the art lane's barley icon (§7).** History: 📝 specced (D822);
+> Status: **⭐ MERGED INTO `main` AT JOE'S WORD (D830, 2026-11-21, *"Merge it"*, `c720171`), NOT PUSHED; ✅ BUILT (D825–D827),
+> ✅ PLAYED AND APPROVED (D828, *"they work as expected and delivered the expected outcomes"*) — §11 is what was built.
+> *(Read "⏸️ The merge at his word" at D828–D829.)* ⏸️ his to tune in play: `barley_unlock_forage` (5,000, measured §11.2); ✅ the art lane's barley
+> icon and paintings are in `main` (A162–A164) — the probe 0 ⛔.** History: 📝 specced (D822);
 > ✅ calls 2–5 as recommended (D823, *"I like all as recommended"*); ✅ call 1, barley found wild by a forager (D824,
 > *"Yes, the forager's find"*, §9.1). *(Read "🔨 the build (§10), the gate's number measured before it is typed" at D824,
 > "⏸️ call 1 reopened" at D823, "⏸️ five calls Joe's" at D822.)* *(Read "🔨 claimed; the spec is being written" at the claim commit.)*

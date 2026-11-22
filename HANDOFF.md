@@ -1,6 +1,13 @@
 # Handoff — Kith: **▶️ PHASE 6 — ✅ THE SCHOOL MERGED INTO `main` AT JOE'S WORD (D769), PUSHED AT HIS WORD (D770), ✅ PLAYED AND APPROVED (D773). NEXT, SYSTEMS: WATER AS A HOUSEHOLD NEED — ✅ MERGED INTO `main` AND PUSHED AT HIS WORD (D783); ✅ THE ESTABLISHED LINE MERGED AND PUSHED (D785); ✅ THE SCHOOL WORDINGS MERGED AND PUSHED (D787); ⭐ THE SYSTEMS-COMPLETE REVIEW (D788), ITS TEN CALLS AS RECOMMENDED (D789), MERGED AND PUSHED AT HIS WORD (D790) — PHASE 6 IS NOW W1–W13; NO BRANCH OPEN BUT `art`; ⭐ W1, THE BATCH TRADE AS A ROW (D791–D795), MERGED INTO `main` AND PUSHED AT HIS WORD (D796), NO GOLDEN MOVED — ⏸️ HIS PLAY; NO BRANCH OPEN BUT `art`; ⭐ W2, CONTENTMENT (D797–D809), PLAYED AND APPROVED, MERGED INTO `main` AT HIS WORD (D810, `8b85c02`), ✅ PUSHED AT HIS WORD (D811, `origin/main` = ecbeaa0); NO BRANCH OPEN BUT `art`; ▶️ NEXT FOR SYSTEMS: W7, A SECOND CROP — BARLEY — THEN W3, BEER BREWED FROM BARLEY (D821, *"Yes, barley first"*). ✅ OAKMONT'S BOUNCE FIXED (D771), MERGED AND PUSHED AT HIS WORD (D772).** *(Read "▶️ NEXT FOR SYSTEMS, W2 (MORALE)" at D796–D809.)* *(Read "✅ W1 … BUILT ON `slice/batch-trade` … ⏸️ THE MERGE AT HIS WORD, AND HIS PLAY" at D795.)* *(Read "▶️ NEXT FOR SYSTEMS: W1" at D790.)* *(Read "⏸️ TEN CALLS JOE'S, THE CUT LINE FIRST; THE MERGE AT HIS WORD" at D788.)* *(Read "NEXT, SYSTEMS: THE SYSTEMS-COMPLETE REVIEW (D776) … NO BRANCH OPEN BUT `art`" at D787.)* *(Read "🔨 CLAIMED ON `slice/water-need` … `slice/water-need` OPEN" at D775–D782.)* *(Read "AT HIS WORD — NOTHING CLAIMED … NO BRANCH OPEN BUT `art`" at D772–D774.)* *(Read "NO BRANCH OPEN BUT `art`" at D769–D770, and "`slice/clearing-haul` OPEN … MERGE AT HIS WORD" at D771.)*
 
-> **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
+> **⭐ W7, BARLEY, MERGED INTO `main` AT JOE'S WORD (D830, *"Merge it"*, `c720171`), NOT PUSHED; `slice/w7-barley` DELETED.
+> Four checks on the merged tree: suite 2204 / 0 / 5 of 2209; view build 0 warnings; probe 219 lines, 139 ✅, 0 ⛔ (barley's icon
+> in), bar 183; goldens 457, none moved since D825. No branch open but `art`. ⏸️ PUSH AT HIS WORD. ▶️ NEXT FOR SYSTEMS: W3,
+> BEER AND THE TAVERN, BREWED FROM BARLEY — and the find's moment gains its "brew beer" clause there (D826).**
+> - **⛔ TRAP (D830): an art merge into `main` means a re-import here before the probe** — the new images are not in the
+>   import cache, and the import leaves untracked `.uid` files (delete by list) and line-ending-only `.import` rewrites
+>   (`git checkout --` those files only, after `git diff --ignore-cr-at-eol` shows nothing).
+> *(The slice's banner, kept:)* **🔨 `slice/w7-barley` — W7, A SECOND CROP: BARLEY (2026-11-21), CUT FROM `main` IN THE MAIN CHECKOUT. Spec first
 > (`specs/barley.md`), Joe's calls before code. The only systems branch open; `art` is the other.**
 > **✅ BUILT (D825), AND THE FIND'S SENTENCE BY WHAT THE VILLAGE HAS (D826, Joe's ask; the beer clause waits for W3).
 > UNPLAYED. Nine goldens moved, each proven by ablation. ⛔ The probe's `ui icons:` reads "no file for goods/barley" until
@@ -10880,8 +10887,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   and learns from wheat only. Nothing built until he answers.
   **✅ CALLS 2–5 AS RECOMMENDED (D823, *"I like all as recommended"*). ⏸️ CALL 1 REOPENED BY HIM** — a forager finds
   barley growing wild after `barley_unlock_forage` gathered (`barley.md §9.1`); the number measured first. ✅ **HIS WORD
-  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D827), ✅ PLAYED AND APPROVED (D828) — ⏸️ THE MERGE
-  AT HIS WORD.** His to tune in play: `barley_unlock_forage` 5,000.
+  (D824, *"Yes, the forager's find"*). 🔨 Building.** ✅ **BUILT (D825–D827), ✅ PLAYED AND APPROVED (D828), ⭐ MERGED INTO `main`
+  AT HIS WORD (D830, `c720171`), NOT PUSHED.** His to tune in play: `barley_unlock_forage` 5,000.
 
 - ⏸️ 🎨 **ART LANE — BARLEY'S PAINTINGS (W7, D822; `barley.md §7`, the art lane's list, D774).** A folder
   `textures/crops/barley/` with **young, growing and ripe** (ploughed and stubble are `_ground/`'s, shared), in
