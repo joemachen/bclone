@@ -180,7 +180,7 @@
 >   background; switched straight back, but a build that may have read the wrong files is not evidence — the suite was
 >   stopped and run again.
 >
-> **✅ W1 BUILT (D795, 2026-11-18) — ALL SIX STEPS; suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine) 2119 / 0 / 5 IN 15m39, VIEW BUILD 0 WARNINGS, PROBE BAR 151 AND
+> **✅ W1 BUILT (D795, 2026-11-18) — ALL SIX STEPS; SUITE 2119 / 0 / 5 IN 15m39, VIEW BUILD 0 WARNINGS, PROBE BAR 151 AND
 > `done.`, GOLDENS 438 UNCHANGED. ⏸️ HIS: THE MERGE, AND A PLAY OF A VILLAGE WITH ALL FOUR HUTS (he should see nothing
 > different).** Commits: `9004541` claim, `67e06b5` spec, `4d9dd83` step 1, `6e1d85c` steps 2+4, `2c2c511` step 5, then
 > step 6 and these docs.
@@ -7168,7 +7168,7 @@ forager's hour — *"a fisher at 2.7× may be the next 'too much'"*); the winter
 (*"fine for now"*); harvest marks staying on felled ground (D127, reaffirmed D343: *keep it
 standing, draw it quieter*); a hard valley being a legitimate roll (D344).
 
-## ⛔⛔ THE TRAPS THE LAST THREE DAYS PAID FOR (D350–D358) — THE EDGE OF THE PAINT, THE CLOCK, AND THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S CLOCK
+## ⛔⛔ THE TRAPS THE LAST THREE DAYS PAID FOR (D350–D358) — THE EDGE OF THE PAINT, THE CLOCK, AND THE SUITE'S CLOCK
 
 **Joe played wheat, confirmed it, and filed five bugs. Four were one fact and the fifth was a fold.**
 
@@ -7258,7 +7258,7 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     back along it, and a fishing rate read 687 against 830. The `Position` setter drops the leg
     now; only `WalkTo` keeps it. **Any new state that describes "what I am in the middle of" needs
     the same rule: an outside hand clears it.**
-18. **⛔⛔ REBUILDING EVERY FLOW FIELD EVERY SEASON TOOK THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine) 3m → 10m20 (D358).** Nothing
+18. **⛔⛔ REBUILDING EVERY FLOW FIELD EVERY SEASON TOOK THE SUITE 3m → 10m20 (D358).** Nothing
     failed; only the clock said so. Each re-price refills ~90 fields of 9,600 tiles. The fixes, in
     the order they were measured: re-price only when a tile's PRICE CLASS changes (not its wear);
     Dial's bucket queue, not a `PriorityQueue` (the heap cost a minute); refill the SAME arrays
@@ -7494,7 +7494,7 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     set one seat and measured four autumns; the day the foragers' trips lengthened, the food
     quota took the hand for an autumn and the farm reaped 45 for 59. `SetPinnedTrade` is how a
     guard says "this seat is the premise".
-88. **⚠️ THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S CLOCK MOVES WHEN VILLAGES STOP DYING (D384).** 3m07 → 4m35 with the fixture's
+88. **⚠️ THE SUITE'S CLOCK MOVES WHEN VILLAGES STOP DYING (D384).** 3m07 → 4m35 with the fixture's
     fifty years costing the same in isolation: villages that froze under a starved fuel chain now
     live through eighty-year runs (the shelter guards 16 s → 71 s), and a longer-lived village is
     a bigger one. Read the per-class sums before hunting a per-tick regression — and `Passed [N s]`
@@ -7764,7 +7764,7 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     adding a row to it* — `household_names` and `town_names` index arithmetically by the seed for
     this exact reason and say so.
 
-106. **⚠️ THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S CLOCK MOVED 3m12 → 3m45 ON D391, AND HERE IS WHERE.** Tools put 8 % more
+106. **⚠️ THE SUITE'S CLOCK MOVED 3m12 → 3m45 ON D391, AND HERE IS WHERE.** Tools put 8 % more
     people in every fixture village and a fetch walk on every hand; nothing new is per tick.
     The per-test top ten from the trx (`dotnet test --logger trx`), 1,883 s of test time over
     1,200 tests: `MostSeedsProduceAValleyAVillageCanLiveIn` 102 s · `CapacityIsWhatHoldsThePopulationFlat`
@@ -7803,7 +7803,7 @@ standing, draw it quieter*); a hard valley being a legitimate roll (D344).
     the last sentence, because a brush stroke re-sends its warning on every motion event and
     alt+wheel announces the brush on every notch.
 
-111. **⚠️ THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine) READ 5m34 AGAINST ~3m30, AND IT WAS A GAME RUNNING ON THE MACHINE.** After
+111. **⚠️ THE SUITE READ 5m34 AGAINST ~3m30, AND IT WAS A GAME RUNNING ON THE MACHINE.** After
     D396 the full run took 4m13, then 5m33, then 5m34 — and the trx said every long-horizon
     village was **+47 % uniformly** against D391's list (trap 106): `MostSeedsProduce…` 102 → 168 s,
     `CapacityIsWhat…` 87 → 122, `AFoundingThatPaintsNoSeam…` 79 → 111. A uniform per-tick cost
@@ -8619,7 +8619,7 @@ Read `git status` after staging, every time.
 - **A harness village is not a played village** (D447, again): `ZzReplay`'s four arms never pass ~19 people, so its
   replay times are a floor, and the spec says so rather than quoting them as the cost.
 
-## ⛔ THE TRAPS SAVE/LOAD (D509) PAID FOR — A POSE THAT NEVER REACHES THE STATE, AND A suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine) THAT LOOKS GREEN FIRST TIME
+## ⛔ THE TRAPS SAVE/LOAD (D509) PAID FOR — A POSE THAT NEVER REACHES THE STATE, AND A SUITE THAT LOOKS GREEN FIRST TIME
 
 - **Every guard passed on its first run, and two of fourteen mutants then scored ZERO.** Dropping `Moments` or the
   *nowhere to keep it* latch from the save changed nothing any pose could see, because no pose held a pending moment or
@@ -11652,7 +11652,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   with no autumn to spare and never probes a fourteenth; `AFarmWithAutumnToSpare…` is posed
   without tools for it. The cap is honest — the walk is the cost — but it means tools do not
   raise a far farm's harvest, only a near one's. Sits beside the over-painted-farm item below.
-- ⚠️ **THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S CLOCK 3m12 → 3m45 (D391).** The fixture carries 8 % more people and every
+- ⚠️ **THE SUITE'S CLOCK 3m12 → 3m45 (D391).** The fixture carries 8 % more people and every
   hand walks for a tool once in three years; the per-test top ten is in trap 106. Not chased —
   named so the next session does not attribute it to its own change.
 
@@ -11968,7 +11968,7 @@ go looking for one.
 named one and was stale within the minute.
 
 
-**suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine), FROM A RUN (2026-08-29, after the town hall's slice 1):**
+**SUITE, FROM A RUN (2026-08-29, after the town hall's slice 1):**
 ```
 880 passed, 0 failed, 1 skipped of 881 - 2m45s (was 18m52s before D179)
 ```
@@ -12279,7 +12279,7 @@ complaint, that is where to spend the effort.*
 - **⚠️ A GUARD THAT SCORES ZERO AGAINST A RULE MAY BE SAYING THE RULE DOES NOTHING (2026-09-26, D413).** `NoThirdHouseInALine` scored 0 against the row term; the whole 18-seed layout arm then read identically without it — the term was dead code with a reason on it. Measure the rule, not just the guard, before keeping the code.
 - **⚠️ A TEST'S POSE CAN KILL HALF ITS VILLAGES AND NOBODY NOTICES WHILE THE SEED THAT LIVES IS THE ONE IN THE ROW (2026-09-26, D413).** `FoodConservationTests`' every-source pose dies on seeds 3 and 7 on main; 12345 happened to live. When a one-seed guard fails, run its pose on two or three more seeds on BOTH builds before blaming the change.
 
-- **⛔ COMPARE THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S CLOCK BACK TO BACK, NEVER ACROSS THE DAY (2026-09-26, D412).** The branch read 5m30 against the morning's 3m06 and looked like a regression; run back to back with main in a worktree it was **4m02 against main's 4m40** — the machine had slowed, not the code. Sum the per-test durations from a `trx` too: equal CPU with a longer wall clock is the schedule, not the work.
+- **⛔ COMPARE THE SUITE'S CLOCK BACK TO BACK, NEVER ACROSS THE DAY (2026-09-26, D412).** The branch read 5m30 against the morning's 3m06 and looked like a regression; run back to back with main in a worktree it was **4m02 against main's 4m40** — the machine had slowed, not the code. Sum the per-test durations from a `trx` too: equal CPU with a longer wall clock is the schedule, not the work.
 - **⚠️ A GOLDEN TEST CAN HOLD TWO GOLDENS (2026-09-26, D412).** `AVillageThatFarmsAndClearsAtOnce…` asserts the hash AND the hash without skills; moving the first and seeing the test still fail looked like nondeterminism across processes. It was line 347. **Read the line number before suspecting the sim.**
 - **⛔ A PRICE THAT IS ZERO OUT OF RANGE IS A SUBSIDY FOR BEING OUT OF RANGE (2026-09-26, D412).** The setback cost a site nothing when no path was within reach, so sites far from every path beat sites beside one. Hold the price at the range's edge.
 - **⚠️ A TURNED RECTANGLE ON THE GRID IS CORNER-CONNECTED (2026-09-26, D412).** At 45° a yard's tile centres touch only at corners; villagers step edge to edge; most of the yard was no gate's. Join the corners (`PlotShape.Bridge`) and price what no gate reaches.
@@ -12328,11 +12328,11 @@ complaint, that is where to spend the effort.*
 - **⛔⛔⛔ A SELF-CHECK TESTS ITS OWN SIDE OF A SEAM AND SAYS NOTHING ABOUT THE SEAM (2026-09-10, D338).** `ZoneOutline.SelfCheck` was green while the riverbank was drawn **half a tile off the river** and the zone borders an eighth of a tile inside their own wash. It was right: the tracer closed its loops and kept their area throughout. **The bug was in what three call sites believed the tracer's UNITS were** — and the spec had argued explicitly that a shoreline check would be *"a second copy of the same assertion"*. ⭐ *When two pieces of code have to agree about a coordinate space, the guard goes ON the agreement:* the outline's bounding box must equal the rectangle the FILL draws for the same cell.
 - **⚠️ MEASURE THE THING THAT IS ACTUALLY INVARIANT — SECOND TIME IN TWO COMMITS (2026-09-10, D338).** The new seam guard scored **24px on correct code** because it required every traced point to be a rectangle corner, and the tracer **cuts corners**: a lone cell comes back as a rounded octagon whose points sit *along* the edges. *D337's overhang guard failed the same way, measuring canopy centres instead of branches.* **A guard that is right that something is wrong and wrong about what is the most expensive kind of red**, because the obvious fix is to the wrong thing.
 - **⛔⛔ A DERIVED SUMMARY IS NOT A SKIP TEST IF IT HAS A THRESHOLD IN IT (2026-09-10, D338).** `ZoneMap.IsResidential` / `IsHarvest` mean **"at least half the sixteen sub-tiles"** — the threshold the economy asks in. Using them to decide whether a tile is worth drawing would have **silently erased every tile under a quarter painted**, which is precisely the ragged edge sub-tiles were built for. ⭐ *The raw COUNT is the honest question; the threshold is a different question wearing the same words.*
-- **⚠️ THE 3m0s suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine) READING FROM 2026-09-09 WAS THE MACHINE — RESOLVED, AND THE TRAP ABOVE IT CAN STAY AS WRITTEN.** It read **1m52s** the next day with the sim changed. *Recorded because the previous entry left the question open on purpose.*
+- **⚠️ THE 3m0s SUITE READING FROM 2026-09-09 WAS THE MACHINE — RESOLVED, AND THE TRAP ABOVE IT CAN STAY AS WRITTEN.** It read **1m52s** the next day with the sim changed. *Recorded because the previous entry left the question open on purpose.*
 
 - **⛔⛔⛔ A GUARD THAT SAMPLES ONE FRAME CANNOT SEE A BUG THAT NEEDS TWO (2026-09-09, D337).** The tree scatter's determinism guard computed the wood twice and compared — **both passes in one call, at one tick**, so a seed drifting frame to frame would have matched itself every time. ⭐ *The fix was not a better test: `CanopyOn` became a `static` taking only a tile and an index, so it CANNOT read the tick.* **When a guard scores zero, ask whether the property can be made impossible instead of asserted.**
 - **⚠️ MEASURE THE THING THAT IS ACTUALLY OVER THE LINE (2026-09-09, D337).** The overhang guard reported *"nothing overhangs"* while measuring canopy **centres**. A canopy centred at 0.45 with a radius of 0.20 has already crossed the tile edge at 0.5. *The guard was right that something was wrong and wrong about what — which is the most expensive kind of red, because the obvious fix is to the wrong thing.*
-- **⚠️ THE suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine)'S WALL-CLOCK MOVED 1m46s → 3m0s ON A VIEW-ONLY COMMIT, AND IT IS THE MACHINE (2026-09-09).** Reproducible across two runs — but **the only modified files were `Main.cs` and `VillageMap.cs`, and `Kith.Game` is deliberately not in `Kith.sln` (D11), so the suite never compiles them.** ⭐ *Proving it was NOT the code took one `git status` and one fact about the solution.* ⚠️ **If a later session sees ~1m50s again, this was thermal or background load after a long session; if it stays at 3m, something real happened between D336 and then.**
+- **⚠️ THE SUITE'S WALL-CLOCK MOVED 1m46s → 3m0s ON A VIEW-ONLY COMMIT, AND IT IS THE MACHINE (2026-09-09).** Reproducible across two runs — but **the only modified files were `Main.cs` and `VillageMap.cs`, and `Kith.Game` is deliberately not in `Kith.sln` (D11), so the suite never compiles them.** ⭐ *Proving it was NOT the code took one `git status` and one fact about the solution.* ⚠️ **If a later session sees ~1m50s again, this was thermal or background load after a long session; if it stays at 3m, something real happened between D336 and then.**
 
 - **⛔⛔⛔ `git checkout <file>` TO UNDO A RED CHECK DESTROYS THE UNCOMMITTED WORK IN THAT FILE (2026-09-09, D336).** I used it to revert a deliberate break and it took a guard I had written twenty minutes earlier with it — in the same file, uncommitted. ⭐ *The habit that works is the one used everywhere else in this session:* `cp file /tmp/x.bak` before the break, `cp /tmp/x.bak file` after. **Never reach for git to undo an edit in a file that has work in it.**
 - **⚠️ AN INSTRUMENT THAT KEEPS A CONSTANT AFTER THE CONSTANT CHANGES MEANING MEASURES THE PAST (2026-09-09, D336).** The width probe posed the brush at `MaxRadius` — correct when radii were tiles, and a quarter of the real ceiling once they became quarter-tiles. **It was measuring a brush four times narrower than a spun wheel produces**, and nothing said so. *Fourth instance of the pose-the-wrong-state family: D242, D326, D332, now this.*
