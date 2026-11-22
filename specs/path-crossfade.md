@@ -2,7 +2,7 @@
 
 **Status:** ✍️ **SPECCED AND MOCKED (A168, 2026-11-21).** ✅ **His four calls answered (A169, 2026-11-22: *"All as
 recommended"*) — C by patches, half a season, the same pace both ways, no fade on a load.** 🔨 **BUILT on `art` (A169, §7)**, the
-two map files at his *"Yes, edit them"*; ⏸️ **his eyes next — not merged.** Art piece (a) of his play
+two map files at his *"Yes, edit them"*; played, and ✅ **merged into `main` at his word (A171, *"Looks good, merge it"*, merge `2b222ae`); not pushed.** Art piece (a) of his play
 notes of 2026-11-20 (*"paths change too abruptly"*), moved ahead of the bridge at his word on 2026-11-21: *"move path
 transition/cross-fade up to the next item and start on that"*. Art lane, **view only**: the sim's wear, its classes, the
 routes and the cost field (`desire-paths.md`) are read, never written — no golden can move. Neighbours: `painted-paths.md`
