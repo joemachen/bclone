@@ -122,6 +122,7 @@ internal static class ParchmentLook
         theme.SetFont("title_button_font", "Tree", header);
 
         NewValley(theme);
+        Title(theme, header);
         DefaultTypes(theme);
         return theme;
     }
@@ -130,6 +131,46 @@ internal static class ParchmentLook
     /// ⭐ The new-valley screen's own parts (A147, `new-game-screen.md §12`): the paper under the map, the faces, and the
     /// one filled button. Named roles, so on slate the screen asks for them and gets today's look.
     /// </summary>
+    private static void Title(Theme theme, Font header)
+    {
+        // ⭐ The title's items (A180, `title-screen-art.md §2`): the heading face at 22, ink; under the pointer a faint rubric
+        // wash and rubric words; with the keyboard on it a rubric underline and rubric words; pressed, the theme's swash.
+        theme.SetTypeVariation(UiLook.TitleItem, "Button");
+        theme.SetFont("font", UiLook.TitleItem, header);
+        theme.SetFontSize("font_size", UiLook.TitleItem, 22);
+        StyleBoxFlat Box(Color fill, Color edge, int bottom)
+        {
+            var box = new StyleBoxFlat { BgColor = fill, BorderColor = edge, BorderWidthBottom = bottom, DrawCenter = fill.A > 0f };
+            box.SetCornerRadiusAll(3);
+            box.ContentMarginLeft = 12;
+            box.ContentMarginRight = 12;
+            box.ContentMarginTop = 6;
+            box.ContentMarginBottom = 6;
+            return box;
+        }
+
+        theme.SetStylebox("normal", UiLook.TitleItem, Box(Colors.Transparent, Colors.Transparent, 0));
+        theme.SetStylebox("disabled", UiLook.TitleItem, Box(Colors.Transparent, Colors.Transparent, 0));
+        theme.SetStylebox("hover", UiLook.TitleItem, Box(Rubric with { A = 0.10f }, Colors.Transparent, 0));
+        theme.SetStylebox("focus", UiLook.TitleItem, Box(Colors.Transparent, Rubric, 2));
+        foreach (string colour in new[] { "font_hover_color", "font_focus_color", "font_hover_pressed_color", "font_pressed_color" })
+        {
+            theme.SetColor(colour, UiLook.TitleItem, RubricInk);
+        }
+
+        theme.SetColor("font_color", UiLook.TitleItem, Ink);
+
+        // The primary: the new valley's one red button, in the heading face, an ink ring round it when it has the keyboard.
+        theme.SetTypeVariation(UiLook.TitlePrimary, UiLook.PrimaryButton);
+        theme.SetFont("font", UiLook.TitlePrimary, header);
+        theme.SetFontSize("font_size", UiLook.TitlePrimary, 22);
+        var ring = new StyleBoxFlat { DrawCenter = false, BorderColor = Ink };
+        ring.SetBorderWidthAll(2);
+        ring.SetCornerRadiusAll(4);
+        ring.SetExpandMarginAll(4);
+        theme.SetStylebox("focus", UiLook.TitlePrimary, ring);
+    }
+
     private static void NewValley(Theme theme)
     {
         string t = UiLook.Type;

@@ -37,6 +37,11 @@ to have: back to the title, and to the desktop.
 
 ## 3. The title screen (`TitleScreen.cs`)
 
+> ⭐ **Repainted by the art lane (A180, `title-screen-art.md`), Joe's brief:** the dimmed band below is now a parchment panel
+> docked left; with no save *Continue* and *Load…* are **hidden**, not disabled; *New village* or *Continue* is the one red
+> button; a **Settings** item between *Load…* and *Quit* holds the player's own settings (`title-screen-art.md §2a`). The
+> rules below — what each item opens, the refusal, the backdrop — are unchanged until that spec's part 3 replaces the backdrop.
+
 What the game opens on. ⭐ **Its rules are Main's and the sim's; the screen only lays them out** — the
 new-game screen's shape (`NewGameScreen`, which raises events and Main acts on them).
 

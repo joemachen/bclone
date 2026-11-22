@@ -1,6 +1,8 @@
 # The title screen, painted — a parchment menu, and the valley in four seasons behind it (A178, A179)
 
-> **Status: ✍️ SPECCED, PART 1 MOCKED (A179, 2026-11-22); ⏸️ SIX CALLS JOE'S (§7). NOTHING BUILT.** Art lane (CLAUDE.md
+> **Status: 🔨 PART 1 BUILT ON `art` (A180, 2026-11-22) — Joe: *"All as recommended - and add a 'settings' option to the title
+> screen"*; ⏸️ HIS PLAY OF PART 1 (§9), then part 2 once he has played his save to maturity.** Specced and part 1 mocked A179.
+> Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
 > View only: nothing in the sim, `data/` or `tests/` changes. Part 1's mock is drawn by the game itself from a copy of his
@@ -61,6 +63,26 @@ no save, Continue and Load… hidden and New village the primary, focused, enabl
 focused, New village plain; ↓ from the primary visits every shown item in order and wraps; every word's contrast against the
 panel ≥ 4.5 : 1; at 1280 × 720 the panel's contents inside its height and the panel narrower than 40 % of the window. Red-
 checked, the reds counted (D326). The test project cannot reach Godot code, so there is no xunit test — the brief says so.
+
+## 2a. Settings on the title (A180 — Joe: *"add a 'settings' option to the title screen"*)
+
+His two answers, asked when the item was added: *"Player's settings"*, and *"Yes, edit them"* (`Main.cs`, `Main.Settings.cs`).
+
+- **An item, *Settings*, between *Load…* and *Quit*.** It turns the panel to the settings — the same sheet, a page in it —
+  and *Back* (or Esc) turns it back, the keyboard on *Settings* again.
+- **What it holds — the player's own, never the village's** (`settings-persistence.md §3`'s line): **The window** — the UI
+  size (− 75 % +, steps of five) and *full screen*; **On the map** — every tick the village's Settings has there; **Alerts** —
+  *go back to my speed after an alert*. Each as the player last left it. **Not here**, because an open village owns them: the
+  window list and *Reset window positions*, *Routes* and *Paths* (overlays of a map that is not open), *How the village runs*
+  (hashed, the village's), *About this run*.
+- **One table** (`Main.PlayerTicks`): every tick's key, words, default and heading. The village's Settings makes each tick from
+  its row (`Main.Tick(key)`) and the title lists the same rows — so the two can never offer different words or defaults. The
+  `full screen:` probe line checks every tick the village's Settings holds is a row, and every row a tick.
+- **Kept at once.** With no village open nothing else writes the file, so a tick or a step of the dial is written as it moves
+  (`TitleTickChanged`, `TitleUiScaleMoved`); the village reads it when it opens, as it always has (`ApplySettings`). *"Kept for
+  the next village you open."* under the list says so. *Full screen* applies at once.
+- ⚠️ **Full screen now applies from the title** (a departure, §8): it used to wait for a village's Settings to be built, so the
+  title opened in a window and the game went full screen at the founding.
 
 ## 3. Part 2 — the capture tool
 
@@ -128,7 +150,7 @@ composite with both seams — ⏸️ his pick. 6. On screen, the four checks —
 The pause screen's look (its sheet already parchment); the new-valley screen; music or motion on the title; a title that
 changes with the real season.
 
-## 7. ⏸️ Joe's calls
+## 7. ✅ Joe's calls — *"All as recommended"* (A180, 2026-11-22), and Settings added (§2a)
 
 1. **With no save, Continue and Load… are not shown** — the first-run menu is *New village* (the red button) and *Quit*.
    ⭐ **Hidden.** *Or:* both shown greyed (the mock's last picture) — but greyed words cannot meet 4.5 : 1.
@@ -153,3 +175,38 @@ changes with the real season.
 - **Falling snow off in every capture** — the brief speaks of snow on the ground only.
 - **The tool checks the world's hash and the captures' agreement** — not asked for; they are what make "same world, same
   camera" a fact rather than a hope.
+- **Full screen applies from the title** (§2a), not from a village's founding — Settings on the title needs it to, and the
+  game had been opening in a window and jumping to full screen a screen later.
+- **Settings' long list scrolls** inside the panel at 720 high (the new-valley panel's way); the menu itself never does.
+
+## 9. 🔨 Part 1 built (A180, 2026-11-22)
+
+- **`TitleScreen.cs`**: the panel as §2 says, two pages in one sheet (the menu, Settings); `NewestThatOpens` decides
+  *Continue*; the arrow keys linked to wrap (`LinkTheItems`); the width on every resize, never per frame (`PlaceThePanel`).
+  `TitleScreen.Probe.cs`: what the probe asks of it. **`LoadMenu`'s button focusable** — the pause screen's too.
+- **`ParchmentLook.cs` / `UiLook.cs`**: two roles, `TitleItem` (the heading face at 22, a rubric wash under the pointer, a rubric
+  underline and rubric words with the keyboard) and `TitlePrimary` (the new valley's red button in the heading face, an ink
+  ring when it has the keyboard). On slate the items fall back to plain buttons.
+- **`Main.cs`**: the title gets its settings doors and applies full screen; `ProbeTheTitle` asks the title's checks of itself and
+  of a title posed over a save (its grid tick set away from the default first); the fifteen Settings ticks made from the table;
+  the `full screen:` line's table guard. **`Main.Settings.cs`**: `PlayerTicks`, `Tick`, `TickValue`, the title's two writers;
+  `WriteTheSettings` says a refusal to the village's log only when there is a village.
+- **Probe** — `title:` now reads, green: *a parchment sheet docked left, Kith in the blackletter, the items in the heading face;
+  with no save Continue and Load… hidden and New village the red primary with the keyboard; over a save Continue the primary and
+  New village plain; ↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the
+  player's ticks as last left, a tick goes to the file, Back returns.* **Red-check: 19 mutants, 17 red, two zeros written down** — *Kith* losing its blackletter override (the theme's default
+  face *is* the blackletter, so nothing the probe can see changes) and full screen not applied on the title (headless, the
+  display takes no mode; Joe's eyes). One mutant (a Settings page missing its first group) first killed the probe with no line
+  — unscored, never a red — so the title's checks are now in a `try` and it re-ran red by its throw (`redcheck180.py`,
+  `red180.log`, `red180b.log` in `D:\Projects\brushes\title-menu\`).
+- **Renders** of the build from a copy of his Hollowmere save and from none, with the keyboard moved and Settings open:
+  `D:\Projects\brushes\title-menu\built\`.
+- **The four checks:** suite 2206 / 0 / 5 of 2211 in 20m16 (no sim, data or test file changed); view build 0 warnings;
+  probe 178 lines, 140 ✅, 0 ⛔, bar 183, `title:` ✅, `full screen:` ✅ with the table's guard, tile centres ✅, new game ✅,
+  `done.`; goldens 457, none moved.
+- ⚠️ **Joe's own settings file says full screen is off**, so on his machine the title now opens in a window, as his village
+  already did — before, the title opened windowed whatever the file said and the founding applied it.
+- **What to play** (`.\run.bat` from the art worktree): the title reads, ink on parchment; ↑ ↓ Enter work it, *Load…*
+  included; *Settings* turns the panel, a tick changed there is the village's when one opens; *Back* and Esc return. With no
+  save (a fresh `APPDATA`, or rename the saves folder) only *New village*, *Settings* and *Quit*. Sheet of the build's renders:
+  `D:\Projects\brushes\title-menu\title_part1_built.jpg`.

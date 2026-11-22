@@ -20,34 +20,48 @@ namespace Kith.Game;
 /// <i>Continue</i> does not reuse it: a second door in from disk is how the two would come to differ. With no
 /// save, a valley from a rolled seed — and under the probe there are never saves.
 /// </para>
+/// <para>
+/// ⭐⭐ <b>A parchment panel docked left</b> (A180, `title-screen-art.md §2`; Joe's brief, <i>"All as recommended"</i>): the dark
+/// scrim it replaces left ink words on a dark ground. <i>Kith</i> in the blackletter, the items in the heading face, the one
+/// red button the primary — <i>Continue</i> when a save opens, <i>New village</i> otherwise — and with no save neither
+/// <i>Continue</i> nor <i>Load…</i> is shown. <i>Settings</i> (Joe: <i>"add a 'settings' option"</i>) turns the panel to the
+/// player's own settings — the window and the map's ticks — read and written through <see cref="SettingsDoors"/>.
+/// </para>
 /// </remarks>
 public sealed partial class TitleScreen : Control
 {
     /// <summary>The name on the title (Joe, D516: <i>"bclone" for now</i>) — one string, changed once.</summary>
     internal const string GameName = "Kith";
 
+    /// <summary>The panel's share of a wide window — the new-valley panel's (A148); never narrower than its contents.</summary>
+    internal const float PanelShare = 0.28f;
+
     /// <summary>The backdrop's bake, a little finer than the new-game preview's: it fills the window.</summary>
     private const int BackdropPixelsPerTile = 10;
 
     private readonly SimConfig _config;
     private readonly string _build;
+    private readonly SettingsDoors _doors;
     private readonly ValleyTexture _bake = new(BackdropPixelsPerTile);
 
     private TextureRect _backdrop = null!;
     private Label _refusal = null!;
+    private VBoxContainer _menu = null!;
+    private Label _scaleReading = null!;
 
     /// <summary>For Godot, which may construct a script's node itself; the game uses the other.</summary>
     public TitleScreen()
-        : this(new SimConfig(), Array.Empty<SaveListing>(), "?")
+        : this(new SimConfig(), Array.Empty<SaveListing>(), "?", SettingsDoors.None)
     {
     }
 
     /// <summary>The title over <paramref name="saves"/> (newest first, as the load list shows them).</summary>
-    internal TitleScreen(SimConfig config, IReadOnlyList<SaveListing> saves, string build)
+    internal TitleScreen(SimConfig config, IReadOnlyList<SaveListing> saves, string build, SettingsDoors doors)
     {
         _config = config;
         Saves = saves;
         _build = build;
+        _doors = doors;
     }
 
     /// <summary>Asked to open the save at this path — <i>Continue</i> or <i>Load…</i>.</summary>
@@ -62,17 +76,61 @@ public sealed partial class TitleScreen : Control
     /// <summary>A save the player can open, as the list shows it — or one it can only show, greyed, with why.</summary>
     internal sealed record SaveListing(string Path, string Line, string? Refusal);
 
+    /// <summary>
+    /// What the title's Settings reads and writes (A180): the player's ticks (<c>Main.PlayerTicks</c>, the village's Settings'
+    /// own table), each one's value as last left, where a change goes, and the UI size's reading and its step.
+    /// </summary>
+    internal sealed record SettingsDoors(
+        IReadOnlyList<PlayerTick> Ticks, Func<string, bool> Value, Action<string, bool> Changed, Func<int> UiScale, Func<int, int> MoveUiScale)
+    {
+        /// <summary>No settings — Godot's own construction only.</summary>
+        internal static SettingsDoors None { get; } = new(Array.Empty<PlayerTick>(), _ => false, (_, _) => { }, () => 0, _ => 0);
+    }
+
     /// <summary>Every save on disk, newest first.</summary>
     internal IReadOnlyList<SaveListing> Saves { get; }
 
-    /// <summary>For the probe: the band of words and buttons, whose right edge must be inside the window.</summary>
-    internal Control Band { get; private set; } = null!;
+    /// <summary>The newest save that opens, which <i>Continue</i> opens — none, and there is no <i>Continue</i>.</summary>
+    internal static SaveListing? NewestThatOpens(IReadOnlyList<SaveListing> saves) => saves.FirstOrDefault(s => s.Refusal is null);
+
+    /// <summary>For the probe: the panel, docked left.</summary>
+    internal PanelContainer Band { get; private set; } = null!;
+
+    /// <summary>For the probe: <i>Kith</i>.</summary>
+    internal Label TitleLabel { get; private set; } = null!;
+
+    /// <summary>For the probe: the version at the foot.</summary>
+    internal Label VersionLabel { get; private set; } = null!;
 
     /// <summary>For the probe and the tooltip: <i>Continue</i>.</summary>
     internal Button ContinueButton { get; private set; } = null!;
 
     /// <summary>For the probe: <i>New village</i>.</summary>
     internal Button NewVillageButton { get; private set; } = null!;
+
+    /// <summary>For the probe: <i>Load…</i>.</summary>
+    internal MenuButton LoadButton { get; private set; } = null!;
+
+    /// <summary>For the probe: <i>Settings</i>.</summary>
+    internal Button SettingsButton { get; private set; } = null!;
+
+    /// <summary>For the probe: <i>Quit</i>.</summary>
+    internal Button QuitButton { get; private set; } = null!;
+
+    /// <summary>The one red item: <i>Continue</i> with a save that opens, <i>New village</i> without.</summary>
+    internal Button PrimaryItem { get; private set; } = null!;
+
+    /// <summary>The items shown, top to bottom — the order the arrow keys walk.</summary>
+    internal IReadOnlyList<Button> ShownItems { get; private set; } = Array.Empty<Button>();
+
+    /// <summary>For the probe: the Settings page.</summary>
+    internal VBoxContainer SettingsPage { get; private set; } = null!;
+
+    /// <summary>For the probe: the Settings page's ticks, by key, in the table's order.</summary>
+    internal IReadOnlyList<(string Key, CheckBox Box)> SettingsTicks { get; private set; } = Array.Empty<(string, CheckBox)>();
+
+    /// <summary>For the probe: the Settings page's way back.</summary>
+    internal Button SettingsBack { get; private set; } = null!;
 
     /// <summary>For the probe: the backdrop has a valley on it.</summary>
     internal bool HasABackdrop => _bake.Texture is not null && _backdrop.Texture is not null;
@@ -102,8 +160,22 @@ public sealed partial class TitleScreen : Control
         _backdrop.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         AddChild(_backdrop);
 
-        AddChild(BuildTheBand());
+        AddChild(BuildThePanel());
+        LinkTheItems();
+        PlaceThePanel();
+        Resized += PlaceThePanel;
+        PrimaryItem.CallDeferred(Control.MethodName.GrabFocus);
         BakeTheBackdrop();
+    }
+
+    /// <summary>Esc on the Settings page goes back to the menu, as its <i>Back</i> does.</summary>
+    public override void _UnhandledKeyInput(InputEvent e)
+    {
+        if (SettingsPage.Visible && e is InputEventKey { Pressed: true, Keycode: Key.Escape })
+        {
+            ShowTheMenu();
+            GetViewport().SetInputAsHandled();
+        }
     }
 
     /// <summary>A save that would not open, said where the player is looking. The title stays.</summary>
@@ -115,6 +187,26 @@ public sealed partial class TitleScreen : Control
 
     /// <summary>For the probe: what pressing <i>New village</i> does.</summary>
     internal void PressNewVillage() => NewVillageAsked?.Invoke();
+
+    /// <summary>The panel turns to Settings, the first tick taking the keyboard.</summary>
+    internal void ShowTheSettings()
+    {
+        _menu.Visible = false;
+        SettingsPage.Visible = true;
+        _scaleReading.Text = $"{_doors.UiScale()}%";
+        if (SettingsTicks.Count > 0)
+        {
+            SettingsTicks[0].Box.GrabFocus();
+        }
+    }
+
+    /// <summary>Back to the menu, <i>Settings</i> taking the keyboard again.</summary>
+    internal void ShowTheMenu()
+    {
+        SettingsPage.Visible = false;
+        _menu.Visible = true;
+        SettingsButton.GrabFocus();
+    }
 
     /// <summary>
     /// <b>Load…</b>: every save, newest first, a refused one greyed with its refusal as the tooltip — the title's
@@ -151,7 +243,8 @@ public sealed partial class TitleScreen : Control
 
         private LoadMenu(Action<string> picked)
         {
-            Button = new MenuButton { Text = "Load…", Flat = false };
+            // ⚠️ Focusable (A180): a MenuButton is not by default, so the arrow keys walked past Load… (found by the title's mock).
+            Button = new MenuButton { Text = "Load…", Flat = false, FocusMode = FocusModeEnum.All };
             Button.GetPopup().IdPressed += id =>
             {
                 if (id < _listed.Count)
@@ -185,67 +278,183 @@ public sealed partial class TitleScreen : Control
         }
     }
 
-    private Control BuildTheBand()
+    private Control BuildThePanel()
     {
-        // ⭐ A dimmed band down the left, so the words read over any valley.
-        var band = new PanelContainer { CustomMinimumSize = new Vector2(340, 0) };
-        band.AddThemeStyleboxOverride("panel", UiLook.TitleBand());
-        band.SetAnchorsAndOffsetsPreset(LayoutPreset.LeftWide);
-        band.OffsetRight = 340;
-        Band = band;
+        Band = new PanelContainer { AnchorLeft = 0f, AnchorRight = 0f, AnchorTop = 0f, AnchorBottom = 1f };
+        Band.AddThemeStyleboxOverride("panel", UiLook.Panel());
 
-        var column = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
-        column.AddThemeConstantOverride("separation", 10);
-        band.AddChild(column);
+        // Two pages in one sheet, one shown: the menu, and the player's settings.
+        var stack = new VBoxContainer();
+        Band.AddChild(stack);
+        _menu = BuildTheMenu();
+        stack.AddChild(_menu);
+        SettingsPage = BuildTheSettings();
+        SettingsPage.Visible = false;
+        stack.AddChild(SettingsPage);
+        return Band;
+    }
 
-        var title = new Label { Text = GameName };
-        title.AddThemeFontSizeOverride("font_size", 56);
-        column.AddChild(title);
+    private VBoxContainer BuildTheMenu()
+    {
+        var column = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        column.AddThemeConstantOverride("separation", 6);
+        column.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 0.5f });
 
-        var build = new Label { Text = _build };
-        UiLook.Tint(build, UiLook.Faint);
-        build.AddThemeFontSizeOverride("font_size", 13);
-        column.AddChild(build);
-        column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 28) });
-
-        SaveListing? newest = Saves.FirstOrDefault(s => s.Refusal is null);
-        ContinueButton = Big(new Button
+        TitleLabel = new Label { Text = GameName, HorizontalAlignment = HorizontalAlignment.Center };
+        if (UiLook.Blackletter is { } blackletter)
         {
-            Text = "Continue",
-            Disabled = newest is null,
-            TooltipText = newest?.Line ?? "No saved village yet.",
-        });
+            TitleLabel.AddThemeFontOverride("font", blackletter);
+        }
+
+        TitleLabel.AddThemeFontSizeOverride("font_size", 96);
+        column.AddChild(TitleLabel);
+        column.AddChild(new ColorRect { Color = UiLook.SelectedEdge, CustomMinimumSize = new Vector2(120, 2), SizeFlagsHorizontal = SizeFlags.ShrinkCenter });
+        column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 36) });
+
+        SaveListing? newest = NewestThatOpens(Saves);
+        ContinueButton = new Button { Text = "Continue", TooltipText = newest?.Line ?? LoadMenu.NoSaveYet, Visible = newest is not null };
         ContinueButton.Pressed += () => LoadAsked?.Invoke(newest!.Path);
-        column.AddChild(ContinueButton);
-
-        NewVillageButton = Big(new Button { Text = "New village" });
+        NewVillageButton = new Button { Text = "New village" };
         NewVillageButton.Pressed += () => NewVillageAsked?.Invoke();
-        column.AddChild(NewVillageButton);
+        LoadButton = new LoadMenu(Saves, path => LoadAsked?.Invoke(path)).Button;
+        LoadButton.Visible = Saves.Count > 0;
+        SettingsButton = new Button { Text = "Settings" };
+        SettingsButton.Pressed += ShowTheSettings;
+        QuitButton = new Button { Text = "Quit" };
+        QuitButton.Pressed += () => QuitAsked?.Invoke();
+        PrimaryItem = newest is not null ? ContinueButton : NewVillageButton;
 
-        column.AddChild(Big(new LoadMenu(Saves, path => LoadAsked?.Invoke(path)).Button));
+        foreach (Button item in new Button[] { ContinueButton, NewVillageButton, LoadButton, SettingsButton, QuitButton })
+        {
+            item.ThemeTypeVariation = item == PrimaryItem ? UiLook.TitlePrimary : UiLook.TitleItem;
+            item.CustomMinimumSize = new Vector2(250, 46);
+            item.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+            column.AddChild(item);
+        }
 
-        Button quit = Big(new Button { Text = "Quit" });
-        quit.Pressed += () => QuitAsked?.Invoke();
-        column.AddChild(quit);
+        ShownItems = new Button[] { ContinueButton, NewVillageButton, LoadButton, SettingsButton, QuitButton }.Where(b => b.Visible).ToArray();
 
         _refusal = new Label
         {
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Visible = false,
-            CustomMinimumSize = new Vector2(240, 0),
+            CustomMinimumSize = new Vector2(260, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
         };
         UiLook.Tint(_refusal, UiLook.Refused);
-        _refusal.AddThemeFontSizeOverride("font_size", 13);
+        _refusal.AddThemeFontSizeOverride("font_size", 14);
         column.AddChild(_refusal);
-        return band;
+        column.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill });
+
+        VersionLabel = new Label { Text = _build, HorizontalAlignment = HorizontalAlignment.Center };
+        UiLook.Tint(VersionLabel, UiLook.Faint);
+        VersionLabel.AddThemeFontSizeOverride("font_size", 13);
+        column.AddChild(VersionLabel);
+        return column;
     }
 
-    private static T Big<T>(T button)
-        where T : Button
+    /// <summary>
+    /// The player's own settings (A180, Joe: <i>"Player's settings"</i>): the window — full screen and the UI size — then every
+    /// tick of the village's <i>On the map</i>, then <i>Alerts</i>, each under the heading its row names, as last left. Not here,
+    /// because an open village owns them: the window list, <i>How the village runs</i>, <i>About this run</i>.
+    /// </summary>
+    private VBoxContainer BuildTheSettings()
     {
-        button.CustomMinimumSize = new Vector2(240, 40);
-        button.AddThemeFontSizeOverride("font_size", 18);
-        return button;
+        var page = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        page.AddThemeConstantOverride("separation", 8);
+
+        var heading = new Label { Text = "Settings", HorizontalAlignment = HorizontalAlignment.Center, ThemeTypeVariation = UiLook.HeaderLabel };
+        heading.AddThemeFontSizeOverride("font_size", 28);
+        page.AddChild(heading);
+
+        var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled, SizeFlagsVertical = SizeFlags.ExpandFill };
+        page.AddChild(scroll);
+        var rows = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        rows.AddThemeConstantOverride("separation", 4);
+        scroll.AddChild(rows);
+
+        var ticks = new List<(string, CheckBox)>();
+        string? group = null;
+        foreach (PlayerTick tick in _doors.Ticks)
+        {
+            if (tick.Group != group)
+            {
+                group = tick.Group;
+                var title = new Label { Text = group };
+                UiLook.Tint(title, UiLook.Hint);
+                title.AddThemeFontSizeOverride("font_size", 14);
+                rows.AddChild(title);
+                if (group == "The window")
+                {
+                    rows.AddChild(TheUiSizeRow());
+                }
+            }
+
+            var box = new CheckBox { Text = tick.Label, ButtonPressed = _doors.Value(tick.Key) };
+            box.AddThemeFontSizeOverride("font_size", 16);
+            string key = tick.Key;
+            box.Toggled += on => _doors.Changed(key, on);
+            rows.AddChild(box);
+            ticks.Add((key, box));
+        }
+
+        SettingsTicks = ticks;
+        var caption = new Label { Text = "Kept for the next village you open.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        UiLook.Tint(caption, UiLook.Hint);
+        caption.AddThemeFontSizeOverride("font_size", 13);
+        page.AddChild(caption);
+
+        SettingsBack = new Button
+        {
+            Text = "Back",
+            ThemeTypeVariation = UiLook.TitleItem,
+            CustomMinimumSize = new Vector2(250, 46),
+            SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
+        };
+        SettingsBack.Pressed += ShowTheMenu;
+        page.AddChild(SettingsBack);
+        return page;
+    }
+
+    /// <summary>The UI size, the village's dial: − 75 % +, a step of five.</summary>
+    private HBoxContainer TheUiSizeRow()
+    {
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 6);
+        var name = new Label { Text = "UI size", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        name.AddThemeFontSizeOverride("font_size", 16);
+        row.AddChild(name);
+        var smaller = new Button { Text = "−" };
+        var bigger = new Button { Text = "+" };
+        _scaleReading = new Label { Text = $"{_doors.UiScale()}%", HorizontalAlignment = HorizontalAlignment.Center, CustomMinimumSize = new Vector2(52, 0) };
+        _scaleReading.AddThemeFontSizeOverride("font_size", 16);
+        smaller.Pressed += () => _scaleReading.Text = $"{_doors.MoveUiScale(-PlayerSettings.UiScaleStep)}%";
+        bigger.Pressed += () => _scaleReading.Text = $"{_doors.MoveUiScale(PlayerSettings.UiScaleStep)}%";
+        row.AddChild(smaller);
+        row.AddChild(_scaleReading);
+        row.AddChild(bigger);
+        return row;
+    }
+
+    /// <summary>↑ and ↓ walk the shown items and wrap — Godot's own neighbours stop at the ends.</summary>
+    private void LinkTheItems()
+    {
+        for (int i = 0; i < ShownItems.Count; i++)
+        {
+            Button item = ShownItems[i];
+            item.FocusNeighborBottom = item.GetPathTo(ShownItems[(i + 1) % ShownItems.Count]);
+            item.FocusNeighborTop = item.GetPathTo(ShownItems[(i + ShownItems.Count - 1) % ShownItems.Count]);
+        }
+    }
+
+    /// <summary>The panel's width: the share of the window, never narrower than what it holds. On every resize, never per frame.</summary>
+    private void PlaceThePanel()
+    {
+        float width = Mathf.Ceil(Mathf.Max(Size.X * PanelShare, Band.GetCombinedMinimumSize().X));
+        Band.OffsetLeft = 0f;
+        Band.OffsetRight = width;
+        Band.OffsetTop = 0f;
+        Band.OffsetBottom = 0f;
     }
 
     /// <summary>The newest save's valley, or a rolled one — never a half-made picture (§3).</summary>
@@ -260,7 +469,7 @@ public sealed partial class TitleScreen : Control
 
     private SimWorld? TheNewestValley()
     {
-        SaveListing? newest = Saves.FirstOrDefault(s => s.Refusal is null);
+        SaveListing? newest = NewestThatOpens(Saves);
         if (newest is null)
         {
             return null;

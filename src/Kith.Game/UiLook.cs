@@ -100,6 +100,12 @@ internal static class UiLook
     /// <summary>The theme type variation of a screen's one primary button — the new valley's <i>Found</i> (A147).</summary>
     internal const string PrimaryButton = "PrimaryButton";
 
+    /// <summary>The title screen's items (A180): the heading face, the rubric under the pointer and the keyboard.</summary>
+    internal const string TitleItem = "TitleItem";
+
+    /// <summary>The title screen's one primary item (A180): <see cref="PrimaryButton"/> in the heading face, ringed in ink when focused.</summary>
+    internal const string TitlePrimary = "TitlePrimary";
+
     /// <summary>The face words are read in on the new-valley screen (A147, Joe's Cardo); null on slate.</summary>
     internal static Font? ReadingFace => NamedFont("reading_font");
 
