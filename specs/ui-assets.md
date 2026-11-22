@@ -120,7 +120,7 @@ They sit straight on the parchment — ✅ **D637's parchment chip under picture
 a parchment sheet it is redundant, so dropped** (A109, Joe: *"all as recommended"*). States are separate
 files named `<name>-<state>.png`.
 
-### 4.1 Goods (16) — `icons/goods/`
+### 4.1 Goods (16, and barley's, A162) — `icons/goods/`
 ⚠️ Today a goods row shows a 10-logical colour chip. Icons at 20 widen the top bar and the stock rows, and make each
 row taller than today's text line (a layout change in the seam — the build bar's buttons and the top bars grow with it). Fill colour from `GoodsPalette`.
 
@@ -142,6 +142,7 @@ row taller than today's text line (a layout change in the seam — the build bar
 | `hay.png` | a loose, low stook — must not read as `wheat` (no ears, no tie) |
 | `clothing.png` | a folded coat (the moss mantle, A93) |
 | `handcarts.png` | a two-wheeled handcart, from the side |
+| `barley.png` | wheat's sheaf, but the heads hang over its sides, each trailing long awns — must not read as `wheat` (its ears stand upright) — ✅ approved and in (A163, `painted-crops.md §9`); shown once W7's good merges |
 
 ### 4.2 Buildings (29) — `icons/buildings/`
 **Two files each:** normal, and **owed** (a gift waiting — today's amber *Stone bridge*, *School*: **a small gold-leaf

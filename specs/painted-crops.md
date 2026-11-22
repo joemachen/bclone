@@ -9,6 +9,9 @@ below — are drawn on **their own layer behind the map** (`VillageMap.Watercolo
 track can be cut out of the crop and the valley's painted track show through (`painted-paths.md §3.7`). Nothing about how
 a crop is painted changed; tick off, the map draws the fields as ever, byte for byte.
 
+**A162–A163 (2026-11-21, on `art`):** barley's three stages and its icon painted and mocked (§9); ✅ his calls *"All as
+recommended"* (A163) and the files in. They are drawn once W7 (`slice/w7-barley`), whose data holds the crop, merges.
+
 ---
 
 ## 1. What this is, and what it is not
@@ -157,3 +160,52 @@ agrees.
 - **GPU:** not measured; Photoshop was holding the card in its slow state (A60). A field is at most two triangle draws,
   a snow draw and its edge, against the flat look's fill plus a line or 5–12 stalks per tile.
 - **Red-check:** 8 mutants, 6 red (bare ground ploughed all year; sown ground never young; a painting every four tiles; the paintings not repeating; the crop's own folder never read; the crops never painted). **Two zeros, written down:** the fields drawn flat with the tick on, and no snow on the fields. Both are draw-time only (`_Draw`, never headless), and the year's renders are their evidence. The harness crashed once, on a Windows file lock mid-restore. It left C3's mutant in place, which was found by its anchor count and reversed by its own text; the harness now retries a locked write.
+
+## 9. Barley (A162–A163, 2026-11-21) — ✅ APPROVED, *"All as recommended"*; THE FILES IN; DRAWN WHEN W7 MERGES
+
+W7's request (`barley.md §7` on `slice/w7-barley`; D821, D825), at his *"Start barley art"*. Painted the way wheat was:
+`D:\Projects\brushes\barley\build_barley_stages.py` imports wheat's painter (`build_crop_stages.py`, never re-run, so
+wheat's files are untouched), seed 821, and writes `young.png`, `growing.png` and `ripe.png` — 1024², 128 px a tile,
+seamless by construction, rows east–west four to a tile. Ploughed, stubble and snow stay `_ground`'s.
+
+- **How it reads apart from wheat:** *young* — denser, broader blue-green blades, less earth between; *growing* — a bluer,
+  greyer green, broad arching leaves; *ripe* — straw rows with the heads **nodding** (bent over, three ways) and long silver
+  **awns** trailing from them, a bristled haze where wheat has upright gold ears.
+- **Measured (§4, `measure.py`):** the step over each wrap across is 0.87–0.93× a typical step (wheat's 0.91–0.97), and down
+  each wrap matches the other row periods; L\* p50 62, 62 and 75, no dark marks; mean hue 50°, 88° and 46° against wheat's
+  42°, 72° and 42° — each stage in its own fill's family.
+- ⚠️ **The pale ripe the brief asks for fades in the game.** Under the watercolour it is a cream barely apart from the grey
+  ploughed ground beside it (his Hollowmere rook-hare, autumn), so a ripe field stops saying *ready to reap* — Non-Negotiable 1.
+  A **warm** ripe keeps the silver awns and the nodding heads and deepens the straw toward wheat's value (mean `#c6b274`).
+- **Mocks** (`D:\Projects\brushes\barley\`): `barley_vs_wheat.jpg` — each stage beside wheat's at 2×, 1:1 and a quarter,
+  stubble below; `barley_in_game.jpg` — three of his farms rendered by the game with barley's paintings put in wheat's place
+  (a scratch copy, `try\`, never this tree): young turning to growing, growing, and ripe; `ripe_three.jpg` — wheat, pale and
+  warm ripe, close and at a village's zoom; `icon_sheet.png` — the icon beside wheat, hay and flour at 160 to 8 px.
+- **The icon** (`textures/ui/icons/goods/barley.png`, 80², painted by `p3_icons.jsx`'s new `G["barley"]` with every other
+  icon's pen, hatch and seed rule): wheat's sheaf and tie, but the heads **hang over its sides**, each trailing three awns, in
+  the recommended straw — apart from wheat's upright fan of ears at 40 and 20 px.
+- **The colour.** W7's stand-in `Color(0.81, 0.80, 0.62)` (`#cfcc9e`) is 9 ΔE from the parchment ground — closer than any
+  good (flour, accepted, is 11) — and nothing on the map took it from a field. Wheat's colour *is* its ripe field's (D348).
+  ⭐ **`#cbbb7c`**, taken from the warm ripe painting: 15 ΔE from parchment, 22 from wheat, apart from flour; the carried
+  sheaf the same (PersonPainter's `#d2cc9c` is the stand-in's twin). Hay has no goods colour at all today (it falls to the
+  mod grey) — not barley's to fix; the nearest hay will come is its icon's `#b3a05c`, 10 ΔE off.
+- **Landing it, once `slice/w7-barley` merges** (a crop is a folder, §4 — nothing in the draw changes): the three files into
+  `textures/crops/barley/` and the icon into `icons/goods/`, imported; `ThePaintedCropsHold` gains barley's three rows
+  (crop 2 exists only with the slice's data, so the rows cannot land before it); `ui icons:` then finds `barley.png`. The
+  colour is one line in `GoodsPalette.cs` and one in `PersonPainter.cs`, both the slice's — W7's to change on its branch, or
+  the art lane's after the merge, at his word.
+
+**His calls — ✅ answered *"All as recommended"* (A163):**
+1. **Ripe barley — warm or pale?** Pale is the brief's silvery straw but fades into the ploughed ground under the
+   watercolour; warm keeps the silver awns and nodding heads and reads as ripe. ⭐ **Warm.** ✅
+2. **Barley's colour — `#cbbb7c` or keep the stand-in `#cfcc9e`?** The chip, the pile's sacks, the carried sheaf, the icon.
+   ⭐ **`#cbbb7c`** — it matches the painted field as wheat's does, and stands further off the parchment. ✅
+3. **The icon — heads hanging over the sides with awns?** ⭐ **Yes.** ✅
+
+**As landed (A163):** `textures/crops/barley/young.png`, `growing.png`, `ripe.png` (the warm ripe) and
+`textures/ui/icons/goods/barley.png` (`#cbbb7c`), each imported lossless with mipmaps as wheat's are (their `.import`
+templated on wheat's; the import's 200 line-ending rewrites and 73 `.uid`s put back, trap 67). Nothing draws them yet: the
+game has no barley crop or good until W7 merges. The colour's two lines (`GoodsPalette.cs`, `PersonPainter.cs`) are in on
+`slice/w7-barley` (`a4bd596`, D829), put there by W7 at his words. ⏸️ **After both are in `main`:** barley's three rows in `ThePaintedCropsHold`
+(crop 2), red-checked, and a look at a real barley field. Checks: probe 138 ✅ 0 ⛔ (`painted crops:` and `ui icons:` ✅ —
+an icon for a good the game lacks is not asked for), view build 0 warnings, goldens unmoved, suite 2,182 passed, 5 skipped, 22 m 25 s (16 m 42 s at A159 — nothing compiled changed, only images and docs; W7 was working on the same machine).
