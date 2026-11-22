@@ -11072,7 +11072,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     (§8): which look (⭐ B, planks with a rail each side), the wear painted, stone in the same piece, what stays as it is, his OK
     for one line of `VillageMap.cs`** — ✅ **his *"B, all as recommended"*; 🔨 BUILT on `art` (A175, `painted-bridges.md §9`),
     renders `D:\Projects\brushes\bridges\built\`; ✅ played and MERGED INTO `main` at his *"merge it"* (A176, merge
-    `df134f6`), not pushed — done**; (i) **trees
+    `df134f6`), pushed at his *"Push main"* (A177, `origin/main` = `f115aaf`) — done**; (i) **trees
     swaying in a gentle wind**, a degree or two more in winter, in the manner of the river's animation;
     (j) **trees maturing from saplings to full trees, an animated transition** (A173, Joe, 2026-11-22: *"Add to art's list:
     animated transition for trees 1) maturing from saplings to full trees and 2) being felled/falling"*) — *what the sim

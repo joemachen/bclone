@@ -1,6 +1,6 @@
 # Painted bridges — a wooden bridge, and its stone rebuild, with the buildings' treatment (A174, A175)
 
-> **Status: ✅ MERGED INTO `main` (A176, 2026-11-22, merge `df134f6`) at Joe's *"merge it"*, after his play; not pushed.
+> **Status: ✅ MERGED INTO `main` (A176, 2026-11-22, merge `df134f6`) at Joe's *"merge it"*, after his play; pushed at his *"Push main"* (A177, `origin/main` = `f115aaf`).
 > Built A175 at his *"B, all as recommended"* — every call as §8 recommends.** §9 is what was built. Specced and mocked A174. Art lane (CLAUDE.md
 > *Two tracks*), piece (h) of his play notes (HANDOFF, *"JOE'S PLAY NOTES, 2026-11-20 … SORTED BY LANE"*), at his *"next for
 > art: bridges"* (2026-11-22), claimed A173. View only: nothing in the sim, `data/` or `tests/` changes. Mocks, drawn by the
