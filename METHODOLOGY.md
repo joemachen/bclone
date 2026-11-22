@@ -42,6 +42,10 @@ Testing is not optional and not an afterthought.
 
 **⭐ AND THAT APPLIES TO THE TOOLING, NOT ONLY TO THE VILLAGE (D179).** The suite ran for **nineteen minutes** and the plan was to tag the long acceptance runs as "slow" and split it. **Measuring first said the plan was wrong**: the suite was already ~9.5× parallel, so throughput was never the cost. Following the slowest test down — nine minutes to read one integer off fifty villagers — led to `SimFactory.CreatePhase0` at **4,069 ms a world**, of which map generation was **1 ms**, and from there to an O(n²) Dijkstra in `TerrainCostField` doing 92 million iterations per flow field. **One `for` loop; the suite is 2m30s now.** *The horizons everybody suspected were never the problem, and shortening them would have cost the guards their teeth for nothing.*
 
+**⭐ The suite runs only when something it tests changed (D846).** The test project builds only `Kith.Sim` (D11) and reads
+the repo only through `data/`, so a view-only change cannot move it — `CLAUDE.md`'s *Verification* holds the command and how
+a skip is recorded.
+
 **⚠️ A full run is for a verdict, not for discovery.** D178 ran the whole suite four times in one slice, twice to learn something that was already knowable — a golden was always going to move, and running nineteen minutes to be told so is nineteen minutes. **Use `--filter` while iterating; spend the full run when you need to be able to say the number.**
 
 **Definition of Done (per phase/feature):**
