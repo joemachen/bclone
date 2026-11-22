@@ -101,6 +101,36 @@ public sealed class SteepGroundTests
         Assert.True(on.CanPaintWorkGround(forester, steep).Allowed, "the woods are worked on any slope");
     }
 
+    /// <summary>
+    /// ⭐ A quarry and a mine stand on steep ground (D832; Joe, 2026-11-21, after a quarry beside his stone refused every tile
+    /// in reach: <i>"yes, let quarries and mines stand on steep ground"</i>). Seams sit on the hills, so the ground around
+    /// them is steep; a building whose trade works a face is exempt, decided by the face, never by a list of kinds. A pile
+    /// on the same steep tile is still refused — the rule holds for everything else.
+    /// </summary>
+    [Theory]
+    [InlineData(BuildingKind.Quarry)]
+    [InlineData(BuildingKind.Mine)]
+    public void AQuarryAndAMineStandOnSteepGroundBesideTheirSeam(BuildingKind kind)
+    {
+        SimWorld on = SimFactory.CreatePhase0(Hilly, new InMemoryLogSink()).World;
+        SimWorld off = SimFactory.CreatePhase0(Hilly with { SteepRefusesBuilding = false }, new InMemoryLogSink()).World;
+
+        // Steep tiles the rule-free valley takes this building on (so its seam is in reach) and a pile on too.
+        List<GridPos> steep = Open(on, Slope.Steep)
+            .Where(t => off.CanBuildAt(kind, t).Allowed && off.CanBuildAt(BuildingKind.Pile, t).Allowed)
+            .ToList();
+        Assert.True(steep.Count > 0, $"no steep tile in the hilly valley takes a {kind} without the rule, so nothing was posed");
+
+        foreach (GridPos tile in steep)
+        {
+            PlacementVerdict verdict = on.CanBuildAt(kind, tile);
+            Assert.True(verdict.Allowed, $"{kind} on steep {tile} refused: {verdict.Reason}");
+            Assert.Equal(SimWorld.TooSteepSentence, on.CanBuildAt(BuildingKind.Pile, tile).Reason);
+        }
+
+        _output.WriteLine($"{kind}: {steep.Count} steep tiles beside its seam taken, a pile refused on each");
+    }
+
     [Fact]
     public void TheFoundingNeverStandsOnSteepGround()
     {

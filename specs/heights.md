@@ -5,7 +5,7 @@ calls 1–4). Neighbours: D2 (integer costs), D15/§2.6 (one shared cost field),
 paths in the field), D383 (buildings as obstacles), D404 (fences), D473 (a stage per stream), D477 (height
 parked *after the shell*, a stage and a row of its own), D546 (bridge decks), D641 (Phase 5's exit gate),
 D666 (Joe's balance bar), D689 (a cart is slow on grass), A57 (the art lane's relief waits on this).
-**Status:** ✅ **§13, nothing built on steep ground — built on `slice/play-notes` (D814, 2026-11-21), his play to come.**
+**Status:** ✅ **§13, nothing built on steep ground — built (D814, 2026-11-21), merged; §13.8, a quarry and a mine exempt — built on `slice/steep-quarry` (D832), his play to come.**
 ✅ **BUILT AND MERGED INTO `main` AT JOE'S WORD (D742, 2026-11-13: *"okay merge then"* (relayed verbatim by the session that started this one)).** The hills'
 *look* goes to the art lane, which draws them to his concept; `VillageMap.Relief.cs` is its stand-in and is not tuned
 further (Joe, on D741: *"still just looks like a shadow, not a hill"*). *(As it stood before the merge:)* 🔨 **BEING BUILT
@@ -374,3 +374,12 @@ right, and proposed the rule below — Joe: *"Yes, as proposed"*.
    is written here.
 7. ⏸️ **Joe's play:** his ridge first — if it was the valley's drawn edge rather than steep tiles, this rule does not
    reach it, and that is its own note.
+8. **A quarry and a mine stand on steep ground (D832, 2026-11-21).** Joe, with two screenshots of a quarry refused
+   beside his stone, the log saying *"Too steep to build on."*: point 2 let the *face* be worked on any slope, but the
+   *building* still had to stand on gentle ground within `face_reach_tiles` of its seam — and seams sit on the hills,
+   so every tile in reach could be steep. Joe: *"yes, let quarries and mines stand on steep ground"*. **A building whose
+   trade works a face** (`JobsCatalog.FaceOf`, the test the seam claim already reads) **skips the steep refusal**;
+   everything else — every other building, a house plot, a field, a pasture — keeps it. No new key: a modded face
+   trade's building inherits it. Guard: `AQuarryAndAMineStandOnSteepGroundBesideTheirSeam` (a theory, quarry and
+   mine): every steep tile the rule-free hilly valley takes the building on is taken, and a pile on each is still
+   refused. **2 mutants, 5 reds** (the exemption removed: 2; the exemption for every building: 3).
