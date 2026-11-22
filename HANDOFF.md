@@ -10915,6 +10915,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
+
 - ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC.** A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
 
 - ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
@@ -10923,10 +10925,6 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep
   both"*):** the brewery burns no firewood; ~~the brewing rule is read under his ale limit~~ — the rule itself gone at his
   word (D838): ale brews to its limit, tavern or not, and is kept in the granary.
-
-- ⏸️ 🎨 **ART LANE — THE PROFESSIONS PANEL WANTS A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3, D838).** With the
-  brewer and the tavern keeper added it runs past the bottom of the screen (his screenshot: Tavern keeper's row at the bar's
-  edge). ⚠️ The panel is drawn in `Main.cs`, which D699's table gives the systems lane — whichever lane takes it, one session.
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while

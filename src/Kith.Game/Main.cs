@@ -1562,6 +1562,58 @@ public partial class Main : Control
 
         PrintWidths(_professionsPanel, "prof", 0);
         GD.Print(OnlyTheKnownTradesHaveRows());
+        GD.Print(TheProfessionsTableScrollsPastItsCeiling());
+    }
+
+    /// <summary>
+    /// ⭐ The professions table stands no taller than its ceiling and scrolls past it (Joe, 2026-11-22) — <b>a probe line</b>,
+    /// asked with every trade posed learned (the table at its tallest, a village late in the game) and put back after.
+    /// </summary>
+    private string TheProfessionsTableScrollsPastItsCeiling()
+    {
+        if (_professionsScroll is null || _professionsTable is null)
+        {
+            return "[widths] professions height: ⛔ the table is not in a scroll";
+        }
+
+        (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor, bool workshop) =
+            (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown);
+        (bool school, bool brewery, bool tavern) = (_schoolKnown, _breweryKnown, _tavernKnown);
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
+            (true, true, true, true, true, true, true, true);
+        (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
+        RefreshTheStrip();
+
+        float table = _professionsTable.GetCombinedMinimumSize().Y;
+        float shown = _professionsScroll.GetCombinedMinimumSize().Y;
+        int rows = _professionRows.Count(r => r.Cells[0].Visible);
+
+        (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
+            (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
+        (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
+        RefreshTheStrip();
+        float founding = _professionsScroll.GetCombinedMinimumSize().Y;
+
+        var faults = new List<string>();
+        if (table <= ProfessionsHeight)
+        {
+            faults.Add($"every trade learned, the table is only {table:F0}px — the pose does not reach the ceiling ({ProfessionsHeight:F0})");
+        }
+
+        if (shown > ProfessionsHeight + 0.5f)
+        {
+            faults.Add($"every trade learned, the table stands {shown:F0}px against a ceiling of {ProfessionsHeight:F0}");
+        }
+
+        if (founding > shown + 0.5f || founding <= 0f)
+        {
+            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] professions height: ✅ every trade learned ({rows} rows), the table wants {table:F0}px and stands "
+                + $"{shown:F0}, scrolling past its ceiling of {ProfessionsHeight:F0}; at the founding it stands {founding:F0}"
+            : $"[widths] professions height: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -5598,7 +5650,38 @@ public partial class Main : Control
         counts.AddChild(_laborerReadout);
         body.AddChild(counts);
 
-        body.AddChild(BuildProfessionsTable());
+        // ⭐ A CEILING AND A SCROLL BAR (Joe, 2026-11-22, playing W3: "The professions tab needs a height limit and a scroll
+        // bar") — the brewer and the tavern keeper took the table past the bottom of his screen. As tall as its rows up to
+        // `ProfessionsHeight`, then it scrolls: the build queue's shape (D730). Re-measured where a row appears
+        // (`ShowTheKnownTrades`), never per frame.
+        _professionsScroll = new ScrollContainer
+        {
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+        };
+        _professionsTable = BuildProfessionsTable();
+        _professionsScroll.AddChild(_professionsTable);
+        body.AddChild(_professionsScroll);
+        FitTheProfessionsScroll();
+    }
+
+    /// <summary>The most the professions table stands before it scrolls — about twelve rows, logical px.</summary>
+    private const float ProfessionsHeight = 360f;
+
+    private ScrollContainer? _professionsScroll;
+    private GridContainer? _professionsTable;
+
+    /// <summary>The scroll as tall as the table's shown rows, up to <see cref="ProfessionsHeight"/>.</summary>
+    private void FitTheProfessionsScroll()
+    {
+        if (_professionsScroll is null || _professionsTable is null)
+        {
+            return;
+        }
+
+        float tall = _professionsTable.GetCombinedMinimumSize().Y;
+        _professionsScroll.CustomMinimumSize = new Vector2(0, Math.Min(tall, ProfessionsHeight));
     }
 
     /// <summary>
@@ -5702,6 +5785,9 @@ public partial class Main : Control
                 cell.Visible = known;
             }
         }
+
+        // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
+        FitTheProfessionsScroll();
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
