@@ -8,7 +8,8 @@
 > 138 ✅, 1 ⛔ (`ui icons:` — the art lane's, asked below), bar 183; three goldens moved, each proven by ablation. ⏸️ Owed:
 > the gate's posed golden (a village kept by a tavern) and HIS PLAY (`.\run.bat`: a barley farm and a brewery, a tavern
 > among the homes; watch the keeper carry a cask, adults walk over of an evening, a person's card say the tavern made up for
-> a worry). ⏸️ Two changes his to overrule: the brewery burns no firewood; the brewing rule reads under his limit.**
+> a worry). ✅ His two build-time calls kept (D837, *"Keep both"*): the brewery burns no firewood; the brewing rule reads
+> under his limit.**
 > - **⛔ TRAP (D834): a draft written read-only guessed the modded test ids** ("building 31 → 33"); the tests' modded
 >   buildings sit at 10 and `NextFreeId`. Grep the tests for the casts before writing which ids move.
 > - **⛔ TRAP (D836): a modded good at the next free id silently fills a new built-in's slot — the seventh time.**
@@ -10910,8 +10911,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - ⏸️ **W3, BEER AND THE TAVERN (D821 order, D834 calls).** **🔨 being built on `slice/w3-tavern` (2026-11-22)** —
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
   3b asked for by the village, 3c one a tavern), 4–6 as recommended. ✅ **Built (D836), unplayed.** His to tune in play:
-  `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ⏸️ **His to overrule (D836):** the
-  brewery burns no firewood (no store holds both barley and firewood); the brewing rule is read under his ale limit.
+  `tavern_reach_tiles` 12, `tavern_every_days` 5, 20 barley → 10 ale, `tavern_stock` 20. ✅ **Kept at his word (D837, *"Keep
+  both"*):** the brewery burns no firewood; the brewing rule is read under his ale limit.
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while

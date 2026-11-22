@@ -2,7 +2,7 @@
 
 > Status: **✅ BUILT ON `slice/w3-tavern` (2026-11-22, D836) — STEPS 1–5; ⏸️ STEP 6 (THE GATE'S POSED GOLDEN, A VILLAGE KEPT
 > BY A TAVERN) AND JOE'S PLAY STILL OWED.** Three goldens moved, each proven by ablation (§7). Two things changed at the build
-> and are his to overrule (§5.2's firewood, §5.3's limit), and the keeper never drinks at their own tavern (§5.4a).
+> and he kept both (§5.2's firewood, §5.3's limit — D837, *"Keep both"*), and the keeper never drinks at their own tavern (§5.4a).
 > Specced 2026-11-21 while `slice/steep-quarry` held the checkout; Joe answered 2026-11-22 (§10): *"all as recommended
 > except for who runs the tavern. B: a tavern keeper"*, and the three follow-ups the keeper raised, *"All as
 > recommended"* (§10.1). Built: ale, the brewery, the tavern and its keeper, the evening, the comfort, the find's clause and
@@ -110,8 +110,8 @@ Stop FedFirst | TavernsSupplied · Hands ShortfallOverAYear · QuotaBand AfterSt
 - ⚠️ **No firewood (D836, changed at the build — call 6 had said *"a little firewood like the oven"*).** A batch takes its
   input and its firing from **one** store (D713: one walk, priced), and barley is kept where food is (granary, market,
   cart) while firewood is not — the only store holding both is the market, which a batch never uses. A copper lit with
-  firewood would never have brewed. ⏸️ Joe's to overrule: firewood back means barley in the warehouse too, or a second
-  walk the stint does not price.
+  firewood would never have brewed. ✅ **Kept at his word (D837, *"Keep both"*).** Firewood back would mean barley in the
+  warehouse too, or a second walk the stint does not price.
 - **`FedFirst`** — barley is food, so the brewer stands down while the village is short of food (the miller's rule, D522).
 - **`ShortfallOverAYear`** — the tailor's shape: hands for the shortfall over what one brewer brews in a year.
 - **N, M and the ticks are measured before typed** (§8 step 1), to Joe's bar (D666): **one barley farm and one brewery
@@ -123,7 +123,7 @@ Brew while the stores **and the taverns' own stock** hold less than **a season's
 of a standing tavern; **no tavern standing, nothing to brew for** (and the card says so). The player's limit is the
 ceiling over it, read first (D62's derived default under the ceiling). ⚠️ *Changed at the build (D836):* the draft read
 the rule only with no limit set, as the tailor's is — but every good ships with a starting limit (D697), so it would never
-have run, and a village with no tavern would have brewed its 50 for nobody. Ale starts at **50** (D697's number); the
+have run, and a village with no tavern would have brewed its 50 for nobody. ✅ Kept at his word (D837). Ale starts at **50** (D697's number); the
 lowlands make 25 and the hills want 25 (D594's half). One method, read by the stop, the quota and the card — never three copies (D370's lesson).
 
 ### 5.4 The tavern and the evening there
