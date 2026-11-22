@@ -11099,6 +11099,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     TAVERN AND BREWERY"*): its `ui icons:` line is ⛔ without them. Barley's pattern (A162–A166): painted by
     `D:\Projects\brushes\ui\ps\p3_icons.jsx`, mocked for his OK, merged into `main` at his word so W3 can take `main`. Also asked
     there, not in this piece: the buildings' painted look on the map, the figures, the cask.
+    ✍️ **Painted, in on `art`, mocked (A182; `D:\Projects\brushes\tavern\w3_icons_mock.jpg`); the slice's own `ui icons:` ✅
+    with them on a scratch copy, ⛔ without (all seven named). ⏸️ Two calls his: the icons as drawn, and the colours (ale and the
+    brewer `#9a5e14`, the keeper `#8a2f3e`, recommended over W3's stand-ins, which sit under ΔE 10 of bread, the baker and the
+    herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
