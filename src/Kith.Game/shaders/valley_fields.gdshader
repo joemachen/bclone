@@ -30,6 +30,8 @@ uniform bool paths_on = false;
 uniform sampler2D path_map : hint_default_black, filter_linear, repeat_disable;
 uniform vec2 path_field_range = vec2(-0.25, 0.6);
 uniform float path_wobble_tiles = 0.035;
+// The paths' fade, as the valley's layer blends it (`path-crossfade.md`) — the same include, so the cut moves with the track.
+#include "res://shaders/path_fade.gdshaderinc"
 
 // How much of the crop a track takes: x lightly worn, y packed (1 clears it).
 uniform vec2 field_cut = vec2(0.7, 1.0);
@@ -53,7 +55,7 @@ void fragment() {
     if (paths_on && uv.x >= split_u) {
         vec2 tile = (uv - 0.5) * ground_map_tiles;
         vec2 corner = tile + 0.5 * ground_map_tiles;
-        vec3 pf = textureLod(path_map, corner / ground_map_tiles, 0.0).rgb;
+        vec3 pf = path_field_faded(corner / ground_map_tiles, tile);
         float path_s = mix(path_field_range.x, path_field_range.y, pf.r);
         float reach = field_pool.y + path_wobble_tiles + field_cut_pen_px / max(px_per_tile, 1e-3);
         if (path_s < reach) {

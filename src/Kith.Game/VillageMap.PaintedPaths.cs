@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Kith.Sim.Config;
 using Kith.Sim.Core;
+using Kith.Sim.World;
 using Godot;
 
 namespace Kith.Game;
@@ -43,8 +44,19 @@ public partial class VillageMap
     private void HandThePathsOver()
     {
         ShaderMaterial? material = _watercolourMaterial;
-        if (material is null || ReferenceEquals(_pathsOf, _network))
+        if (material is null)
         {
+            return;
+        }
+
+        if (ReferenceEquals(_pathsOf, _network))
+        {
+            // The same network: only the fade's clock, and only while it runs.
+            if (_pathFadeHanded < 1f)
+            {
+                HandThePathFadeOver();
+            }
+
             return;
         }
 
@@ -52,23 +64,143 @@ public partial class VillageMap
         _pathsOf = _network;
         SimConfig config = _world!.Config;
         byte[] field = PathField(_network.Lanes, _network.Junctions, config.MapMinX, config.MapMinY, config.MapWidth, config.MapHeight);
+        TakeThePathField(material, field);
+        PathFieldBakes++;
+        LastPathFieldMs = (Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency;
+    }
+
+    /// <summary>A new field to the layers: snapped to, faded to, or — the same bytes as shown — nothing uploaded.</summary>
+    private void TakeThePathField(ShaderMaterial material, byte[] field)
+    {
+        SimConfig config = _world!.Config;
         int w = config.MapWidth * PathTexelsPerTile, h = config.MapHeight * PathTexelsPerTile;
-        using (Image image = Image.CreateFromData(w, h, false, Image.Format.Rgb8, field)) // ⛔ `using` (A45)
+
+        // ⭐ The fade (A169, `path-crossfade.md`): the texture that showed the old field becomes the one faded FROM, and the
+        // other takes the new field — no copy in the usual case. Mid-fade, what was on screen is baked into the "from" side
+        // once. A new world (a load, a founding) or a first field snaps; a field byte for byte the one shown leaves a running
+        // fade running and uploads nothing.
+        double now = _world.Tick + _alpha;
+        bool sameWorld = _pathFieldShown is not null && ReferenceEquals(_pathsWorld, _world.Paths) && _pathFieldShown.Length == field.Length;
+        _pathsWorld = _world.Paths;
+        if (sameWorld && field.AsSpan().SequenceEqual(_pathFieldShown))
         {
-            if (_pathsTexture is null || _pathsTexture.GetWidth() != w || _pathsTexture.GetHeight() != h)
+            field = _pathFieldShown!;
+        }
+        else if (sameWorld)
+        {
+            float t = PathFadeAt(now);
+            byte[] was = t >= 1f || _pathFieldWas is null ? _pathFieldShown! : LerpPathField(_pathFieldWas, _pathFieldShown!, t);
+            (_pathsTexture, _pathsTextureFrom) = (_pathsTextureFrom, _pathsTexture);
+            if (!ReferenceEquals(was, _pathFieldShown))
             {
-                _pathsTexture = ImageTexture.CreateFromImage(image);
+                Upload(ref _pathsTextureFrom, was);
+                PathFadeMidBakes++;
+            }
+
+            _pathFieldWas = was;
+            _pathFadeStart = now;
+            PathFades++;
+        }
+        else
+        {
+            _pathFieldWas = null;
+            _pathFadeStart = double.NegativeInfinity;
+        }
+
+        if (!ReferenceEquals(field, _pathFieldShown) || _pathsTexture is null)
+        {
+            _pathFieldShown = field;
+            Upload(ref _pathsTexture, field);
+        }
+
+        void Upload(ref ImageTexture? texture, byte[] bytes)
+        {
+            using Image image = Image.CreateFromData(w, h, false, Image.Format.Rgb8, bytes); // ⛔ `using` (A45)
+            if (texture is null || texture.GetWidth() != w || texture.GetHeight() != h)
+            {
+                texture = ImageTexture.CreateFromImage(image);
             }
             else
             {
-                _pathsTexture.Update(image);
+                texture.Update(image);
             }
         }
 
-        material.SetShaderParameter("path_map", _pathsTexture);
+        material.SetShaderParameter("path_map", _pathsTexture!);
+        if (_pathsTextureFrom is not null)
+        {
+            material.SetShaderParameter("path_map_from", _pathsTextureFrom);
+        }
+
+        HandThePathFadeOver();
         material.SetShaderParameter("paths_on", true);
-        PathFieldBakes++;
-        LastPathFieldMs = (Stopwatch.GetTimestamp() - started) * 1000.0 / Stopwatch.Frequency;
+    }
+
+    // ⭐ The fade's state, kept where the network changes (CLAUDE.md: nothing derivable rebuilt per frame): the bytes each
+    // texture holds, the world they were baked for, and the game time the fade began. A frame only reads the clock.
+    private ImageTexture? _pathsTextureFrom;
+    private byte[]? _pathFieldShown;
+    private byte[]? _pathFieldWas;
+    private PathWear? _pathsWorld;
+    private double _pathFadeStart = double.NegativeInfinity;
+    private float _pathFadeHanded = 1f;
+
+    /// <summary>How many fades have started, and how many of them began mid-fade (the "from" field baked) — for the probe.</summary>
+    internal int PathFades { get; private set; }
+
+    internal int PathFadeMidBakes { get; private set; }
+
+    /// <summary>
+    /// The fade at a game time: 0 the old field, 1 the new. Over the look's <see cref="ValleyWatercolourLook.PathFadeTicks"/>
+    /// of game time from the tick the network changed, so a pause holds it and the game's speed scales it (A169).
+    /// </summary>
+    private float PathFadeAt(double now)
+    {
+        float ticks = ValleyWatercolourLook.Current.PathFadeTicks;
+        return ticks <= 0f ? 1f : (float)Math.Clamp((now - _pathFadeStart) / ticks, 0.0, 1.0);
+    }
+
+    /// <summary>The fade to both layers — a uniform from the game clock, each draw while it runs (as the season is).</summary>
+    private void HandThePathFadeOver()
+    {
+        if (_world is null)
+        {
+            return;
+        }
+
+        float t = PathFadeAt(_world.Tick + _alpha);
+        _pathFadeHanded = t;
+        float patch = ValleyWatercolourLook.Current.PathFadePatch;
+        Hand(_watercolourMaterial);
+        Hand(_fieldsMaterial);
+
+        // The fields' layer cuts the crop with the same blend (`painted-paths.md §3.7`), so it takes the same three.
+        void Hand(ShaderMaterial? m)
+        {
+            if (m is null)
+            {
+                return;
+            }
+
+            m.SetShaderParameter("path_fade", t);
+            m.SetShaderParameter("path_fade_patch", patch);
+            if (_pathsTextureFrom is not null)
+            {
+                m.SetShaderParameter("path_map_from", _pathsTextureFrom);
+            }
+        }
+    }
+
+    /// <summary>Two fields blended byte by byte at t — what the shader shows mid-fade, less the patches.</summary>
+    internal static byte[] LerpPathField(byte[] from, byte[] to, float t)
+    {
+        var mixed = new byte[to.Length];
+        for (int i = 0; i < to.Length; i++)
+        {
+            mixed[i] = (byte)Math.Clamp(MathF.Round(from[i] + ((to[i] - from[i]) * t)), 0f, 255f);
+        }
+
+        return mixed;
     }
 
     /// <summary>The look's path values to the layer, once, as it is built.</summary>
@@ -346,6 +478,11 @@ public partial class VillageMap
                 faults.Add("a painted path value on the layer is not the look file's, or the field not handed over");
             }
 
+            // ⭐ The crossfade (A169), with the tick on again.
+            ShowWatercolour(true);
+            ThePathFadeHolds(world, faults);
+            ShowWatercolour(wasOn);
+
             // The look draws a track: on, the dirt lighter than the halo, the packed dirt deeper than the worn, a pen.
             if (!look.PathOn || !(look.PathWorn.Luminance > look.PathPacked.Luminance) || !(look.PathPacked.Luminance > look.PathHalo.Luminance)
                 || look.PathPenStrength <= 0f || !(look.PathPenWornShare < 1f) || look.PathWobbleTiles >= WornTrailHalfWidth * 0.5f)
@@ -364,13 +501,125 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? $"[widths] painted paths: ✅ on a made-up network the lanes inside and a tile off outside, packed apart from worn, the edges at the mesh's widths, the dead end narrower and the junction wider, the same bytes twice, nothing from no network; the valley's field {config.MapWidth * PathTexelsPerTile} × {config.MapHeight * PathTexelsPerTile} for {_network.Lanes.Count} lanes in {LastPathFieldMs:F1}ms; the look's values handed over; the mesh not drawn with the tick, drawn without"
+                ? $"[widths] painted paths: ✅ on a made-up network the lanes inside and a tile off outside, packed apart from worn, the edges at the mesh's widths, the dead end narrower and the junction wider, the same bytes twice, nothing from no network; the valley's field {config.MapWidth * PathTexelsPerTile} × {config.MapHeight * PathTexelsPerTile} for {_network.Lanes.Count} lanes in {LastPathFieldMs:F1}ms; the look's values handed over; the mesh not drawn with the tick, drawn without; the fade {ValleyWatercolourLook.Current.PathFadeTicks:0} ticks: a new world and an unchanged field draw as they are, a change fades from the texture that showed the old (no copy) 0 → ½ → 1 in game time on both layers, mid-fade from what was shown"
                 : $"[widths] painted paths: ⛔ {string.Join("; ", faults)}";
         }
         catch (Exception e)
         {
             // Trap 33: a probe line that throws never reaches `done.` and leaves a headless Godot running.
             return $"[widths] painted paths: ⛔ threw {e.GetType().Name}: {e.Message}";
+        }
+    }
+
+    /// <summary>
+    /// The probe's half of the crossfade (A169, <c>path-crossfade.md §7</c>), on the probe's valley with the tick on: two
+    /// made-up fields handed over in turn, the valley's own put back after. ⚠️ The blend and its patches are the shader's,
+    /// draw-time, so the renders check them; this checks what reaches it.
+    /// </summary>
+    private void ThePathFadeHolds(SimWorld world, List<string> faults)
+    {
+        if (_watercolourMaterial is not ShaderMaterial material)
+        {
+            faults.Add("the fade: switched on, no valley layer");
+            return;
+        }
+
+        // The spec's numbers, not the file's (trap 25): half a season, 60 ticks, inside the season so a fade ends before the
+        // next turn; patchy, but short of 1, where no place would move until the very end.
+        ValleyWatercolourLook look = ValleyWatercolourLook.Current;
+        SimConfig config = world.Config;
+        int season = config.TicksPerDay * config.DaysPerSeason;
+        float ticks = look.PathFadeTicks;
+        if (ticks != 60f || ticks > season || !(look.PathFadePatch > 0f && look.PathFadePatch < 1f))
+        {
+            faults.Add($"the fade lasts {ticks} ticks (want 60, half a season, inside the season's {season}) at patchiness {look.PathFadePatch} (want between 0 and 1)");
+        }
+
+        // Two made-up networks in the valley's own frame: a packed lane across its middle, then a worn one two tiles over.
+        int cx = config.MapMinX + (config.MapWidth / 2), cy = config.MapMinY + (config.MapHeight / 2);
+        TrailNetwork.Lane LaneAt(int y, byte grade) =>
+            new(new[] { new Vector2(cx - 6, y), new Vector2(cx, y), new Vector2(cx + 6, y) }, new[] { grade, grade, grade }, false, false, false);
+        byte[] Bake(TrailNetwork.Lane lane) =>
+            PathField(new[] { lane }, Array.Empty<(Vector2, byte)>(), config.MapMinX, config.MapMinY, config.MapWidth, config.MapHeight);
+        byte[] first = Bake(LaneAt(cy, 2)), second = Bake(LaneAt(cy + 2, 1));
+        double now = world.Tick + _alpha;
+        int fades = PathFades, midBakes = PathFadeMidBakes;
+        static float FadeOn(ShaderMaterial m) => m.GetShaderParameter("path_fade").AsSingle();
+
+        // A new world — a load, a founding — is drawn as it is.
+        _pathsWorld = null;
+        TakeThePathField(material, first);
+        if (PathFades != fades || FadeOn(material) != 1f || !ReferenceEquals(_pathFieldShown, first))
+        {
+            faults.Add($"a new world faded ({PathFades - fades} fades, path_fade {FadeOn(material)}): want it drawn as it is");
+        }
+
+        // The same bytes again: no fade, nothing uploaded.
+        ImageTexture? shown = _pathsTexture;
+        TakeThePathField(material, (byte[])first.Clone());
+        if (PathFades != fades || !ReferenceEquals(_pathsTexture, shown) || !ReferenceEquals(_pathFieldShown, first))
+        {
+            faults.Add("an unchanged field started a fade or was uploaded again");
+        }
+
+        // A change: the texture that showed the old field is the one faded from (no copy), the other takes the new; 0 at once.
+        TakeThePathField(material, second);
+        HandTheFieldsThePaths();
+        if (PathFades != fades + 1 || PathFadeMidBakes != midBakes || shown is null || !ReferenceEquals(_pathsTextureFrom, shown)
+            || _pathsTexture is null || ReferenceEquals(_pathsTexture, shown) || !ReferenceEquals(_pathFieldShown, second) || !ReferenceEquals(_pathFieldWas, first)
+            || !ReferenceEquals(material.GetShaderParameter("path_map").AsGodotObject(), _pathsTexture)
+            || !ReferenceEquals(material.GetShaderParameter("path_map_from").AsGodotObject(), shown)
+            || FadeOn(material) != 0f || !Mathf.IsEqualApprox(material.GetShaderParameter("path_fade_patch").AsSingle(), look.PathFadePatch))
+        {
+            faults.Add($"a changed field: {PathFades - fades} fades (want 1), {PathFadeMidBakes - midBakes} bakes of the old (want 0), faded from the texture that showed it {ReferenceEquals(_pathsTextureFrom, shown)}, the new in the other {_pathsTexture is not null && !ReferenceEquals(_pathsTexture, shown)}, both on the layer, path_fade {FadeOn(material)} (want 0) at the look's patchiness");
+        }
+
+        // The crop's cut fades with the track, to the pixel: the fields' layer holds the same three.
+        if (_fieldsMaterial is ShaderMaterial fields
+            && (FadeOn(fields) != 0f || !ReferenceEquals(fields.GetShaderParameter("path_map_from").AsGodotObject(), shown)
+                || !ReferenceEquals(fields.GetShaderParameter("path_map").AsGodotObject(), _pathsTexture)
+                || !Mathf.IsEqualApprox(fields.GetShaderParameter("path_fade_patch").AsSingle(), look.PathFadePatch)))
+        {
+            faults.Add($"the fields' layer does not fade with the valley's: path_fade {FadeOn(fields)} (want 0), the two fields not the valley's");
+        }
+
+        // In game time, through the frame's own call (the network unchanged): halfway at half the ticks, the same again at the
+        // same time (a pause holds it), whole at the end.
+        _pathsOf = _network;
+        _pathFadeStart = now - (ticks / 2);
+        HandThePathsOver();
+        float half = FadeOn(material);
+        HandThePathsOver();
+        float held = FadeOn(material);
+        _pathFadeStart = now - ticks;
+        HandThePathsOver();
+        float whole = FadeOn(material);
+        if (!Mathf.IsEqualApprox(half, 0.5f) || held != half || whole != 1f || _pathFadeHanded != 1f)
+        {
+            faults.Add($"the fade reads {half} halfway, {held} again at the same time, {whole} at the end (want 0.5, the same, 1)");
+        }
+
+        // A change mid-fade starts from what was on screen — the old and new blended there — so nothing jumps back.
+        _pathFadeStart = now - (ticks / 2);
+        float midway = PathFadeAt(now);
+        TakeThePathField(material, first);
+        byte[] blended = LerpPathField(first, second, midway);
+        if (PathFades != fades + 2 || PathFadeMidBakes != midBakes + 1 || _pathFieldWas is null || !_pathFieldWas.AsSpan().SequenceEqual(blended)
+            || blended.AsSpan().SequenceEqual(first) || blended.AsSpan().SequenceEqual(second) || !ReferenceEquals(_pathFieldShown, first) || FadeOn(material) != 0f)
+        {
+            faults.Add($"a change mid-fade: {PathFadeMidBakes - midBakes} bakes of what was shown (want 1), from the blend at {midway} {_pathFieldWas is not null && _pathFieldWas.AsSpan().SequenceEqual(blended)}, path_fade {FadeOn(material)} (want 0)");
+        }
+
+        // The valley's own field put back after the tick goes off and on — the field was not kept up while it was off, so it
+        // is drawn as it is, never faded to from a field gone stale.
+        ShowWatercolour(false);
+        ShowWatercolour(true);
+        _pathsOf = null;
+        HandThePathsOver();
+        HandTheFieldsThePaths();
+        if (FadeOn(material) != 1f || PathFades != fades + 2 || _pathFieldShown is null || _pathFieldShown.AsSpan().SequenceEqual(first))
+        {
+            faults.Add($"the tick off and on again, the valley's own field faded in (path_fade {FadeOn(material)}, {PathFades - fades - 2} more fades) or was not put back");
         }
     }
 }

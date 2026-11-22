@@ -407,6 +407,17 @@ public sealed partial class ValleyWatercolourLook : Resource
     public float PathSnowClear { get; set; }
 
     /// <summary>
+    /// The paths' crossfade (A169, <c>path-crossfade.md</c>, Joe: <i>"All as recommended"</i>): how many ticks of game time a
+    /// change of the network takes to wear in, or grow back, the same both ways — half a season. 0 steps as before.
+    /// </summary>
+    [Export]
+    public float PathFadeTicks { get; set; }
+
+    /// <summary>How patchily it soaks in: 0 the whole map at one pace; toward 1 each place starts in turn by a noise.</summary>
+    [Export]
+    public float PathFadePatch { get; set; }
+
+    /// <summary>
     /// A track across a crop field (A126, Joe: <i>"the paths on/in crop fields need to be given the proper styling like the rest
     /// of the paths in the game"</i>): how much of the crop it takes — x lightly worn (the wheat trampled, thinned), y packed (1
     /// clears it, and the valley's painted track shows through).

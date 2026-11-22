@@ -555,6 +555,13 @@ public partial class VillageMap
     {
         _watercolour = on;
 
+        // The paths' crossfade (A169): with the tick off the field is not kept up, so on again it is drawn as it is — a fade
+        // from a field gone stale while the mesh was drawn would wear in paths that changed long ago.
+        if (!on)
+        {
+            _pathsWorld = null;
+        }
+
         if (on)
         {
             BuildTheWatercolourLayer();
@@ -1926,6 +1933,7 @@ public partial class VillageMap
     {
         "valley_origin_px", "valley_size_px", "px_per_tile", "ground_map_tiles", "split_u", "paths_on", "path_map",
         "path_field_range", "path_wobble_tiles", "field_cut", "field_cut_pen_px", "field_pool", "field_pool_srgb",
+        "path_map_from", "path_fade", "path_fade_patch",
     };
 
     /// <summary>
@@ -2026,6 +2034,7 @@ public partial class VillageMap
         "paths_on", "path_map", "path_field_range", "path_worn_srgb", "path_packed_srgb", "path_halo_srgb", "path_halo_tiles",
         "path_halo_strength", "path_mottle", "path_rim", "path_ruts", "path_wobble_tiles", "path_pen_strength",
         "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear", "path_trail", "path_trail_feet",
+        "path_map_from", "path_fade", "path_fade_patch",
         "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief",
     };
 
