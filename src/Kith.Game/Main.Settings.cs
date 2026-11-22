@@ -68,6 +68,72 @@ public partial class Main
     /// <summary>The alerts' tick (D578): whether the village goes back to the player's speed after an alert.</summary>
     private const string AlertSpeedToggle = "alert_speed_back";
 
+    /// <summary>
+    /// ⭐ THE PLAYER'S TICKS, ONE TABLE (A180, <c>title-screen-art.md §2a</c>; Joe, Settings on the title: <i>"Player's
+    /// settings"</i>). Every tick in the village's Settings is made from its row here (<see cref="Tick"/>), and the title's
+    /// Settings lists the same rows — so the two can never offer different words or defaults. Each tick's handler stays where
+    /// it is built: it moves the map, which the title has none of. <c>Group</c> is the heading the title files it under.
+    /// </summary>
+    internal static readonly PlayerTick[] PlayerTicks =
+    {
+        new(FullScreenToggle, "full screen", true, "The window"),
+        new("full_markers", "mark stores with no room", true, "On the map"),
+        new("idle_markers", "mark buildings that cannot work", true, "On the map"),
+        new("snap", "snap buildings to the grid", false, "On the map"),
+        new("grid", "draw the tile grid", false, "On the map"),
+        new("watercolour", "paint the valley in watercolour", true, "On the map"),
+        new("before_after", "before/after slider over the watercolour", false, "On the map"),
+        new("trees", "draw the trees", true, "On the map"),
+        new("moving_water", "moving water", true, "On the map"),
+        new("housing", "shade ground marked for housing", true, "On the map"),
+        new("work_ground", "shade ground a workplace has claimed", true, "On the map"),
+        new("harvest", "shade ground marked for harvest", true, "On the map"),
+        new("animals", "animals in the woods", true, "On the map"),
+        new("berries", "berry patches in the woods", true, "On the map"),
+        new(AlertSpeedToggle, "go back to my speed after an alert", false, "Alerts"),
+    };
+
+    /// <summary>A tick's row — a key with no row is a programming error, and throws where it is built.</summary>
+    private static PlayerTick TickRow(string key) => PlayerTicks.First(t => t.Key == key);
+
+    /// <summary>A Settings tick made from its row: its words and its default.</summary>
+    private static CheckBox Tick(string key)
+    {
+        PlayerTick row = TickRow(key);
+        return new CheckBox { Text = row.Label, ButtonPressed = row.Default };
+    }
+
+    /// <summary>A tick as the player last left it, with no village open: the file's, else its row's default.</summary>
+    private bool TickValue(string key) => _settings.Toggles.TryGetValue(key, out bool on) ? on : TickRow(key).Default;
+
+    /// <summary>
+    /// The title's Settings changed a tick (A180): kept and written at once — with no village open nothing else writes the file —
+    /// and full screen applied now. The village reads it when it opens (<see cref="ApplySettings"/>).
+    /// </summary>
+    private void TitleTickChanged(string key, bool on)
+    {
+        _settings = _settings with { Toggles = new Dictionary<string, bool>(_settings.Toggles, StringComparer.Ordinal) { [key] = on } };
+        if (key == FullScreenToggle)
+        {
+            SetFullScreen(on);
+        }
+
+        WriteTheSettings(_settings);
+    }
+
+    /// <summary>The title's Settings moved the UI size a step: kept and written, as the village's dial does.</summary>
+    private int TitleUiScaleMoved(int by)
+    {
+        SetUiScale(_uiScalePercent + by);
+        _settings = _settings with { UiScalePercent = _uiScalePercent };
+        WriteTheSettings(_settings);
+        return _uiScalePercent;
+    }
+
+    /// <summary>What the title's Settings reads and writes — the table, and the doors into the player's file.</summary>
+    private TitleScreen.SettingsDoors TheTitlesSettings() =>
+        new(PlayerTicks, TickValue, TitleTickChanged, () => _uiScalePercent, TitleUiScaleMoved);
+
     private static bool TheProbeIsRunning => System.Environment.GetEnvironmentVariable("KITH_PROBE_WIDTHS") is not null;
 
     /// <summary>Read the player's settings before anything is built — the UI size and the new-game rows are needed first.</summary>
@@ -371,7 +437,11 @@ public partial class Main
             // Never swallowed (METHODOLOGY §4): said twice, and a preference is not worth halting a village for.
             string sentence = $"The settings could not be written to {_settingsPath} ({ex.Message}); they hold for this session only.";
             GD.PushError($"[Kith] {sentence}");
-            _loop.World.Log(LogLevel.Warn, "shell", sentence);
+            // On the title (A180) there is no village yet, so no village log to say it in.
+            if (_loop is not null)
+            {
+                _loop.World.Log(LogLevel.Warn, "shell", sentence);
+            }
         }
     }
 
@@ -575,3 +645,6 @@ public partial class Main
         }
     }
 }
+
+/// <summary>One tick the player sets (A180): the key it is remembered by, its words, its default, and the title's heading for it.</summary>
+internal sealed record PlayerTick(string Key, string Label, bool Default, string Group);

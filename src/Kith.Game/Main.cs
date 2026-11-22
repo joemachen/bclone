@@ -128,7 +128,9 @@ public partial class Main : Control
     /// <summary>The title, over the saves on disk (§3). Each button raises an event and Main acts on it.</summary>
     private void ShowTheTitle(SimConfig config)
     {
-        _title = new TitleScreen(config, TheSavesOnDisk(config), BuildVersion);
+        // ⭐ The window as the player left it, from the title on (A180): it used to wait for a village's Settings to be built.
+        SetFullScreen(TickValue(FullScreenToggle));
+        _title = new TitleScreen(config, TheSavesOnDisk(config), BuildVersion, TheTitlesSettings());
         _title.LoadAsked += path => OpenTheVillage(config, path);
         _title.NewVillageAsked += () =>
         {
@@ -453,7 +455,8 @@ public partial class Main : Control
 
     /// <summary>
     /// ⭐ The probe's <c>title:</c> line (`title-and-pause.md §8`): the title as the probe meets it — no saves, so a
-    /// rolled valley behind it, <i>Continue</i> disabled and <i>New village</i> not, the band inside the window —
+    /// rolled valley behind it, the band inside the window, and the parchment panel's own checks (A180,
+    /// <see cref="TitleScreen.WhatTheTitleHolds"/>) on it and on a title posed over a save —
     /// then it presses <i>New village</i> and the <c>new game:</c> line runs as it always has.
     /// </summary>
     private void ProbeTheTitle()
@@ -469,24 +472,41 @@ public partial class Main : Control
             faults.Add("the backdrop has no valley on it");
         }
 
-        if (!_title.ContinueButton.Disabled)
-        {
-            faults.Add("Continue is offered with no save on disk");
-        }
-
-        if (_title.NewVillageButton.Disabled)
-        {
-            faults.Add("New village is disabled");
-        }
-
         float ends = _title.Band.GetGlobalRect().End.X;
         if (ends > Size.X + 0.5f)
         {
             faults.Add($"the band ends at {ends:F0}px of a {Size.X:F0}px window");
         }
 
+        // ⭐ The parchment panel (A180, `title-screen-art.md §2`): its checks are the title's own; the settings it moves while it
+        // checks are put back, so the village founded next is the probe's as always.
+        // ⚠️ In a `try`, as every art line is (A180's red-check: a Settings page missing its first group threw here, and the
+        // probe died with no title line — a crash is never a red, so it scored nothing).
+        PlayerSettings settingsWere = _settings;
+        try
+        {
+            faults.AddRange(_title.WhatTheTitleHolds());
+        }
+        catch (Exception e)
+        {
+            faults.Add($"the title's checks threw {e.GetType().Name}: {e.Message}");
+        }
+
+        _settings = settingsWere;
+
+        // And a title over a save: a listing whose file does not open (the backdrop falls back to a rolled valley, as today) —
+        // the grid's tick set away from its default first, so its Settings shows what the player left, not the default.
+        _settings = _settings with { Toggles = new Dictionary<string, bool>(StringComparer.Ordinal) { ["grid"] = !TickRow("grid").Default } };
+        var posed = new TitleScreen(
+            _title.Config, new[] { new TitleScreen.SaveListing("user://probe-no-such.save", "A posed village — Year 1", null) }, BuildVersion, TheTitlesSettings());
+        AddChild(posed);
+        faults.AddRange(TitleScreen.WhatASavedTitleShows(posed));
+        RemoveChild(posed);
+        posed.QueueFree();
+        _settings = settingsWere;
+
         GD.Print(faults.Count == 0
-            ? $"[widths] title: ✅ {TitleScreen.GameName} over a {(_title.BackdropIsASave ? "saved" : "rolled")} valley ({_title.BackdropMs:F0} ms), Continue disabled with no saves, New village offered, the band ends at {ends:F0}px"
+            ? $"[widths] title: ✅ {TitleScreen.GameName} over a {(_title.BackdropIsASave ? "saved" : "rolled")} valley ({_title.BackdropMs:F0} ms), the band ends at {ends:F0}px; {TitleScreen.WhatTheTitleShowed}"
             : $"[widths] title: ❌ {string.Join("; ", faults)}");
         _title.PressNewVillage();
     }
@@ -1391,6 +1411,26 @@ public partial class Main : Control
             faults.Add($"at a founding the tick is {(tick.ButtonPressed ? "pressed" : "clear")} and the window asked {(_fullScreen ? "full screen" : "windowed")}");
         }
 
+        // ⭐ The village's ticks and the title's are one table (A180): every tick Settings holds is a row of PlayerTicks, in its
+        // words, and every row is a tick here — so the title can never offer a setting the village does not have, or miss one.
+        var rowsHere = new List<string>();
+        for (int i = 0; i < _viewToggles.Count; i++)
+        {
+            (string key, _, CheckBox box, _) = _viewToggles[i];
+            PlayerTick? row = PlayerTicks.FirstOrDefault(t => t.Key == key);
+            if (row is null || row.Label != box.Text)
+            {
+                faults.Add($"Settings' {key} tick ('{box.Text}') is not the table's row ('{row?.Label}')");
+            }
+
+            rowsHere.Add(key);
+        }
+
+        if (PlayerTicks.Any(t => !rowsHere.Contains(t.Key)))
+        {
+            faults.Add($"the table has rows Settings does not ({string.Join(", ", PlayerTicks.Select(t => t.Key).Except(rowsHere))})");
+        }
+
         tick.ButtonPressed = false;
         bool windowed = !_fullScreen;
         tick.ButtonPressed = true;
@@ -1410,7 +1450,7 @@ public partial class Main : Control
         }
 
         return faults.Count == 0
-            ? "[widths] full screen: ✅ the tick is pressed at a founding and asks for full screen; unticked asks for a window; a file's off is read as off"
+            ? "[widths] full screen: ✅ the tick is pressed at a founding and asks for full screen; unticked asks for a window; a file's off is read as off; every Settings tick a row of the title's table, and every row a tick"
             : $"[widths] full screen: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -7260,7 +7300,7 @@ public partial class Main : Control
         body.AddChild(_wearButton);
         RefreshWearButton();
 
-        var markers = new CheckBox { Text = "mark stores with no room", ButtonPressed = true };
+        var markers = Tick("full_markers");
         markers.AddThemeFontSizeOverride("font_size", 12);
         markers.Toggled += on => _map.ShowFullMarkers(on);
         body.AddChild(markers);
@@ -7268,7 +7308,7 @@ public partial class Main : Control
 
         // The global half of D147's idle ring, beside the global half of D140's, because they
         // are the same kind of preference and a player looking for one will look for the other.
-        var idle = new CheckBox { Text = "mark buildings that cannot work", ButtonPressed = true };
+        var idle = Tick("idle_markers");
         idle.AddThemeFontSizeOverride("font_size", 12);
         idle.Toggled += on => _map.ShowIdleMarkers(on);
         body.AddChild(idle);
@@ -7286,7 +7326,7 @@ public partial class Main : Control
         // default"*). ⚠️ Two defaults, this tick and `VillageMap._snapToGrid`, and the
         // probe below checks they agree — it did not check this one until D345, and its own
         // doc said an unregistered toggle was invisible to it.
-        var snap = new CheckBox { Text = "snap buildings to the grid" };
+        var snap = Tick("snap");
         snap.AddThemeFontSizeOverride("font_size", 12);
         snap.Toggled += on => _map.SnapToGrid(on);
         body.AddChild(snap);
@@ -7308,14 +7348,14 @@ public partial class Main : Control
         // tick starts pressed and the window is set with it here — a tick pressed in its initializer never fires its handler
         // (the watercolour's rule, below) — and a settings file that says off is applied after. Borderless full screen, not
         // exclusive: the desktop is an Alt-Tab away, as it is in a window.
-        var fullScreen = new CheckBox { Text = "full screen", ButtonPressed = true };
+        var fullScreen = Tick(FullScreenToggle);
         fullScreen.AddThemeFontSizeOverride("font_size", 12);
         fullScreen.Toggled += SetFullScreen;
         SetFullScreen(fullScreen.ButtonPressed);
         body.AddChild(fullScreen);
         _viewToggles.Add((FullScreenToggle, "full screen", fullScreen, () => _fullScreen));
 
-        var grid = new CheckBox { Text = "draw the tile grid" };
+        var grid = Tick("grid");
         grid.AddThemeFontSizeOverride("font_size", 12);
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
@@ -7326,14 +7366,14 @@ public partial class Main : Control
         // the tick starts pressed and the map is switched on with it here, because a tick pressed in its initializer never
         // fires its handler. ⚠️ TWO DEFAULTS THAT MOVE TOGETHER, as the grid's: this tick and the map's watercolour. A player
         // whose settings say off gets it off when they are applied. Everything behind it is `VillageMap.Watercolour.cs`.
-        var watercolour = new CheckBox { Text = "paint the valley in watercolour", ButtonPressed = true };
+        var watercolour = Tick("watercolour");
         watercolour.AddThemeFontSizeOverride("font_size", 12);
         watercolour.Toggled += on => _map.ShowWatercolour(on);
         _map.ShowWatercolour(watercolour.ButtonPressed);
         body.AddChild(watercolour);
         _viewToggles.Add(("watercolour", "the valley in watercolour", watercolour, () => _map.WatercolourShown));
 
-        var beforeAfter = new CheckBox { Text = "before/after slider over the watercolour" };
+        var beforeAfter = Tick("before_after");
         beforeAfter.AddThemeFontSizeOverride("font_size", 12);
         beforeAfter.Toggled += on => _map.ShowBeforeAfter(on);
         body.AddChild(beforeAfter);
@@ -7341,7 +7381,7 @@ public partial class Main : Control
 
         // ⭐ THE TREES, ON OR OFF (A36, Joe: *"give settings options to disable trees (so user can see land underneath)"*).
         // On by default: the map opens as it was. Off hides every tree, in either look; boulders and berries stay.
-        var trees = new CheckBox { Text = "draw the trees", ButtonPressed = true };
+        var trees = Tick("trees");
         trees.AddThemeFontSizeOverride("font_size", 12);
         trees.Toggled += on => _map.ShowTrees(on);
         body.AddChild(trees);
@@ -7349,7 +7389,7 @@ public partial class Main : Control
 
         // ⭐ THE WATER MOVING, ON OR OFF (A45 call 4, `river-drawn.md §4.5`). On by default; off, the river's ripples are
         // drawn but hold still, for a player who finds motion at the edge of the eye a distraction.
-        var movingWater = new CheckBox { Text = "moving water", ButtonPressed = true };
+        var movingWater = Tick("moving_water");
         movingWater.AddThemeFontSizeOverride("font_size", 12);
         movingWater.Toggled += on => _map.ShowMovingWater(on);
         body.AddChild(movingWater);
@@ -7363,33 +7403,25 @@ public partial class Main : Control
         // ⛔ **Each hides the wash AND the border.** Half a layer showing reads as a bug
         // rather than as a setting — and the border is the louder half, so hiding only the
         // fill would barely quieten anything.
-        var homes = new CheckBox { Text = "shade ground marked for housing", ButtonPressed = true };
+        var homes = Tick("housing");
         homes.AddThemeFontSizeOverride("font_size", 12);
         homes.Toggled += on => _map.ShowResidentialLand(on);
         body.AddChild(homes);
         _viewToggles.Add(("housing", "ground marked for housing", homes, () => _map.ResidentialLandShown));
 
-        var fields = new CheckBox
-        {
-            Text = "shade ground a workplace has claimed",
-            ButtonPressed = true,
-        };
+        var fields = Tick("work_ground");
         fields.AddThemeFontSizeOverride("font_size", 12);
         fields.Toggled += on => _map.ShowWorkGround(on);
         body.AddChild(fields);
         _viewToggles.Add(("work_ground", "ground a workplace claimed", fields, () => _map.WorkGroundShown));
 
-        var marked = new CheckBox
-        {
-            Text = "shade ground marked for harvest",
-            ButtonPressed = true,
-        };
+        var marked = Tick("harvest");
         marked.AddThemeFontSizeOverride("font_size", 12);
         marked.Toggled += on => _map.ShowHarvestLand(on);
         body.AddChild(marked);
         _viewToggles.Add(("harvest", "ground marked for harvest", marked, () => _map.HarvestLandShown));
 
-        var wildlife = new CheckBox { Text = "animals in the woods", ButtonPressed = true };
+        var wildlife = Tick("animals");
         wildlife.AddThemeFontSizeOverride("font_size", 12);
         wildlife.Toggled += on => _map.ShowGame(on);
         body.AddChild(wildlife);
@@ -7398,7 +7430,7 @@ public partial class Main : Control
         // Its own switch rather than one "scenery" tick, because the two answer different
         // questions: what the woods FEED and what they HOLD. A player hunting for a quieter
         // map may well want one and not the other.
-        var forage = new CheckBox { Text = "berry patches in the woods", ButtonPressed = true };
+        var forage = Tick("berries");
         forage.AddThemeFontSizeOverride("font_size", 12);
         forage.Toggled += on => _map.ShowForage(on);
         body.AddChild(forage);
@@ -7407,7 +7439,7 @@ public partial class Main : Control
         // ⭐ THE ALERTS' SPEED (Joe, D578): every pop-up brings the village to 1×, and by default it stays there. The
         // player's own preference — under its own heading, not *How the village runs*, which is the village's rules.
         body.AddChild(Muted("Alerts"));
-        var speedBack = new CheckBox { Text = "go back to my speed after an alert", ButtonPressed = false };
+        var speedBack = Tick(AlertSpeedToggle);
         speedBack.AddThemeFontSizeOverride("font_size", 12);
         speedBack.Toggled += on => _alertsGiveTheSpeedBack = on;
         body.AddChild(speedBack);

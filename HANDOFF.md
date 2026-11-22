@@ -11167,6 +11167,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     ⏸️ **Parked behind (m), Joe's order (relayed 2026-11-22: *"The art lane should paint the tavern icons so it can build
     sooner"*)** — his calls were answered here (*"All as recommended - and add a 'settings' option to the title screen"*) and
     part 1 is built in the worktree, uncommitted, its red-check running; picked up after (m).
+    🔨 **Part 1 BUILT and committed on `art` (A180, `title-screen-art.md §9`; Settings on the title, §2a, his *"Player's
+    settings"*), unplayed; the four checks green; renders `D:\Projects\brushes\title-menu\title_part1_built.jpg`. ⏸️ His play of
+    part 1. Part 2 waits on him: a save played to maturity (recommended his honey-harrow Hollowmere, year 84, with a school
+    built in), saved under a name he tells me.**
     (m) **W3's icons — the brewery and the tavern (each with its owed form), ale, the brewer and the tavern keeper** — 🔨 **being
     built on `art`** (A181, 2026-11-22, ahead of (l) at Joe's word). W3's request (`slice/w3-tavern`'s HANDOFF, *"ART LANE — W3'S
     TAVERN AND BREWERY"*): its `ui icons:` line is ⛔ without them. Barley's pattern (A162–A166): painted by

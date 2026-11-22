@@ -202,3 +202,7 @@ file it deletes.
   Probe line `full screen:`; headless, the display takes no mode, so the wish is read back and the look is Joe's.
 - **A renamed window keeps its place** (D815): the tech tree's window is *Lore*, and a file that remembers *Tree* is
   read for it once (`Main.FormerTitles`), then written under *Lore* with *Tree* dropped. Probe line `settings:`.
+- **Settings on the title** (A180, `title-screen-art.md §2a`; Joe: *"Player's settings"*): the UI size, *full screen*, every
+  *On the map* tick and the alerts' tick, read and written through the same keys (`ui_scale_percent`, `toggles.<id>`) and
+  written at once (no village is open to write them). The ticks are one table, `Main.PlayerTicks`, which the village's
+  Settings builds each tick from. Full screen applies from the title, not from a village's founding.
