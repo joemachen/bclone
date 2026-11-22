@@ -1,6 +1,8 @@
 # Spec: The market stand, learned by the long walk (W14)
 
-> Status: **📏 MEASURED AND SPECCED (D851, 2026-11-22) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT.** Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D852, 2026-11-22) — Joe: *"a market stand should have its own marketer - only 1 though.
+> everything else i agree with"* — calls 1, 3, 4, 5 as recommended, call 2 his (§5.3). 🔨 Building, §7's order; nothing built
+> yet.** *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
 > `slice/w14-market-stand` (Joe: *"start the market stand"*). Built from D839, his shape and his unlock (*"The long walk"*).
 > The instrument is `tools/harness/ZzMarketStand.cs` (§4), run on the newest save of each of his 182 folders (a copy) and on
 > 16 unattended valleys. **⚠️ The measurement found that a stand built on today's market code is not stocked** (§4.3), so
@@ -192,11 +194,23 @@ nearest counter with room otherwise, as today.
   Oakhaven made the far walk longer). **(C) a stand restocked from the market** — refused by D372 (*"a market is not a source
   for a market"*), recorded so it is not re-proposed.
 
-### 5.3 Who keeps it — call 2
+### 5.3 Who keeps it — call 2, Joe's (D852): *"a market stand should have its own marketer - only 1 though"*
 
-The stand's seat is a marketer's seat. When the player has typed a professions number for marketers, the village hires no
-more than that number (D51), and the market's two seats are nearer most hands than the stand's one. Measured: Oakhaven's
-typed 2 left the stand's seat empty 65% of the time.
+**⭐ As answered: each stall has its own marketer — one — outside the professions number.** The player's typed number for
+marketers counts **the market's** marketers; a stall's one seat is wanted on top of it whenever that stall's counter wants
+stocking (D36's rule — bounded by errands, never by spare hands: a stall with every shelf at its limit asks for nobody), and
+it is matched **before** the market's seats, so the stall's keeper is never the hand the market took. The keeper is a
+marketer — the same trade, colour, skill and card — and still has to come out of the free hands like any trade: in a
+village with nobody spare, the stall's card says so in the allocator's own words.
+
+- The professions panel's marketer row says the stalls apart: *"2 — and 1 at the stall"*, so the count on the row never
+  reads past the number typed.
+- *Why not the recommendation:* the measurement (§4.3) left the stall's seat 65% empty under Oakhaven's typed 2, and Joe's
+  answer is that a stall that has to be asked for twice is not the corner shop he meant.
+
+*The call as put (D851), kept for its reasoning:* The stand's seat is a marketer's seat. When the player has typed a
+professions number for marketers, the village hires no more than that number (D51), and the market's two seats are nearer
+most hands than the stand's one. Measured: Oakhaven's typed 2 left the stand's seat empty 65% of the time.
 
 **Recommended (A): leave the player's number alone, and say it.** The stand's card, with its seat empty: *"Nobody keeps this
 stall — the professions panel asks for 2 marketers and both are at the market."* The log says it once when the stand opens
@@ -225,7 +239,7 @@ walked to.
 
 - **The build bar:** *market stall* beside the market, its tooltip the progress line until it is learned.
 - **The stand's card** is the market's card (its limits panel, its cart line, its keeper), with two lines of its own:
-  *"Serves the homes nearer it than the market"* and, with its seat empty, call 2's sentence. ⚠️ Not a walk length on the
+  *"Serves the homes nearer it than the market"* and, with its seat empty, why (§5.3: nobody spare, or nothing to stock). ⚠️ Not a walk length on the
   villager card (D432): the home card already says where a household shops and how far (D744), and a stand changes that line
   by itself.
 - **The log:** the learning sentence once; *"The far houses have a stall"* when the first one opens.
@@ -265,7 +279,12 @@ walked to.
 - **Its build-bar icon**, beside the market's.
 - No new villager state (the keeper is a marketer and wears the marketer's colour) and no new good.
 
-## 9. Joe's calls — ⏸️ open
+## 9. Joe's calls — ✅ answered 2026-11-22 (D852)
+
+> Joe: *"a market stand should have its own marketer - only 1 though."* / *"everything else i agree with"* — **calls 1, 3,
+> 4 and 5 as recommended; call 2 his: each stall has its own one marketer, outside the professions number** (§5.3).
+
+### The calls as put on 2026-11-22 (D851)
 
 1. **How it is stocked.** As the code stands, a marketer puts what they fetch on the counter nearest the storehouse, so a
    stall out among the far houses stays nearly empty and the far families walk past it (in Oakhaven they walked *more* than

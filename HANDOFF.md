@@ -20,7 +20,9 @@
 > ⭐ MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*, `64310f8`), ✅ PUSHED AT HIS WORD (D850, *"Push main"*); `slice/w3-tavern` DELETED. No branch open
 > but `art` — the art lane merges `main` into `art` next. ▶️ NEXT FOR SYSTEMS: W14, THE MARKET STAND, OR WHATEVER HE NAMES.
 > 🔨 **`slice/w14-market-stand` — W14, THE MARKET STAND (2026-11-22, Joe: *"start the market stand"*), cut from `main` (c42a065).**
-> 📏 Measured and 📝 specced (D851, `specs/market-stand.md`); ⏸️ **FIVE CALLS HIS (§9), nothing built:** (1) a marketer fills
+> ✅ **EVERY CALL ANSWERED (D852): four as recommended, and call 2 his — *"a market stand should have its own marketer - only 1
+> though"*: each stall's one seat sits outside the typed marketer number. 🔨 Building, `market-stand.md §7`'s order.**
+> *(Read "⏸️ FIVE CALLS HIS (§9), nothing built" until D852:)* 📏 Measured and 📝 specced (D851, `specs/market-stand.md`): (1) a marketer fills
 > their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
 > *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
 > (home → store, planned) by 5 different households; (4) 2×1, 18 logs, 15 stone; (5) still wanted, knowing its keeper walks
@@ -10974,7 +10976,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
 
-- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — 🔨 being built on `slice/w14-market-stand` (2026-11-22, Joe: *"start the market stand"*) — 📏 measured and 📝 specced (D851, `specs/market-stand.md`); ⏸️ FIVE CALLS HIS (§9), each with a recommendation; nothing built until he answers.** *(Read "measured on his saves first, then `specs/market-stand.md` and his calls" until D851.)* *(Read "QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC" until 2026-11-22.)* A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
+- ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — 🔨 being built on `slice/w14-market-stand` (2026-11-22, Joe: *"start the market stand"*) — 📏 measured and 📝 specced (D851, `specs/market-stand.md`); ✅ every call answered (D852 — four as recommended; call 2 his: each stall has its own one marketer, outside the professions number); 🔨 building.** *(Read "⏸️ FIVE CALLS HIS (§9) … nothing built until he answers" until D852.)* *(Read "measured on his saves first, then `specs/market-stand.md` and his calls" until D851.)* *(Read "QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC" until 2026-11-22.)* A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
 
 - ✅ **W3, BEER AND THE TAVERN (D821 order, D834 calls) — MERGED INTO `main` AT HIS WORD (D849, *"Merge it"*), PUSHED AT HIS WORD (D850).** *(Was: 🔨 being built on `slice/w3-tavern`, 2026-11-22.)* —
   `specs/tavern.md`. Every call answered (D834): 1A comfort, 2A learned at the find, 3B a keeper (3a carries ale in,
@@ -11207,8 +11209,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
     ✅ **His *"Yes, merge them"* (the look and the recommended colours) — MERGED INTO `main` (A183, `ddcd161`), pushed at his *"Push main"* (A184, `origin/main` = `a35d65c`). ▶️ W3
     takes `main`, sets ale and the brewer to `#9a5e14` and the keeper to `#8a2f3e`, and re-imports. Done for the art lane.**
-  - 🎨 **ART LANE — W14'S MARKET STALL** (asked 2026-11-22 by the W14 systems session; ⏸️ **waits on Joe's calls 4 and 5** in
-    `specs/market-stand.md §9` — its size, and whether it is built at all; nothing to paint until he answers): the stall, 2×1
+  - 🎨 **ART LANE — W14'S MARKET STALL** (asked 2026-11-22 by the W14 systems session; ✅ **Joe's calls 4 and 5 answered as recommended**
+    (D852): **2×1, and it is built** — ready to paint; the systems slice draws a stand-in until the painting is in): the stall, 2×1
     recommended, in the market's family but plainly smaller (an awning and a counter, not a hall), and its build-bar icon beside
     the market's. No new villager state (its keeper is a marketer) and no new good. `market-stand.md §8`.
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
