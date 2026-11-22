@@ -153,8 +153,8 @@ mine, bakery, trading post · 1×1 forager's hut, forester's hut, fishing hut, w
 | Library | `#6a7fc9` | ✅ | — | 🟨 |
 | Town hall | `#b9b2a6`; never weathers | ✅ | — | 🟨 |
 | Well | `#8d8577` + a water dot | ✅ | — | 🟨 |
-| Wooden bridge | Deck quad `#8a6a48` + plank lines; failing drops every other plank, closed is dashed (`VillageMap.cs:3476–3505`) | ⚠️ **grey square** — no glyph, no colour (`BuildingGlyph.cs:89`, `:327`), and it *is* on the Works tab | Condition (built) | 🟨 / ⬜ glyph |
-| Stone bridge | Deck quad `#a8a49b` + joints; an upgrade rebuilt over the wood; never weathers | ⚠️ **grey square** | — | 🟨 / ⬜ glyph |
+| Wooden bridge | ✅ **Painted (A175, `painted-bridges.md`)**: planks on trestles with a post-and-rail each side, worn / failing / fallen in painted; with the tick off, the deck quad `#8a6a48` + plank lines | ⚠️ **grey square** — no glyph, no colour (`BuildingGlyph.cs:89`, `:327`), and it *is* on the Works tab | Condition (built) | 🟨 / ⬜ glyph |
+| Stone bridge | ✅ **Painted (A175)**: setts between parapets on pointed piers; with the tick off, the deck quad `#a8a49b` + joints; never weathers | ⚠️ **grey square** | — | 🟨 / ⬜ glyph |
 | Pasture fence | Traced lines with a gate gap (`VillageMap.cs:4247`, `:4476–4600`) | Grey square (brush-placed, no bar button) | — | 🟨 |
 | Household plot fence | `#583b1d` lines, 35% alpha before the house stands (`VillageMap.cs:4219`) | — | Gate | 🟨 |
 | Seam palisade | `#3f2d1a` lines + post dots, 35% while planned (`VillageMap.cs:4274`) | — | — | 🟨 |
