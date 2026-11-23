@@ -65,6 +65,10 @@ against a number from an older commit.
   possible), kept (as shipped) and kept with the water answered — who left, who died, who is alive, the first departure,
   each leaver's causes — and Phase 0's village of one, season by season, with leaving on. Copy in, `--filter ZzLeaving`,
   delete.
+- `ZzFieldOverlap.cs` — D857's read of Joe's save for *"the field overlapped the quarry"*: on the newest save of each folder
+  under `ZZ_SAVES` (a copy), every quarry's, farm's and mine's ground — its tiles, how many on a seam, any under a building — and
+  a grid round each quarry (owner, painted quarters of 16, B for a building, s for a seam). Reads, never steps. Copy in,
+  `--filter ZzFieldOverlap --logger "console;verbosity=detailed"`, delete.
 - `ZzMarketStand.cs` (+ `market_stand_own_counter.py`) — D851's measurement for `specs/market-stand.md §4`: on Joe's saves
   (`ZZ_SAVES` a copy, the newest per folder, `ZZ_YEARS` 5, `ZZ_SHARD=k/n` for parallel processes) every shopping round trip —
   elapsed and planned, its store and good (ZZM / ZZY / ZZP / ZZF / ZZL), and the distinct households past each length with the

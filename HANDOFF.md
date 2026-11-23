@@ -28,6 +28,8 @@
 > his number untouched, the far walking down 23–40 %.** ✅ **Step 4 (D856): the bar, the placement aid, the professions row;
 > probe 141 ✅, 1 ⛔ (`ui icons:` — the stall's painted icon, the art lane's).** ⏸️ **HIS PLAY** (`.\run.bat`, his Oakhaven at
 > Year 41, the save *year-41*: learn it within a year, place a stall among the south-western homes), **then the merge at his word.**
+> 🐞 **D857, his Millbrook note (*"i painted the farm field on the existing quarry and it overlapped"*): drawn only — the sim kept them
+> apart; the outline's rounding reached into the field's tile. A building's drawn ground now keeps clear of every other's. ⏸️ His eyes.**
 > *(Read "⏸️ FIVE CALLS HIS (§9), nothing built" until D852:)* 📏 Measured and 📝 specced (D851, `specs/market-stand.md`): (1) a marketer fills
 > their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
 > *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
@@ -55,6 +57,10 @@
 >   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
 >   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
 >   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D857): ROUNDING CUTS AN INWARD CORNER OUTWARD.** Chaikin's cut at a concave corner lies in the empty quarter beyond
+>   it, so a painted shape's picture reaches past its cells (Joe's field over a quarry — apart in the sim, overlapping on screen).
+>   `ZoneOutline.Trace(…, keepClearOf:)` pins the corners near somebody else's ground. And a geometry check that reads only a
+>   polyline's POINTS misses a side that cuts across — walk the sides.
 > - **⛔ TRAP (D854): A WORKPLACE DID NOT KNOW WHICH BUILDING IT STOOD IN** — seven places read it off the trade
 >   (`JobsCatalog.WorksAt(workplace.Kind)`), so a second building for one trade is read as the first everywhere. Ask
 >   `SimWorld.BuildingKindOf(workplace)`; a new building for an existing trade goes on `JobRow.AlsoWorksAt` and sets
