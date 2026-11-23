@@ -1,6 +1,6 @@
 # Spec: Tree motion — a tree felled and falling, a young stand growing into a wood
 
-**Status:** ✍️ **SPECCED AND MOCKED (A196, 2026-11-22); ⏸️ SIX CALLS JOE'S (§8). NOTHING BUILT.** Art lane, branch `art`.
+**Status:** ✍️ **SPECCED AND MOCKED (A196, 2026-11-22); ✅ JOE'S SIX CALLS ANSWERED, ALL AS RECOMMENDED (A197, §8); 🔨 BUILT ON `art` (A197, §9), UNPLAYED — ⏸️ HIS PLAY, THEN THE MERGE AT HIS WORD.** Art lane, branch `art`.
 The art queue's items (j) and (k) in HANDOFF's 🅿️ ART section, taken together at Joe's pick (via the coordinator: *"tree
 growth/felling in a new nested sessions"*). His request (A173, 2026-11-22): *"animated transition for trees 1) maturing
 from saplings to full trees and 2) being felled/falling"*. Mocks in `D:\Projects\brushes\trees\motion\`. Owner: Joe +
@@ -73,7 +73,8 @@ once more, from exactly where the mesh drew it, and falls:
    because a standing tree's is hidden under its crown (A31).
 2. **It lands, about a quarter of a second**: a small settle back along the line (6 % of its reach) and forward again.
    No bounce beyond that, and no dust (the meditative pace, §1.2).
-3. **It lies, about a second**, then **fades, about a second**. Gone 3.4 seconds after the tick.
+3. **It lies, about a second**, then **fades, about a second**. Gone 3.4 seconds after the tick (a second tree 0.3 s
+   behind, so 3.7).
 
 **The crown is never turned** (A31: the light is painted in, up-left). It is only slid along the fall line and squashed
 along it by up to 18 % as it lies, so its lit side stays up-left and its painted shadow down-right. The trunk is a plain
@@ -162,6 +163,9 @@ hands each change on; the canopy draw calls the motion's draw) and one line in `
 
 ## 8. Joe's calls, in plain words, each with a recommendation
 
+✅ **Answered (A197, 2026-11-22), all six as recommended** — Joe: *"1. A 2. A 3. into the open 4. real seconds, frozen when
+paused 5. Yes 6. APproved"*.
+
 The mocks: `D:\Projects\brushes\trees\motion\tree_fall_mock.gif`, `tree_grow_mock.gif`, `tree_sprout_mock.gif` (each
 looping, at the game's closest zoom, today beside the options), and `…_frames.jpg` for the same at twice the size, frame by
 frame. They are composited from the game's own tree paintings over a real render's grass, so the trees, sizes and ground are
@@ -185,3 +189,52 @@ the game's; the motion is the proposal.
 **What stays as it is, and why:** the trees beside a felled tile can change kind at that moment (a wood's new edge grows
 birches, A36's `KindOf`), and that still switches in one frame — the fall covers it, and fading it would mean keeping a
 chunk's old mesh alive. Said here so it is not a surprise in play.
+
+## 9. As built (A197)
+
+**The code.** `VillageMap.TreeMotion.cs` (new): `StartTheTreeMotion` takes each changed tile from the diff and starts what
+§2's rule says; `PaintedTreesOf` lays a tile's trees exactly as the mesh does; `FallLineOf` is the fall line;
+`TreeFrameAt` is where a tree in motion is drawn at a moment, pure, so the probe asks it the draw's own question;
+`LayTheTreeFrame` lays a frame as six vertices with `MeshBuilder.Sprite`'s cell arithmetic (`CellUv`), squashed along the
+line about the crown's centre and never turned; `AdvanceTheTreeMotion` moves the clock and lets ended motions go;
+`DrawTheTreeMotion` draws the trunks (untextured, through `MeshBuilder.Taper`) and then the crowns (one small mesh a frame,
+the season's atlas and the next one's while a season turns). `VillageMap.TreeMotionProbe.cs` (new): the probe's line.
+At Joe's OK (call 6): in `VillageMap.Meshes.cs` the diff hands each change on, a fresh map forgets every motion,
+`BuildChunk` leaves a held tile's trees out, and the canopy's draw advances and draws the motion; in
+`VillageMap.Watercolour.cs` the probe's line rides on `painted trees:`.
+
+**Settled while building, inside the calls:**
+- **The fall line snaps off wood.** The open sides' average can point at a wooded diagonal (an inside corner, open north
+  and west with the north-west wooded); there the line takes the open neighbour nearest it, so the neighbour a tree falls
+  toward is always open. A young tile counts as open (a sapling lies under a falling crown); water and rock do.
+- **A tile that changes again while held** (a sapling ploughed while it rises) lets its held motion go; a fall keeps falling.
+- **Off headless.** A headless run draws no frame, so nothing would ever end a motion: the motion starts only with a window
+  (the probe switches it on for itself). In play nothing changes.
+- **The clock** steps by the frame's own delta (so movie mode films it true), at most a quarter-second a frame (a hitch does
+  not skip a fall), and not at all while the village is paused.
+
+**What still switches at once, measured (said here so it is not a surprise in play):**
+- **The ground under the tile.** The valley's painted floor (`ValleyTexture.cs`, outside the lane's table) turns from
+  woods floor to grass, or young-wood ground to woods floor, in the frame the sim changes the tile — as before this piece.
+  In the film of a stand growing it is the large change at each row's turn (4,600–5,900 pixels of a 560 × 360 crop at the
+  closest zoom); with the trees moving over it, it reads as the wood changing under them. A fade there is its own piece.
+- **Which crown is on top where two overlap, at a growing's end** (and a fall's first frame). The motion draws over the
+  canopy; the mesh lays trees tile by tile. So the frame a grown tree goes back into the mesh, a neighbour that overlaps it
+  from a later tile goes back on top: one patch of about 30 × 40 pixels at the closest zoom, about 500–700 changed pixels a
+  row of three or four tiles, against 10–20 between other frames. Drawing the motion inside the mesh's order needs a
+  change to `MeshBuilder.cs` (a third file) or a chunk rebuilt every frame of a motion; not done, his call if he sees it.
+- **The trees beside a felled tile changing kind** (§8's note), as before.
+
+**Verified (A197):**
+- **The probe's `tree motion:` line** — every expectation from this spec (§7), and two more found while writing it: the
+  fall line checked on every wooded tile of the probe's valley with open ground beside it (1,373), and a feller posed on
+  each of their lines; a lying crown's corners squashed and not turned. And, added after the red-check's one zero, a fall straight out of a straight edge (178 in the probe's valley). **Red-checked: 32 mutants; the first run 31 red with one zero written down — the fall line taken from the tile alone (snapped off wood, so still never toward wood); the straight-edge check was added and that mutant re-run alone is red: 32 of 32** (`D:\Projects\brushes\trees\motion\red\`, `redcheck197.py`, `red197_first.log`, `red197.log`).
+- **Renders** (movie mode, 20 fps, `--screen 1`, a copy of Joe's Oakhaven year 28 with tiles changed through the sim's own
+  `SetTerrain` by a scratch hook, removed): `D:\Projects\brushes\trees\motion\built\` — `built_fall.gif`,
+  `built_grow.gif`, `built_sprout.gif`, each with a `_frames.jpg`. In the film of the growing the rows are 1.5 s apart, three
+  times quicker than the sweep at 1×, to keep it short.
+- **Watercolour off:** windowed renders at four zooms on that copy, paused, before (this piece's code taken out) and after:
+  identical but for the debug readout's timing line (rows 103–115, x 17–671 of 1600 × 1000), which differs between any two runs.
+- **The GPU** (RTX 3070, 3840 × 2160, rounds alternating in one run, 221 tiles felled so 332 trees in motion): at the
+  closest zoom 7.91–8.18 ms with them drawn against 7.80–8.01 ms without; three steps out 7.83–8.05 against 7.64–8.14 ms;
+  render CPU 0.88–1.03 ms either way. Inside the rounds' own spread: no cost measured.

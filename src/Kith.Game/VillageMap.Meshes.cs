@@ -240,6 +240,7 @@ public partial class VillageMap
         if (fresh)
         {
             _sceneryOf = map;
+            ForgetTheTreeMotion();
             _chunksAcross = (map.Width + ChunkTiles - 1) / ChunkTiles;
             _chunksDown = (map.Height + ChunkTiles - 1) / ChunkTiles;
             _scenery = new SceneryChunk[_chunksAcross * _chunksDown];
@@ -276,8 +277,16 @@ public partial class VillageMap
                         continue;
                     }
 
+                    Terrain was = _sceneryShadow[i];
                     _sceneryShadow[i] = tiles[i];
                     dirty[ChunkOf(i % map.Width, i / map.Width)] = true;
+
+                    // ⭐ The trees' motion (A197, `tree-motion.md §6`): the change handed on, before the chunk re-meshes, so a
+                    // growing or a rising holds its tile's new trees out of the mesh while it plays.
+                    if (TreeMotionOn)
+                    {
+                        StartTheTreeMotion(map, new GridPos(map.MinX + (i % map.Width), map.MinY + (i / map.Width)), was, tiles[i]);
+                    }
 
                     // ⭐ A painted tree's kind reads its neighbours (A36: willows by the water, birches at a wood's edge),
                     // so a tile felled at a chunk's edge re-meshes the chunks beside it too. Only with the painted trees:
@@ -363,7 +372,11 @@ public partial class VillageMap
                         // The painted trees with the tick on (A35), into their own textured mesh; the crowns otherwise, as ever.
                         if (_paintedTrees)
                         {
-                            PaintedTrees(_trees, map, tile, grown: terrain == Terrain.Forest);
+                            // A growing or a rising draws this tile's trees while it plays (A197) and gives them back when it ends.
+                            if (!TreeHeldByMotion(tile))
+                            {
+                                PaintedTrees(_trees, map, tile, grown: terrain == Terrain.Forest);
+                            }
                         }
                         else
                         {
@@ -485,11 +498,16 @@ public partial class VillageMap
         // textures and a share, never a re-mesh (D338: a uniform, never a re-bake).
         (float season, float _) = TheYearAt(SeasonTick(), _world!.Config.TicksPerSeason);
         (TreeSet from, float fromAlpha, TreeSet to, float toAlpha) = TreeSeasonAt(season);
+
+        // ⭐ The trees' motion (A197): its clock a frame on, an ended growing's trees given back before the chunks are drawn.
+        AdvanceTheTreeMotion();
         DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha, TreeTintFor(from));
         if (toAlpha > 0f)
         {
             DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(to)!, toAlpha, TreeTintFor(to));
         }
+
+        DrawTheTreeMotion(minX, maxX, minY, maxY, from, fromAlpha, to, toAlpha);
 
         _treesNow += Since(started);
     }
