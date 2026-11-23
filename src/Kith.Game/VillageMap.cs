@@ -2276,7 +2276,8 @@ public partial class VillageMap : Control
     /// </remarks>
     private string TheMarketsServiceArea()
     {
-        if (_building != BuildingKind.Market || _world is null || !_world.Map.Contains(_hovered))
+        // ⭐ And the market stall (W14): the homes it would serve are what it is for — the placement aid is the card's sentence.
+        if (_building is not (BuildingKind.Market or BuildingKind.MarketStall) || _world is null || !_world.Map.Contains(_hovered))
         {
             return string.Empty;
         }
@@ -3708,7 +3709,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawTheHomesThisMarketWouldServe()
     {
-        if (_building != BuildingKind.Market || _world is null)
+        if (_building is not (BuildingKind.Market or BuildingKind.MarketStall) || _world is null)
         {
             return;
         }

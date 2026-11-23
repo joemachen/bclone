@@ -24,8 +24,10 @@
 > though"*: each stall's one seat sits outside the typed marketer number. 🔨 Building, `market-stand.md §7`'s order.**
 > ✅ **Step 1 (D853): a marketer stocks their own market's counter first** — suite 2233 / 0 / 5 in 20m17, no golden moved.
 > ✅ **Steps 2–3 (D854): the market stall (33), its own marketer seated first, the long walk (10 days × 5 households, the
-> latch hashed, a Lore node, Joe's sentence).** ⏸️ **Step 4, the view (build bar, card, stand-in drawing, probe) — waits on
-> Joe closing his game in this checkout**; then step 5's measurement and his play.
+> latch hashed, a Lore node, Joe's sentence).** ✅ **Step 5 (D855): the real stall on his saves — its seat kept 99–100 % with
+> his number untouched, the far walking down 23–40 %.** ✅ **Step 4 (D856): the bar, the placement aid, the professions row;
+> probe 141 ✅, 1 ⛔ (`ui icons:` — the stall's painted icon, the art lane's).** ⏸️ **HIS PLAY** (`.\run.bat`, his Oakhaven at
+> Year 41, the save *year-41*: learn it within a year, place a stall among the south-western homes), **then the merge at his word.**
 > *(Read "⏸️ FIVE CALLS HIS (§9), nothing built" until D852:)* 📏 Measured and 📝 specced (D851, `specs/market-stand.md`): (1) a marketer fills
 > their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
 > *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
@@ -11222,7 +11224,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   - 🎨 **ART LANE — W14'S MARKET STALL** (asked 2026-11-22 by the W14 systems session; ✅ **Joe's calls 4 and 5 answered as recommended**
     (D852): **2×1, and it is built** — ready to paint; the systems slice draws a stand-in until the painting is in): the stall, 2×1
     recommended, in the market's family but plainly smaller (an awning and a counter, not a hall), and its build-bar icon beside
-    the market's. No new villager state (its keeper is a marketer) and no new good. `market-stand.md §8`.
+    the market's. No new villager state (its keeper is a marketer) and no new good. `market-stand.md §8`. ⚠️ The systems slice's
+    probe reads `ui icons: ⛔ no file for buildings/market-stall, buildings/market-stall-owed` until they are in (D856) — the
+    stand-in glyph is the market's awning at half the width, in `VillageMap.MarketTone`.
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's

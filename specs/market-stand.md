@@ -2,7 +2,8 @@
 
 > Status: **✅ EVERY CALL ANSWERED (D852, 2026-11-22) — Joe: *"a market stand should have its own marketer - only 1 though.
 > everything else i agree with"* — calls 1, 3, 4, 5 as recommended, call 2 his (§5.3). 🔨 Building, §7's order: ✅ step 1, a marketer's own
-> counter first (D853); ✅ steps 2–3, the stall and the long walk (D854) — ⏸️ step 4, the view, waits on Joe closing his game.**
+> counter first (D853); ✅ steps 2–3, the stall and the long walk (D854); ✅ step 5, measured (D855); ✅ step 4, the view (D856). ⏸️ Joe's play, then
+> the merge at his word.**
 > *(Read "🔨 Building … nothing built yet" until D853, "✅ step 1" until D854.)* *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
 > `slice/w14-market-stand` (Joe: *"start the market stand"*). Built from D839, his shape and his unlock (*"The long walk"*).
 > The instrument is `tools/harness/ZzMarketStand.cs` (§4), run on the newest save of each of his 182 folders (a copy) and on
@@ -269,14 +270,24 @@ walked to.
   workshop's progress line, D676's shape).
 - A village loaded with a lowered knob learns it at the next qualifying collection, not at load (the workshop's rule).
 
-### 5.5 What the player sees
+### 5.5 What the player sees — ✅ built (D856)
 
-- **The build bar:** *market stall* beside the market, its tooltip the progress line until it is learned.
-- **The stand's card** is the market's card (its limits panel, its cart line, its keeper), with two lines of its own:
-  *"Serves the homes nearer it than the market"* and, with its seat empty, why (§5.3: nobody spare, or nothing to stock). ⚠️ Not a walk length on the
-  villager card (D432): the home card already says where a household shops and how far (D744), and a stand changes that line
-  by itself.
-- **The log:** the learning sentence once; *"The far houses have a stall"* when the first one opens.
+- **The build bar:** *market stall* on the Storage tab beside the market, hidden until the long walk teaches it (the
+  learned-buttons' arm, or `_ => true` would have offered it at the founding), then lit until the first is marked; a stand-in
+  glyph in the market's tone, the market's awning at half the width, until the art lane's icon (`ui icons:` ⛔ until then).
+  Before it is learned, Lore's node and the sim's refusal say how far the long walk has come.
+- **Where it would serve:** the market's placement aid — the homes a market here would be the nearest food store for, counted
+  in the placement line and ringed on the map (D201) — is the stall's too. ⭐ **This is where *"serves the homes nearer it than
+  the market"* went**: a workplace card has no subtitle line, the ring says it where the decision is made, and once it stands
+  each home card says where that household shops (D744).
+- **The card** is the market's (its limits, its cart line, its keeper); with its seat empty, the sim's own *nobody posted*
+  sentence says why.
+- **The professions panel's marketer row** counts the market's marketers against the typed number and says the stalls' apart:
+  *"… · and 1 of 1 at the stall, each its own"* (its tooltip).
+- **The log:** the learning moment, once (§5.4). ⚠️ *"The far houses have a stall"* when the first one opens was not built — the
+  ordinary *"the market stall was finished"* line says it; Joe's to ask for if he wants it.
+- **Probe `market stall:`** — not offered at the founding, offered once learned (posed in the view only), the market's tone,
+  no stall keeper counted at the founding; red-checked 2 mutants, 2 reds.
 
 ## 6. Determinism, the hash, saves, goldens
 
