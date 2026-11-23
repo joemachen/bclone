@@ -11179,6 +11179,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     tile `Forest` → `Grass` in one tick, its logs carried off or left beside it as a heap; so the fall plays at that tick
     from the tile the feller worked (all of the tile's painted trees go at once — which fall and which fade is the
     piece's call), and the chopping before it is the villager's own swing (A130);
+    ↳ (j) and (k) together — 🔨 **being built on `art`** (A196, 2026-11-22, Joe's pick via the coordinator: *"tree
+    growth/felling in a new nested sessions"*). Spec first (`specs/tree-motion.md`), mocked in
+    `D:\Projects\brushes\trees\motion\`, his calls before any code. View only; no sim change, no `data/` row.
     (l) **the title screen upgrade** — a parchment menu panel, and a four-season composite background captured from the real
     renderer; his amended brief is `D:\Projects\brushes\title-menu\brief.md`. **Queued after (h), Joe's *"After the bridge"*.**
     🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code)
