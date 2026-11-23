@@ -30,6 +30,8 @@
 > Year 41, the save *year-41*: learn it within a year, place a stall among the south-western homes), **then the merge at his word.**
 > 🐞 **D857, his Millbrook note (*"i painted the farm field on the existing quarry and it overlapped"*): drawn only — the sim kept them
 > apart; the outline's rounding reached into the field's tile. A building's drawn ground now keeps clear of every other's. ⏸️ His eyes.**
+> 🐞 **D858, his bridge note (*"villagers 'Stairstep' across the diagonal wooden bridge"*): a deck is boarded and left only at its two
+> ends (walls on its sides). On his Millbrook save 38 staircased crossings of 44 → 0. No golden moved. ⏸️ His eyes.**
 > *(Read "⏸️ FIVE CALLS HIS (§9), nothing built" until D852:)* 📏 Measured and 📝 specced (D851, `specs/market-stand.md`): (1) a marketer fills
 > their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
 > *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
@@ -57,6 +59,9 @@
 >   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
 >   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
 >   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D858): A RULE ABOUT "WHERE A WALKER MAY STEP" IS A WALL, NOT A NEW READER.** The routing, the leg and the every-step
+>   guard all read `WallsOn`; a deck's sides went there (derived with the deck) and every reader obeyed at once. A new rule in one
+>   of them alone is a walker routed one way and drawn another (D404's lesson, again).
 > - **⛔ TRAP (D857): ROUNDING CUTS AN INWARD CORNER OUTWARD.** Chaikin's cut at a concave corner lies in the empty quarter beyond
 >   it, so a painted shape's picture reaches past its cells (Joe's field over a quarry — apart in the sim, overlapping on screen).
 >   `ZoneOutline.Trace(…, keepClearOf:)` pins the corners near somebody else's ground. And a geometry check that reads only a

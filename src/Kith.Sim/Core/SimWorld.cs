@@ -9516,7 +9516,8 @@ public sealed partial class SimWorld : IObstacles
     /// </remarks>
     public byte WallsOn(GridPos tile)
     {
-        byte standing = Zones.WallsOn(tile);
+        // ⭐ And a deck's sides (D858): boarded and left only at its ends — the routing reads it as a fence, with no new reader.
+        byte standing = (byte)(Zones.WallsOn(tile) | DeckWallsOn(tile));
         if (_trialWalls is null)
         {
             return standing;
