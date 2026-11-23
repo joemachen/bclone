@@ -78,6 +78,13 @@
 >   it, so a painted shape's picture reaches past its cells (Joe's field over a quarry — apart in the sim, overlapping on screen).
 >   `ZoneOutline.Trace(…, keepClearOf:)` pins the corners near somebody else's ground. And a geometry check that reads only a
 >   polyline's POINTS misses a side that cuts across — walk the sides.
+> - **⛔ TRAP (D864): AN ARRIVAL CAPPED BY A ROOM IS NOT CAPPED BY THE LARDER.** Letters to kin held by Joe's two caps (a spare
+>   bed, one a generation) starved 15 of his people in ten years and nearly tripled the unattended valleys' famine: a bed asks the
+>   house, not the village's food. Births learned this in D153 (*"bred to ninety-two … thirty-three starved"*). Any new way for
+>   people to arrive asks the birth gate's food half too — or says why not.
+> - **⛔ TRAP (D864): A HARNESS COUNTER KEYED ON "FIRST SEEN ALIVE" RE-COUNTS THE DEAD.** `wasAlive.Add(id)` for a newcomer
+>   re-added a dead newborn every tick, so the first pass read 11,622 births and 20,136 starved. Keep a seen-set apart from the
+>   alive-set; read one save's yearly lines before reading a table.
 > - **⛔ TRAP (D854): A WORKPLACE DID NOT KNOW WHICH BUILDING IT STOOD IN** — seven places read it off the trade
 >   (`JobsCatalog.WorksAt(workplace.Kind)`), so a second building for one trade is read as the first everywhere. Ask
 >   `SimWorld.BuildingKindOf(workplace)`; a new building for an existing trade goes on `JobRow.AlsoWorksAt` and sets
@@ -11030,7 +11037,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **THE LIBRARY'S BORROWING — LETTERS TO KIN, THEN THE ALMANAC (Joe, 2026-11-22; started 2026-11-23, *"systems: library"*).** **🔨 being built on `slice/library-borrowing`** (D863). Joe's play note: the library gives no reason to build it near homes. His pick: a villager walks from home to the library in spare time and carries a book home (the walk in the one cost field, the tavern's reach shape); **letters to kin** bring one relative up the valley to join that household — *a spare bed in it, at most one a household a generation*; **the almanac** has a household lay in its firewood earlier and come in from the cold sooner. ⛔ Not a contentment comfort (it would empty the tavern), not faster apprenticeship (D209), not a yield that climbs with a count (D196, D34). Spec first (`specs/library-borrowing.md`), measured on his saves; ⏸️ its calls his before anything is built.
+- ⏸️ **GRADUATES HOLD THE COLD-WINTER WORRY FOUR TIMES AS OFTEN (found by D864's measurement, 2026-11-23; not built, not a slice yet).** On his 15 lived-in saves over ten years, 79 of 401 graduate adult-winters reached six days at the get-warm line against 132 of 2,733 for everybody else. The school's B(i) (D753) lets a graduate stay out toward `school_heed_percent` 80 beside the village, and W2 counts every day past `seek_shelter_percent` 50 as a cold day. Two of his rules pulling against each other: his to say whether a graduate's cold day should be counted at her own line.
+
+- ⏸️ **THE LIBRARY'S BORROWING — LETTERS TO KIN, THEN THE ALMANAC (Joe, 2026-11-22; started 2026-11-23, *"systems: library"*).** **🔨 being built on `slice/library-borrowing`** (D863). 📏📝 **Measured and specced (D864, `specs/library-borrowing.md`); ⏸️ FIVE CALLS HIS (§9), nothing built:** (1) any adult borrows; (2) a generation = 24 years from the last kin; (3) a letter a season, answered within six years by hash; (4) ⭐ new — kin come only with food to spare (the birth gate's food half; his two caps alone starved 15 of his people in ten years); (5) the almanac not now — it changes nothing (99.3 % of homes have their wood in at winter's first day, no cold deaths) — kept for W8. Joe's play note: the library gives no reason to build it near homes. His pick: a villager walks from home to the library in spare time and carries a book home (the walk in the one cost field, the tavern's reach shape); **letters to kin** bring one relative up the valley to join that household — *a spare bed in it, at most one a household a generation*; **the almanac** has a household lay in its firewood earlier and come in from the cold sooner. ⛔ Not a contentment comfort (it would empty the tavern), not faster apprenticeship (D209), not a yield that climbs with a count (D196, D34). Spec first (`specs/library-borrowing.md`), measured on his saves; ⏸️ its calls his before anything is built.
 
 - ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
 
