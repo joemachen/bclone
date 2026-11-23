@@ -11045,7 +11045,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** 🔨 **The two buildings
   on the map: being built on `art`** (A199, 2026-11-23, Joe via the coordinator: *"art: tavern and brewery real buildings"*;
-  spec and mocks first, his look before any code). The cask and the brewer's and keeper's figures are not in this piece. Asked, not drawn here:
+  spec and mocks first, his look before any code). The cask and the brewer's and keeper's figures are not in this piece.
+  ✍️ **Specced and mocked (A199): `specs/tavern-and-brewery-art.md`, `D:\Projects\brushes\tavern\buildings\w3_buildings_mock.jpg`.
+  ⏸️ Six calls his (§6), each recommended: the look; steam off the copper; lamplight while a drinker sits inside; their trades'
+  colours; the tavern's winter smoke; his OK for five `VillageMap` files. Nothing built.** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while
   anybody sits inside — `VillageMap.Indoors` already hides drinkers and the keeper indoors); **ale**'s UI icon
   (`ui icons:` reads ⛔ until it is in `main`, barley's precedent) and its colour in `GoodsPalette` (a stand-in amber
