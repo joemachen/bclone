@@ -167,9 +167,10 @@ public partial class VillageMap
         // ⭐ The school's stove (D764) has a chimney now, so its winter fire shows (A139, Joe's call 2: "okay").
         JobKind.Teacher => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1),
 
-        // ⏳ W3 (`tavern.md §9`): the brewery's copper and the tavern's stove each have a chimney — the art lane draws the rest.
-        JobKind.Brewer => new(RoofForm.Roof, RoofMaterial.Tile, Chimneys: 1),
-        JobKind.TavernKeeper => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1),
+        // ⭐ W3's brewery and tavern as real buildings (A199, `tavern-and-brewery-art.md §3`): the brewery shingle (the bakery
+        // beside it is tile), its copper in its yard; the tavern a thatched hall, its sign and its ale out front.
+        JobKind.Brewer => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1, Yard: YardKind.Brewery),
+        JobKind.TavernKeeper => new(RoofForm.Roof, RoofMaterial.Thatch, Chimneys: 1, Yard: YardKind.Tavern),
         JobKind.Woodcutter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Woodcutter),
         JobKind.Builder => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Builder),
         JobKind.Hunter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Hunter),
@@ -218,6 +219,17 @@ public partial class VillageMap
 
         // ⭐ Smoke from its chimneys while its fire burns (A139, `indoors-and-smoke.md §2`).
         DrawTheSmoke(held, burning, alpha);
+
+        // ⭐ A199: the tavern's lamplight while a drinker sits inside, the brewery's steam while it brews (their ids are workplaces').
+        if (roof.Yard == YardKind.Tavern)
+        {
+            DrawTheLamplight(held, _tavernsLit.Contains(seed), alpha);
+        }
+        else if (roof.Yard == YardKind.Brewery)
+        {
+            DrawTheSteam(held, _coppersBrewing.Contains(seed), alpha);
+        }
+
         return true;
     }
 
@@ -251,6 +263,18 @@ public partial class VillageMap
 
         /// <summary>A mill's hub, in the view's tiles (A145): what its sails turn about.</summary>
         public Vector2 Hub { get; init; }
+
+        /// <summary>A tavern's lamplight (A199), in the view's tiles: drawn each frame at <see cref="Light"/>, never in the runs.</summary>
+        public RoofPiece[] Lamps { get; init; } = Array.Empty<RoofPiece>();
+
+        /// <summary>Its lamplight, 0 dark to 1 lit, carried frame to frame.</summary>
+        public float Light { get; set; }
+
+        /// <summary>A brewery's copper, in the view's tiles (A199): where its steam rises from.</summary>
+        public Vector2? Copper { get; init; }
+
+        /// <summary>Its steam, 0 none to 1 brewing, carried frame to frame.</summary>
+        public float Steam { get; set; }
 
         /// <summary>A mill's sails: how far round (radians) and how fast, 0 still to 1 at speed — carried frame to frame.</summary>
         public float SailsAt { get; set; }
@@ -286,7 +310,8 @@ public partial class VillageMap
             signature.Door, signature.DoorAt, signature.Seed, signature.FallenIn, signature.Yard, homeYard?.Invoke(signature.At));
         var laid = new RoofCache
         {
-            Signature = signature, Runs = RoofRuns(pieces, _pixelsPerTile), Flues = FluesOf(pieces), Smoke = held?.Smoke ?? 0f,
+            Signature = signature, Runs = RoofRuns(pieces.Where(p => !IsLamplight(p)).ToList(), _pixelsPerTile), Flues = FluesOf(pieces), Smoke = held?.Smoke ?? 0f,
+            Lamps = pieces.Where(IsLamplight).ToArray(), Light = held?.Light ?? 0f, Copper = CopperOf(pieces), Steam = held?.Steam ?? 0f,
             Hub = HubOf(pieces), SailsAt = held?.SailsAt ?? 0f, SailSpeed = held?.SailSpeed ?? 0f,
         };
         _roofCache[signature.At] = laid;

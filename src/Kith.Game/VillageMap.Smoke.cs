@@ -72,7 +72,8 @@ public partial class VillageMap
             return false;
         }
 
-        if (workplace.Kind == JobKind.Teacher)
+        // ⭐ And the tavern's stove (A199, call 5): the school's own rule one building over, as the sim burns it (`HearthSystem`).
+        if (HasAStove(workplace.Kind))
         {
             return SeasonOnScreen(world) == Season.Winter && workplace.WorkerIds.Count > 0 && workplace.Store.Firewood > 0;
         }
@@ -88,6 +89,8 @@ public partial class VillageMap
     {
         _firesLit.Clear();
         _millsWorked.Clear();
+        _tavernsLit.Clear();
+        _coppersBrewing.Clear();
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -107,6 +110,8 @@ public partial class VillageMap
             {
                 _firesLit.Add(villager.WorkplaceId);
             }
+
+            NoteTheTavernAndTheCopper(world, villager);
 
             // A miller grinding: the mill is worked, and its sails turn (A145).
             if (villager.State == VillagerState.WorkingABatch && world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Miller)
@@ -180,7 +185,10 @@ public partial class VillageMap
     /// grain, a speckle at a few pixels' scale), <b>a bloom</b> (a paler patch where the water ran back), and <b>warm and cool
     /// greys</b> drifting across it. Darker than A139's one plain disc.
     /// </summary>
-    internal static byte[] PaintThePuff(int variant)
+    internal static byte[] PaintThePuff(int variant) => PaintAPuff(variant, PuffWarm, PuffCool, PuffEdge);
+
+    /// <summary>A puff painting in a wash of these colours: the smoke's, or the copper's steam (A199).</summary>
+    internal static byte[] PaintAPuff(int variant, Color warm, Color cool, Color edgeColour)
     {
         const int n = PuffPixels;
         var rgba = new byte[n * n * 4];
@@ -211,7 +219,7 @@ public partial class VillageMap
                 float grain = 0.78f + (0.44f * Grain(x, y));
                 float pigment = Mathf.Clamp(((0.74f * fill * (1f - (0.38f * pale))) + (0.42f * rim)) * grain, 0f, 1f);
                 float tint = 0.5f + (0.5f * Mathf.Sin((p.X * 2.2f) + (p.Y * 1.4f) + drift));
-                Color wash = PuffWarm.Lerp(PuffCool, tint).Lerp(PuffEdge, Mathf.Clamp(rim * 0.95f, 0f, 1f));
+                Color wash = warm.Lerp(cool, tint).Lerp(edgeColour, Mathf.Clamp(rim * 0.95f, 0f, 1f));
                 int at = ((y * n) + x) * 4;
                 rgba[at] = (byte)Mathf.RoundToInt(wash.R * 255f);
                 rgba[at + 1] = (byte)Mathf.RoundToInt(wash.G * 255f);

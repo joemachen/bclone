@@ -1,6 +1,7 @@
 # W3's brewery and tavern, drawn as real buildings (A199)
 
-> **Status: ✍️ SPECCED AND MOCKED (A199, 2026-11-23); ⏸️ JOE'S CALLS (§6) BEFORE ANY CODE. Nothing built.** Art lane
+> **Status: 🔨 BUILT ON `art` (A200, 2026-11-23) — Joe: *"All as recommended"* on §6's six calls; ⏸️ his play, then the merge
+> at his word. Specced and mocked A199.** Art lane
 > (CLAUDE.md *Two tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\tavern\buildings\w3_buildings_mock.jpg` (script `mock.py` beside it, the A86 yards painter).
 
@@ -109,3 +110,28 @@ colours their trades'; tick off, nothing of it drawn.
 ## 7. Not in this piece
 
 The keeper's cask in the arms (*carrying ale*), the brewer's and keeper's figures, roofs in snow, the card's picture.
+
+## 8. As built (A200)
+
+Joe, 2026-11-23: *"All as recommended"* — the six calls of §6 as written.
+
+- **Code:** `VillageMap.Tavern.cs` (new: the two yards, the copper, mash tun, stillage, casks, trestle and sign; the rules
+  `LightsTheTavern`, `SteamsTheCopper`, `HasAStove`; who is lit and what steams, noted once a tick; the lamplight and the
+  steam drawn each frame at a level carried on the roof's cache) and `VillageMap.TavernProbe.cs` (new: the probe line). At his
+  OK (call 6): `VillageMap.Roofs.cs` (the two rows of `RoofOf(JobKind)`; the cache keeps the lamplight out of the runs and
+  keeps the copper's middle; the light and steam drawn after the smoke), `VillageMap.Yards.cs` (`YardKind.Brewery`,
+  `YardKind.Tavern`, `StockRead.Ale`, the two layouts — the tavern's carries where its door is, `YardLayout.DoorAt`),
+  `VillageMap.Smoke.cs` (the two sets cleared and filled where the fires are noted; `FireLitAt` asks `HasAStove`; the puff
+  painter takes its colours, so the steam is the smoke's painting near white), `VillageMap.YardsProbe.cs` (§2's table gains
+  the two kinds; the new line rides on its return), `VillageMap.cs` (one row of `ColourOf(JobKind)`).
+- **The light** is five fans — a window each side of the door, the door, a window in each side wall — from the eave outward,
+  `#ffc552` at 0.8 at the wall fading to nothing (`LampReach` 0.45 tile in front, 0.3 at the sides), and a lit slit at each
+  window, `#ffd37a`. Drawn with ordinary blending, not added light: a material on the map would shade every draw of it (art
+  trap 19). The first strength (0.5) all but vanished on his grass in daylight and was raised after the first renders.
+- **Probe** `tavern and brewery:` (riding on `building yards:`, trap 73). Red-check 30 mutants, 29 red, each a ⛔ line on the line it aims at, none a crash; ⚠️ one zero written down: the steam painted in the smoke's own colours at the draw (`TheSteamPuffs`) — the probe paints the steam's colours itself, so the renders are its evidence.
+- **Renders** on copies of his Millbrook (year 36), Elderwood (year 33) and Oakhaven (year 41) — the lamplight and an open
+  copper **posed** with a scratch switch (never committed), as no autosave was taken with a drinker inside or a batch on:
+  `D:\Projects\brushes\tavern\buildings\render\w3_buildings_built.jpg`.
+- **Draw-time zeros, written down:** the light's and steam's fade is the smoke's own `SmokeOn` (probed), but whether the frame
+  calls it for a tavern and a brewery, and the posed renders, are its evidence; the winter smoke is the rule (`HasAStove`,
+  probed) — no winter save with a kept tavern was rendered.
