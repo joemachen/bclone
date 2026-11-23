@@ -232,17 +232,18 @@ limits, every market's are, as today. **The plan is the whole rule:** the load a
 
 ### 5.3 Who keeps it — call 2, Joe's (D852): *"a market stand should have its own marketer - only 1 though"*
 
-**⭐ As answered: each stall has its own marketer — one — outside the professions number.** The player's typed number for
-marketers counts **the market's** marketers; a stall's one seat is wanted on top of it whenever that stall's counter wants
-stocking (D36's rule — bounded by errands, never by spare hands: a stall with every shelf at its limit asks for nobody), and
-it is matched **before** the market's seats, so the stall's keeper is never the hand the market took. The keeper is a
-marketer — the same trade, colour, skill and card — and still has to come out of the free hands like any trade: in a
-village with nobody spare, the stall's card says so in the allocator's own words.
+**⭐ As built since D860 (Joe: *"it should within the professions number"*): each stall has its own marketer — one — counted
+WITHIN the professions number, and seated first.** The player's typed number for marketers bounds every marketer, the stalls'
+keepers included; of those, a stall whose counter wants stocking (D36's rule — bounded by errands, never by spare hands: a stall
+with every shelf at its limit asks for nobody) has its keeper matched **before** the market's seats, so a stall is never the seat
+left empty. With 2 typed and one stall: one keeps the stall, one the market; 3 typed keeps both market seats. At 0, nobody.
 
-- The professions panel's marketer row says the stalls apart: *"2 — and 1 at the stall"*, so the count on the row never
-  reads past the number typed.
-- *Why not the recommendation:* the measurement (§4.3) left the stall's seat 65% empty under Oakhaven's typed 2, and Joe's
-  answer is that a stall that has to be asked for twice is not the corner shop he meant.
+- The professions panel's marketer row counts them all against the number and says *"· 1 of them at the stall, kept first"*.
+
+⛔ *As first built (D852–D859), withdrawn at D860:* D852's answer was read as **outside** the number — *"the player's typed
+number for marketers counts the market's marketers; a stall's one seat is wanted on top of it"* — and Joe, told so in the merge
+report: *"absolutely not. it should within the professions number."* The reading was never put back to him before it was built;
+the lesson is D860's.
 
 *The call as put (D851), kept for its reasoning:* The stand's seat is a marketer's seat. When the player has typed a
 professions number for marketers, the village hires no more than that number (D51), and the market's two seats are nearer

@@ -149,13 +149,15 @@ public sealed class MarketStandTests
     }
 
     /// <summary>
-    /// ⭐ §5.3, Joe's call (D852): <i>"a market stand should have its own marketer - only 1 though"</i>. The professions number
-    /// typed at the market's seats (and at nought) leaves the stall its one keeper on top, seated at the stall.
+    /// ⭐ §5.3: the stall's keeper is one of the marketers the professions number asks for (Joe, D860: <i>"it should within the
+    /// professions number"</i>), and is seated first (D852's <i>"its own marketer - only 1"</i>) — so at a typed 0 nobody keeps
+    /// it, at 1 the stall has its keeper and the market none, at 2 one each; never more marketers than typed.
     /// </summary>
     [Theory]
-    [InlineData(0)]
-    [InlineData(2)]
-    public void AStallHasItsOwnMarketerOutsideTheProfessionsNumber(int typed)
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 1)]
+    public void AStallsKeeperIsWithinTheProfessionsNumberAndSeatedFirst(int typed, int atStallWanted)
     {
         (_, SimWorld world, Workplace stall, StoreBuilding counter) = AStall();
         world.StoreBuildings.Single(s => s.Kind == StoreKind.Granary).Put(Goods.Produce, 2000);
@@ -166,12 +168,11 @@ public sealed class MarketStandTests
         LabourAllocator.Reshuffle(world);
 
         int atTheStall = world.Villagers.Count(v => v.Alive && v.HasJob && v.WorkplaceId == stall.Id);
-        int atTheMarket = world.Villagers.Count(v => v.Alive && v.HasJob && v.WorkplaceId != stall.Id
-            && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Marketer);
-        _output.WriteLine($"typed {typed}: quota {quota.Marketers} of whom {quota.StallKeepers} at stalls; seated {atTheStall} at the stall, {atTheMarket} at the market");
-        Assert.Equal(1, quota.StallKeepers);
-        Assert.Equal(1, atTheStall);
-        Assert.True(atTheMarket <= typed, $"{atTheMarket} at the market against the {typed} typed");
+        int marketers = world.Villagers.Count(v => v.Alive && v.HasJob && world.FindWorkplace(v.WorkplaceId)?.Kind == JobKind.Marketer);
+        _output.WriteLine($"typed {typed}: quota {quota.Marketers} of whom {quota.StallKeepers} at stalls; seated {atTheStall} at the stall, {marketers} marketers in all");
+        Assert.True(quota.Marketers <= typed, $"the quota wants {quota.Marketers} marketers against the {typed} typed");
+        Assert.True(marketers <= typed, $"{marketers} marketers seated against the {typed} typed");
+        Assert.Equal(atStallWanted, atTheStall);
     }
 
     /// <summary>A stall with every shelf at its limit asks for nobody (D36: bounded by errands, never by spare hands).</summary>
@@ -200,7 +201,7 @@ public sealed class MarketStandTests
     {
         (SimLoop loop, SimWorld world, Workplace stall, StoreBuilding counter) = AStall();
         world.StoreBuildings.Single(s => s.Kind == StoreKind.Granary).Put(Goods.Produce, 2000);
-        world.SetJobLimit(JobKind.Marketer, 1);
+        world.SetJobLimit(JobKind.Marketer, 2); // one for the stall, kept first, and one for the market (D860)
 
         loop.Step(world.Config.TicksPerSeason);
 
