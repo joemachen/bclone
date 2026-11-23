@@ -11043,7 +11043,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   14–26 tiles' walk from every home, so nobody came and the card still said "Open of an evening"; the card now counts the
   homes within reach. ✅ **His call (D847, *"Keep 12"*): `tavern_reach_tiles` stays 12 — the tavern goes among the homes.**
 
-- ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** Asked, not drawn here:
+- ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** 🔨 **The two buildings
+  on the map: being built on `art`** (A199, 2026-11-23, Joe via the coordinator: *"art: tavern and brewery real buildings"*;
+  spec and mocks first, his look before any code). The cask and the brewer's and keeper's figures are not in this piece. Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while
   anybody sits inside — `VillageMap.Indoors` already hides drinkers and the keeper indoors); **ale**'s UI icon
   (`ui icons:` reads ⛔ until it is in `main`, barley's precedent) and its colour in `GoodsPalette` (a stand-in amber
