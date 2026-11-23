@@ -23,7 +23,7 @@
 > `slice/w14-market-stand` DELETED. No branch open but `art` — the art lane merges `main` into `art` next. ⏸️ THE PUSH AT HIS WORD.
 > ⭐ **D860, Joe: *"absolutely not. it should within the professions number"* — the stall's keeper counts within the typed
 > marketer number, seated first. MERGED INTO `main` AT HIS WORD (D861, *"Merge it"*); `slice/w14-stall-keeper` DELETED.
-> No branch open but `art`. `main` pushed through `04ec4a4` (A198 carried D859 out); ⏸️ D861'S PUSH AT HIS WORD.**
+> No branch open but `art`. ✅ `main` PUSHED AT HIS WORD (D862, *"Push main"*).**
 > ▶️ NEXT FOR SYSTEMS: W4, THE CEMETERY AND THE GRAVEDIGGER, OR WHATEVER HE NAMES.**
 > *(Read what follows until D859:)* 🔨 **`slice/w14-market-stand` — W14, THE MARKET STAND (2026-11-22, Joe: *"start the market stand"*), cut from `main` (c42a065).**
 > ✅ **EVERY CALL ANSWERED (D852): four as recommended, and call 2 his — *"a market stand should have its own marketer - only 1
