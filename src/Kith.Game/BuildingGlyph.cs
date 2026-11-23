@@ -68,6 +68,9 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Granary => VillageMap.StoreColour,
         BuildingKind.Warehouse => VillageMap.StoreTone,
         BuildingKind.Market => VillageMap.MarketTone,
+
+        // ⭐ The market stall (W14) — the market's own tone: it is the market at a smaller size, a stand-in until the art lane's.
+        BuildingKind.MarketStall => VillageMap.MarketTone,
         BuildingKind.Pile => VillageMap.StoneTone,
         // ⭐ Each house its own tier's colour (`house-tiers.md §6`, D722) — the map's walls, one fact.
         BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor => VillageMap.DwellingColourOf(kind),
@@ -160,6 +163,12 @@ public sealed partial class BuildingGlyph : Control
             case BuildingKind.Market:
                 Roof(new Rect2(s * 0.08f, s * 0.16f, s * 0.84f, s * 0.28f), ink);
                 DrawRect(new Rect2(s * 0.20f, s * 0.52f, s * 0.60f, s * 0.30f), ink);
+                break;
+
+            // The market stall (W14): the market's awning and counter at half the width — a stand-in until the art lane's.
+            case BuildingKind.MarketStall:
+                Roof(new Rect2(s * 0.26f, s * 0.24f, s * 0.48f, s * 0.24f), ink);
+                DrawRect(new Rect2(s * 0.32f, s * 0.54f, s * 0.36f, s * 0.26f), ink);
                 break;
 
             // A heap on bare ground: goods stacked, and nothing built over them (D76).

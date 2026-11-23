@@ -56,7 +56,7 @@ public sealed partial class SimWorld
     public Door? DoorOf(Workplace workplace)
     {
         ArgumentNullException.ThrowIfNull(workplace);
-        BuildingKind? kind = workplace.Construction?.Kind ?? JobsCatalog.WorksAt(workplace.Kind);
+        BuildingKind? kind = workplace.Construction?.Kind ?? BuildingKindOf(workplace);
         return kind is BuildingKind building && !HasADoor(building) ? null : DoorAt(workplace.Footprint);
     }
 

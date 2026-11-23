@@ -753,6 +753,13 @@ public sealed class Workplace
     public int HandcartUses { get; set; }
 
     /// <summary>
+    /// The building this workplace stands in, when it is not its trade's own (<c>JobRow.WorksAt</c>) — a marketer's
+    /// <see cref="BuildingKind.MarketStall"/> (W14, D852). Null for every other workplace, which stands in its trade's
+    /// building; read through <c>SimWorld.BuildingKindOf(Workplace)</c>, never directly. Saved and hashed only when set.
+    /// </summary>
+    public BuildingKind? RaisedAs { get; internal set; }
+
+    /// <summary>
     /// Whether this building may own a handcart (`handcart.md §13.2`): a <b>standing, open</b> market or trading post. A site
     /// is not an owner, and a closed building asks the carpenter for nothing.
     /// </summary>
@@ -929,6 +936,9 @@ public sealed class Workplace
         ["hay_put_out"] = HayPutOut,
         ["hay_cut_this_year"] = HayCutThisYear,
         ["handcart_uses"] = HandcartUses,
+
+        // W14 (D852): only when the workplace stands in a building that is not its trade's own — a marketer's stall.
+        ["raised_as"] = RaisedAs is BuildingKind raised ? SaveWriter.Enum(raised) : null,
         ["fenced_tiles"] = FencedTiles.Count == 0 ? null : SaveWriter.Ints(FencedTiles),
         ["fence_gate"] = SaveWriter.GridPos(FenceGate),
         ["fence_stands"] = FenceStands,
@@ -972,6 +982,7 @@ public sealed class Workplace
             HayPutOut = save.Int("hay_put_out"),
             HayCutThisYear = save.Int("hay_cut_this_year"),
             HandcartUses = save.Int("handcart_uses"),
+            RaisedAs = save.HasValue("raised_as") ? save.NullableEnum<BuildingKind>("raised_as") : null,
 
             // Read tolerantly (D598): a format-8 save written before fences has none of the three.
             FencedTiles = save.HasValue("fenced_tiles") ? save.Ints("fenced_tiles") : new List<int>(),

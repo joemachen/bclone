@@ -486,6 +486,14 @@ public sealed class BuildingsCatalog
         _employs = new JobKind?[count];
         for (int id = 0; id < jobs.Count; id++)
         {
+            foreach (BuildingKind also in jobs[id].AlsoWorksAt)
+            {
+                if ((int)also >= 0 && (int)also < count)
+                {
+                    _employs[(int)also] = (JobKind)id;
+                }
+            }
+
             BuildingKind? worksAt = jobs[id].WorksAt;
             if (worksAt is BuildingKind at && (int)at >= 0 && (int)at < count)
             {

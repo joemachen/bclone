@@ -1815,6 +1815,28 @@
   // it, and at a market they replace the half-for-food rule (D361, Joe's call).
   "market_store_capacity": 8000,
 
+  // The market stall (W14, market-stand.md, D839-D852): the market at a
+  // smaller size for the far houses, learned by the long walk. Joe: "a
+  // smaller version of a market that staffs one marketer and holds half of
+  // what a market usually does". One seat, and it is its own (D852, "a
+  // market stand should have its own marketer - only 1 though"): wanted on
+  // top of the professions number for marketers, and seated first. Half the
+  // room and half the starting limit a good, so eight goods fill it.
+  "market_stall_capacity": 1,
+  "market_stall_store_capacity": 4000,
+  "market_stall_starting_limit": 500,
+
+  // The long walk (D839, Joe's unlock; his numbers D852): a shopping round
+  // trip, home to the store and back by the cost field, of at least this
+  // many ticks (40 = ten days) marks a household, once; when this many
+  // different households have made one, the far houses ask for a stall.
+  // Measured first (D851, tools/harness/ZzMarketStand.cs): trips run 4-6
+  // days at the median in every village, 10+ days in none under five homes;
+  // 10 days by 5 households lit in Joe's three saves with far houses
+  // (7, 18, 18 homes) and in no unattended valley in 16 x 50 years.
+  "market_stall_walk_ticks": 40,
+  "market_stall_households": 5,
+
   // ---- What buildings cost to raise (D43) --------------------
   // Two numbers each, on purpose. Logs are what the village must
   // HAVE; work ticks are what it must SPEND. A building that is
@@ -1852,6 +1874,10 @@
   "granary_stone": 30,
   "warehouse_stone": 24,
   "market_stone": 30,
+  // Half the market, as it is half the market (Joe's call 4, D852).
+  "market_stall_logs": 18,
+  "market_stall_stone": 15,
+  "market_stall_work_ticks": 25,
 
   // And a nominal amount on the huts (Joe, D214). One seam tile is 12 stone,
   // so clearing a single rock buys four huts. Measured over fifty years: the

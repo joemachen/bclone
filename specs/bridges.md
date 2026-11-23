@@ -108,6 +108,18 @@ right-click lets go of a drag.
   index unchanged, the deck still takes no wear, and `CrossedOnto` still fires once at the step from land onto the
   deck. ⚠️ `Bridge.Near`/`Far` are the raw drag points — tile centres under Snap, anything under free placement — which
   is why the leg aims at the *points*: the centres of the end tiles lie on a different line (the off-centre guard, §11).
+- ⭐ **A deck is boarded and left only at its two ends** (2026-11-22, D858 — Joe, playing Millbrook: *"villagers "Stairstep"
+  across the diagonal wooden bridge."*). D705's aim fires only for a route that passes an end, and the routing let a walker
+  step onto any deck tile from any land tile beside it: where a bank runs alongside a slanted deck (his wooden bridge 1),
+  walkers boarded and left mid-span, passed neither end, and every leg went tile centre to tile centre — 38 of 44 crossings
+  on a copy of his save, up to 0.7 of a tile off the deck (the art lane's diagnosis, `ZzBridgeWalk`, confirmed). **The rule
+  is walls**, derived with the deck index (`SimWorld.DeckWallsOn`, read into `WallsOn`): every edge between a water deck tile
+  and a tile its bridge does not hold is walled on both sides, so the routing, the leg (`LineOfSight`) and every step's wall
+  guard read it as they read a fence — no new reader, the way a door is walls on a building's other edges (D623). A bridge
+  begins and ends on dry land, so its end tiles are its own and the bank meets it there and nowhere else. **After, same save,
+  same 1,500 ticks:** 44 crossings, every one NEAR→FAR in one leg on the deck (the three flagged are builders at the near
+  end tile, not crossings). ⚠️ What it costs: a walker beside a mid-span deck walks to the end to board — a tile or two on
+  his bridge 1. ⚠️ Dry tiles a bridge holds mid-span (an island) are not walled, so it may be boarded there too.
 
 ---
 

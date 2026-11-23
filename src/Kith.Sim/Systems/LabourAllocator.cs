@@ -311,6 +311,37 @@ internal static class LabourAllocator
         int held = CountHolding(world, kind);
         int wanted = quota.For(kind);
 
+        // ⭐ EACH STALL'S OWN KEEPER FIRST (W14, `market-stand.md §5.3`, D852): the stalls' seats are offered before the market's,
+        // up to the stall keepers the quota wants, so the market's nearer seats never take the hand a stall was owed.
+        if (kind == JobKind.Marketer && quota.StallKeepers > 0)
+        {
+            int atStalls = 0;
+            for (int i = 0; i < world.Villagers.Count; i++)
+            {
+                if (world.Villagers[i].HasJob && world.FindWorkplace(world.Villagers[i].WorkplaceId) is Workplace w
+                    && LabourQuota.IsAStall(world, w))
+                {
+                    atStalls++;
+                }
+            }
+
+            for (int i = 0; i < candidates.Count && atStalls < quota.StallKeepers && held < wanted; i++)
+            {
+                Candidate candidate = candidates[i];
+                if (world.FindVillager(candidate.VillagerId) is not Villager keeper || keeper.HasJob
+                    || world.FindWorkplace(candidate.WorkplaceId) is not Workplace stall || stall.IsFull
+                    || !LabourQuota.IsAStall(world, stall))
+                {
+                    continue;
+                }
+
+                int snapshotOf = previousWorkplaces is null ? 0 : previousWorkplaces[IndexOf(world, keeper)];
+                Assign(world, keeper, stall, candidate.Cost, candidates, i, snapshotOf != 0 ? snapshotOf : keeper.LastWorkplaceId);
+                held++;
+                atStalls++;
+            }
+        }
+
         for (int i = 0; i < candidates.Count && held < wanted; i++)
         {
             Candidate candidate = candidates[i];

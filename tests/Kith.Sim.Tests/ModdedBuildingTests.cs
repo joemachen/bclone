@@ -158,7 +158,8 @@ public sealed class ModdedBuildingTests
         { "id": 29, "name": "insulated manor", "house_capacity": 5, "local_store_cap": 800, "winter_firewood": 5, "work_ticks": 60, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 45 } ] },
         { "id": 30, "name": "school", "seats": 2, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 12 } ] },
         { "id": 31, "name": "brewery", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 12 } ] },
-        { "id": 32, "name": "tavern", "seats": 1, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 12 } ] }
+        { "id": 32, "name": "tavern", "seats": 1, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 12 } ] },
+        { "id": 33, "name": "market stall", "stores": "Market", "store_capacity": 4000, "seats": 1, "extent_width": 2, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 18 }, { "goods": "Stone", "amount": 15 } ] }
       ]
     }
     """;
@@ -218,7 +219,7 @@ public sealed class ModdedBuildingTests
         // → 18 with the quarry (D434); → 21 with the mill and the bakery (D522); → 23 with the two
         // bridges (D546); → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598); → 27 with the
         // tailor's shop (D661); → 28 with the workshop (D678); → 30 with the stone cottage and the manor (D720); → 31 with the school (D755). The modder's boathouse sits inside the range, at the library's id, on purpose.
-        Assert.Equal(33, catalog.Count); // → 31 with the school (D755); → 33 with the brewery and the tavern (D836)
+        Assert.Equal(34, catalog.Count); // → 31 with the school (D755); → 33 with the brewery and the tavern (D836); → 34 with the market stall (D854)
 
         // ⭐ Everything the sim used to answer with a switch, answered for a building no switch has
         // ever named.
@@ -371,6 +372,7 @@ public sealed class ModdedBuildingTests
             { "id": 30, "name": "school", "seats": 2, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 12 } ] },
             { "id": 31, "name": "brewery", "seats": 2, "extent_width": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 25 }, { "goods": "Stone", "amount": 12 } ] },
             { "id": 32, "name": "tavern", "seats": 1, "extent_width": 2, "extent_height": 2, "work_ticks": 40, "materials": [ { "goods": "Logs", "amount": 30 }, { "goods": "Stone", "amount": 12 } ] },
+            { "id": 33, "name": "market stall", "stores": "Market", "store_capacity": 4000, "seats": 1, "extent_width": 2, "work_ticks": 25, "materials": [ { "goods": "Logs", "amount": 18 }, { "goods": "Stone", "amount": 15 } ] },
             { "id": 28, "name": "stone cottage", "house_capacity": 5, "local_store_cap": 600, "winter_firewood": 12, "work_ticks": 45, "materials": [ { "goods": "Logs", "amount": 20 }, { "goods": "Stone", "amount": 30 } ] },
             { "id": 21, "name": "wooden bridge",  "spans_water": true, "deck_tile_cost": 10,       "work_ticks": 10, "materials": [ { "goods": "Logs", "amount": 8 } ] },
             { "id": 4,  "name": "stockpile",       "stores": "Pile" },
@@ -454,7 +456,7 @@ public sealed class ModdedBuildingTests
 
         SimConfig config = SimConfigLoader.Parse(without, "<retired>");
         var catalog = new BuildingsCatalog(config.BuildingRows, new JobsCatalog(config.JobsCatalog));
-        Assert.Equal(33, catalog.Count); // 23 → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598); → 27 with the tailor's shop (D661); → 28 with the workshop (D678); → 30 with the house ladder (D720) → 31 with the school (D755) → 33 with the brewery and the tavern (D836)
+        Assert.Equal(34, catalog.Count); // 23 → 25 with the barn and the trading post (D590); → 26 with the pasture fence (D598); → 27 with the tailor's shop (D661); → 28 with the workshop (D678); → 30 with the house ladder (D720) → 31 with the school (D755) → 33 with the brewery and the tavern (D836) → 34 with the market stall (D854)
         Assert.False(catalog.Has((int)BuildingKind.Longhouse));
         Assert.True(catalog.Has((int)BuildingKind.Smithy));
 
