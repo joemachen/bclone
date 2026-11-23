@@ -3598,11 +3598,11 @@ public partial class Main : Control
         {
             (JobKind kind, Label maximum, Label name) = _professionReadouts[i];
 
-            // ⭐ The stalls' own marketers are outside the professions number (W14, D852), so the row counts the market's and
-            // says the stalls' apart — the number in the box never reads as overrun by a keeper it does not govern.
+            // ⭐ A stall's keeper is one of the marketers the number asks for (D860, Joe: *"it should within the professions
+            // number"*), seated first — the row counts them all, and says how many are at the stalls.
             (int atStalls, int stallSeats) = kind == JobKind.Marketer ? StallKeepersAndSeats(world) : (0, 0);
-            int working = WorkingAt(world, kind) - atStalls;
-            int seats = SeatsFor(world, kind) - stallSeats;
+            int working = WorkingAt(world, kind);
+            int seats = SeatsFor(world, kind);
             int? asked = world.JobLimits.For(kind);
 
             // The MAX half of the ASSIGNED / MAX cell. It cannot be written once at construction:
@@ -3626,7 +3626,7 @@ public partial class Main : Control
 
             if (stallSeats > 0)
             {
-                row += $" · and {atStalls} of {stallSeats} at the {(stallSeats == 1 ? "stall" : "stalls")}, each its own";
+                row += $" · {atStalls} of them at the {(stallSeats == 1 ? "stall" : "stalls")}, kept first";
             }
 
             // ⛔⛔ NO ALERTS ON THIS PANEL (D379, Joe: *"the alert is on again and it doesn't make
@@ -7869,7 +7869,7 @@ public partial class Main : Control
             : $"[widths] market stall: ⛔ {string.Join("; ", faults)}";
     }
 
-    /// <summary>The marketers at market stalls and the stalls' seats (W14, D852) — outside the professions number.</summary>
+    /// <summary>The marketers at market stalls and the stalls' seats (W14) — counted within the professions number (D860).</summary>
     private static (int Working, int Seats) StallKeepersAndSeats(SimWorld world)
     {
         int working = 0;

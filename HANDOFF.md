@@ -21,6 +21,9 @@
 > but `art` — the art lane merges `main` into `art` next. ▶️ NEXT FOR SYSTEMS: W14, THE MARKET STAND, OR WHATEVER HE NAMES.
 > ⭐ **W14, THE MARKET STALL — PLAYED AND MERGED INTO `main` AT HIS WORD (D859, *"played it, merge"*); NOT PUSHED;
 > `slice/w14-market-stand` DELETED. No branch open but `art` — the art lane merges `main` into `art` next. ⏸️ THE PUSH AT HIS WORD.
+> ⭐ **D860, Joe: *"absolutely not. it should within the professions number"* — the stall's keeper counts within the typed
+> marketer number, seated first. MERGED INTO `main` AT HIS WORD (D861, *"Merge it"*); `slice/w14-stall-keeper` DELETED.
+> No branch open but `art`. `main` pushed through `04ec4a4` (A198 carried D859 out); ⏸️ D861'S PUSH AT HIS WORD.**
 > ▶️ NEXT FOR SYSTEMS: W4, THE CEMETERY AND THE GRAVEDIGGER, OR WHATEVER HE NAMES.**
 > *(Read what follows until D859:)* 🔨 **`slice/w14-market-stand` — W14, THE MARKET STAND (2026-11-22, Joe: *"start the market stand"*), cut from `main` (c42a065).**
 > ✅ **EVERY CALL ANSWERED (D852): four as recommended, and call 2 his — *"a market stand should have its own marketer - only 1
@@ -62,6 +65,12 @@
 >   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
 >   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
 >   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D861): THE OTHER LANE CAN MOVE `main` UNDER AN UNCOMMITTED MERGE.** The art worktree updates `refs/heads/main`
+>   while this checkout has it open; `--no-commit` left the index on the old tip, and committing would have reverted A198. Read
+>   `git status` and `git log -1 main` right before committing a merge; a file you never touched staged as deleted means abort and redo.
+> - **⛔ TRAP (D860): SAY JOE'S SHORT ANSWER BACK BEFORE BUILDING ON IT.** *"its own marketer - only 1 though"* was built as
+>   "outside the professions number" and merged; he meant within it. An answer that overturns a recommendation in a few words
+>   is a reading — put the reading to him in one plain sentence first.
 > - **⛔ TRAP (D858): A RULE ABOUT "WHERE A WALKER MAY STEP" IS A WALL, NOT A NEW READER.** The routing, the leg and the every-step
 >   guard all read `WallsOn`; a deck's sides went there (derived with the deck) and every reader obeyed at once. A new rule in one
 >   of them alone is a walker routed one way and drawn another (D404's lesson, again).

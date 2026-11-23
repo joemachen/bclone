@@ -312,7 +312,8 @@ internal static class LabourAllocator
         int wanted = quota.For(kind);
 
         // ⭐ EACH STALL'S OWN KEEPER FIRST (W14, `market-stand.md §5.3`, D852): the stalls' seats are offered before the market's,
-        // up to the stall keepers the quota wants, so the market's nearer seats never take the hand a stall was owed.
+        // up to the stall keepers the quota wants, so the market's nearer seats never take the hand a stall was owed. All within the
+        // player's marketer number (D860).
         if (kind == JobKind.Marketer && quota.StallKeepers > 0)
         {
             int atStalls = 0;

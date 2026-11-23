@@ -2482,8 +2482,8 @@ public sealed record SimConfig
     /// <summary>The market stall's seats (W14, `market-stand.md §5.1`, D839: <i>"staffs one marketer"</i>).</summary>
     /// <remarks>
     /// ⭐ Each stall's seat is its own (Joe, D852: <i>"a market stand should have its own marketer - only 1 though"</i>): wanted
-    /// on top of the player's marketer number whenever the stall's counter wants stocking, and filled before the market's
-    /// (<c>LabourQuota.StallKeepersWanted</c>).
+    /// whenever the stall's counter wants stocking, counted within the professions number for marketers (D860), and filled before
+    /// the market's (<c>LabourQuota.StallKeepersWanted</c>).
     /// </remarks>
     [JsonPropertyName("market_stall_capacity")]
     public int MarketStallCapacity { get; init; } = 1;
