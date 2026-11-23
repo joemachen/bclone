@@ -11243,6 +11243,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     wood's edge, plant, watch a young stand turn), then the merge at his word. Two things still switch at once, measured and
     put to him: the ground under a changed tile (`ValleyTexture.cs`, not the lane's file), and which of two overlapping
     crowns is on top in the frame a growing ends (fixing it needs `MeshBuilder.cs`).**
+    ✅ **MERGED INTO `main` AND PUSHED at his word, *"I'll play it"* then *"merge and push"* (A198, merge `f889d25`).
+    The two that still switch at once stay his to call; he has asked for neither. Nothing else open in (j)/(k).**
     (l) **the title screen upgrade** — a parchment menu panel, and a four-season composite background captured from the real
     renderer; his amended brief is `D:\Projects\brushes\title-menu\brief.md`. **Queued after (h), Joe's *"After the bridge"*.**
     🔨 **being built on `art`** (A178, 2026-11-22, Joe: *"start the title screen"*; spec first, shown to him before any code)

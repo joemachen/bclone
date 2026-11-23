@@ -1,6 +1,6 @@
 # Spec: Tree motion — a tree felled and falling, a young stand growing into a wood
 
-**Status:** ✍️ **SPECCED AND MOCKED (A196, 2026-11-22); ✅ JOE'S SIX CALLS ANSWERED, ALL AS RECOMMENDED (A197, §8); 🔨 BUILT ON `art` (A197, §9), UNPLAYED — ⏸️ HIS PLAY, THEN THE MERGE AT HIS WORD.** Art lane, branch `art`.
+**Status:** ✍️ **SPECCED AND MOCKED (A196, 2026-11-22); ✅ JOE'S SIX CALLS ANSWERED, ALL AS RECOMMENDED (A197, §8); 🔨 BUILT ON `art` (A197, §9); ✅ MERGED INTO `main` AND PUSHED AT HIS WORD — *"merge and push"* (A198, merge `f889d25`).** Still his to call, neither asked for: fading the ground under a changed tile (`ValleyTexture.cs`) and the overlap swap when a growing ends (`MeshBuilder.cs`) — §9. Art lane, branch `art`.
 The art queue's items (j) and (k) in HANDOFF's 🅿️ ART section, taken together at Joe's pick (via the coordinator: *"tree
 growth/felling in a new nested sessions"*). His request (A173, 2026-11-22): *"animated transition for trees 1) maturing
 from saplings to full trees and 2) being felled/falling"*. Mocks in `D:\Projects\brushes\trees\motion\`. Owner: Joe +
