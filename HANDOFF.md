@@ -11055,7 +11055,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   ⏸️ Six calls his (§6), each recommended: the look; steam off the copper; lamplight while a drinker sits inside; their trades'
   colours; the tavern's winter smoke; his OK for five `VillageMap` files.** ✅ **His *"All as recommended"* — 🔨 BUILT (A200):
   `D:\Projects\brushes\tavern\buildings\render\w3_buildings_built.jpg`. ⏸️ His play (`.\run.bat` in the art folder, Settings →
-  *paint the valley in watercolour*), then the merge into `main` at his word.** Asked, not drawn here:
+  *paint the valley in watercolour*), then the merge into `main` at his word.** ✅ **MERGED INTO `main` at his word,
+  *"merge it"* (A201, merge `98dc56b`); not pushed.** Asked, not drawn here:
   the **brewery** (a workshop with a copper and a chimney) and the **tavern** (a homely hall with a sign, lit windows while
   anybody sits inside — `VillageMap.Indoors` already hides drinkers and the keeper indoors); **ale**'s UI icon
   (`ui icons:` reads ⛔ until it is in `main`, barley's precedent) and its colour in `GoodsPalette` (a stand-in amber

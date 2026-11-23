@@ -1,7 +1,7 @@
 # W3's brewery and tavern, drawn as real buildings (A199)
 
-> **Status: 🔨 BUILT ON `art` (A200, 2026-11-23) — Joe: *"All as recommended"* on §6's six calls; ⏸️ his play, then the merge
-> at his word. Specced and mocked A199.** Art lane
+> **Status: 🔨 BUILT ON `art` (A200, 2026-11-23) — Joe: *"All as recommended"* on §6's six calls; ✅ MERGED INTO `main` AT HIS WORD
+> — *"merge it"* (A201, merge `98dc56b`); not pushed. Specced and mocked A199.** Art lane
 > (CLAUDE.md *Two tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\tavern\buildings\w3_buildings_mock.jpg` (script `mock.py` beside it, the A86 yards painter).
 
