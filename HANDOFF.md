@@ -11215,6 +11215,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     ✍️ **The icon painted, in on `art`, mocked (A193; `D:\Projects\brushes\stall\stall_icon_mock.jpg`); the slice's own
     `ui icons:` ✅ with them on a scratch copy, ⛔ without (both named). ⏸️ Joe's look, then the merge into `main` at his
     word, and W14 takes `main`.**
+    ✅ **His *"Yes, merge it"* — MERGED INTO `main` (A194, `07e4205`), not pushed. ▶️ W14 takes `main` and imports once. The
+    map's painted stall is the art lane's next half, after W14 is in `main`.**
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's

@@ -191,7 +191,7 @@ does not), a call for Joe. Fill colour from the building's map colour.
 
 | `brewery.png` (+ `-owed`) | W3 (A181): a workshop in the brewer's colour with a chimney, a copper on its fire beside it, piped into the wall; ✅ approved and in (A183) |
 | `tavern.png` (+ `-owed`) | W3 (A181): a homely thatched hall in the keeper's colour, its two windows lit, a sign with a tankard hung from a bracket; ✅ approved and in (A183) |
-| `market-stall.png` (+ `-owed`) | W14 (A193, `market-stand.md §8`): one bay of the market — its awning colour, its counter, its produce and loaf — under a peaked, scalloped canopy on two posts, where the market is a long flat awning across the whole icon; the owed medallion on the counter's right end (189, 205), the outline unchanged; ✍️ painted, ⏸️ Joe's look |
+| `market-stall.png` (+ `-owed`) | W14 (A193, `market-stand.md §8`): one bay of the market — its awning colour, its counter, its produce and loaf — under a peaked, scalloped canopy on two posts, where the market is a long flat awning across the whole icon; the owed medallion on the counter's right end (189, 205), the outline unchanged; ✅ approved and in (A194, *"Yes, merge it"*) |
 
 *Every icon is named after its row's name in the data, lower case, apostrophes dropped, words hyphened (A111) — the
 three home tiers were renamed from `cabin`, `cottage` and `manor` so the game finds them with no list of exceptions. A
