@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **📏 MEASURED AND 📝 SPECCED (D864, 2026-11-23) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT.** Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order.** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -246,6 +246,26 @@ a home of their own.
 
 ⚠️ **Not a call, said so:** kin come whether the Nomads switch is on or off — the switch keeps strangers out (D570, D572),
 and a household writing to its own family is the player's doing by where the library stands. (Joe's word changes it.)
+✅ **Accepted (D865); and since D865 the player has a switch of their own for letters** (§5.4a) — so a Nomads-off village
+that wants no arrivals at all turns letters off too.
+
+#### 5.3a Kin in the family, and marriage — Joe's addition 1 (D865)
+
+*Joe: "spec states whether kin are recorded as relatives in the family tree and whether they can marry into the host
+household."* Read off the code first:
+
+- **There is no family tree of who is related to whom.** A villager carries a `Generation` number (D718, the house tiers'
+  count) and a household — no parents, no siblings, no kin links. The *"family tree"* the game speaks of is that count.
+- **So kin are recorded as kin of the household, not in a tree:** `Villager.CameByLetterOf` holds the id of the household
+  whose letter brought them — saved, hashed sparsely — and the person's card says *"Came up the valley in Year 43, at the
+  Haywards' letter — kin of the Haywards."* For the generation count they are **generation 1**, new to the valley, as a
+  nomad is: they were not born here, and a child of theirs is generation 2 here. Nothing else reads `CameByLetterOf`.
+- **Marriage into the host household: not while they share the house, and nothing else bars it.** The partner rule
+  (`HouseholdSystem.FindPartner`) refuses only someone of the same household — the one bar there is, which today is also
+  what stops two siblings at home. So kin living with the Haywards cannot pair with a Hayward under that roof; once either
+  has moved out to a home of their own, they can, exactly as two siblings who have both left home can today. **No new bar
+  is built:** a kinship bar wants the parent links the sim does not keep. ⚠️ Logged as a known gap (HANDOFF ⏸️): marriage
+  between kin is not prevented anywhere in the game, letters or no letters.
 
 ### 5.4 What the player sees
 
@@ -258,7 +278,21 @@ and a household writing to its own family is the player's doing by where the lib
   homes around it: build it near them."*
 - **The household's card**: *"Writing to kin in the lowlands — 5 letters so far."* / *"Tamsin came in Year 43, at Hilde's
   letter; kin may come again from Year 67."* / the refusal sentence while an answer stands.
-- **The person's card**: *"Came up the valley in Year 43, at the Haywards' letter."*
+- **The person's card**: *"Came up the valley in Year 43, at the Haywards' letter — kin of the Haywards."*
+- ⭐ **Letters waiting on an answer, on the library's card** (Joe's addition, D865): *"3 homes are writing to kin — 14 letters
+  out, none answered yet."* And while an answer stands: *"… 1 answer waits on a bed."* / *"… on food to spare."* Counted
+  from the households when the card is drawn, never stored (D335).
+
+#### 5.4a Letters on and off — Joe's addition 2 (D865)
+
+*Joe: "add a letters on/off on the library card if cheap, otherwise log it as a known gap for Nomads-off players."*
+**It is cheap, so it is built:** a village-wide switch, `SimWorld.LettersEnabled`, the Nomads switch's shape (D570, D572) —
+started from `letters_enabled` (true) in the data file, the village's own, saved, **hashed only when off**; a toggle button
+on every library's card, *"Letters to kin: on"* / *"off"* (the card's `Marker: ON` precedent). Off: nobody fetches paper,
+no letter is counted, and no kin come — an answer already standing waits until it is back on, and the card says *"Letters
+to kin are off — nobody writes, and nobody comes."* One switch for the village rather than one a library: a library has no
+id (D396), and a family writes to its kin, not to a building. Not on the new-game screen unless Joe asks — the card is
+where the library is.
 
 ### 5.5 The almanac — not built now (call 5)
 
@@ -284,14 +318,15 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 
 ## 7. Build order — one step a commit, TDD
 
-1. **The walk** — `library_reach_tiles`, `letter_every_days`, `library_sit_ticks` (validated); `WalkToTheLibrary`, the
-   offer, the two states, paper home, `LettersWritten`; the library's card count. Guards: an adult in reach walks there and
+1. **The walk** — `library_reach_tiles`, `letter_every_days`, `library_sit_ticks`, `letters_enabled` (validated); the switch; `WalkToTheLibrary`, the
+   offer, the two states, paper home, `LettersWritten`; the library's card count and its letters-waiting line. Guards: an adult in reach walks there and
    back and the count rises; out of reach, a full house, a closed library, a child — nobody goes; the card counts.
 2. **The answer** — `letters_answered_within`, `letters_generation_years`; the hashed letter; the bed and food gates; kin
    come (§5.3); a standing answer said once and kept; the generation clock; cleared on a new family. Guards: an answer on
    its hashed letter; refused by a full house, then by an empty larder, then honoured; never twice in a generation; the same
    seed the same relative; the conservation guard sees the 20 food come in; save and load mid-answer.
-3. **The view** — paper in hand (a stand-in until the art lane's), the household and person card lines, the walk-in. The
+3. **The view** — paper in hand (a stand-in until the art lane's), the household and person card lines, the library card's
+   switch, the walk-in. The
    probe gains a `library:` line (the card's sentence posed).
 4. **Measured again on his saves with the real code** (D855's shape): relatives, nomads, starved, people.
 5. **Joe plays it** — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
@@ -303,7 +338,15 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 - **The library**, if its drawing is a stand-in still — a building people now walk to; nothing new is required of it.
 - No new building, good or trade.
 
-## 9. Joe's calls — ⏸️ OPEN (2026-11-23), each with a recommendation
+## 9. Joe's calls — ✅ answered 2026-11-23 (D865)
+
+Joe: *"All five calls as recommended. Defaults accepted, with two additions: (1) spec states whether kin are recorded
+as relatives in the family tree and whether they can marry into the host household; (2) add a letters on/off on the library
+card if cheap, otherwise log it as a known gap for Nomads-off players. Also show pending unanswered letters on the card."*
+So: 1A, 2A (a relative's own new home may write), 3 as recommended, 4A, 5A; every default below; the additions in §5.3a,
+§5.4 and §5.4a.
+
+### The calls as put on 2026-11-23 (D864)
 
 1. **Who can borrow.** **(A) Any adult at home — recommended**; (B) only school graduates (*readers*). A: the library comes
    fifteen years into a village and the school after it, so B leaves the library doing nothing for a decade after its gift,
