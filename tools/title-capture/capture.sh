@@ -24,7 +24,8 @@ export TITLE_OUT="$OUTP"
 cd "$ROOT"
 dotnet build src/Kith.Game/Kith.Game.csproj -nologo -v q | grep -E "Error\(s\)"
 set +e
-"$GODOT" --path src/Kith.Game -s "$SCRIPT" 2>&1 | grep -E "^capture:|^ERROR|SCRIPT ERROR"
+# Joe: "can we pop all test windows onto my 2nd monitor?" - the capture window opens on screen 1.
+"$GODOT" --screen 1 --path src/Kith.Game -s "$SCRIPT" 2>&1 | grep -E "^capture:|^ERROR|SCRIPT ERROR"
 code=${PIPESTATUS[0]}
 rm -rf "$USERDIR"
 exit $code

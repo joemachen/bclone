@@ -18,7 +18,8 @@ set "APPDATA=%USERDIR%"
 set "TITLE_OUT=%OUT%"
 pushd "%HERE%..\.."
 dotnet build src\Kith.Game\Kith.Game.csproj -nologo -v q
-"%GODOT%" --path src\Kith.Game -s "%HERE%capture.gd"
+rem Joe: "can we pop all test windows onto my 2nd monitor?" - the capture window opens on screen 1.
+"%GODOT%" --screen 1 --path src\Kith.Game -s "%HERE%capture.gd"
 set "CODE=%ERRORLEVEL%"
 popd
 rmdir /s /q "%USERDIR%"
