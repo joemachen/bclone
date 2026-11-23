@@ -308,7 +308,7 @@ off, the saplings stay the inked discs they are today, and the renders compare b
 **Not in this piece:** a tree that grows gradually from sapling to wood (the sim has one step, so the view does too:
 the day a sapling tile becomes forest, its young trees give way to grown ones); planted rows that tell a forester's
 saplings from self-seeded ones (the sim keeps that difference only until the next regrowth sweep); stumps on a felled
-tile; spring blossom.
+tile; spring blossom. *(The moment a sapling tile becomes a wood, and a felled tree's fall, are `tree-motion.md` — A196.)*
 
 ### Joe's calls (A50), in plain words, each with a recommendation
 

@@ -651,8 +651,8 @@ public partial class VillageMap
     /// ⚠️ The draw itself (<c>DrawThePaintedTrees</c>) runs only inside <c>_Draw</c>, which never runs headless (D340); what
     /// it draws is these meshes, and a windowed render is its check.
     /// </remarks>
-    /// <remarks>⭐ The season override's line rides on this one's return (A189, art trap 73), each in its own <c>try</c>.</remarks>
-    internal string ThePaintedTreesHold() => ThePaintedTreesAloneHold() + "\n" + TheSeasonShownHolds();
+    /// <remarks>⭐ The season override's line rides on this one's return (A189, art trap 73), each in its own <c>try</c>; the trees' motion's (A197) too.</remarks>
+    internal string ThePaintedTreesHold() => ThePaintedTreesAloneHold() + "\n" + TheSeasonShownHolds() + "\n" + TheTreeMotionHolds();
 
     private string ThePaintedTreesAloneHold()
     {
