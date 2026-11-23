@@ -182,9 +182,64 @@ internal static class ZoneOutline
         Clipped("a 7-tile round, clipped to all of it", RoundBrush(14), all: true);
         Clipped("a 7-tile round, clipped to its lower half", RoundBrush(14), all: false);
 
+        // ⛔⛔ AND A SHAPE KEEPS CLEAR OF THE GROUND BESIDE IT (D857, Joe's Millbrook: a field in a quarry's notch). A 3×3-tile
+        // block with its top-left tile cut out, in quarter-tiles, the notch tile held by somebody else: rounded freely its
+        // inward corner bulges INTO the notch (the bug, measured here so the check cannot pass on a shape that never bulged);
+        // kept clear of the notch, no point of the outline enters it.
+        KeptClear();
+
         return complaints.Count == 0
             ? $"[widths] zone outlines: ✅ every shape closed and kept its area{sizes}"
             : "[widths] zone outlines: ⛔ " + string.Join("; ", complaints) + sizes;
+
+        void KeptClear()
+        {
+            var quarry = new HashSet<Vector2I>();
+            foreach ((int x, int y) in Block(12, 12))
+            {
+                if (x >= 4 || y >= 4)
+                {
+                    quarry.Add(new Vector2I(x, y));
+                }
+            }
+
+            static bool InTheNotch(Vector2I cell) => cell.X >= 0 && cell.X < 4 && cell.Y >= 0 && cell.Y < 4;
+
+            // How far into the notch tile's square (cells −0.5 … 3.5 each way) the outline reaches, in cells — walked along
+            // every side, not only at its points: a side between two points on the notch's edges cuts straight across it
+            // (D857's red check scored zero on the points alone).
+            static float Into(List<Vector2[]> loops)
+            {
+                float deepest = 0f;
+                foreach (Vector2[] loop in loops)
+                {
+                    for (int i = 0; i + 1 < loop.Length; i++)
+                    {
+                        for (int step = 0; step <= 16; step++)
+                        {
+                            Vector2 p = loop[i].Lerp(loop[i + 1], step / 16f);
+                            deepest = Mathf.Max(deepest, Mathf.Min(3.5f - p.X, 3.5f - p.Y));
+                        }
+                    }
+                }
+
+                return deepest;
+            }
+
+            float free = Into(Trace(quarry, SubTilesPerTile));
+            float kept = Into(Trace(quarry, SubTilesPerTile, keepClearOf: InTheNotch));
+            if (free < 0.1f)
+            {
+                complaints.Add($"keep clear: rounded freely the notch was never entered ({free:F2} cells), so the check measures nothing");
+            }
+
+            if (kept > 1e-4f)
+            {
+                complaints.Add($"keep clear: the outline reaches {kept:F2} cells into ground it was told to keep clear of");
+            }
+
+            sizes += $"; kept clear of a neighbour's notch ({free:F2} cells in when rounded freely, {kept:F2} kept)";
+        }
 
         void Roundness(string what, int radius, float wanted)
         {
@@ -733,8 +788,10 @@ internal static class ZoneOutline
     /// one is ever kept (D374, Joe: *"what is this big square that showed up in the middle?"* — a
     /// 3×3 block of worn tiles whose every side was two tiles, the sharp-corner length exactly).
     /// </param>
+    /// <param name="keepClearOf">Cells somebody else holds: a corner within the rounding's reach of one is kept where it was painted (D857).</param>
     internal static List<Vector2[]> Trace(
-        HashSet<Vector2I> tiles, int cellsPerTile = 1, float sharpCornerTiles = SharpCornerTiles)
+        HashSet<Vector2I> tiles, int cellsPerTile = 1, float sharpCornerTiles = SharpCornerTiles,
+        Func<Vector2I, bool>? keepClearOf = null)
     {
         var loops = new List<Vector2[]>();
         if (tiles.Count == 0)
@@ -751,10 +808,52 @@ internal static class ZoneOutline
                 continue;
             }
 
-            loops.Add(Round(straightened, cellsPerTile, sharpCornerTiles));
+            loops.Add(Round(straightened, cellsPerTile, sharpCornerTiles, Pinned(straightened, cellsPerTile, keepClearOf)));
         }
 
         return loops;
+    }
+
+    /// <summary>
+    /// ⭐⭐ THE CORNERS THAT MUST NOT BE ROUNDED, BECAUSE ROUNDING WOULD CROSS SOMEBODY ELSE'S GROUND (D857). Joe, Millbrook:
+    /// <i>"i painted the farm field on the existing quarry and it overlapped."</i> The sim had kept them apart — the field held
+    /// the grass tile in the quarry's top-left notch, the quarry the stone around it — but rounding cuts a shape's INWARD
+    /// corners outward (a convex corner's cut lies inside, a concave one's in the empty quarter beyond it), so the quarry's
+    /// floor and outline curved into the field's tile. So a corner with a <paramref name="keepClearOf"/> cell within
+    /// <see cref="RimReach"/> — as far as the rounding can carry a curve past its cells, the reach <see cref="ClipToCells"/>
+    /// already uses — is kept exactly where it was painted, D334's sharp-corner rule for one more reason. Everywhere else the
+    /// rounding is untouched, so a round brush in open ground stays round.
+    /// </summary>
+    private static HashSet<Vector2>? Pinned(List<Vector2> corners, int cellsPerTile, Func<Vector2I, bool>? keepClearOf)
+    {
+        if (keepClearOf is null)
+        {
+            return null;
+        }
+
+        int reach = RimReach(cellsPerTile);
+        HashSet<Vector2>? pinned = null;
+        foreach (Vector2 corner in corners)
+        {
+            // A corner sits on cell edges (half-integers); the cells whose square comes within the reach of it.
+            int fromX = Mathf.FloorToInt(corner.X - reach);
+            int toX = Mathf.CeilToInt(corner.X + reach);
+            int fromY = Mathf.FloorToInt(corner.Y - reach);
+            int toY = Mathf.CeilToInt(corner.Y + reach);
+            for (int y = fromY; y <= toY && !(pinned?.Contains(corner) ?? false); y++)
+            {
+                for (int x = fromX; x <= toX; x++)
+                {
+                    if (Mathf.Abs(x - corner.X) <= reach + 0.5f && Mathf.Abs(y - corner.Y) <= reach + 0.5f && keepClearOf(new Vector2I(x, y)))
+                    {
+                        (pinned ??= new HashSet<Vector2>()).Add(corner);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return pinned;
     }
 
     /// <summary>
@@ -1397,7 +1496,7 @@ internal static class ZoneOutline
     /// Chaikin corner-cutting on a closed loop — each pass replaces a corner with two points a
     /// quarter of the way along each of its sides.
     /// </summary>
-    private static Vector2[] Round(List<Vector2> loop, int cellsPerTile, float sharpCornerTiles)
+    private static Vector2[] Round(List<Vector2> loop, int cellsPerTile, float sharpCornerTiles, HashSet<Vector2>? pinned = null)
     {
         // ⛔ The two rules below are stated in TILES and the loop is in CELLS (D343).
         float cornerCut = CornerCutTiles * cellsPerTile;
@@ -1408,7 +1507,7 @@ internal static class ZoneOutline
         // ---- Stage 1: steps into chords ----
         for (int pass = 0; pass < Straightenings; pass++)
         {
-            points = Cut(points, sharpCorner, cornerCut, 2f);
+            points = Cut(points, sharpCorner, cornerCut, 2f, pinned);
         }
 
         // ⚠️ Two cuts meeting at a step's midpoint leave the same point twice; drawn,
@@ -1418,7 +1517,7 @@ internal static class ZoneOutline
         // ---- Stage 2: chords into a curve ----
         for (int pass = 0; pass < Roundings; pass++)
         {
-            points = Cut(points, sharpCorner, float.PositiveInfinity, 4f);
+            points = Cut(points, sharpCorner, float.PositiveInfinity, 4f, pinned);
         }
 
         // Closed: the first point repeated, so a polyline draws the last side too.
@@ -1454,7 +1553,7 @@ internal static class ZoneOutline
     /// <paramref name="cap"/> and at most a <paramref name="fraction"/> of its run from the corner.
     /// </summary>
     private static List<Vector2> Cut(
-        List<Vector2> points, float sharpCorner, float cap, float fraction)
+        List<Vector2> points, float sharpCorner, float cap, float fraction, HashSet<Vector2>? pinned = null)
     {
         {
             var cut = new List<Vector2>(points.Count * 2);
@@ -1471,8 +1570,10 @@ internal static class ZoneOutline
                 float back = before.DistanceTo(here);
                 float forward = here.DistanceTo(next);
 
-                // Two long runs meeting: a corner somebody chose. Kept exactly.
-                if (back >= sharpCorner && forward >= sharpCorner)
+                // Two long runs meeting: a corner somebody chose. Kept exactly. ⭐ And a corner beside somebody else's
+                // ground (D857, `Pinned`): kept exactly, so the curve never crosses into it. The kept point is the very
+                // same value every pass, so the pin holds through all of them.
+                if ((back >= sharpCorner && forward >= sharpCorner) || (pinned?.Contains(here) ?? false))
                 {
                     cut.Add(here);
                     continue;

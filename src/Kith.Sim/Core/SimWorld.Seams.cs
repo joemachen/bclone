@@ -268,7 +268,7 @@ public sealed partial class SimWorld
     /// <returns>How many tiles were claimed.</returns>
     private int ClaimTheSeam(Workplace workplace)
     {
-        if (JobsCatalog.FaceOf(workplace.Kind) is null || JobsCatalog.WorksAt(workplace.Kind) is not BuildingKind kind)
+        if (JobsCatalog.FaceOf(workplace.Kind) is null || BuildingKindOf(workplace) is not BuildingKind kind)
         {
             return 0;
         }

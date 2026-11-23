@@ -137,6 +137,12 @@ public sealed class Household
     /// </summary>
     public bool KeepsItsHouse { get; internal set; }
 
+    /// <summary>
+    /// Whether this household has made the long walk to shop (W14, `market-stand.md §5.4`) — once, so a household counts once
+    /// toward <c>SimWorld.HouseholdsThatWalkedFar</c> however often it walks. A statistic: saved only when set, never hashed.
+    /// </summary>
+    public bool WalkedFar { get; internal set; }
+
     /// <summary>The tick the builders last mended the house, or 0 never.</summary>
     public ulong HomeRepairedAtTick { get; set; }
 
@@ -1358,6 +1364,7 @@ public sealed class Household
 
         // Only when set (D723) — so a save without it, every format-13 save before piece 5, reads a house the rebuilds may take.
         ["keeps_its_house"] = KeepsItsHouse ? true : null,
+        ["walked_far"] = WalkedFar ? true : null,
         ["why_here"] = WhyHere,
         ["fenced"] = SaveWriter.GridPositions(FencedTiles),
         ["last_birth_year"] = LastBirthYear,
@@ -1386,6 +1393,7 @@ public sealed class Household
             HomeClosed = save.HasValue("home_closed") && save.Bool("home_closed"),
             HomeKind = save.Enum<BuildingKind>("home_kind"),
             KeepsItsHouse = save.HasValue("keeps_its_house") && save.Bool("keeps_its_house"),
+            WalkedFar = save.HasValue("walked_far") && save.Bool("walked_far"),
             WhyHere = save.String("why_here"),
             FencedTiles = save.GridPositions("fenced"),
             LastBirthYear = save.Int("last_birth_year"),

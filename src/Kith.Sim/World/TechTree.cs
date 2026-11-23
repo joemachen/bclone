@@ -66,6 +66,13 @@ public enum TechCondition
     /// where the count crosses <c>barley_unlock_forage</c>; the bar reads the count and the knob.
     /// </summary>
     ForageGathered,
+
+    /// <summary>
+    /// ⭐ The long walk (W14, `market-stand.md §5.4`, D852) — households that have walked far to shop against
+    /// <c>market_stall_households</c>; known on <see cref="SimWorld.MarketStallLearned"/>, the latch. Learned by the village's
+    /// own feet, so it introduces the map.
+    /// </summary>
+    LongWalk,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -245,6 +252,13 @@ public static class TechTree
             Requires = new[] { "barley" },
             Says = "Learned with the brewery: a keeper, a hearth, and somewhere to spend an evening over a cup of ale.",
         },
+        new TechNodeRow
+        {
+            // ⭐ W14 (`market-stand.md §5.4`, Joe, D839: "The long walk") — learned by the far houses' own feet. One sentence:
+            // the tree's card is 160 tall (`tech tree:`).
+            Id = "market-stall", Name = "The market stall", Unlocks = BuildingKind.MarketStall, Condition = TechCondition.LongWalk,
+            Says = "When enough households walk far to shop, the far houses ask for a stall of their own.",
+        },
     };
 
     /// <summary>A node's state, and its progress against what it takes (`tech-tree-map.md §3.2–§3.3`).</summary>
@@ -263,6 +277,7 @@ public static class TechTree
             TechCondition.ManorFamilyTree => world.ManorLearned,
             TechCondition.LibraryStands => world.SchoolLearned,
             TechCondition.ForageGathered => world.BarleyLearned,
+            TechCondition.LongWalk => world.MarketStallLearned,
             _ => of > 0 && progress >= of,
         };
 
@@ -312,6 +327,8 @@ public static class TechTree
                 return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
             case TechCondition.ForageGathered:
                 return (world.FoodEverProducedOf(Goods.Produce), world.Config.BarleyUnlockForage);
+            case TechCondition.LongWalk:
+                return (Math.Min(world.HouseholdsThatWalkedFar, world.Config.MarketStallHouseholds), world.Config.MarketStallHouseholds);
             case TechCondition.VillageSize:
                 return (Math.Min(world.MostEverAlive, world.Config.BridgeUnlockPopulation), world.Config.BridgeUnlockPopulation);
             case TechCondition.CrossingsWalked:
@@ -371,7 +388,8 @@ public static class TechTree
     public static bool IntroducesTheMap(TechCondition condition) =>
         condition is TechCondition.StoneDug or TechCondition.IronDug or TechCondition.IronToolsForged
             or TechCondition.WheatReaped or TechCondition.LeatherHeld or TechCondition.LogsFelled
-            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree or TechCondition.ForageGathered;
+            or TechCondition.CottageFamilyTree or TechCondition.ManorFamilyTree or TechCondition.ForageGathered
+            or TechCondition.LongWalk;
 
     /// <summary>How deep a node sits — the longest chain of <see cref="TechNodeRow.Requires"/> above it.</summary>
     public static int DepthOf(IReadOnlyList<TechNodeRow> nodes, TechNodeRow node)

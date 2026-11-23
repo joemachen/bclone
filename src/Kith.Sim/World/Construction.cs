@@ -438,6 +438,14 @@ public enum BuildingKind
     /// holding ale; where adults within reach spend an evening, warm inside. Learned with the brewery. <b>Appended at 32.</b>
     /// </summary>
     Tavern = 32,
+
+    /// <summary>
+    /// The market stall (W14, `market-stand.md §5.1`, D852) — the market at a smaller size, for the far houses: one marketer's
+    /// seat, half the room, half the starting limit a good, a handcart. Its row stores as a market, so every rule a shopper
+    /// or a marketer follows treats it as one; its workplace remembers it is a stall (<c>Workplace.RaisedAs</c>), because the
+    /// marketer's trade works at two buildings. Learned by the long walk (§5.4). <b>Appended at 33.</b>
+    /// </summary>
+    MarketStall = 33,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

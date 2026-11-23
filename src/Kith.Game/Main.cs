@@ -573,6 +573,7 @@ public partial class Main : Control
         GD.Print(TheMomentSpeaksInParagraphs());
         GD.Print(TheAlertLeavesTheVillageAt1x());
         GD.Print(NothingUnlearnedIsOffered());
+        GD.Print(TheMarketStallWaitsForTheLongWalk());
         GD.Print(ThePersonsCardHoldsItsShape());
         GD.Print(TheCardSaysTheCoat());
         GD.Print(TheSchoolIsSaid());
@@ -2461,6 +2462,7 @@ public partial class Main : Control
     private Button? _schoolButton;
     private Button? _breweryButton;
     private Button? _tavernButton;
+    private Button? _marketStallButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2633,6 +2635,10 @@ public partial class Main : Control
         RefreshALearnedButton(world, BuildingKind.Brewery, JobKind.Brewer, _breweryButton, ref _breweryKnown, ref _breweryTried);
         RefreshALearnedButton(world, BuildingKind.Tavern, JobKind.TavernKeeper, _tavernButton, ref _tavernKnown, ref _tavernTried);
 
+        // ⭐ The market stall, learned by the long walk (W14, `market-stand.md §5.4`) — lit until the first is marked. No trade:
+        // the marketer already works at the market, so only a stall's own site marks it tried.
+        RefreshALearnedButton(world, BuildingKind.MarketStall, null, _marketStallButton, ref _marketStallKnown, ref _marketStallTried);
+
         // ⭐ The bridges (D546): the wooden one when the village has held enough people, the stone one when
         // feet have crossed enough — lit until the first is marked, as the quarry's. No trade works there.
         RefreshALearnedButton(world, BuildingKind.Bridge, null, _bridgeButton, ref _bridgeKnown, ref _bridgeTried);
@@ -2699,6 +2705,8 @@ public partial class Main : Control
     private bool _breweryTried;
     private bool _tavernKnown;
     private bool _tavernTried;
+    private bool _marketStallKnown;
+    private bool _marketStallTried;
     private bool _bridgeKnown;
     private bool _bridgeTried;
     private bool _stoneBridgeKnown;
@@ -3590,8 +3598,11 @@ public partial class Main : Control
         {
             (JobKind kind, Label maximum, Label name) = _professionReadouts[i];
 
-            int working = WorkingAt(world, kind);
-            int seats = SeatsFor(world, kind);
+            // ⭐ The stalls' own marketers are outside the professions number (W14, D852), so the row counts the market's and
+            // says the stalls' apart — the number in the box never reads as overrun by a keeper it does not govern.
+            (int atStalls, int stallSeats) = kind == JobKind.Marketer ? StallKeepersAndSeats(world) : (0, 0);
+            int working = WorkingAt(world, kind) - atStalls;
+            int seats = SeatsFor(world, kind) - stallSeats;
             int? asked = world.JobLimits.For(kind);
 
             // The MAX half of the ASSIGNED / MAX cell. It cannot be written once at construction:
@@ -3611,6 +3622,11 @@ public partial class Main : Control
             if (asked is int wanted && wanted != working)
             {
                 row += $" · {working} working of {wanted} asked";
+            }
+
+            if (stallSeats > 0)
+            {
+                row += $" · and {atStalls} of {stallSeats} at the {(stallSeats == 1 ? "stall" : "stalls")}, each its own";
             }
 
             // ⛔⛔ NO ALERTS ON THIS PANEL (D379, Joe: *"the alert is on again and it doesn't make
@@ -7808,6 +7824,68 @@ public partial class Main : Control
     private VBoxContainer _professionsBody = null!;
 
     /// <summary>How many people are actually on this kind of work right now.</summary>
+    /// <summary>
+    /// Probe <c>market stall:</c> (W14, `market-stand.md §5.5`) — the stall is not offered at the founding (it is learned by the
+    /// long walk); posed learned in the view only (never in the sim) it is, on the Storage tab; it draws in the market's tone,
+    /// not a modder's grey; and the founding's professions row says no stall. Put back after.
+    /// </summary>
+    private string TheMarketStallWaitsForTheLongWalk()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        if (world.IsUnlocked(BuildingKind.MarketStall) || EarnedYet(BuildingKind.MarketStall))
+        {
+            faults.Add("the founding offers a stall nobody has walked for");
+        }
+
+        if (_marketStallButton is null)
+        {
+            faults.Add("the bar has no stall button");
+        }
+
+        bool was = _marketStallKnown;
+        _marketStallKnown = true;
+        RefreshTheStrip();
+        if (!EarnedYet(BuildingKind.MarketStall))
+        {
+            faults.Add("posed learned, the stall is still not offered");
+        }
+
+        _marketStallKnown = was;
+        RefreshTheStrip();
+
+        if (BuildingGlyph.ColourOf(BuildingKind.MarketStall) != VillageMap.MarketTone)
+        {
+            faults.Add("the stall's glyph is not in the market's tone");
+        }
+
+        if (StallKeepersAndSeats(world) != (0, 0))
+        {
+            faults.Add("the founding counts a stall's keeper");
+        }
+
+        return faults.Count == 0
+            ? "[widths] market stall: ✅ not offered at the founding, offered once learned (posed in the view), in the market's tone, no stall keeper counted"
+            : $"[widths] market stall: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>The marketers at market stalls and the stalls' seats (W14, D852) — outside the professions number.</summary>
+    private static (int Working, int Seats) StallKeepersAndSeats(SimWorld world)
+    {
+        int working = 0;
+        int seats = 0;
+        foreach (Workplace workplace in world.Workplaces)
+        {
+            if (workplace.Kind == JobKind.Marketer && !workplace.IsSite && world.BuildingKindOf(workplace) == BuildingKind.MarketStall)
+            {
+                working += workplace.WorkerIds.Count;
+                seats += workplace.Places;
+            }
+        }
+
+        return (working, seats);
+    }
+
     private static int WorkingAt(SimWorld world, JobKind kind)
     {
         int count = 0;
@@ -8281,6 +8359,10 @@ public partial class Main : Control
             {
                 _tavernButton = button;
             }
+            else if (kind == BuildingKind.MarketStall)
+            {
+                _marketStallButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -8498,7 +8580,7 @@ public partial class Main : Control
             // the ground, and a village with nowhere to put things cannot begin.
             // ⭐ And the post beside the market (D596): both are where goods go to leave the stores.
             BuildingKind.Pile or BuildingKind.Granary or BuildingKind.Warehouse
-                or BuildingKind.Market or BuildingKind.TradingPost => BuildCategory.Storage,
+                or BuildingKind.Market or BuildingKind.MarketStall or BuildingKind.TradingPost => BuildCategory.Storage,
 
             // ⭐ ITS OWN GROUP, BECAUSE IT IS ITS OWN KIND OF DECISION (Phase 4). Everything else
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
@@ -8650,6 +8732,9 @@ public partial class Main : Control
         // ⛔ The brewery's and the tavern's arms (W3) — without them `_ => true` offers both at the founding.
         BuildingKind.Brewery => _breweryKnown,
         BuildingKind.Tavern => _tavernKnown,
+
+        // ⛔ The market stall's arm (W14) — without it `_ => true` offers a stall at the founding.
+        BuildingKind.MarketStall => _marketStallKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

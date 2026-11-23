@@ -90,6 +90,15 @@ public sealed record JobRow
     public BuildingKind? WorksAt { get; init; }
 
     /// <summary>
+    /// The other buildings this trade staffs (W14, D852: the marketer at the market stall as well as the market) — still
+    /// on the job, so the relation is stated in one place and <see cref="BuildingsCatalog.EmployedBy(BuildingKind)"/>
+    /// indexes both columns backwards. <see cref="WorksAt"/> stays the trade's own building, the one a workplace is
+    /// taken to stand in unless it says otherwise (<c>Workplace.RaisedAs</c>).
+    /// </summary>
+    [JsonPropertyName("also_works_at")]
+    public IReadOnlyList<BuildingKind> AlsoWorksAt { get; init; } = Array.Empty<BuildingKind>();
+
+    /// <summary>
     /// Whose stock limit stands this trade down, or null for a trade no limit reaches.
     /// </summary>
     /// <remarks>

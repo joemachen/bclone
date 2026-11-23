@@ -43,6 +43,26 @@ public sealed partial class SimWorld
     /// <summary>Whether each tile is the deck of a <em>failing</em> bridge — a leg over it takes longer (`building-condition.md §4.4`). Derived, never hashed.</summary>
     private bool[]? _deckSlow;
 
+    /// <summary>
+    /// ⭐ The walls a deck stands on its sides (D858) — N 1, E 2, S 4, W 8, by map-order index; derived with the deck, never
+    /// hashed (a derived index restates the bridges, D335).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Joe, playing Millbrook: <i>"villagers "Stairstep" across the diagonal wooden bridge."</i> Its bank runs alongside the deck,
+    /// and the routing let a walker step onto any deck tile from any land tile beside it — so they boarded and left mid-span,
+    /// never passed an end, and D705's end-to-end aim never fired: 38 of 44 crossings on a copy of his save went tile centre to
+    /// tile centre, up to 0.7 of a tile off the deck.
+    /// </para>
+    /// <para>
+    /// ⭐ <b>A deck is boarded and left only at its two ends.</b> Every edge between a water deck tile and a tile its bridge does
+    /// not hold is walled, on both sides — so the routing, the leg (<c>LineOfSight</c>) and every step's
+    /// wall guard read it as they read a fence, with no new reader: the way a door is walls on a building's other edges (D623).
+    /// A bridge's own dry tiles at its ends are its, so the walk from the end tile onto the first plank is never walled.
+    /// </para>
+    /// </remarks>
+    private byte[]? _deckWalls;
+
     private int _bridgeIndexBuiltAt = -1;
 
     /// <summary>
@@ -63,6 +83,41 @@ public sealed partial class SimWorld
     /// </summary>
     public bool IsWalkable(GridPos tile) =>
         Map.Contains(tile) && (TerrainRules.IsPassable(Map.TerrainAt(tile)) || DeckOn(tile) != 0);
+
+    /// <summary>The walls a deck stands on this tile's edges (D858) — 0 off every deck's sides. Read into <c>WallsOn</c>.</summary>
+    internal byte DeckWallsOn(GridPos tile)
+    {
+        RebuildTheBridgeIndexIfStale();
+        int index = IndexOfTile(tile);
+        return index < 0 ? (byte)0 : _deckWalls![index];
+    }
+
+    /// <summary>
+    /// Wall every side of a deck tile that faces ground its bridge does not hold, from both sides (D858) — called by the index
+    /// rebuild, once a deck tile, never per tick. ⭐ No end is ever walled because no end is ever deck: a bridge begins and ends
+    /// on dry land (<see cref="BridgeLineFrom"/>), so its two end tiles are its own, the step from each onto the first plank is
+    /// within the bridge, and the bank meets the bridge there and nowhere else. (A first draft skipped the end tiles here; the
+    /// red-check scored zero on it, because the case cannot happen — deleted, D858.)
+    /// </summary>
+    private void WallTheDeckSides(Bridge bridge, GridPos deck)
+    {
+        int here = IndexOfTile(deck);
+        foreach ((int dx, int dy) in new[] { (0, -1), (1, 0), (0, 1), (-1, 0) })
+        {
+            var beside = new GridPos(deck.X + dx, deck.Y + dy);
+            if (bridge.Holds(beside))
+            {
+                continue;
+            }
+
+            _deckWalls![here] |= ZoneMap.EdgeBit(dx, dy);
+            int there = IndexOfTile(beside);
+            if (there >= 0)
+            {
+                _deckWalls[there] |= ZoneMap.EdgeBit(-dx, -dy);
+            }
+        }
+    }
 
     /// <summary>Whether a bridge, finished or still a site, lands on or crosses this tile — nothing else may stand there.</summary>
     public bool BridgeLandsOn(GridPos tile)
@@ -115,9 +170,11 @@ public sealed partial class SimWorld
         _deckCost ??= new byte[tiles];
         _bridgeLands ??= new bool[tiles];
         _deckSlow ??= new bool[tiles];
+        _deckWalls ??= new byte[tiles];
         System.Array.Clear(_deckCost);
         System.Array.Clear(_bridgeLands);
         System.Array.Clear(_deckSlow);
+        System.Array.Clear(_deckWalls);
 
         for (int i = 0; i < Bridges.Count; i++)
         {
@@ -140,6 +197,7 @@ public sealed partial class SimWorld
                 {
                     _deckCost[index] = cost;
                     _deckSlow[index] = slow;
+                    WallTheDeckSides(Bridges[i], under[t]);
                 }
             }
         }

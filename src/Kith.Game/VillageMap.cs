@@ -2276,7 +2276,8 @@ public partial class VillageMap : Control
     /// </remarks>
     private string TheMarketsServiceArea()
     {
-        if (_building != BuildingKind.Market || _world is null || !_world.Map.Contains(_hovered))
+        // ⭐ And the market stall (W14): the homes it would serve are what it is for — the placement aid is the card's sentence.
+        if (_building is not (BuildingKind.Market or BuildingKind.MarketStall) || _world is null || !_world.Map.Contains(_hovered))
         {
             return string.Empty;
         }
@@ -3708,7 +3709,7 @@ public partial class VillageMap : Control
     /// </remarks>
     private void DrawTheHomesThisMarketWouldServe()
     {
-        if (_building != BuildingKind.Market || _world is null)
+        if (_building is not (BuildingKind.Market or BuildingKind.MarketStall) || _world is null)
         {
             return;
         }
@@ -4899,9 +4900,23 @@ public partial class VillageMap : Control
         // beside an orange one draws on top — the later instruction is the one that stands.
         Keep(destroy, Layer.Destroy, DestroyEdge, owner: 0, waiting: false);
 
+        // ⭐ WHOSE EACH CELL IS, so every building's ground is drawn kept clear of every other's (D857, Joe's Millbrook: a field
+        // in a quarry's notch, apart in the sim and overlapping on the screen). Built once a rebuild, never per frame.
+        var ownerOfCell = new Dictionary<Vector2I, int>();
         for (int i = 0; i < owners.Count; i++)
         {
-            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false);
+            foreach (Vector2I cell in byOwner[owners[i]])
+            {
+                ownerOfCell[cell] = owners[i];
+            }
+        }
+
+        for (int i = 0; i < owners.Count; i++)
+        {
+            int ownerHere = owners[i];
+            bool SomebodyElses(Vector2I cell) => ownerOfCell.TryGetValue(cell, out int other) && other != ownerHere;
+
+            Keep(byOwner[owners[i]], Layer.WorkGround, WorkGroundEdge, owners[i], waiting: false, keepClearOf: SomebodyElses);
 
             // ⭐⭐ A FARM'S FIELD IS ITS PAINT, FILLED ALONG THE SAME CURVE (D352). Joe: *"when the
             // farm land is painted with the round brush, the brush itself is round, but it still
@@ -4941,7 +4956,7 @@ public partial class VillageMap : Control
                     }
                 }
 
-                List<Vector2[]> loops = ZoneOutline.Trace(field, SubTile.PerTile);
+                List<Vector2[]> loops = ZoneOutline.Trace(field, SubTile.PerTile, keepClearOf: SomebodyElses);
                 Vector2[] traced = ZoneOutline.Fill(loops);
                 KeepTraced(traced, Terrain.Field, 0);
                 foreach ((byte crop, HashSet<Vector2I> cells) in sown)
@@ -4986,7 +5001,7 @@ public partial class VillageMap : Control
 
                 if (worked.Count > 0)
                 {
-                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile)), seam, 0);
+                    KeepTraced(ZoneOutline.Fill(ZoneOutline.Trace(worked, SubTile.PerTile, keepClearOf: SomebodyElses)), seam, 0);
                 }
             }
         }
@@ -5052,9 +5067,9 @@ public partial class VillageMap : Control
         // ⚠️ The LAYER is stored, not inferred from the colour (D340). The three
         // toggles have to hide a border and its wash together, and *"whichever loops came out
         // `HarvestEdge`"* is a coincidence of palette rather than a fact about the layer.
-        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting)
+        void Keep(HashSet<Vector2I> tiles, Layer layer, Color edge, int owner, bool waiting, Func<Vector2I, bool>? keepClearOf = null)
         {
-            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile);
+            List<Vector2[]> loops = ZoneOutline.Trace(tiles, SubTile.PerTile, keepClearOf: keepClearOf);
             foreach (Vector2[] loop in loops)
             {
                 _zoneOutlines.Add((layer, edge, loop));
