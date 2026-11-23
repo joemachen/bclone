@@ -34,6 +34,12 @@ internal enum YardKind
     Cottage,
     Manor,
     FoundersCart,
+
+    /// <summary>W3's brewery (A199, `tavern-and-brewery-art.md §3.1`): its copper, mash tun and casks.</summary>
+    Brewery,
+
+    /// <summary>W3's tavern (A199, §3.2): its sign, trestle and benches, its ale by the door.</summary>
+    Tavern,
 }
 
 /// <summary>
@@ -118,6 +124,9 @@ public partial class VillageMap
         Handcarts,
         Hay,
         Tools,
+
+        /// <summary>The tavern's ale (A199).</summary>
+        Ale,
     }
 
     /// <summary>
@@ -133,9 +142,12 @@ public partial class VillageMap
         YardKind.Warehouse => (StockRead.HeldLessCarts, StockRead.Handcarts, false),
         YardKind.Market or YardKind.TradingPost => (StockRead.Held, StockRead.None, false),
         YardKind.Barn => (StockRead.Hay, StockRead.None, false),
+
+        // ⭐ The tavern keeps its ale in its own store (A199, §3.2): casks by the door, by level.
+        YardKind.Tavern => (StockRead.Ale, StockRead.None, false),
         YardKind.FoundersCart => (StockRead.Edible, StockRead.Tools, false),
         YardKind.Woodcutter or YardKind.Builder or YardKind.Forager or YardKind.Smith or YardKind.Quarry or YardKind.Mine
-            or YardKind.Bakery or YardKind.Tailor or YardKind.Mill => (StockRead.None, StockRead.None, true),
+            or YardKind.Bakery or YardKind.Tailor or YardKind.Mill or YardKind.Brewery => (StockRead.None, StockRead.None, true),
         _ => (StockRead.None, StockRead.None, false),
     };
 
@@ -153,6 +165,7 @@ public partial class VillageMap
         StockRead.Handcarts => store[Goods.Handcart],
         StockRead.Hay => store[Goods.Hay],
         StockRead.Tools => store[Goods.Tools],
+        StockRead.Ale => store[Goods.Ale],
         _ => 0,
     };
 
@@ -260,7 +273,8 @@ public partial class VillageMap
     // ------------------------------------------------------------------ the layouts (§3)
 
     /// <summary>Where the roof stands and where the yard is, in the building's frame (§3).</summary>
-    internal readonly record struct YardLayout(Vector2 RoofAt, float RoofHw, float RoofHd, Vector2 YardAt, Vector2 YardAlong, float YardLong, float YardShort)
+    /// <remarks><paramref name="DoorAt"/>: where the door is along a front strip, as P's fraction (A199: the tavern's sign stands by it).</remarks>
+    internal readonly record struct YardLayout(Vector2 RoofAt, float RoofHw, float RoofHd, Vector2 YardAt, Vector2 YardAlong, float YardLong, float YardShort, float DoorAt = 0f)
     {
         /// <summary>A point in the yard by fractions (−1..1) along and across it.</summary>
         public Vector2 P(float along, float across) =>
@@ -317,7 +331,7 @@ public partial class VillageMap
             }
 
             case YardKind.Smith or YardKind.Quarry or YardKind.Mine or YardKind.Workshop or YardKind.Bakery or YardKind.Tailor
-                or YardKind.TradingPost or YardKind.Barn:
+                or YardKind.TradingPost or YardKind.Barn or YardKind.Brewery:
             {
                 float roofHalf = longHalf * (yard == YardKind.Barn ? 0.68f : 0.8f);
                 float roofCentre = sx * (longHalf - roofHalf);
@@ -326,7 +340,7 @@ public partial class VillageMap
                 return Make(longAxis * roofCentre, roofHalf, shortHalf, longAxis * (inner - (sx * yardLong)), longAxis, yardLong, fullShort);
             }
 
-            case YardKind.Granary or YardKind.Warehouse or YardKind.Library or YardKind.TownHall or YardKind.Farmhouse:
+            case YardKind.Granary or YardKind.Warehouse or YardKind.Library or YardKind.TownHall or YardKind.Farmhouse or YardKind.Tavern:
             {
                 // A strip on the door's side; the roof at the back. The strip runs across the door's way.
                 Vector2 way = DominantAxis(doorOut);
@@ -345,7 +359,7 @@ public partial class VillageMap
                 float yardDepth = (fullDepth - inner) / 2f;
                 float roofHw = wayIsX ? roofDepthHalf : roofWidthHalf;
                 float roofHd = wayIsX ? roofWidthHalf : roofDepthHalf;
-                return new YardLayout(roofAt, roofHw, roofHd, way * (inner + yardDepth), across, fullWidth, yardDepth);
+                return new YardLayout(roofAt, roofHw, roofHd, way * (inner + yardDepth), across, fullWidth, yardDepth, Mathf.Clamp(doorLocal.Dot(across) / fullWidth, -1f, 1f));
             }
 
             case YardKind.Forager or YardKind.Forester or YardKind.Fisher:
@@ -1617,6 +1631,14 @@ public partial class VillageMap
                 Paving(k, l.YardAt, l.YardLong * 0.97f, l.YardShort, t, seed);
                 NoticeBoard(k, l.P(-0.6f, 0f), t);
                 Bench(k, l.P(0.25f, 0.4f), t);
+                break;
+
+            case YardKind.Brewery:
+                BreweryYard(k, l, s, seed);
+                break;
+
+            case YardKind.Tavern:
+                TavernYard(k, l, s, seed);
                 break;
 
             case YardKind.Well:

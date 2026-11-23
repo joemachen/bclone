@@ -279,6 +279,9 @@ public partial class VillageMap
                 (YardKind.Quarry, StockRead.None, StockRead.None, true), (YardKind.Mine, StockRead.None, StockRead.None, true),
                 (YardKind.Bakery, StockRead.None, StockRead.None, true), (YardKind.Tailor, StockRead.None, StockRead.None, true),
                 (YardKind.Mill, StockRead.None, StockRead.None, true),
+
+                // W3's (A199, `tavern-and-brewery-art.md §3`): the tavern keeps its ale; a brewery's batch keeps nothing.
+                (YardKind.Tavern, StockRead.Ale, StockRead.None, false), (YardKind.Brewery, StockRead.None, StockRead.None, true),
             };
             foreach (YardKind y in Enum.GetValues<YardKind>())
             {
@@ -341,7 +344,7 @@ public partial class VillageMap
             // ⭐ The stock piles' line rides on this one (A159): the probe's list is `Main.cs`, the systems lane's.
             return (faults.Count == 0
                 ? $"[widths] building yards: ✅ twelve stock things drawn only with their stock (the founders' cart's food and tools among them) and eleven piles only while working (§2's table); the dressing always, the founders' cart a wagon with its wheels, bed, shafts and canvas; every yard thing on its building's ground at four turns ({checkedKinds} kinds), the fishing hut's dock out on its water's side and none without water; the roof on the door's half, the step past its eave; a home's things on its plot and off its house, the woodpile longer with each level, a larder of its level, no vegetable beds, for the cabin, cottage and manor; the fences by tier; the pen's strokes inside their roof for seven materials, thinned under 3 px, hatching only in shade; the parked cart a cart; §2's table of what each yard reads, and each read its own good; the levels at 1, 5, 20, 60; a field stops at a building, every stage (A142)"
-                : $"[widths] building yards: ⛔ {string.Join("; ", faults)}") + "\n" + TheStockPilesHold();
+                : $"[widths] building yards: ⛔ {string.Join("; ", faults)}") + "\n" + TheStockPilesHold() + "\n" + TheTavernAndBreweryHold();
         }
         catch (System.Exception e)
         {

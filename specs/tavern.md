@@ -297,7 +297,8 @@ when it is not.
 - **Villager states:** *brewing* (the shared batch state — the building's own look), *carrying ale* (the keeper with a
   cask — the one new carried look), *keeping the tavern* (indoors), *walking to the tavern* (an ordinary walk), *at the
   tavern* (indoors; nothing drawn but the lit window).
-- Until the art lands: both buildings draw in the generic workshop look, ale in a stand-in colour (`ui icons:` ⛔ until
+- ✅ *Drawn (the art lane's A199–A200, `tavern-and-brewery-art.md`): the two buildings, their yards, the lamplight and the
+  copper's steam; the cask and the figures still asked.* Until the art lands: both buildings draw in the generic workshop look, ale in a stand-in colour (`ui icons:` ⛔ until
   the icon is in `main` — the barley precedent, D827–D830).
 
 ## 10. Joe's calls — answered 2026-11-22
