@@ -11205,6 +11205,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
     herdsman). Then the merge into `main` at his word, and W3 takes `main` (and the two colours, on its branch).**
     ✅ **His *"Yes, merge them"* (the look and the recommended colours) — MERGED INTO `main` (A183, `ddcd161`), pushed at his *"Push main"* (A184, `origin/main` = `a35d65c`). ▶️ W3
     takes `main`, sets ale and the brewer to `#9a5e14` and the keeper to `#8a2f3e`, and re-imports. Done for the art lane.**
+    (n) **W14's market stall — its build-bar icon (with its owed form) and, after W14 merges, its painted look on the map** —
+    🔨 **being built on `art`** (A193, 2026-11-22, Joe's pick via the coordinator: *"The stall's art"*). W14's request
+    (`slice/w14-market-stand`'s HANDOFF, *"ART LANE — W14'S MARKET STALL"*; `market-stand.md §8`): 2×1, in the market's family
+    but plainly smaller, an awning and a counter, not a hall; its icon beside the market's. The slice's `ui icons:` is ⛔ on
+    `buildings/market-stall` and `-owed` until they are in. ⚠️ The map's painted look keys on `BuildingKind.MarketStall`, which
+    exists only on the slice: that half waits for W14 in `main` and `main` in `art`.
   - 🎨 **ART LANE — BARLEY'S PAINTINGS** (asked 2026-11-21 by the W7 systems session at Joe's word) — 🔨 **being built on
     `art`** (2026-11-21, Joe's *"Start barley art"*; ✍️ painted and mocked A162, `painted-crops.md §9`, mocks in
     `D:\Projects\brushes\barley\`; ✅ his *"All as recommended"* and the files in, A163; ✅ **merged into `main`** at his *"Merge art first"*, A164, not pushed — warm ripe, `#cbbb7c` (in on W7's
