@@ -157,6 +157,8 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.FetchingAle => "fetching ale for the tavern",
         VillagerState.CarryingAle => "carrying ale to the tavern",
         VillagerState.KeepingTheTavern => "keeping the tavern",
+        VillagerState.WalkingToTheLibrary => "walking to the library",
+        VillagerState.AtTheLibrary => "at the library",
         VillagerState.WalkingOutToTend => "walking out to tend the field",
         VillagerState.Tending => "tending the field",
         VillagerState.WalkingBackToTheSteading => "walking back to the steading",
@@ -509,6 +511,22 @@ public sealed partial class BehaviorSystem : ISimSystem
                 }
 
                 Travel(world, villager, tavern.Position, keeper ? VillagerState.KeepingTheTavern : VillagerState.AtTheTavern);
+                return;
+            }
+
+            case VillagerState.WalkingToTheLibrary:
+            {
+                // To the library they set off for, fixed at departure. Fallen in or gone on the way, and they turn for home.
+                Library? library = world.LibraryAt(new GridPos(villager.ErrandX, villager.ErrandY));
+                if (library is null || library.Closed)
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, library.Position, VillagerState.AtTheLibrary);
                 return;
             }
 
@@ -2684,6 +2702,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                 return;
             }
 
+            // ⭐ And paper from the library for a letter to kin (`library-borrowing.md §5.1`) — the family's errand, last.
+            if (TryFetchPaper(world, villager))
+            {
+                return;
+            }
+
             villager.State = VillagerState.Resting;
             villager.ActionTicksRemaining = world.Config.RestTicks;
             return;
@@ -3930,6 +3954,12 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         // ⭐ And an evening at the tavern, as a spell begins at home (W3, `tavern.md §5.4b`) — after the water and the tend.
         if (TryGoToTheTavern(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ And paper from the library, as a spell begins at home (`library-borrowing.md §5.1`) — after the tavern.
+        if (TryFetchPaper(world, villager))
         {
             return;
         }
@@ -5790,6 +5820,13 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ THE LIBRARY (`library-borrowing.md §5.1`): paper taken, if it is still open.
+        if (onArrival == VillagerState.AtTheLibrary)
+        {
+            ArriveAtTheLibrary(world, villager);
+            return;
+        }
+
         if (onArrival == VillagerState.WorkingABatch)
         {
             BeginBatches(world, villager);
@@ -5944,6 +5981,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (!atTheSteading)
         {
             UnloadAtHome(world, villager);
+
+            // ⭐ Paper from the library is a letter once it is home (`library-borrowing.md §5.1`) — at their own door only.
+            if (villager.CarryingPaper && villager.Tile == world.HomePlaceOf(villager))
+            {
+                WriteTheLetter(world, villager);
+            }
 
             // ⭐ And the household's cart is parked at the door (`handcart.md §4`) — `RestPointFor` sends a pusher home,
             // never to the steading, so this is the one place a cart comes to rest. The works' cart never rests here (§13.2).
@@ -6154,6 +6197,87 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.State = VillagerState.WalkingToTheTavern;
         Travel(world, villager, tavern.Position, VillagerState.AtTheTavern);
         return true;
+    }
+
+    /// <summary>
+    /// ⭐ Paper from the library (`library-borrowing.md §5.1`; Joe's calls 1 and 3, D865): offered where a rest at home begins, after
+    /// the tavern, to any adult at home whose household is writing (<see cref="SimWorld.HouseholdIsWriting"/> — letters on, a spare
+    /// bed) and has not taken paper for <c>letter_every_days</c>, with an open library within <c>library_reach_tiles</c> and nobody
+    /// of the household already on the walk. An errand, never a rest; the walk home is the ordinary <see cref="GoHome"/>.
+    /// </summary>
+    private static bool TryFetchPaper(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying || villager.CarryingPaper || villager.State == VillagerState.Left)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        if (!household.HasHome || villager.Tile != world.HomePlaceOf(villager) || !world.HouseholdIsWriting(household))
+        {
+            return false;
+        }
+
+        if (household.LastLetterDay > 0 && world.Today - household.LastLetterDay < world.Config.LetterEveryDays)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < household.MemberIds.Count; i++)
+        {
+            if (world.FindVillager(household.MemberIds[i]) is { } other && other.Id != villager.Id
+                && (other.CarryingPaper || other.State is VillagerState.WalkingToTheLibrary or VillagerState.AtTheLibrary))
+            {
+                return false;
+            }
+        }
+
+        if (world.LibraryWithinReachOf(household) is not Library library)
+        {
+            return false;
+        }
+
+        villager.ActionTicksRemaining = 0;
+        villager.ErrandX = library.Tile.X;
+        villager.ErrandY = library.Tile.Y;
+        villager.State = VillagerState.WalkingToTheLibrary;
+        Travel(world, villager, library.Position, VillagerState.AtTheLibrary);
+        return true;
+    }
+
+    /// <summary>At the library (§5.1): paper taken while it stands open, the day counted on the household; then a short sit.</summary>
+    private static void ArriveAtTheLibrary(SimWorld world, Villager villager)
+    {
+        Library? library = world.LibraryAt(new GridPos(villager.ErrandX, villager.ErrandY));
+        if (library is null || library.Closed || !world.LettersEnabled)
+        {
+            villager.ErrandX = 0;
+            villager.ErrandY = 0;
+            GoHome(world, villager);
+            return;
+        }
+
+        villager.CarryingPaper = true;
+        world.HouseholdOf(villager).LastLetterDay = world.Today;
+        villager.State = VillagerState.AtTheLibrary;
+        villager.ActionTicksRemaining = world.Config.LibrarySitTicks;
+    }
+
+    /// <summary>
+    /// Home with paper (§5.1): the letter is written, the household's count rises, and the first letter of a household's writing
+    /// is said once in the log.
+    /// </summary>
+    private static void WriteTheLetter(SimWorld world, Villager villager)
+    {
+        villager.CarryingPaper = false;
+        Household household = world.HouseholdOf(villager);
+        household.LettersWritten++;
+        if (household.LettersWritten == 1)
+        {
+            world.Narrate(
+                $"{villager.FullName} wrote to kin in the lowlands. {world.Clock.SeasonAndYear()}.",
+                Logging.LogCategory.Life);
+        }
     }
 
     /// <summary>Arrived on a tavern's errand (W3): a drinker sits down to a cup; the keeper takes an armful or puts it in.</summary>
@@ -7853,6 +7977,13 @@ public sealed partial class BehaviorSystem : ISimSystem
             case VillagerState.AtSchool:
             case VillagerState.Teaching:
                 villager.State = VillagerState.TravelingHome;
+                return;
+
+            // ⭐ Paper taken (`library-borrowing.md §5.1`): home, the ordinary way — the letter is written at the door.
+            case VillagerState.AtTheLibrary:
+                villager.ErrandX = 0;
+                villager.ErrandY = 0;
+                GoHome(world, villager);
                 return;
 
             // ⭐ An evening spent (W3): home, the ordinary way — `GoHome`, never a rest at the tavern (HANDOFF's D513 trap: a

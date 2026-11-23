@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order.** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -318,7 +318,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 
 ## 7. Build order — one step a commit, TDD
 
-1. **The walk** — `library_reach_tiles`, `letter_every_days`, `library_sit_ticks`, `letters_enabled` (validated); the switch; `WalkToTheLibrary`, the
+1. ✅ **The walk** (D866) — `library_reach_tiles`, `letter_every_days`, `library_sit_ticks`, `letters_enabled` (validated); the switch; `WalkToTheLibrary`, the
    offer, the two states, paper home, `LettersWritten`; the library's card count and its letters-waiting line. Guards: an adult in reach walks there and
    back and the count rises; out of reach, a full house, a closed library, a child — nobody goes; the card counts.
 2. **The answer** — `letters_answered_within`, `letters_generation_years`; the hashed letter; the bed and food gates; kin

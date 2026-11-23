@@ -1089,6 +1089,17 @@
   "tavern_sit_ticks": 2,
   "tavern_stock": 20,
 
+  // THE LIBRARY'S BORROWING (specs/library-borrowing.md, D864-D865; Joe: "All five
+  // calls as recommended"). An adult whose home is within library_reach_tiles of an
+  // open library (the tavern's 12, the walk in the one cost field) walks there from
+  // a rest at home and carries paper home; the letter is written at the door, a
+  // season apart while the household has a spare bed. letters_enabled is where the
+  // village's own switch starts (the library card's toggle, his addition 2).
+  "library_reach_tiles": 12,
+  "letter_every_days": 30,
+  "library_sit_ticks": 2,
+  "letters_enabled": true,
+
   // THE TAILOR'S SHOP (clothing.md 3.5-3.6, D659): leather to coats, the mill's
   // batch shape. Half a hunt's hide a coat; a sew between a bake (4) and a hunt
   // (15); two a stint. Learned at fifty leather handled -- about five hunts, the

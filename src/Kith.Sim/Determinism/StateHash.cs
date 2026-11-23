@@ -336,6 +336,20 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)household.DryDaysThisSeason);
             }
 
+            // ⭐ THE LIBRARY'S BORROWING (`library-borrowing.md §6`): sparse and tagged, so a household that never wrote hashes
+            // as it did before there were letters.
+            if (household.LettersWritten != 0)
+            {
+                hash = MixByte(hash, 0x92);
+                hash = MixUInt32(hash, (uint)household.LettersWritten);
+            }
+
+            if (household.LastLetterDay != 0)
+            {
+                hash = MixByte(hash, 0x93);
+                hash = MixUInt32(hash, (uint)household.LastLetterDay);
+            }
+
             if (household.HomePosition is not null)
             {
             }
@@ -1039,6 +1053,12 @@ public static class StateHash
             hash = MixByte(hash, 0x6A);
         }
 
+        // The letters switch (D865, the Nomads switch's shape): mixed only when it is off.
+        if (!world.LettersEnabled)
+        {
+            hash = MixByte(hash, 0x6B);
+        }
+
         // ---- Trade (D590, `trade.md §11` commit 1) ----
         // ⭐ ALL SPARSE, AND THAT IS WHAT HOLDS THE GOLDENS (`trade.md §11.1`): a village that never set an order, saw a
         // boat or woke the region mixes nothing here at all. Each block under its own tag so two facts cannot collide.
@@ -1455,6 +1475,9 @@ public static class StateHash
         hash = MixSparse(hash, 21u, villager.LastTavernDay);
         hash = MixSparse(hash, 22u, villager.TavernEveningsThisSeason);
         hash = MixSparse(hash, 23u, villager.ContentmentComforts);
+
+        // The library's borrowing: paper in hand on the way home — sparse, so nobody carrying none hashes as before.
+        hash = MixSparse(hash, 24u, villager.CarryingPaper ? 1 : 0);
 
         // Gone from the valley (W2 step 5): sparse, so a village nobody has left hashes as it did. The state is mixed above.
         if (villager.LeftAtTick is ulong left)

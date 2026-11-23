@@ -1251,6 +1251,15 @@ public sealed class Household
     public bool ToppingUpFirewood { get; set; }
 
     /// <summary>
+    /// Letters this household has written to kin in the lowlands (`library-borrowing.md §5.2`) — one each time somebody brings
+    /// paper home from the library. Saved and hashed sparsely (nought when none).
+    /// </summary>
+    public int LettersWritten { get; set; }
+
+    /// <summary>The day (<c>SimWorld.Today</c>) paper was last taken from the library for this household; 0 never.</summary>
+    public int LastLetterDay { get; set; }
+
+    /// <summary>
     /// The water in the household's jar at home (D778, `water-need.md §5` step 2; Joe's call 1A: a number the household
     /// keeps, not a good) — <b>0 for an empty jar</b>.
     /// </summary>
@@ -1376,6 +1385,8 @@ public sealed class Household
         ["handcart_uses"] = HandcartUses,
         ["fire_out_held_until"] = FireOutHeldUntil != 0 ? FireOutHeldUntil : null,
         ["dry_days_this_season"] = DryDaysThisSeason != 0 ? DryDaysThisSeason : null,
+        ["letters_written"] = LettersWritten != 0 ? LettersWritten : null,
+        ["last_letter_day"] = LastLetterDay != 0 ? LastLetterDay : null,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
@@ -1404,6 +1415,8 @@ public sealed class Household
             HandcartUses = save.Int("handcart_uses"),
             FireOutHeldUntil = save.HasValue("fire_out_held_until") ? save.Int("fire_out_held_until") : 0,
             DryDaysThisSeason = save.HasValue("dry_days_this_season") ? save.Int("dry_days_this_season") : 0,
+            LettersWritten = save.HasValue("letters_written") ? save.Int("letters_written") : 0,
+            LastLetterDay = save.HasValue("last_letter_day") ? save.Int("last_letter_day") : 0,
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };
 

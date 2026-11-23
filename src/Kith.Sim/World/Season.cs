@@ -405,6 +405,15 @@ public enum VillagerState
 
     /// <summary>A tavern keeper keeping the tavern — the teacher's lesson's shape, a day, then home (W3).</summary>
     KeepingTheTavern,
+
+    /// <summary>
+    /// Walking to the library for paper (`library-borrowing.md §5.1`) — an errand offered where a rest at home would begin, the
+    /// tavern evening's shape. At the end of the list, so no state saved or hashed moves.
+    /// </summary>
+    WalkingToTheLibrary,
+
+    /// <summary>At the library taking paper — <c>library_sit_ticks</c>, then home with it in hand (§5.1).</summary>
+    AtTheLibrary,
 }
 
 /// <summary>

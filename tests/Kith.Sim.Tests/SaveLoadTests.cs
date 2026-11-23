@@ -327,7 +327,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
             "HandcartsEverMade", "WorkshopLearned", "MarketStallLearned", "HouseholdsThatWalkedFar", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
         (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
@@ -382,7 +382,7 @@ public sealed class SaveLoadTests : IDisposable
             "LeftAtTick",
 
             // The tavern (W3, D836) — saved and hashed sparsely (`TavernTests.EveryTavernFieldIsHashedAndSaved`).
-            "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts",
+            "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts", "CarryingPaper",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
@@ -394,7 +394,7 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse", "WalkedFar",
-            "FireOutHeldUntil", "DryDaysThisSeason",
+            "FireOutHeldUntil", "DryDaysThisSeason", "LettersWritten", "LastLetterDay",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {

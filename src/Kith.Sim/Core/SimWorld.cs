@@ -12481,6 +12481,7 @@ public sealed partial class SimWorld : IObstacles
     {
         Config = config;
         NomadsEnabled = config.NomadsEnabled;
+        LettersEnabled = config.LettersEnabled;
         GoodsCatalog = new GoodsCatalog(config.GoodsCatalog);
         Crops = new CropsCatalog(config.Crops);
         JobsCatalog = new JobsCatalog(config.JobsCatalog);
@@ -15564,6 +15565,7 @@ public sealed partial class SimWorld : IObstacles
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
+            ["letters_enabled"] = LettersEnabled ? null : false,
             ["region_awake_since"] = SaveWriter.Hex(RegionAwakeSince),
             ["trade_keep"] = TradeKeep.ToSave(),
             ["trade_buy"] = TradeBuy.ToSave(),
@@ -15780,6 +15782,7 @@ public sealed partial class SimWorld : IObstacles
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");
+        LettersEnabled = !save.HasValue("letters_enabled") || save.Bool("letters_enabled");
         RegionAwakeSince = save.ULong("region_awake_since");
 
         // Trade and the herd (D590, format 8).
