@@ -31,6 +31,7 @@ namespace Kith.Sim.Tests;
 //          the stand against the walk to the shop it used; the far homes' trips at the stand / at another market / at a
 //          storehouse; trips that PASSED it (turned at a store further from home than the stand); its seat filled share;
 //          the food on its shelf (min / mean) and the ticks its shelf held less than a cart-load of food.
+// ZZ_REAL=1 (D855) raises the real market stall instead — its own row, its own marketer, no override, no patch.
 // ZZ_SHARD=k/n runs every n-th folder from k (parallel processes after one build).
 // Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --no-build --filter ZzMarketStand --logger "console;verbosity=detailed"`;
 // delete.
@@ -463,9 +464,20 @@ public sealed class ZzMarketStand
         return best;
     }
 
-    /// <summary>A finished market as near <paramref name="near"/> as one will stand, told D839's shape.</summary>
+    /// <summary>
+    /// A finished market as near <paramref name="near"/> as one will stand, told D839's shape — or, with ZZ_REAL=1 (D855, §7
+    /// step 5), the real <c>BuildingKind.MarketStall</c>, learned, raised by its own row and left as built: its own seat, its own
+    /// limits, no override. Either way a new cart, so the two arms are told apart only by the rules.
+    /// </summary>
     private static (Workplace?, StoreBuilding?) RaiseTheStand(SimWorld world, GridPos near)
     {
+        bool real = Environment.GetEnvironmentVariable("ZZ_REAL") == "1";
+        BuildingKind kind = real ? BuildingKind.MarketStall : BuildingKind.Market;
+        if (real)
+        {
+            world.MarketStallLearned = true;
+        }
+
         for (int r = 1; r < 20; r++)
         {
             for (int dy = -r; dy <= r; dy++)
@@ -478,13 +490,13 @@ public sealed class ZzMarketStand
                     }
 
                     var at = new GridPos(near.X + dx, near.Y + dy);
-                    if (!world.Map.Contains(at) || world.HasSomethingToHarvest(at) || !world.CanBuildAt(BuildingKind.Market, at).Allowed
-                        || !world.Mark(BuildingKind.Market, at).Allowed)
+                    if (!world.Map.Contains(at) || world.HasSomethingToHarvest(at) || !world.CanBuildAt(kind, at).Allowed
+                        || !world.Mark(kind, at).Allowed)
                     {
                         continue;
                     }
 
-                    Workplace site = world.Workplaces.Single(w => w.Construction?.Kind == BuildingKind.Market && w.Construction.IsFinished == false && w.IsSite && w.Tile.ChebyshevTo(at) <= 2);
+                    Workplace site = world.Workplaces.Single(w => w.Construction?.Kind == kind && w.Construction.IsFinished == false && w.IsSite && w.Tile.ChebyshevTo(at) <= 2);
                     BuildFixtures.StockTheSite(site);
                     for (int i = 0; i <= site.Construction!.Recipe.WorkTicks; i++)
                     {
@@ -495,9 +507,13 @@ public sealed class ZzMarketStand
                     world.Complete(site);
                     Workplace seat = world.Workplaces.Single(w => w.Kind == JobKind.Marketer && w.Tile == stood && !w.IsSite);
                     StoreBuilding store = world.StoreBuildings.Single(s => s.Kind == StoreKind.Market && s.Tile == stood);
-                    store.Store.Capacity = world.Config.MarketStoreCapacity / 2;
-                    store.StartingLimit = world.Config.MarketStartingLimit / 2;
-                    world.SetStaffing(seat, 1);
+                    if (!real)
+                    {
+                        store.Store.Capacity = world.Config.MarketStoreCapacity / 2;
+                        store.StartingLimit = world.Config.MarketStartingLimit / 2;
+                        world.SetStaffing(seat, 1);
+                    }
+
                     seat.HandcartUses = world.Config.HandcartUses;
                     return (seat, store);
                 }

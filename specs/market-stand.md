@@ -155,6 +155,26 @@ limits each tick **out of the storehouses** (no food made), the most a stand cou
 - Alive after five years, stand against untouched: 25 / 26, 77 / 77, 55 / 59 (own counter): within the noise of a
   perturbed run (D777's method was not run here; nothing is claimed for or against).
 
+### 4.3a Measured after — the real stall (D855, §7 step 5)
+
+`ZZ_REAL=1`: the real `BuildingKind.MarketStall`, learned and raised by its own row at the far homes' medoid (2×1, so it
+stood 5–8 ticks off where the 2×2 pose stood 6–13), left as built — step 1's rule alone (no patch), its own marketer outside
+the professions number (Joe's call 2), **the typed number not raised**. Same saves, same 5 years, the same far homes:
+
+| far homes' walking, 5 years (ticks) | untouched | D851's pose (both patch halves, number +1) | **the real stall** | always stocked |
+|---|---|---|---|---|
+| Ashbourne-yarrow-clover-89 | 2,221 | 1,113 | **1,327** (48 of 64 far trips at the stall) | 923 |
+| Hollowmere-honey-harrow-82 | 2,485 | 1,590 | **1,581** (27 of 64) | 1,532 |
+| Oakhaven-sumac-sumac-89 | 4,129 | 3,002 | **3,183** (34 of 104) | 2,149 |
+
+- **⭐ The seat is kept without the player's help:** 100 %, 100 %, 99 % of the watched ticks with the typed number as Joe left
+  it (D851: 35 % in Oakhaven until it was raised). Call 2 doing what he asked.
+- **The far walking falls 23–40 %**, from 1 % better to 19 % worse than the pose that had both patch halves and a raised number; the
+  difference is the patch's load half (D853), which this build does not have.
+- **The keeper still walks** — 80–90 % of their ticks collecting and stocking, as §4.3 said. Alive after five years, stall
+  against untouched: 26 / 26, 75 / 77, 58 / 59 — inside the noise of a perturbed run, nothing claimed.
+- Millbrook-bay-larch-19 is a dead valley (nobody alive): its stall had nobody to seat, and its row is left out.
+
 ### 4.4 What the numbers are not
 
 - **Not Joe's biggest villages.** The D669 villages with 36 homes and 21–27-day trips are format 8–11 and refused; the
@@ -283,7 +303,7 @@ walked to.
 3. **The long walk:** the household bit, the count, the flag, the gate, the sentence; guards for each, red-checked and
    counted (D326).
 4. **The card, the build bar's line, the log lines**; probe lines for the card.
-5. **Measured after** on the same saves (`ZzMarketStand`, the stand raised by the real row): the far walking against §4.3's
+5. ✅ **Measured after (D855, §4.3a)** on the same saves (`ZzMarketStand`, the stand raised by the real row): the far walking against §4.3's
    own-counter column; then the four checks; then Joe's play.
 
 ## 8. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request
