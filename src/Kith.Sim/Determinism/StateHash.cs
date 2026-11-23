@@ -459,6 +459,14 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.HandcartUses);
             }
 
+            // The building a workplace stands in when it is not its trade's own — a marketer's stall (W14, D852). Sparse under
+            // its own tag: a village with no stall hashes as it did before there could be one.
+            if (workplace.RaisedAs is BuildingKind raisedAs)
+            {
+                hash = MixUInt32(hash, 0xF4u);
+                hash = MixUInt32(hash, (uint)raisedAs);
+            }
+
             // ⭐⭐ WHAT A FARM HAS LEARNED IT CAN BRING IN (`per-site-yield.md §4.2a`, D194).
             // It decides how much ground the farm commits every spring, so two runs of one
             // seed that differ in it are different runs and must hash differently.
@@ -774,6 +782,14 @@ public static class StateHash
         if (world.WorkshopLearned)
         {
             hash = MixByte(hash, 0x7F);
+        }
+
+        // ⭐ The market stall's latch (W14, `market-stand.md §6`) — the workshop's shape: a tag byte when learned. ⚠️ THE GAP,
+        // STATED: the count beneath it (`HouseholdsThatWalkedFar`, `Household.WalkedFar`) is a statistic and stays unmixed;
+        // `MarketStandTests.TheLongWalksCountIsNotInTheFingerprint` asserts it on purpose.
+        if (world.MarketStallLearned)
+        {
+            hash = MixByte(hash, 0x8B);
         }
 
         // ⭐ The school's latch (D754), joined at `school-and-education.md §12` step 5 (D766) with the goldens taken once (D152):

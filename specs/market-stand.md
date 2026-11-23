@@ -2,7 +2,8 @@
 
 > Status: **✅ EVERY CALL ANSWERED (D852, 2026-11-22) — Joe: *"a market stand should have its own marketer - only 1 though.
 > everything else i agree with"* — calls 1, 3, 4, 5 as recommended, call 2 his (§5.3). 🔨 Building, §7's order: ✅ step 1, a marketer's own
-> counter first (D853).** *(Read "🔨 Building … nothing built yet" until D853.)* *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
+> counter first (D853); ✅ steps 2–3, the stall and the long walk (D854) — ⏸️ step 4, the view, waits on Joe closing his game.**
+> *(Read "🔨 Building … nothing built yet" until D853, "✅ step 1" until D854.)* *(Read "📏 MEASURED AND SPECCED (D851) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D852.)* Claimed on
 > `slice/w14-market-stand` (Joe: *"start the market stand"*). Built from D839, his shape and his unlock (*"The long walk"*).
 > The instrument is `tools/harness/ZzMarketStand.cs` (§4), run on the newest save of each of his 182 folders (a copy) and on
 > 16 unattended valleys. **⚠️ The measurement found that a stand built on today's market code is not stocked** (§4.3), so
@@ -165,9 +166,15 @@ limits each tick **out of the storehouses** (no food made), the most a stand cou
 
 ## 5. The rule, as proposed
 
-### 5.1 The stand — a building row
+### 5.1 The stand — a building row — ✅ built (D854)
 
-`BuildingKind.MarketStand`, appended. Its row: `Stores = StoreKind.Market`, **`Seats` 1**, **`StoreCapacity` 4,000**,
+`BuildingKind.MarketStall` (*"market stall"* — the code's word; *stand* and *stall* are one building), appended at 33.
+⭐ **The marketer's trade works at two buildings**, which nothing did before: `JobRow.AlsoWorksAt` (on the job, so the relation
+is still stated in one place and `BuildingsCatalog.EmployedBy` indexes both columns), and **`Workplace.RaisedAs`** — the
+building a workplace stands in when it is not its trade's own, the house tiers' precedent (`Household.HomeKind`) — read
+through one door, `SimWorld.BuildingKindOf(Workplace)`, at the seven places that derived a workplace's building from its
+trade (its row for wear, its door, its seam, its name on the map, the refounding count, the must-be-near rule, `KindOf`).
+*As specced:* `BuildingKind.MarketStand`, appended. Its row: `Stores = StoreKind.Market`, **`Seats` 1**, **`StoreCapacity` 4,000**,
 **a starting limit of 500 a good**, footprint **2×1** (call 4), half the market's price (call 4). Knobs in
 `data/sim.config.json`: `market_stand_capacity` 1, `market_stand_store_capacity` 4000, `market_stand_starting_limit` 500,
 `market_stand_logs`, `market_stand_stone`, `market_stand_work_ticks`. The store remembers it is a stand so
@@ -224,7 +231,7 @@ stall — the professions panel asks for 2 marketers and both are at the market.
 with the number full. **(B)** raising a stand raises a typed marketer number by one, said in the log — fewer clicks, but
 the sim would be changing a number the player typed, which nothing in the game does today.
 
-### 5.4 The long walk — call 3
+### 5.4 The long walk — call 3 — ✅ built (D854): `SimWorld.MarketStallLearned`, `HouseholdsThatWalkedFar`, `Household.WalkedFar`; knobs `market_stall_walk_ticks` 40, `market_stall_households` 5; the Lore node *"The market stall"* (`TechCondition.LongWalk`)
 
 **Counted at the counter, not per tick:** when a shopper collects at a store (`CollectFromStore`), and
 `2 × TicksBetween(their home, the store)` is at least **`market_stand_walk_ticks` 40** (10 days), their household is marked
@@ -253,12 +260,12 @@ walked to.
 
 ## 6. Determinism, the hash, saves, goldens
 
-- **Hashed:** `MarketStandLearned` as a tag byte when true (D676). The stand itself is a building and a store, hashed as
+- **Hashed:** `MarketStallLearned` as a tag byte when true (D676; `0x8B`), and a workplace's `RaisedAs` sparsely under `0xF4` (D854). The stand itself is a building and a store, hashed as
   every building and store already is. **Not hashed:** `Household.WalkedFar` and `HouseholdsThatWalkedFar` — statistics the
   flag is set from, `LogsEverFelled`'s shape; the gap (two villages at 2 and 4 households hash alike) is asserted on purpose
   by a guard, as D676's was.
-- **Saved, each only when set:** `market_stand_learned` (the world), `walked_far` (a household),
-  `households_that_walked_far` (the world). **The format stays 13**: a save without them reads as nothing learned and nobody
+- **Saved, each only when set:** `market_stall_learned` (the world; specced as `market_stand_learned`), `walked_far` (a
+  household), `households_that_walked_far` (the world), and `raised_as` on a stall's workplace (D854). **The format stays 13**: a save without them reads as nothing learned and nobody
   walked far, the house tiers' and contentment's precedent (`save-load.md` table). `EveryFieldIsSavedOrNamed` names them.
 - **No golden should move, for four reasons, each checked at the build:** (1) no golden run learns the stand — the control
   never makes a planned 10-day trip in 16 valleys × 50 years (§4.2); (2) the statistics are unhashed; (3) call 1's rule

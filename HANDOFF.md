@@ -22,6 +22,10 @@
 > 🔨 **`slice/w14-market-stand` — W14, THE MARKET STAND (2026-11-22, Joe: *"start the market stand"*), cut from `main` (c42a065).**
 > ✅ **EVERY CALL ANSWERED (D852): four as recommended, and call 2 his — *"a market stand should have its own marketer - only 1
 > though"*: each stall's one seat sits outside the typed marketer number. 🔨 Building, `market-stand.md §7`'s order.**
+> ✅ **Step 1 (D853): a marketer stocks their own market's counter first** — suite 2233 / 0 / 5 in 20m17, no golden moved.
+> ✅ **Steps 2–3 (D854): the market stall (33), its own marketer seated first, the long walk (10 days × 5 households, the
+> latch hashed, a Lore node, Joe's sentence).** ⏸️ **Step 4, the view (build bar, card, stand-in drawing, probe) — waits on
+> Joe closing his game in this checkout**; then step 5's measurement and his play.
 > *(Read "⏸️ FIVE CALLS HIS (§9), nothing built" until D852:)* 📏 Measured and 📝 specced (D851, `specs/market-stand.md`): (1) a marketer fills
 > their own market's counter first — without it a stall among the far houses stays empty (Oakhaven's far families walked
 > *more* with one); (2) his typed marketer number left alone, the stall's card saying so; (3) the long walk = a 10-day trip
@@ -49,6 +53,12 @@
 >   D835 measured the tavern's reach from the medoid home; Joe built his 14–26 tiles from every home, nobody came, and the
 >   card said "Open". Any *within reach* rule needs the card to count what is within reach — the well's and the market's
 >   too, if they ever gain one. Read his save before guessing (`tools/harness/ZzTavernSave.cs`).
+> - **⛔ TRAP (D854): A WORKPLACE DID NOT KNOW WHICH BUILDING IT STOOD IN** — seven places read it off the trade
+>   (`JobsCatalog.WorksAt(workplace.Kind)`), so a second building for one trade is read as the first everywhere. Ask
+>   `SimWorld.BuildingKindOf(workplace)`; a new building for an existing trade goes on `JobRow.AlsoWorksAt` and sets
+>   `Workplace.RaisedAs`. And `NearestCounterWithRoomFor` returns the nearest STORE with room, not a counter — read the loop.
+> - **⛔ TRAP (D853): A MEASUREMENT PATCH IS TWO RULES UNTIL ABLATED.** D851's own-counter patch changed the plan and the load;
+>   only the plan was the rule, and the load half moved a one-market village. Ablate a patch half by half before building it.
 > - **⛔ TRAP (D851): A MARKETER'S LOAD GOES TO THE COUNTER NEAREST THE STOREHOUSE, NOT THE ONE THAT ASKED.** `OfferMarketRestock`
 >   picks the emptiest shelf of *any* market; `StoreForTheLoad` puts the load on the counter nearest where the marketer
 >   stands. With one market they agree; with two, a counter far from the granary is filled last. Found posing a stall in

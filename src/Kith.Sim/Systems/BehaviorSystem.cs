@@ -5062,6 +5062,12 @@ public sealed partial class BehaviorSystem : ISimSystem
             household.ToppingUpFood = false;
         }
 
+        // ⭐ THE LONG WALK IS COUNTED HERE, AT THE COUNTER (W14, `market-stand.md §5.4`) — once a collection, never per tick.
+        if (foodTaken > 0)
+        {
+            world.WalkedToShop(household, villager, target);
+        }
+
         // ⚠️ A FREE HAND, NOT A FREE TRIP. If food took the whole armful there is nothing left
         // to carry and this does nothing — the second trip is then carry capacity doing its
         // job (D32), which is the inequality distant households are supposed to feel, and not
@@ -5085,6 +5091,10 @@ public sealed partial class BehaviorSystem : ISimSystem
         if (firewood > 0 && target.Store.TryTake(Goods.Firewood, firewood))
         {
             villager.Carried.Receive(Goods.Firewood, firewood);
+            if (foodTaken == 0)
+            {
+                world.WalkedToShop(household, villager, target);
+            }
         }
 
         // The same end for the hearth's run (D422): all it was short of, or all there was room for.

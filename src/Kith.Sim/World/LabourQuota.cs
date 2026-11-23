@@ -52,9 +52,11 @@ public readonly record struct LabourQuota
         int herdsmen = 0,
         int merchants = 0,
         int teachers = 0,
-        int[]? batch = null)
+        int[]? batch = null,
+        int stallKeepers = 0)
     {
         Hands = hands;
+        StallKeepers = stallKeepers;
         Mouths = mouths;
         ForagersToFeedEveryone = foragersToFeedEveryone;
 
@@ -174,6 +176,13 @@ public readonly record struct LabourQuota
 
     /// <summary>Hands the village wants working the market (D14).</summary>
     public int Marketers => _byJob[(int)JobKind.Marketer];
+
+    /// <summary>
+    /// How many of <see cref="Marketers"/> are the stalls' own keepers (W14, `market-stand.md §5.3`, Joe, D852: <i>"a market
+    /// stand should have its own marketer - only 1 though"</i>) — wanted on top of the player's marketer number and seated
+    /// first, at the stalls, by <c>LabourAllocator</c>.
+    /// </summary>
+    public int StallKeepers { get; }
 
     /// <summary>Hands the village wants forging tools (D391).</summary>
     public int Smiths => _byJob[(int)JobKind.Smith];
@@ -862,7 +871,11 @@ public readonly record struct LabourQuota
         foragers = Asked(world, JobKind.Forager, foragers, hands);
         foresters = Asked(world, JobKind.Forester, foresters, hands);
         woodcutters = Asked(world, JobKind.Woodcutter, woodcutters, hands);
-        marketers = Asked(world, JobKind.Marketer, marketers, hands);
+        // ⭐ EACH STALL HAS ITS OWN MARKETER, OUTSIDE THE PLAYER'S NUMBER (W14, `market-stand.md §5.3`, Joe, D852). The stalls'
+        // keepers come out of what the village decided first; the typed number then bounds only the market's marketers,
+        // by the market's own seats. With no stall standing this is `Asked` exactly as it was.
+        int stallKeepers = Math.Min(StallKeepersWanted(world), marketers);
+        marketers = stallKeepers + AskedOfTheMarkets(world, marketers - stallKeepers, hands - stallKeepers);
         builders = Asked(world, JobKind.Builder, builders, hands);
         farmers = Asked(world, JobKind.Farmer, farmers, hands);
         fishers = Asked(world, JobKind.Fisher, fishers, hands);
@@ -914,7 +927,56 @@ public readonly record struct LabourQuota
             hands, mouths, toFeedEveryone, foragers, foresters, woodcutters, marketers, builders,
             farmers, slots: slots, needed: needed, fishers: fishers, hunters: hunters, smiths: smiths,
             quarriers: quarriers, miners: miners, herdsmen: herdsmen, merchants: merchants, teachers: teachers,
-            batch: batchTaken);
+            batch: batchTaken, stallKeepers: stallKeepers);
+    }
+
+    /// <summary>
+    /// The stalls whose counter wants stocking (W14, D852) — one keeper each, never more than its seats. D36's rule: bounded by
+    /// errands, never by spare hands, so a stall with every shelf at its limit asks for nobody.
+    /// </summary>
+    internal static int StallKeepersWanted(SimWorld world)
+    {
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace stall = world.Workplaces[i];
+            if (IsAStall(world, stall) && stall.Places > 0 && world.StoreAt(stall.Tile) is StoreBuilding counter
+                && world.CounterWantsStocking(counter))
+            {
+                wanted += stall.Places;
+            }
+        }
+
+        return wanted;
+    }
+
+    /// <summary>A standing marketer's seat in a market stall (W14).</summary>
+    internal static bool IsAStall(SimWorld world, Workplace workplace) =>
+        workplace.Kind == JobKind.Marketer && !workplace.IsSite && world.BuildingKindOf(workplace) == BuildingKind.MarketStall;
+
+    /// <summary>
+    /// <see cref="Asked"/> for the market's marketers alone: the player's number, bounded by the market's seats (the stalls'
+    /// are their own, D852) and the hands left.
+    /// </summary>
+    private static int AskedOfTheMarkets(SimWorld world, int decided, int hands)
+    {
+        if (world.JobLimits.For(JobKind.Marketer) is not int asked)
+        {
+            return decided;
+        }
+
+        int seats = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace works = world.Workplaces[i];
+            if (works.Kind == JobKind.Marketer && !works.IsSite && !IsAStall(world, works))
+            {
+                seats += works.Places;
+            }
+        }
+
+        int bounded = asked < seats ? asked : seats;
+        return bounded < hands ? bounded : hands;
     }
 
     /// <summary>Never fewer than the people the player has kept on this trade.</summary>

@@ -29,7 +29,7 @@ public sealed partial class SimWorld
 
     /// <summary>The row a standing workplace was raised from, or null for a site or a trade with no building.</summary>
     private BuildingRow? RowOf(Workplace workplace) =>
-        workplace.IsSite || JobsCatalog.WorksAt(workplace.Kind) is not BuildingKind kind ? null : BuildingsCatalog[kind];
+        workplace.IsSite || BuildingKindOf(workplace) is not BuildingKind kind ? null : BuildingsCatalog[kind];
 
     private BuildingRow? RowOf(StoreBuilding store) =>
         BuildingKindOf(store) is BuildingKind kind ? BuildingsCatalog[kind] : null;

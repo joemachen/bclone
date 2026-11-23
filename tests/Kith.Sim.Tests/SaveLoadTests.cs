@@ -326,7 +326,7 @@ public sealed class SaveLoadTests : IDisposable
             "_nextWorkplaceId", "NeedsMoreResidentialLand", "WorkIsGoingUndone", "WorkSeenUndoneOnce", "_buildingsNamed",
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
-            "HandcartsEverMade", "WorkshopLearned", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
+            "HandcartsEverMade", "WorkshopLearned", "MarketStallLearned", "HouseholdsThatWalkedFar", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
         }),
@@ -393,7 +393,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
-            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse",
+            "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse", "WalkedFar",
             "FireOutHeldUntil", "DryDaysThisSeason",
         }),
         (typeof(Workplace), Kept.Saved, new[]
@@ -404,6 +404,10 @@ public sealed class SaveLoadTests : IDisposable
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
             "HerdHead", "HerdGrowth", "HayPutOut", "HayCutThisYear", "FencedTiles", "FenceGate", "FenceStands", "HandcartUses",
             "EveningsThisSeason",
+
+            // The building a workplace stands in when it is not its trade's own — a marketer's stall (W14, D854): `raised_as`,
+            // written only when set (`MarketStandTests.AStallIsSavedAsAStall`).
+            "RaisedAs",
         }),
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]

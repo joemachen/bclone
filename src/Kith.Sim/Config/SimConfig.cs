@@ -2479,6 +2479,54 @@ public sealed record SimConfig
     [JsonPropertyName("market_store_capacity")]
     public int MarketStoreCapacity { get; init; } = 8000;
 
+    /// <summary>The market stall's seats (W14, `market-stand.md §5.1`, D839: <i>"staffs one marketer"</i>).</summary>
+    /// <remarks>
+    /// ⭐ Each stall's seat is its own (Joe, D852: <i>"a market stand should have its own marketer - only 1 though"</i>): wanted
+    /// on top of the player's marketer number whenever the stall's counter wants stocking, and filled before the market's
+    /// (<c>LabourQuota.StallKeepersWanted</c>).
+    /// </remarks>
+    [JsonPropertyName("market_stall_capacity")]
+    public int MarketStallCapacity { get; init; } = 1;
+
+    /// <summary>What a market stall holds — half the market (D839).</summary>
+    [JsonPropertyName("market_stall_store_capacity")]
+    public int MarketStallStoreCapacity { get; init; } = 4000;
+
+    /// <summary>What a market stall keeps of each good before the player says otherwise — half the market's (D839).</summary>
+    /// <remarks>Shared out of its room in the catalogue's order, as the market's is (D612): eight goods fill it.</remarks>
+    [JsonPropertyName("market_stall_starting_limit")]
+    public int MarketStallStartingLimit { get; init; } = 500;
+
+    /// <summary>What a market stall costs to raise — half the market (Joe, D852, call 4).</summary>
+    [JsonPropertyName("market_stall_logs")]
+    public int MarketStallLogs { get; init; } = 18;
+
+    /// <summary>The stone a market stall costs (D852).</summary>
+    [JsonPropertyName("market_stall_stone")]
+    public int MarketStallStone { get; init; } = 15;
+
+    /// <summary>The work a market stall takes to raise (D852).</summary>
+    [JsonPropertyName("market_stall_work_ticks")]
+    public int MarketStallWorkTicks { get; init; } = 25;
+
+    /// <summary>
+    /// The long walk (W14, `market-stand.md §5.4`, Joe, D852): a shopping round trip, home to the store and back by the one cost
+    /// field, of at least this many ticks marks a household. 40 — ten days.
+    /// </summary>
+    /// <remarks>
+    /// Measured before it was typed (D851, `tools/harness/ZzMarketStand.cs`): a round trip of 4–6 days at the median in every
+    /// village; 10+ days in none under five homes. Never reached by a planned walk in 16 unattended valleys × 50 years.
+    /// </remarks>
+    [JsonPropertyName("market_stall_walk_ticks")]
+    public int MarketStallWalkTicks { get; init; } = 40;
+
+    /// <summary>
+    /// How many different households must make the long walk before the far houses ask for a stall (D852): 5. Measured to
+    /// light within five years in Joe's three saves with far houses (7, 18 and 18 homes), none under five homes.
+    /// </summary>
+    [JsonPropertyName("market_stall_households")]
+    public int MarketStallHouseholds { get; init; } = 5;
+
     // ---------------------------------------------------------------
     //  What buildings cost to raise (D43)
     // ---------------------------------------------------------------
@@ -3969,6 +4017,9 @@ public sealed record SimConfig
             Plural = "traders",
             Doing = "the market",
             WorksAt = BuildingKind.Market,
+
+            // ⭐ And the market stall (W14, D852): the marketer's trade at a smaller building, not a trade of its own.
+            AlsoWorksAt = new[] { BuildingKind.MarketStall },
             LimitedBy = null,
 
             // ⛔ NO TOOL (D617, Joe's call): a marketer's work is carrying, and there is no work action for a tool to quicken.
@@ -4839,6 +4890,25 @@ public sealed record SimConfig
             Seats = TavernCapacity,
             ExtentWidth = 2,
             ExtentHeight = 2,
+        },
+
+        // ⭐ THE MARKET STALL (W14, `market-stand.md §5.1`, D852) — the market's row at half its size: stores as a market, so
+        // every rule a shopper or a marketer follows treats it as one; one seat; 2×1 (Joe's call 4).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.MarketStall,
+            Name = "market stall",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, MarketStallLogs),
+                new MaterialCost(World.Goods.Stone, MarketStallStone),
+            },
+            WorkTicks = MarketStallWorkTicks,
+            Stores = StoreKind.Market,
+            StoreCapacity = MarketStallStoreCapacity,
+            Seats = MarketStallCapacity,
+            ExtentWidth = 2,
+            ExtentHeight = 1,
         },
 
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1) — both learned once the town hall stands (Joe, D587
@@ -6273,6 +6343,25 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"market_store_capacity must be at least 1 (got {MarketStoreCapacity}) — a market that holds nothing is not a store.");
+        }
+
+        if (MarketStallStoreCapacity < 1)
+        {
+            throw new SimConfigException(
+                $"market_stall_store_capacity must be at least 1 (got {MarketStallStoreCapacity}) — a stall that holds nothing is not a store.");
+        }
+
+        if (MarketStallWalkTicks < 0 || MarketStallHouseholds < 1)
+        {
+            throw new SimConfigException(
+                $"market_stall_walk_ticks must be 0 or more and market_stall_households at least 1 (got {MarketStallWalkTicks}, "
+                + $"{MarketStallHouseholds}) — the long walk is learned from somebody walking it.");
+        }
+
+        if (MarketStallStartingLimit < 0 || MarketStallCapacity < 0)
+        {
+            throw new SimConfigException(
+                $"market_stall_starting_limit and market_stall_capacity must be 0 or more (got {MarketStallStartingLimit}, {MarketStallCapacity}).");
         }
 
         if (GranaryCapacity < 1)

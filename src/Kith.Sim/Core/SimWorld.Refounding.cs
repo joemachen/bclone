@@ -229,7 +229,7 @@ public sealed partial class SimWorld
 
         for (int i = 0; i < Workplaces.Count; i++)
         {
-            if (!Workplaces[i].IsSite && JobsCatalog.WorksAt(Workplaces[i].Kind) is not null) { Count(ConditionOf(Workplaces[i])); }
+            if (!Workplaces[i].IsSite && BuildingKindOf(Workplaces[i]) is not null) { Count(ConditionOf(Workplaces[i])); }
         }
 
         for (int i = 0; i < StoreBuildings.Count; i++)

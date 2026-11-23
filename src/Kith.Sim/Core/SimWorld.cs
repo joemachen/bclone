@@ -4118,6 +4118,9 @@ public sealed partial class SimWorld : IObstacles
         BuildingKind.School when !SchoolLearned =>
             "Nobody here teaches yet — a school comes once the village has a library.",
 
+        // ⭐ THE MARKET STALL IS LEARNED BY THE LONG WALK (W14, `market-stand.md §5.4`, D839, D852) — the latch, never the count.
+        BuildingKind.MarketStall when !MarketStallLearned => WhyNoStallYet(),
+
         BuildingKind.Workshop when !WorkshopLearned =>
             $"Nobody here builds carts yet — the village has felled {LogsEverFelled} of the "
             + $"{Config.WorkshopUnlockLogs} logs it takes to learn.",
@@ -6506,7 +6509,7 @@ public sealed partial class SimWorld : IObstacles
         // quarry beside an outcrop of thirty tiles could paint four of them. Joe: *"the volume of give-able ground for iron
         // and stone nodes ... doesn't seem to line up very well with the map and the stone one is very small."* So: the
         // seam with a tile in that diamond, ALL of it (`SimWorld.Seams.cs`), and no other.
-        if (JobsCatalog.WorksAt(workplace.Kind) is BuildingKind works
+        if (BuildingKindOf(workplace) is BuildingKind works
             && BuildingsCatalog[works]?.MustBeNear is NearRule near)
         {
             string bare = WithoutArticle(Describe(near.Terrain));
@@ -7973,7 +7976,8 @@ public sealed partial class SimWorld : IObstacles
     {
         if (store.Kind == StoreKind.Market)
         {
-            store.StartingLimit = Config.MarketStartingLimit;
+            // ⭐ A stall keeps half the market's a good (W14, D839) — by the building it was raised as.
+            store.StartingLimit = store.RaisedAs == BuildingKind.MarketStall ? Config.MarketStallStartingLimit : Config.MarketStartingLimit;
             store.Knows = KnowsOf;
         }
 
@@ -8823,7 +8827,7 @@ public sealed partial class SimWorld : IObstacles
 
         if (StandingWorkplaceCovering(tile) is Workplace workplace)
         {
-            return JobsCatalog.WorksAt(workplace.Kind);
+            return BuildingKindOf(workplace);
         }
 
         return null;
@@ -8838,6 +8842,19 @@ public sealed partial class SimWorld : IObstacles
         ArgumentNullException.ThrowIfNull(store);
 
         return store.RaisedAs ?? BuildingsCatalog.ThatStores(store.Kind);
+    }
+
+    /// <summary>
+    /// The building a workplace stands in — <see cref="Workplace.RaisedAs"/> when it was raised as something other than its
+    /// trade's own building (a marketer's stall, W14), and its trade's <c>works_at</c> otherwise. ⭐ The one door: every
+    /// question about a standing workplace's building (its row, its door, its seam, its name) asks this, so a trade that
+    /// works at two buildings is never read as the first.
+    /// </summary>
+    public BuildingKind? BuildingKindOf(Workplace workplace)
+    {
+        ArgumentNullException.ThrowIfNull(workplace);
+
+        return workplace.RaisedAs ?? JobsCatalog.WorksAt(workplace.Kind);
     }
 
     /// <summary>What the building on a tile is called, or "it".</summary>
@@ -11014,7 +11031,7 @@ public sealed partial class SimWorld : IObstacles
     // a row may legally have no workplace — a laborer is "the villagers no job currently
     // wants" (D66) — and asking such a trade for its building is still a caller error.
     private BuildingKind KindOf(Workplace workplace) =>
-        JobsCatalog.WorksAt(workplace.Kind)
+        BuildingKindOf(workplace)
         ?? throw new ArgumentOutOfRangeException(
             nameof(workplace), workplace.Kind, "That kind of workplace has no building.");
 
@@ -11410,6 +11427,9 @@ public sealed partial class SimWorld : IObstacles
             // gives a modder a three-tile building the day they type one.
             ExtentWidth = row.ExtentWidth,
             ExtentHeight = row.ExtentHeight,
+
+            // ⭐ A building that is not the trade's own says so (W14, D852): a marketer's seat in a stall is a stall.
+            RaisedAs = JobsCatalog.WorksAt(trade) == kind ? null : kind,
         });
 
         // ⭐ A QUARRY OR A MINE TAKES THE SEAM IT STANDS BY (D613, Joe: "when the player places a mine or quarry near its ore
@@ -15520,6 +15540,10 @@ public sealed partial class SimWorld : IObstacles
             ["handcarts_ever_made"] = HandcartsEverMade,
             ["workshop_learned"] = WorkshopLearned,
 
+            // The long walk (W14) — each only when set, so a save of a village before it reads as one from before it existed.
+            ["market_stall_learned"] = MarketStallLearned ? true : null,
+            ["households_that_walked_far"] = HouseholdsThatWalkedFar > 0 ? HouseholdsThatWalkedFar : null,
+
             // Only when learned (W7), so a save of a village before it reads as one from before barley existed.
             ["barley_learned"] = BarleyLearned ? true : null,
             ["school_learned"] = SchoolLearned,
@@ -15734,6 +15758,8 @@ public sealed partial class SimWorld : IObstacles
         CoatsEverSewn = save.Int("coats_ever_sewn");
         HandcartsEverMade = save.Int("handcarts_ever_made");
         WorkshopLearned = save.Bool("workshop_learned");
+        MarketStallLearned = save.HasValue("market_stall_learned") && save.Bool("market_stall_learned");
+        HouseholdsThatWalkedFar = save.HasValue("households_that_walked_far") ? save.Int("households_that_walked_far") : 0;
         BarleyLearned = save.HasValue("barley_learned") && save.Bool("barley_learned");
 
         // ⚠️ A save from before the school (D754) has no key, and may already have a library standing: the latch is the
