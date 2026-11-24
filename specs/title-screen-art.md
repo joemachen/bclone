@@ -2,7 +2,8 @@
 
 > **Status: ✅ PART 1 MERGED INTO `main` (A186, `1678471`, his *"it all looks good. merge it."*); built A180 — Joe: *"All as recommended - and add a 'settings' option to the title
 > screen"*; played and approved; the full-screen flash he found fixed and merged (A187, A188). Parts 2 and 3 built (A189), on the title with his picks (A190, *"B with ink seams"*) — ✅ played and MERGED INTO `main` (A191, `745aee8`, *"merge it"*), pushed (A192).** Specced and part 1 mocked A179.
-> Art lane (CLAUDE.md
+> ⏭️ **A229: `specs/title-snapshot.md` makes the newest village's own picture the title's background and these four seasons its
+> fallback (specced, ⏸️ his calls).** Art lane (CLAUDE.md
 > *Two tracks*), piece (l) of the art list, Joe's *"After the bridge"* and then *"start the title screen"*; claimed A178. His
 > amended brief is `D:\Projects\brushes\title-menu\brief.md` — this spec follows it, and §8 lists every place it departs.
 > View only: nothing in the sim, `data/` or `tests/` changes. Part 1's mock is drawn by the game itself from a copy of his
