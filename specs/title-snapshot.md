@@ -2,7 +2,8 @@
 
 > **Status: ✍️ SPECCED AND MOCKED (A229, 2026-11-23); round 1's looks turned down (*"the parchment looks like a quilt"*),
 > round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour) and turned down (*"no, i hate them both"*);
-> round 3 mocked (A231, §5b: (e) full-bleed watercolour, at two strengths); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
+> round 3 mocked (A231, §5b: (e) full-bleed watercolour, at two strengths); *Continue* lifting the paint into the live map
+> specced (A232, §6a); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -198,6 +199,36 @@ left it, aged; *Continue* opens his newest save. Play a year and quit to the tit
 next season). Found a new village and quit at once: the title still shows the last village with a home. Rename the saves folder:
 the four seasons, aged. **The title opens no slower** than today (one JPG, no save read).
 
+## 6a. Continue: the paint lifts into the game (A232, ⏸️ call 5)
+
+Joe: *"if we do E, then, when the player clicks continue, can we transition the background image smoothly to the playable
+version?"* **Yes.** The picture *is* the save: it was drawn by the same map, from the same state, at the moment that save was
+written. So the live map can open on exactly the frame the title shows, and the handoff can be invisible.
+
+- **What he would see (~2 s):**
+  1. He clicks *Continue*. The panel slides off to the left and fades.
+  2. The save loads behind the still picture, so a slow load is just a held picture, never a frozen animation. Nothing moves
+     until the village is ready.
+  3. **The paint lifts.** The shader's strength runs from (e) down to nothing over about a second. The glazes, washes and blooms
+     dry away and leave the plain snapshot underneath.
+  4. The live map takes over **on the same frame**: same centre, same zoom, same season, the people where they stood. A
+     short crossfade covers what is not in the picture (animation, the markers).
+  5. The camera **eases from the title's framing** (the village right of where the panel was) **to the play framing**, and the
+     HUD fades in. Then it is the game.
+- **What the map needs:** a way to open on the picture's frame instead of `CentreOnTheVillage()`. `LookAt(centre, ppt)` already
+  exists (A150) and takes both. The centre is the homes' middle shifted by the picture's 0.64. The zoom is 32 px a tile × the
+  cover scale of the player's window. Both are worked out from the loaded village and the window, and **nothing new goes in the
+  save**: `slice/hud`'s view section holds no camera and does not need one. The ease to the play framing is the same
+  `LookAt`, stepped each frame.
+- **When it falls back to a plain fade:**
+  - *Load…* opens another save.
+  - *Continue* opens a save that is not the picture's village, because the newest save is a founding (call 2).
+  - There is no picture yet, so the title shows the four seasons.
+  In each case the paint still lifts, then the picture fades to the opened village.
+- **Who:** the transition lives in `TitleScreen` and in the load path in `Main.Saves.cs`, the same systems-lane file as
+  the save-time hook. It waits for `slice/hud`'s merge on the same terms as call 4.
+- **Cost:** none at play time. The shader runs only while the title or the lift is on screen.
+
 ## 7. Who builds which part
 
 | Part | Files | Lane |
@@ -244,13 +275,14 @@ and Joe can play it).
    lane builds them now; and **the save-time hook in `Main.Saves.cs`** after `slice/hud` merges — ⭐ **the art lane makes it, on
    `art`, as its own commit, after the HUD's merge**, since it is ~10 lines and the piece is otherwise whole. *Or:* the systems lane
    makes it as its next commit after the HUD.
+5. **Continue lifts the paint into the game** (§6a, his idea, A232). ⭐ **Yes, as §6a**: about two seconds, the live map opening on the picture's own frame, a plain fade wherever the picture and the opened save differ. It goes in the load path with the hook in call 4, after the HUD's merge. *Or:* a plain crossfade from the picture to the game, with no lift and no matched frame.
 
 ## 10. Order of work
 
 1. ⏸️ His four calls. 2. The surface baked, the shader, `TitleScreen` showing the newest picture with the surface over it, the
 fallback aged — the four checks — ⏸️ his look in the game (`.\run.bat`, the four seasons aged until a picture exists). 3.
 `TitleSnapshot.cs` with its cost measured against today's autosave on his Thornfield. 4. After `slice/hud` merges: `main` into
-`art`, the hook (call 4), the four checks — ⏸️ his play, then the merge at his word.
+`art`, the hook (call 4) and the paint lifting on *Continue* (call 5, §6a), the four checks — ⏸️ his play, then the merge at his word.
 
 ## 11. Not in this piece
 
