@@ -11078,6 +11078,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   that feed the same number one at a time.
 - **A shared registry answers for more than one panel** (D878): `_goodRows` holds the `more ▾` popup's rows *and* the stock
   limits', so "every good has a row" was true with the popup missing five goods. Ask whose row it is.
+- **A probe's pose touches more than the flags it sets** (D880): opening every flyout to measure it marked every category
+  *seen*, and the next line (`new:`) read Knowledge as already looked at. A pose puts back everything its actions touch.
+- **A per-frame tint wipes any colour set less often** (D880): the library's owed tint runs every refresh and would have
+  undone the gold *new* mark each frame; the probe, reading straight after a relight, could not see it. Look for every
+  writer of a channel before trusting a mark set in it.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

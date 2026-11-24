@@ -668,6 +668,7 @@ public partial class Main : Control
 
         ProbeTheControlBar();
         GD.Print(NoTwoFloatersMeet());
+        GD.Print(WhatIsNewIsGoldUntilClicked());
         GD.Print(TheRedBrushIsOnTheBar());
         GD.Print(_map.ABrushShowsWhatItPaints());
         GD.Print(TheAnnounceIsAHintNotALogLine());
@@ -2281,7 +2282,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.AFreeLibraryIsOwed || !_libraryButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_libraryButton, world.AFreeLibraryIsOwed);
 
         // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
@@ -2454,7 +2459,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.AFreeSmithyIsOwed || !_smithyButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_smithyButton, world.AFreeSmithyIsOwed);
         _smithyButton.Text = world.AFreeSmithyIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
@@ -2648,7 +2657,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.ATownHallIsOwed || !_townHallButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_townHallButton, world.ATownHallIsOwed);
 
         _townHallButton.Text = world.ATownHallIsOwed
@@ -4362,6 +4375,7 @@ public partial class Main : Control
         BuildSettingsPanel();
         BuildControlPanel();
         BuildTheWindowsColumn();
+        StartTheSeen(_viewToRestore);
         BuildTheDevBar();
 
         // ⭐ START PAUSED (Joe, 2026-08-25): the player unpauses to begin. It was 1.0, so
@@ -8209,6 +8223,9 @@ public partial class Main : Control
         }
 
         _rebuildOlder?.SetPressedNoSignal(_loop.World.RebuildsOlderHomes);
+
+        // ⭐ New, until clicked (D880): gold last, over the hand's tint.
+        MarkWhatIsNew();
     }
 
     /// <summary>Which mark on the strip a tool is drawn by, or null for the buildings.</summary>
