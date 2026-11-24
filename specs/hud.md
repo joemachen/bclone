@@ -4,8 +4,10 @@
 > AND THE WINDOWS' BUTTONS A COLUMN (A215: *"stack the window buttons as a narrow column"*, *"agree on the 9 calls"*).**
 > ✅ **The art lane's controls painted and in on `art` (A216, Joe: *"Yes, paint them"*; the pinned pin too, A217: *"Yes, paint
 > it"*), not wired** (§8.3).
-> ✅ Merged into `main` at his word (A218, *"Merge art"*). 🔨 **Being built on `slice/hud` (D873, 2026-11-23), §14's
-> steps in order** — the line below each step in §14 says what is built. The build
+> ✅ Merged into `main` at his word (A218, *"Merge art"*). ✅ **All nine steps of §14 built on `slice/hud` (D873–D882,
+> 2026-11-23)** — the line below each step in §14 says what was built, and where the build met something the spec did not
+> foresee (the strip wraps at Joe's word, D877; a real founding is two lines at 1,280, D878). ⏸️ The at-rest measure (§16 item 2)
+> and Joe's play are what remain (D883). The build
 > is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
@@ -331,6 +333,7 @@ Cut from `main` after `slice/library-borrowing` merges. The art lane's files (§
 | 8 | **Lining figures** (§12) | `numerals:` the strip's amounts and the Stock limits table are Cardo | no |
 | | ✅ **Built (D881).** `UiLook.Figures`: the reading face (Cardo) on an amount — `Amount()` (the strip's goods, headcounts and food figure, `more ▾`), every Stock limits field, Professions' asked numbers, the build queue's materials and work columns, the dev bar's readout. The date, the runway, the log and the cards stay in Grenze Gotisch. ⚠️ A tooltip's face is the theme's, one for every tooltip, so the food figure's tooltip stays in the body face. The strip's width did not move (its cells are fixed). `numerals:` new, 65 amounts; 4 mutants / 4 reds (one only after the clause looked inside the professions' stepper) | | |
 | 9 | **The founding line** — `SimWorld.Create` narrates what the stores hold (*"4 exiles arrive in 2 households with a cart: 1,200 food and 20 stone tools. Spring, Year 1."*); *"no food stored"* only when there is none | the suite; `Phase0SimTests.cs:463` pins the village of one's line — keep it if its world holds no food, re-pin it if it does | **yes** |
+| | ✅ **Built (D882).** `SimWorld.WhatTheFoundingHolds`: *"4 exiles arrive in 2 households with a cart: 1,200 food and 20 stone tools. Spring, Year 1."*; *"with stores of"* without a cart; *"no food stored"* only with none. `FoundingLineTests` new; the village of one re-pinned (its store holds forty). Suite run, no golden moved | | |
 | — | **CLAUDE.md** — `bar height` 183 replaced by step 6's measured number, its history kept as the line keeps it now | — | no |
 | | ✅ **Done with step 6 (D879): 104.** | | |
 
