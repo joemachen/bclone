@@ -1,7 +1,8 @@
 # The title's background: your newest village, aged like a painting (A228, A229)
 
 > **Status: ✍️ SPECCED AND MOCKED (A229, 2026-11-23); round 1's looks turned down (*"the parchment looks like a quilt"*),
-> round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
+> round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour) and turned down (*"no, i hate them both"*);
+> round 3 mocked (A231, §5b: (e) full-bleed watercolour, at two strengths); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -159,6 +160,37 @@ copied from his references. Sheets: `title_snapshot_round2.jpg`, `title_snapshot
 **Both keep §2–§4 as written**: the picture taken at save time, one `title.jpg` a village, framed on the homes' middle, the
 season the save's own. The fallback (no picture) is the four seasons under the same treatment.
 
+## 5b. Round 3 (A231, 2026-11-24) — Joe: *"no, i hate them both."*
+
+He went on: *"Instead of either, i want you to lean into the watercolor style even more - get rid of the white paper
+surrounding and have the game map fully go to the edges. just make the watercolor style more intense."* **(c) and (d) are
+withdrawn.** Painted by `D:\Projects\brushes\title-snapshot\look3.py` (seed 231); sheets `title_snapshot_round3.jpg` (behind the
+real title) and `title_snapshot_round3_detail.jpg` (1:1).
+
+### (e) Full-bleed watercolour — the whole map painted, edge to edge
+
+- **No border and no vignette**: the map fills the screen as it does today, painted all over. The heart is painted in finer
+  washes than the outskirts, but nothing fades out.
+- **Flat washes**: the map with its texture taken out by a median at three sizes (finer at the heart), so the shapes keep their
+  edges. Each wash has **a dark rim where it dried**, with a halo of pigment fading inward from it.
+- **Glazes**, the mark that reads most as watercolour: two broad, darker washes and one lift laid over the first wash, each a
+  lobed shape. Where the paper was dry the glaze has a **hard edge with its pigment pooled unevenly along it**; where it was damp
+  the edge is soft. They are quieter over the village.
+- **Wet-in-wet colour drift** (each channel wanders a little over broad patches), **value mottling**, **brush strokes** at two
+  angles, **backruns** (pale blooms with frilled dark rims), **granulation** in the cold-press tooth, a very few dry-brush skips
+  in the outskirts, **the paper's relief** lit from the upper left, and splatters of pigment and of clear water.
+- **The game's own ink lines** are lifted off the map before it is washed and laid back on top, so it reads as **line and
+  wash**: houses, trees and the river bank stay drawn.
+- **Two strengths**: **(e)** and **(e+)** (the same marks about half as strong again: darker glazes, more backruns, more
+  splatter). The build takes one strength, or a strength between them.
+- **Built as:** the canvas shader of §5a (d), without the paper edge. The washes come from the picture's own mip levels. The
+  glazes, backruns and paper come from baked noise masks (`textures/ui/title/watercolour-mask.png`, a paper tile), so they
+  are the same on every village and cost nothing at save time. ⚠️ The mock's median washes are a stand-in; the shader's will
+  differ in detail and want his eyes again in the game.
+
+**§2–§4 hold**: the picture taken at save time, one `title.jpg` a village, framed on the homes' middle, the season the save's own.
+The fallback (no picture) is the four seasons under the same treatment.
+
 ## 6. What Joe will see
 
 `.\run.bat`: the title opens over **his newest village with a home**, framed on its houses right of the panel, in the season he
@@ -199,7 +231,7 @@ and Joe can play it).
 
 ## 9. ⏸️ Joe's calls
 
-1. ~~**The look.**~~ **Answered (A230): neither** — *"i dont really like any of them. the parchment looks like a quilt."* **Now the look of §5a:** ⭐ **(d) deeper watercolour** — it is the game's own medium carried further, the village stays the subject and fills the screen, and the paper's white sets off the parchment panel rather than repeating it. *Or:* **(c) a manuscript page** — the most "ancient", a frame and margins painted once and reused for every village, but the village is smaller inside its frame, and the panel is then a second parchment beside a vellum page. *(Round 1, kept for the record:)* ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
+1. **The look — now §5b (A231):** ⭐ **(e) full-bleed watercolour at the first strength**, which is clearly painted and keeps the village readable at a glance. **(e+)**, the stronger one, goes muddier in the forests. *Or a strength between them.* Round 2 answered (A231): *"no, i hate them both"*, and round 2's text is kept below for the record. ~~**The look.**~~ **Answered (A230): neither** — *"i dont really like any of them. the parchment looks like a quilt."* **Now the look of §5a:** ⭐ **(d) deeper watercolour** — it is the game's own medium carried further, the village stays the subject and fills the screen, and the paper's white sets off the parchment panel rather than repeating it. *Or:* **(c) a manuscript page** — the most "ancient", a frame and margins painted once and reused for every village, but the village is smaller inside its frame, and the panel is then a second parchment beside a vellum page. *(Round 1, kept for the record:)* ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
    picture and the parchment panel read as one object; its marks sit at the edges and folds, leaving the village clear. The oil's
    crack web lies over everything, and its dark lines are the same weight as the map's own ink (paths, fences, contours), so it
    competes with them, most in the village itself (`title_snapshot_detail.jpg`). *Or:* **(a) oil craquelure** — the closer match
