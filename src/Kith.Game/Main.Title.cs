@@ -1,3 +1,4 @@
+using Kith.Sim.Persistence;
 using Godot;
 
 namespace Kith.Game;
@@ -123,6 +124,106 @@ public partial class Main
         }
 
         title.LiftOver(_map, TitleSnapshot.HeartOf(_loop.World), opened, hud);
+    }
+
+    /// <summary>The loading words over the village while another opens (A239); null otherwise.</summary>
+    private PanelContainer? _paintingWords;
+
+    /// <summary>
+    /// ⭐ <i>Painting the village…</i> over this village (A239, Joe: <i>"yes do"</i>), and <paramref name="then"/> once it has been
+    /// drawn: a pause-screen <i>Load…</i> and F7 hold the last frame drawn until the new village draws its first, so the words must
+    /// be in it. The village stands still meanwhile.
+    /// </summary>
+    private void SayItIsPainting(Action then)
+    {
+        PanelContainer words = TitleScreen.TheLoadingSlip(0.8f);
+        _paintingWords = words;
+        AddChild(words);
+        if (!_halted)
+        {
+            SetSpeed(0.0);
+        }
+
+        // Two frames begun from here: the first may be the one this is called in, before it draws.
+        SceneTree tree = GetTree();
+        int frames = 2;
+        void Tick()
+        {
+            if (--frames > 0)
+            {
+                return;
+            }
+
+            tree.ProcessFrame -= Tick;
+            if (IsInstanceValid(this) && IsInsideTree() && _paintingWords == words)
+            {
+                then();
+            }
+        }
+
+        tree.ProcessFrame += Tick;
+    }
+
+    /// <summary>
+    /// ⭐ The words before another village opens (A239) — <b>a probe line</b>: a pick from the pause screen puts them up, over everything,
+    /// the village stopped, with nothing yet saved or reloaded; a second pick is not a second load; a pick that cannot be read puts
+    /// none up. The reload itself a probe cannot survive: driven by hand (`title-snapshot.md §8`).
+    /// </summary>
+    private string TheWordsGoUpBeforeAnotherOpens()
+    {
+        var faults = new List<string>();
+        double speedWas = _driver.SpeedMultiplier;
+        string pick = ProjectSettings.GlobalizePath("user://probe-pick" + SaveFile.Extension);
+        try
+        {
+            LoadFromThePause(pick + ".none");
+            if (_paintingWords is not null)
+            {
+                faults.Add("a pick that cannot be read puts the words up");
+            }
+
+            System.IO.File.WriteAllBytes(pick, new byte[] { 1 });
+            SetSpeed(4.0);
+            LoadFromThePause(pick);
+            PanelContainer? words = _paintingWords;
+            LoadFromThePause(pick);
+            string said = words?.FindChildren("*", "Label", owned: false).OfType<Label>().FirstOrDefault()?.Text ?? "nothing";
+            if (words is null || said != "Painting the village…" || !words.IsVisibleInTree() || words.GetIndex() != GetChildCount() - 1
+                || words.MouseFilter != MouseFilterEnum.Ignore)
+            {
+                faults.Add($"a pick says '{said}', child {words?.GetIndex()} of {GetChildCount()}, shown {words?.IsVisibleInTree()}");
+            }
+
+            if (!_driver.IsPaused || _leave is not null || _saveToOpen is not null)
+            {
+                faults.Add($"with the words just up the village runs at {_driver.SpeedMultiplier}x, {(_leave is null && _saveToOpen is null ? "not yet leaving" : "already leaving")}");
+            }
+
+            if (!ReferenceEquals(_paintingWords, words))
+            {
+                faults.Add("a second pick started a second load");
+            }
+        }
+        finally
+        {
+            foreach (Node child in GetChildren())
+            {
+                if (child is PanelContainer slip && slip == _paintingWords)
+                {
+                    RemoveChild(slip);
+                    slip.QueueFree();
+                }
+            }
+
+            _paintingWords = null; // and what waits for the next frame finds its words gone, and does nothing
+            System.IO.File.Delete(pick);
+            DeleteTheCopy(CopyAside);
+            SetSpeed(speedWas);
+        }
+
+        return faults.Count == 0
+            ? "[widths] loading words: ✅ a pause-screen pick puts \"Painting the village…\" over everything and stops the village before anything is saved or reloaded, once; a pick that cannot be read puts none up"
+            : $"[widths] loading words: ❌ {string.Join("; ", faults)}";
     }
 
     /// <summary>

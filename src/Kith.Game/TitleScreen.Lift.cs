@@ -137,28 +137,38 @@ public sealed partial class TitleScreen
     /// <summary>The loading words on a slip of the HUD's parchment, low in the middle, over the picture and clear of the village.</summary>
     private void PutUpTheWords()
     {
+        _words = TheLoadingSlip(0.9f);
+        AddChild(_words);
+        SetWords(0f);
+    }
+
+    /// <summary>
+    /// The loading words on their slip of parchment, centred <paramref name="down"/> of the way down its parent — the title's, and
+    /// the village's while a pause-screen <i>Load…</i> or F7 opens another (A239).
+    /// </summary>
+    internal static PanelContainer TheLoadingSlip(float down)
+    {
         var label = new Label { Text = LoadingWords, ThemeTypeVariation = UiLook.HeaderLabel };
         label.AddThemeFontSizeOverride("font_size", 22);
-        _words = new PanelContainer
+        var slip = new PanelContainer
         {
             AnchorLeft = 0.5f,
             AnchorRight = 0.5f,
-            AnchorTop = 0.9f,
-            AnchorBottom = 0.9f,
+            AnchorTop = down,
+            AnchorBottom = down,
             GrowHorizontal = GrowDirection.Both,
             GrowVertical = GrowDirection.Both,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        _words.AddThemeStyleboxOverride("panel", UiLook.Strip());
+        slip.AddThemeStyleboxOverride("panel", UiLook.Strip());
         var margin = new MarginContainer();
         margin.AddThemeConstantOverride("margin_left", 18);
         margin.AddThemeConstantOverride("margin_right", 18);
         margin.AddThemeConstantOverride("margin_top", 4);
         margin.AddThemeConstantOverride("margin_bottom", 4);
         margin.AddChild(label);
-        _words.AddChild(margin);
-        AddChild(_words);
-        SetWords(0f);
+        slip.AddChild(margin);
+        return slip;
     }
 
     private void SetWords(float alpha)
