@@ -89,6 +89,7 @@ public sealed partial class TitleScreen : Control
     private readonly string _build;
     private readonly SettingsDoors _doors;
 
+    private Panel _floor = null!;
     private TextureRect _backdrop = null!;
     private Label _refusal = null!;
     private VBoxContainer _menu = null!;
@@ -109,7 +110,7 @@ public sealed partial class TitleScreen : Control
         _doors = doors;
     }
 
-    /// <summary>Asked to open the save at this path — <i>Continue</i> or <i>Load…</i>.</summary>
+    /// <summary>Asked to open the save at this path — <i>Continue</i> or <i>Load…</i>, once the panel has slid away (A236).</summary>
     public event Action<string>? LoadAsked;
 
     /// <summary><i>New village</i>: the new-game screen.</summary>
@@ -196,10 +197,10 @@ public sealed partial class TitleScreen : Control
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var floor = new Panel();
-        floor.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
-        floor.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        AddChild(floor);
+        _floor = new Panel();
+        _floor.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
+        _floor.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_floor);
 
         _backdrop = new TextureRect
         {
@@ -225,9 +226,23 @@ public sealed partial class TitleScreen : Control
         ShowTheVillage();
     }
 
-    /// <summary>Esc on the Settings page goes back to the menu, as its <i>Back</i> does.</summary>
+    /// <summary>
+    /// Esc on the Settings page goes back to the menu, as its <i>Back</i> does. While the paint lifts (A236) a key hurries it, and
+    /// none reaches the village under it.
+    /// </summary>
     public override void _UnhandledKeyInput(InputEvent e)
     {
+        if (Lift is not (LiftStep.None or LiftStep.Easing or LiftStep.Done))
+        {
+            if (e is InputEventKey { Pressed: true, Echo: false })
+            {
+                Hurry();
+            }
+
+            GetViewport()?.SetInputAsHandled();
+            return;
+        }
+
         if (SettingsPage.Visible && e is InputEventKey { Pressed: true, Keycode: Key.Escape })
         {
             ShowTheMenu();
@@ -240,6 +255,10 @@ public sealed partial class TitleScreen : Control
     {
         _refusal.Text = sentence;
         _refusal.Visible = true;
+        if (Lift != LiftStep.None)
+        {
+            BackToTheTitle();
+        }
     }
 
     /// <summary>For the probe: what pressing <i>New village</i> does.</summary>
@@ -371,10 +390,10 @@ public sealed partial class TitleScreen : Control
 
         SaveListing? newest = NewestThatOpens(Saves);
         ContinueButton = new Button { Text = "Continue", TooltipText = newest?.Line ?? LoadMenu.NoSaveYet, Visible = newest is not null };
-        ContinueButton.Pressed += () => LoadAsked?.Invoke(newest!.Path);
+        ContinueButton.Pressed += () => SlideAwayThenOpen(newest!.Path);
         NewVillageButton = new Button { Text = "New village" };
         NewVillageButton.Pressed += () => NewVillageAsked?.Invoke();
-        LoadButton = new LoadMenu(Saves, path => LoadAsked?.Invoke(path)).Button;
+        LoadButton = new LoadMenu(Saves, SlideAwayThenOpen).Button;
         LoadButton.Visible = Saves.Count > 0;
         SettingsButton = new Button { Text = "Settings" };
         SettingsButton.Pressed += ShowTheSettings;

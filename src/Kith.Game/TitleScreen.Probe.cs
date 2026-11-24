@@ -17,7 +17,7 @@ public sealed partial class TitleScreen
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
         + "ticks as last left, a tick goes to the file, Back returns; Kith's seal centred above the name, its wax clear of it "
         + "and inside the sheet, hidden where the paper cannot hold it; the primary a slab of the seal's wax in its six states, "
-        + "its focus the slab's edge inked heavier and clear of the word";
+        + "its focus the slab's edge inked heavier and clear of the word" + WhatTheLiftHeld;
 
     /// <summary>The settings this title reads and writes (the probe poses a second title with them).</summary>
     internal SimConfig Config => _config;
@@ -75,6 +75,7 @@ public sealed partial class TitleScreen
         faults.AddRange(TheSeasonsBehind());
         faults.AddRange(ThePaintOver(this));
         faults.AddRange(TheVillagesPicture());
+        faults.AddRange(TheLiftHolds());
         faults.AddRange(TheSealAbove());
         faults.AddRange(TheWaxButton());
         return faults;

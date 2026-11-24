@@ -10,6 +10,9 @@ namespace Kith.Game;
 /// </summary>
 public sealed partial class VillageMap
 {
+    /// <summary>Where the camera is: the tile at the map's centre, and pixels a tile — what <see cref="LookAt"/> was given (A236).</summary>
+    internal (Vector2 Centre, float Ppt) Camera => (_centreTile, _pixelsPerTile);
+
     /// <summary>Whether every figure this map drew last was painted — a frame paints only a few new ones.</summary>
     internal bool EveryoneIsPainted => _bakesThisFrame < PersonBakesPerFrame;
 

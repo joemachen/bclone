@@ -6,12 +6,12 @@
 > specced (A232, §6a). ✅ **Joe chose (e) and the lift (A233): *"Yes, (e) and the lift"*.** 🔨 **The look built as two
 > shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
 > newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
-> UNPLAYED. NOT YET BUILT: the save-time hook (nothing calls `TitleSnapshot` yet) and the lift — both wait for `slice/hud`'s
-> merge;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
+> UNPLAYED.** 🔨 **The HUD merged (D885): the picture is taken at every save and way out, and *Continue* lifts the paint into
+> the live map (A236), on `art`, UNPLAYED;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
-> sim, `data/` or `tests/` changes. **⚠️ The save-time hook is in the systems lane's files (§7) and waits for `slice/hud`.**
+> sim, `data/` or `tests/` changes. **The save-time hook is in the systems lane's files (§7); the art lane made it, as call 4 said.**
 
 ## 1. What Joe asked
 
@@ -242,7 +242,7 @@ left it, aged; *Continue* opens his newest save. Play a year and quit to the tit
 next season). Found a new village and quit at once: the title still shows the last village with a home. Rename the saves folder:
 the four seasons, aged. **The title opens no slower** than today (one JPG, no save read).
 
-## 6a. Continue: the paint lifts into the game (A232, ⏸️ call 5)
+## 6a. Continue: the paint lifts into the game (A232; ✅ call 5; 🔨 built, A236)
 
 Joe: *"if we do E, then, when the player clicks continue, can we transition the background image smoothly to the playable
 version?"* **Yes.** The picture *is* the save: it was drawn by the same map, from the same state, at the moment that save was
@@ -269,8 +269,22 @@ written. So the live map can open on exactly the frame the title shows, and the 
   - There is no picture yet, so the title shows the four seasons.
   In each case the paint still lifts, then the picture fades to the opened village.
 - **Who:** the transition lives in `TitleScreen` and in the load path in `Main.Saves.cs`, the same systems-lane file as
-  the save-time hook. It waits for `slice/hud`'s merge on the same terms as call 4.
+  the save-time hook (call 4's terms; the HUD merged, D885).
 - **Cost:** none at play time. The shader runs only while the title or the lift is on screen.
+- **Built as (A236):** `TitleScreen.Lift.cs`, a list of steps stepped each frame, a hitched frame counting as 1/30 s:
+  - **the panel away** (0.3 s), then the save is opened on a still frame; a save that will not open brings the panel back;
+  - **held** until the map has drawn at least 4 frames, the last without a hitch, every figure painted (150 frames at most);
+  - **the paint off** (1.1 s), **the picture off** (0.3 s), **the camera to the play framing and the panels in** (0.9 s).
+    The player has the game from the moment the picture is gone.
+  - **The picture is of the save** when the opened save is its folder's newest and the picture was written after it
+    (`PictureIsOf`) — so *Load…* on that save matches too. Otherwise the paint lifts and the picture fades to the usual framing.
+  - **A key or a click hurries it** once the paint is coming off; none reaches the village under it. A camera the player moves
+    while it eases is theirs.
+  - **Measured on Thornfield at 2560 × 1440:** his click to the whole game 4.7 s: the panel 0.3, the load 1.9 (held still, as
+    long as it was before), the rest 2.4. Houses, roads and people fall on the same pixel in the picture and the map. What differs, under
+    the crossfade: the markers and washes the player has on, and the ink. ⚠️ **The picture's ink is finer than the game's**:
+    the game draws on a 1422-wide canvas scaled 1.8 times, the picture at 2560 unscaled, as the look was approved. Left as approved.
+  - It stands in `OpenTheVillage` (`Main.Saves.cs`) and `LiftTheTitle` (`Main.Title.cs`).
 
 ## 7. Who builds which part
 
@@ -279,8 +293,8 @@ written. So the live map can open on exactly the frame the title shows, and the 
 | The surface: layers, shader, painting script | `textures/ui/title/aged-*.png` (+ `.import`), `shaders/title_aged.gdshader`, `tools/title-aged/` | ✅ art's own |
 | The title reads the newest picture and lays the surface | `TitleScreen.cs`, `TitleScreen.Probe.cs` | art built them (A180, A190, A223), outside the lane's table — ⏸️ call 4 |
 | Drawing and writing the picture | a new `TitleSnapshot.cs` (the second map, the framing, the JPG) and a new `VillageMap.Still.cs` (what it borrows, which only the map can hand over) — no existing file changes | ✅ art (new view files) — call 4, A234 |
-| **The save-time hook**: call `TitleSnapshot` after each save and autosave, and at the quits | **`Main.Saves.cs`** (`Autosave`, `SaveUnderAName`, the three quit paths) — ~10 lines | ⛔ **systems** |
-| The `title:` probe line's new checks | `Main.cs`'s `ProbeTheTitle` asks `TitleScreen.Probe.cs`; ~3 lines if a new check needs a door | ⛔ **systems** |
+| **The save-time hook**: call `TitleSnapshot` after each save and autosave, and at the quits; the lift's one line | **`Main.Saves.cs`** (`Autosave`, `SaveUnderAName`, the quit paths, `OpenTheVillage`) and a new `Main.Title.cs` | ✅ art, call 4 (A236) |
+| The probe's new line | `Main.cs`, one `GD.Print` | ✅ art (A236) |
 
 **⛔ `slice/hud` is open in the main checkout and edits both `Main.cs` and `Main.Saves.cs`** (its step 7 writes a view section into
 `CaptureTheVillage`; `git diff main...slice/hud`). So the hook **cannot be built until the HUD merges**, and then only as a
@@ -299,11 +313,18 @@ and Joe can play it).
 - **`TitleSnapshot`'s pure parts** — the heart from a set of homes, the camera from the heart, "a home standing" — probed from a
   posed world, no disk: the heart at (0.64, 0.50) ± 1 px at 2560 × 1440, 32 px a tile; no home, no picture.
 - **The hook** (systems, after the HUD): under the probe nothing is written; the `save:` line's scratch folder gets a `title.jpg`
-  beside its save.
+  beside its save. *(As built: headless draws nothing, so the new `title picture:` line asks what was asked for — below.)*
 - **Built (A234):** the `title:` line's own — the paint over the picture (each shader declaring every uniform it is handed, the
   washes once and the picture's size, full strength), which picture it picks over posed saves on a scratch folder it deletes, a
   file that is not a picture, a heart's place in its picture, a founding with no heart. **Red-check: 12 mutants, 12 red.** The
   three loud `ERROR` lines about `probe-title\broken\title.jpg` in a probe are that check's, meant.
+- **Built (A236):** `title picture:` (`Main.Title.cs`): an autosave, a named save and F5 each ask for one picture beside the save, a
+  village stopped on an error none; a way out waits for the picture and goes once; Godot does not close the window itself.
+  And the lift, on `title:`: `PictureIsOf` over a scratch folder, the frame at three windows, the camera's way, and whole lifts
+  stepped by hand (refused, over its own picture, over another, hurried, moved). **Red-check: 23 mutants, 22 red** (19 at
+  first; three checks tightened). **The zero, written down:** the lift not waiting for every figure, which a headless map
+  cannot pose. ⚠️ **Not guarded, driven by hand in a window instead:** the picture itself, *Quit to title*, F7, the ✕ (0.15 s to close
+  with its picture), the ✕ minimised (closes at once, the last picture stands).
 - Red-checked, the reds counted (D326). The four checks as `CLAUDE.md` says; **the suite by D846's rule** — this piece changes no
   sim, data or test file, so it is skipped and the record says so.
 

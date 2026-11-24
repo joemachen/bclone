@@ -15,8 +15,8 @@ namespace Kith.Game;
 /// </para>
 /// <para>
 /// ⚠️ <b>A picture takes frames</b>: the figures are baked a few a frame, so the map is drawn until every one is (or
-/// <see cref="MostFrames"/>), then read back, and encoded and written off the main thread. A caller that is about to close the game waits for <c>done</c>; it is always called, whether the picture was
-/// written or not. <b>A picture that fails never costs the save</b>: it is said loudly and the last picture stands.
+/// <see cref="MostFrames"/>), then read back, and encoded and written off the main thread. A caller that is about to close the game
+/// waits for <c>done</c>; it is always called, whether the picture was written or not. <b>A picture that fails never costs the save</b>: it is said loudly and the last picture stands.
 /// </para>
 /// </remarks>
 public sealed partial class TitleSnapshot : Node
@@ -46,6 +46,7 @@ public sealed partial class TitleSnapshot : Node
     private SimWorld _world = null!;
     private Vector2 _heart;
     private int _frames;
+    private int _drawnAtPresent;
     private Task? _writing;
 
     /// <summary>For Godot, which may construct a script's node itself; the game uses <see cref="Take"/>.</summary>
@@ -61,17 +62,21 @@ public sealed partial class TitleSnapshot : Node
 
     /// <summary>
     /// Take the village's picture to <paramref name="path"/>, under <paramref name="parent"/>: <paramref name="done"/> is called once
-    /// it is written, or has failed. With no home standing there is no picture (call 2) and <paramref name="done"/> is called now.
+    /// it is written, or has failed. With no home standing (call 2), or a window that is not drawing, there is no picture and
+    /// <paramref name="done"/> is called now.
     /// </summary>
     internal static void Take(Node parent, VillageMap live, SimWorld world, string path, Action? done = null)
     {
-        if (HeartOf(world) is not Vector2 heart)
+        // A minimised window draws nothing (the ✕ from the taskbar): the last picture stands.
+        if (HeartOf(world) is not Vector2 heart || !DisplayServer.WindowCanDraw())
         {
             done?.Invoke();
             return;
         }
 
-        parent.AddChild(new TitleSnapshot(path, done) { _live = live, _world = world, _heart = heart });
+        // ⚠️ Deferred: at the window's ✕ the tree is passing a notification round and refuses a child, and a quit would wait for ever.
+        var snapshot = new TitleSnapshot(path, done) { _live = live, _world = world, _heart = heart };
+        Callable.From(() => parent.AddChild(snapshot)).CallDeferred();
     }
 
     /// <summary>
@@ -111,25 +116,45 @@ public sealed partial class TitleSnapshot : Node
         {
             if (_writing.IsCompleted)
             {
-                SayIfItFailed();
-                QueueFree();
-                SetProcess(false);
-                _done?.Invoke();
+                End(_writing.Exception?.GetBaseException());
             }
 
             return;
         }
 
+        // ⚠️ Whatever goes wrong ends in `done`: a quit is waiting for it.
+        try
+        {
+            TakeAStep();
+        }
+        catch (Exception ex)
+        {
+            End(ex);
+        }
+    }
+
+    private void TakeAStep()
+    {
         if (_view is null)
         {
             Draw();
             return;
         }
 
-        if (++_frames < MostFrames && !_map.EveryoneIsPainted)
+        bool drawn = Engine.GetFramesDrawn() > _drawnAtPresent;
+        if (++_frames < MostFrames && !(drawn && _map.EveryoneIsPainted))
         {
-            Present();
+            if (drawn)
+            {
+                Present();
+            }
+
             return;
+        }
+
+        if (!drawn)
+        {
+            throw new System.IO.IOException("the window stopped drawing");
         }
 
         Image? picture = _view.GetTexture().GetImage();
@@ -166,6 +191,7 @@ public sealed partial class TitleSnapshot : Node
     /// <summary>The map drawn once more, and rendered once: a frame that only reads renders nothing.</summary>
     private void Present()
     {
+        _drawnAtPresent = Engine.GetFramesDrawn();
         _map.Present(_world, 0d, -1, null, MapDetail.Off);
         _view!.RenderTargetUpdateMode = SubViewport.UpdateMode.Once;
     }
@@ -184,11 +210,15 @@ public sealed partial class TitleSnapshot : Node
         System.IO.File.Move(aside, _path, overwrite: true);
     }
 
-    private void SayIfItFailed()
+    private void End(Exception? failed)
     {
-        if (_writing?.Exception is { } failed)
+        if (failed is not null)
         {
-            GD.PushError($"[Kith] the village's picture for the title was not written: {_path} — the last one stands. {failed.GetBaseException()}");
+            GD.PushError($"[Kith] the village's picture for the title was not written: {_path} — the last one stands. {failed}");
         }
+
+        SetProcess(false);
+        QueueFree();
+        _done?.Invoke();
     }
 }

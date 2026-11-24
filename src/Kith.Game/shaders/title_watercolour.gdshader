@@ -71,5 +71,5 @@ void fragment() {
     // the paper's relief, lit from the upper left
     col *= 1.0 + (tex.b - 0.5) * 0.04 * k;
 
-    COLOR = vec4(col, 1.0);
+    COLOR = vec4(col, COLOR.a);   // the title's own fade, at the lift's end (the picture has no alpha)
 }
