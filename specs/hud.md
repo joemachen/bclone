@@ -1,6 +1,8 @@
 # Spec: The HUD — give the map back
 
-> **Status: ✍️ SPECCED AND MOCKED ON `art` (A207–A214, 2026-11-23); NOTHING BUILT. ⏸️ NINE CALLS JOE'S (§13).** The build
+> **Status: ✍️ SPECCED AND MOCKED ON `art` (A207–A215, 2026-11-23); NOTHING BUILT. ✅ JOE'S NINE CALLS ALL AS RECOMMENDED,
+> AND THE WINDOWS' BUTTONS A COLUMN (A215: *"stack the window buttons as a narrow column"*, *"agree on the 9 calls"*).**
+> ▶️ Next: the art lane's three controls (§8.3), then `slice/hud` (§14). The build
 > is its own **systems slice** after `slice/library-borrowing` merges: every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
@@ -23,18 +25,18 @@
 2560 × 1440 screen at the default size — measured, not guessed: the pixels that change when `H` hides the HUD
 (`mock_hud.py`; the proposal's eyeball 40 % was right). Most of it says zero: nine of ten goods, three of five
 headcounts, eight Professions rows at 0 / 0, three greyed categories. **At rest, as specced here, it covers about 15 %**
-(14.7 % in the mock, 15.6 % with the dev bar a debug build adds).
+(15.1 % in the mock, 16.0 % with the dev bar a debug build adds).
 
 ## 2. Which pillars and non-negotiables this serves
 
 - **§1.1 Legibility, hardest — and it cuts both ways.** A zero is information only when it is a surprise. Nine zeros on
   Day 1 are noise that hides the one number that matters. ⛔ **But nothing leaves *reach*:** every good the village
   knows stays in `more ▾` with its zero (D502 still hides what it does not know), every window is one click on the
-  windows' row, every hotkey is in its button's tooltip. *Hidden from the front, never from the player.*
+  windows' column, every hotkey is in its button's tooltip. *Hidden from the front, never from the player.*
 - **§1.2 Meditative pace.** Fewer windows open is less to manage; flyouts open on a click, never on a hover.
 - **§1.6 Traceable over clever.** The food figure is one existing sim number (`FoodTheVillageHolds`) and one division by
   the village's own eating, both in its tooltip — never a forecast.
-- **D103, a feature the player cannot reach does not exist** — the windows' row is how a closed window stays reachable.
+- **D103, a feature the player cannot reach does not exist** — the windows' column is how a closed window stays reachable.
 
 ## 3. What is there today (read off `art` at `58f3dc3`)
 
@@ -75,7 +77,7 @@ founding. `bars:` poses every cell at `+12,345`. `windows:` wants Professions sh
 | **The valley** | top right, as today | the minimap | open by default |
 | **Village log** | right, under the minimap, as today (its 190 px list, its seven filters) | the stories | open by default |
 | **Professions** | top left, under the strip | able adults and labourers, then a row for each trade with a workplace (§9.2) | open by default |
-| **The windows' row** | bottom left | Centre · People · Professions · Stores · Build queue · Lore · Log · Valley · Settings (Records once the hall stands) | always |
+| **The windows' column** | bottom-left corner, one word a line | Centre · People · Professions · Stores · Build queue · Lore · Log · Valley · Settings (Records once the hall stands) | always |
 | **The tool bar** | bottom centre | the categories with anything earned, then Paint land, Move, Remove ▴, Harvest ▴ | always |
 | **A flyout** | above the tool bar, over its button | one category's buildings, or Remove's / Harvest's tools | while open |
 | **Tool options** | beside the tool bar | Brush: square · round, and *Esc* to put the tool down | while a tool is in hand |
@@ -136,7 +138,7 @@ word and this spec does not put it back unasked.
 
 A small floating sheet holding **20×**, **Skip 1y**, **Skip 10y** and the **frame readout** (the fps line under today's
 top bar). **Built only when `OS.IsDebugBuild()`**, the gate `AddTheSkipControls` already uses (D254) — a release build
-has no dev bar, no 20× and no key 5. Draggable, its place saved like any window's (D504); not on the windows' row and not
+has no dev bar, no 20× and no key 5. Draggable, its place saved like any window's (D504); not on the windows' column and not
 in Settings.
 
 ## 8. The tool bar
@@ -156,7 +158,7 @@ icon-only strip is a memory test):
 - **Homes' flyout** holds the well, the *Build homes as* choices (Cabins …, D721) and *Rebuild older homes*. Paint land is a
   tool, not a building, so it sits with the tools.
 
-**Gone from the bar:** the speeds (§6), Skip (§7), *Centre on village* and *Settings* (the windows' row, §9.3), Cancel (§8.4),
+**Gone from the bar:** the speeds (§6), Skip (§7), *Centre on village* and *Settings* (the windows' column, §9.3), Cancel (§8.4),
 the *Show:* row and the hotkey line (§8.4).
 
 ### 8.2 Flyouts
@@ -211,10 +213,18 @@ standing or being built, or anyone working it** — a zero row only means someth
 (`hud_at_rest.png`). Its 360 px scroll (D842) is unchanged. **A** is today's table, eight rows at 0 / 0; **C** is the window
 folded to its title by default.
 
-### 9.3 The windows' row
+### 9.3 The windows' column (A215)
 
-Bottom left, one `slip-long` sheet of words (Metamorphous): **Centre · People · Professions · Stores · Build queue · Lore ·
-Log · Valley · Settings**, plus *Records* once the hall stands. Each shows or hides its window; a shown one is held in
+The bottom-left corner, one `sheet` of words (Metamorphous), **one a line**: **Centre, People, Professions, Stores,
+Build queue, Lore, Log, Valley, Settings**, plus *Records* once the hall stands. About 137 × 262 logical px.
+
+⚠️ **Why a column, not a row** (Joe, A215, after the first mocks put the row under the tool bar's left end): side by side
+the row (643 logical px) and the bar need 1,351 logical px on Day 1 and 1,528 with every category learned — wider than a
+16:10 window (1,280) always and a 16:9 one (1,422) once the village has learned enough. The column takes the same map area
+as the row and only the corner, so the bar centres freely: with every category learned it starts 67 px clear of the
+column at 1,280 wide and 138 px at 16:9. The `hud overlap:` guard (§14) holds that.
+
+Each word shows or hides its window. Each shows or hides its window; a shown one is held in
 lapis. **It replaces Settings' window ticks** (D306) — Settings keeps display and game settings only. *Centre* is today's
 *Centre on village*. Lore and Records appear when earned, as their buttons do today. *(Call 8: People for "The village",
 Stores for "Stock limits".)*
@@ -259,13 +269,15 @@ on the bar are their own labels today (`Amount()`), so the change is a font on t
 **Figures inside a sentence** (a card's lines, the log) **stay in Grenze Gotisch** — read in their words they are not
 mistaken *(call 7's second half)*.
 
-## 13. ⏸️ Joe's calls — plain words, each with a recommendation
+## 13. ✅ Joe's calls — ALL AS RECOMMENDED (A215, 2026-11-23: *"agree on the 9 calls"*)
+
+Kept as they were put to him; each recommendation below is now the spec.
 
 1. **Professions "on screen somehow."** *Recommended:* it stays open top left, but shows only trades that have a building
    (or a building going up); on Day 1 that's just *Able adults 4 · Labourers 4* and a line saying trades appear as their
    buildings go up. *Or:* exactly as today (eight rows of 0 / 0); *or* folded to its title bar until you open it.
 2. **Where the log sits.** *Recommended:* where it is now, right side under the minimap, same size — it's already where you
-   look for news. *Or:* bottom left, wider and shorter, beside the windows' row.
+   look for news. *Or:* bottom left, wider and shorter, beside the windows' column.
 3. **When the food figure turns red.** *Recommended:* when the food in store won't last until next spring if nothing more
    came in — in spring that's under four seasons, in autumn under two. *Or:* under one year, any time of year; *or*
    never (D410's choice, kept). It also ends the tooltip's sentence: *"…won't see the village through the winter."*
@@ -294,10 +306,10 @@ Cut from `main` after `slice/library-borrowing` merges. The art lane's files (§
 | 0 | Joe's calls answered here; the slice claimed | — | no |
 | 1 | **Red and lapis** — `ParchmentLook` roles, the pressed fonts and swash, `UiLook.Held`, the lapis seal and swashes wired | `ui colours:` no pressed / held / ticked style is rubric; every warning role still is | no |
 | 2 | **UI size** — `× 0.75`, the dial 75–150, settings v2 and its migration (and the windows' one-time reset, call 6) | `ui scale:` a v1 75 reads 100 and draws at 0.75; tests in `PlayerSettingsTests` | **yes** (`Kith.Sim`) |
-| 3 | **Windows** — the defaults (§9.1), the windows' row (§9.3), Settings' ticks gone | `windows:` the valley, log and Professions shown, the roster, Stock limits, Build queue hidden; every titled window has a row button | no |
+| 3 | **Windows** — the defaults (§9.1), the windows' column (§9.3), Settings' ticks gone | `windows:` the valley, log and Professions shown, the roster, Stock limits, Build queue hidden; every titled window has a button in the column | no |
 | 4 | **The strip** — one row; time beside the date, PAUSED gone; the dev bar (§7) | `bars:` one row at `+12,345` everywhere, ends left of the right column; `dev bar:` present in a debug build with 20× and both skips, and the strip holds no 20× | no |
 | 5 | **Hide zeros, the food figure, Professions' rows** (§6.1–6.2, §9.2) | `bars:` a good at 0 is hidden, at 1 shown, at 0 and short shown; `food:` equals `FoodTheVillageHolds()` and is unmoved by 500 food posed in a larder; `runway:` 7 seasons at the founding | no |
-| 6 | **The tool bar and flyouts** (§8.1–8.2, §8.4) — the tabs, the *Show:* row, Cancel and the hotkey line gone | `bar height:` **asserts the new pinned number** (not only the spread); `flyouts:` every category's and both tools' flyouts open inside the window; `categories:` Knowledge, Civic and Other hidden at the founding, Works and Food shown | no |
+| 6 | **The tool bar and flyouts** (§8.1–8.2, §8.4) — the tabs, the *Show:* row, Cancel and the hotkey line gone | `bar height:` **asserts the new pinned number** (not only the spread); `flyouts:` every category's and both tools' flyouts open inside the window; `categories:` Knowledge, Civic and Other hidden at the founding, Works and Food shown; **`hud overlap:` no two floaters meet** (the strip, the dev bar, the valley, the log, Professions, the column, the bar, an open flyout, tool options — a flyout touching its own bar is the one exception), posed with every category earned, at 1,280 × 800 and 1,422 × 800 — red-checked with the column laid out as the first mocks' row | no |
 | 7 | **New, until clicked** (§8.3), saved | `new:` a library posed learned lights Knowledge and the Library gold; opening clears the category, picking clears the building; a reload keeps it | **maybe** — if the seen set goes in the save's sim-side format, the save tests |
 | 8 | **Lining figures** (§12) | `numerals:` the strip's amounts and the Stock limits table are Cardo | no |
 | 9 | **The founding line** — `SimWorld.Create` narrates what the stores hold (*"4 exiles arrive in 2 households with a cart: 1,200 food and 20 stone tools. Spring, Year 1."*); *"no food stored"* only when there is none | the suite; `Phase0SimTests.cs:463` pins the village of one's line — keep it if its world holds no food, re-pin it if it does | **yes** |
