@@ -9,7 +9,8 @@
 > foresee (the strip wraps at Joe's word, D877; a real founding is two lines at 1,280, D878). 📏 **At rest: 18.6 %** of a
 > 2560 × 1440 screen with the debug dev bar, ≈ 17.6 % without (D883; §16 item 2 asks 16 — the tool bar's 20 px icons are the
 > difference, Joe's call). ✅ Joe approved it, the bar's size
-> included (D884, *"approved"*). ⏸️ The merge at his word. The build
+> included (D884, *"approved"*). ✅ Merged into `main` and pushed
+> at his word (D885, `592c754`). The build
 > is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
