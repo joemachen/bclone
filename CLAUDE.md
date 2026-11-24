@@ -103,7 +103,8 @@ grep -rn "[0-9]\{15,\}" tests/Kith.Sim.Tests/*.cs   # the goldens, before and af
 - ⛔ **Do not run `test.bat`.** It ends in `pause` and will block until the session times out. It is
   a convenience wrapper around the first line above.
 - ⚠️ **The probe is the only view verification that exists** (D11, D160). Read all its lines —
-  `bar height` must stay **183** (173 from A119 to A120, when Joe's font pair — Metamorphous for the bar's main row, Grenze Gotisch below it — took taller lines; 177 from A112 to A119, when Joe's condensed font, Archivo Narrow, fitted the build bar in fewer rows; 151 until A112, when the painted icons went above the build bar's labels — Joe: *"Yes to both"*; 161 until D475, when the hint line lost *"g ground ·"* with the soil
+  `bar height` must stay **104** — the tool bar's one row since D879 (`hud.md §8`: the tabs, the *Show:* row, Cancel and the hint line
+  went, the flyouts are floaters of their own), and **the probe asserts the number now**, not only a spread (183 from A120 to D879, when Joe's font pair — Metamorphous for the bar's main row, Grenze Gotisch below it — took taller lines; 177 from A112 to A119, when Joe's condensed font, Archivo Narrow, fitted the build bar in fewer rows; 151 until A112, when the painted icons went above the build bar's labels — Joe: *"Yes to both"*; 161 until D475, when the hint line lost *"g ground ·"* with the soil
   and stopped wrapping at 1280 — proven by putting the words back: 161 again), `tile centres` must
   stay ✅, `new game:` must stay ✅ (the new-game screen, measured and then founding the config's own
   valley — D479), and **if `done.` is missing a headless

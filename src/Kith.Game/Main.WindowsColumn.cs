@@ -99,8 +99,8 @@ public partial class Main
     }
 
     /// <summary>
-    /// The column's corner: bottom left. ⚠️ Until the control bar leaves the full width (<c>hud.md §14</c> step 6) it
-    /// stands on the bar, so the two never meet.
+    /// The column's corner: bottom left, on the window's foot — the tool bar is centred since step 6 (D879), and
+    /// <c>hud overlap:</c> holds the two apart (it stood on the full-width bar from D876 to D878).
     /// </summary>
     private void PlaceTheWindowsColumn()
     {
@@ -109,10 +109,8 @@ public partial class Main
             return;
         }
 
-        float barTop = _controlBar?.GetParent()?.GetParent() is PanelContainer { Visible: true } bar ? DrawnTopLeft(bar).Y : Size.Y;
-        float up = Mathf.Max(Edge, Size.Y - barTop + Edge);
-        _windowsColumn.OffsetTop = -up;
-        _windowsColumn.OffsetBottom = -up;
+        _windowsColumn.OffsetTop = -Edge;
+        _windowsColumn.OffsetBottom = -Edge;
     }
 
     /// <summary>
