@@ -4,6 +4,9 @@
 > width probe runs on every verification and its `bar height` line is the bar (151 since D475).
 > *Corrected 2026-10-27 (D640): this said "not yet measured or looked at" for seven weeks after Joe
 > played the bar and asked for its UI size (D310) and one height on every tab (D312).* · Owner: Joe + Claude Code
+> ⏭️ **To be replaced, not yet built (A214, 2026-11-23):** `specs/hud.md §8` turns the tabs and the *Show:* row into
+> category and tool flyouts, hides an empty category (A210) and moves the speeds beside the date. This spec stays true
+> of the game until `slice/hud` builds it.
 > Format per `METHODOLOGY.md §2`. Implements Joe's UI mockup, second half. Resolves
 > `buildings-catalog.md §8.2` (D223's deferral) and closes `content-inventory.md` finding 5's
 > reachability hole.

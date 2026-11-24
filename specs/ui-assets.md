@@ -20,6 +20,8 @@ The game lays out at **1280 × 800 logical pixels** and stretches to the window 
 | Joe today: 1920 × 1080, 75 % | **≈ 1.0** |
 | Largest: 3840-wide (4K), dial at 115 % | **3.45** |
 
+⏭️ *A213 (not yet built): today's 75 % becomes the dial's 100 % and the dial 75–150 % (`hud.md §11`); the physical sizes in this table do not change, only the number the dial shows.*
+
 So a 20-logical icon lands between **11 and 69 physical pixels** (A101: raised from 14, which landed at 8–48 and was
 a speck on Joe's screen in every Phase 1 direction). **Every master is painted at 4 × its logical size or more**, and
 every icon must still read at 8 px (§1.3) — the test stays stricter than the smallest real case.
