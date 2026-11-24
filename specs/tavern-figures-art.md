@@ -1,7 +1,7 @@
 # W3's cask and the brewer's and keeper's figures (A203)
 
 > **Status: 🔨 BUILT ON `art` (A204, 2026-11-23) — Joe: *"All as recommended"* on §6's five calls; ✅ played, MERGED INTO
-> `main` at his word — *"merge"* (A205, merge `aa43220`); not pushed. Specced and mocked A203.** Art lane (CLAUDE.md
+> `main` at his word — *"merge"* (A205, merge `aa43220`); ✅ pushed at his word (A206). Specced and mocked A203.** Art lane (CLAUDE.md
 > *Two tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\tavern\figures\w3_figures_mock.jpg`, painted by the game's own `PersonPainter` — today's file and a
 > proposed copy (`PersonPainter.cand.cs`, made by `cand.py`), run outside the game by a scratch harness (`harness/`), so
