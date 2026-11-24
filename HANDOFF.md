@@ -11079,7 +11079,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   the arms; keep the two colours; his OK for `PersonPainter.cs`, `VillageMap.PeopleProbe.cs`, `TradeGlyph.cs`.**
   ✅ **His *"All as recommended"* — 🔨 BUILT (A204); the mock is the build (the same painter). ⏸️ His play
   (`.\run.bat` in the art folder: a keeper carrying ale to the tavern, a brewer walking to the brewery), then the merge
-  into `main` at his word.**
+  into `main` at his word.** ✅ **MERGED INTO `main` at his word, *"merge"* (A205, merge `aa43220`); not pushed.
+  W3's art list is done.**
 
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,
