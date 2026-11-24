@@ -28,6 +28,11 @@ namespace Kith.Sim.Tests;
 // ZZ_REACH tiles' walk of a standing library (0 = every home, the library beside each — the ceiling), and no relative posed
 // yet this run (one a household a generation: the run is shorter than a generation), receives an unmarried adult of 18–30
 // carrying nomads_food_each, ZZ_SPREAD (0) hashed years after it first qualified.
+// ⭐ D869 (step 4, the real code): ZZ_ARM=real runs the shipped borrowing with letters ON — a library's walk, the hashed answer,
+// the bed and food caps — and every other arm turns letters OFF (`base` is then the village without borrowing; `letters`
+// poses as before, without the real rule doubling it). Kin come by letter are counted apart from nomads (`kin`), and ZZE adds
+// the letters written and the answers standing at the end. The valleys' `real` arm stands a library in the middle of the
+// lived-in homes at Year ZZ_FROM (an unattended village never raises its gifted one).
 // Copy in; `dotnet test tests/Kith.Sim.Tests -c Release --filter ZzLibrary --logger "console;verbosity=detailed"`; delete.
 public sealed class ZzLibrary
 {
@@ -59,6 +64,7 @@ public sealed class ZzLibrary
         int years = Env("ZZ_YEARS", 15);
         int reach = Env("ZZ_REACH", 0);
         int spread = Env("ZZ_SPREAD", 0);
+        world.LettersEnabled = arm == "real";
 
         // ---- At load.
         var buckets = new int[ReachCuts.Length + 2];
@@ -100,8 +106,8 @@ public sealed class ZzLibrary
         ulong season = (ulong)c.TicksPerDay * (ulong)c.DaysPerSeason;
         ulong day = (ulong)c.TicksPerDay;
 
-        int yNomads = 0, yPosed = 0, yBirths = 0, yStarved = 0, yCold = 0, yOther = 0, yLeft = 0;
-        int tNomads = 0, tPosed = 0, tBirths = 0, tStarved = 0, tCold = 0, tOther = 0, tLeft = 0;
+        int yNomads = 0, yPosed = 0, yBirths = 0, yStarved = 0, yCold = 0, yOther = 0, yLeft = 0, yKin = 0;
+        int tNomads = 0, tPosed = 0, tBirths = 0, tStarved = 0, tCold = 0, tOther = 0, tLeft = 0, tKin = 0;
         int fallBurn = 0, fallWanted = 0, fallHomes = 0, fireOutDays = 0, goingsInGrad = 0, goingsInOther = 0, wColdDeaths = 0;
         int tColdGrad = 0, tColdOther = 0, tWintersGrad = 0, tWintersOther = 0, tGoingsGrad = 0, tGoingsOther = 0, tFireOut = 0;
         int tShortAtWinter = 0, tHomeWinters = 0;
@@ -210,7 +216,12 @@ public sealed class ZzLibrary
                 if (seen.Add(v.Id) && !posedIds.Contains(v.Id))
                 {
                     wasAlive.Add(v.Id);
-                    if (v.ArrivedAtTick > 0UL)
+                    if (v.CameByLetterOf != 0)
+                    {
+                        yKin++;
+                        tKin++;
+                    }
+                    else if (v.ArrivedAtTick > 0UL)
                     {
                         yNomads++;
                         tNomads++;
@@ -270,13 +281,14 @@ public sealed class ZzLibrary
             {
                 _o.WriteLine(
                     $"ZZY {village} {arm} year {world.Clock.Year} people {world.Population} food {FoodHeld(world)} "
-                    + $"nomads {yNomads} posed {yPosed} births {yBirths} starved {yStarved} cold {yCold} other {yOther} left {yLeft}");
-                yNomads = yPosed = yBirths = yStarved = yCold = yOther = yLeft = 0;
+                    + $"nomads {yNomads} posed {yPosed} kin {yKin} births {yBirths} starved {yStarved} cold {yCold} other {yOther} left {yLeft}");
+                yNomads = yPosed = yBirths = yStarved = yCold = yOther = yLeft = yKin = 0;
             }
         }
 
         _o.WriteLine(
             $"ZZE {village} {arm} years {years} people {world.Population} food {FoodHeld(world)} nomads {tNomads} posed {tPosed} "
+            + $"kin {tKin} letters {world.Households.Sum(h => h.LettersWritten)} waiting {world.Households.Count(h => h.AnswerWaiting)} "
             + $"births {tBirths} starved {tStarved} cold {tCold} other {tOther} left {tLeft} "
             + $"homewinters {tHomeWinters} shortatwinter {tShortAtWinter} fireoutdays {tFireOut} "
             + $"winters {tWintersGrad} {tWintersOther} colddays6 {tColdGrad} {tColdOther} goingsin {tGoingsGrad} {tGoingsOther}");
@@ -431,6 +443,8 @@ public sealed class ZzLibrary
         }
 
         ColdStartTests.PlayTheOpening(world);
+        world.LettersEnabled = arm == "real";
+        int kin = 0;
         int years = Env("ZZ_YEARS", 50);
         int from = Env("ZZ_FROM", 15);
         var posedHouseholds = new Dictionary<int, int>();
@@ -445,6 +459,11 @@ public sealed class ZzLibrary
             {
                 ColdStartTests.MarkSomewhereNear(world, BuildingKind.Granary, world.Map.FoundingSite, 8);
                 ColdStartTests.MarkSomewhereNear(world, BuildingKind.Warehouse, world.Map.FoundingSite, 8);
+            }
+
+            if (arm == "real" && year == from && world.Libraries.Count == 0)
+            {
+                StandALibraryAmongTheHomes(world);
             }
 
             if (arm == "letters" && year >= from && world.Population > 0)
@@ -468,7 +487,11 @@ public sealed class ZzLibrary
                     if (seen.Add(v.Id))
                     {
                         alive.Add(v.Id);
-                        if (v.ArrivedAtTick > 0UL)
+                        if (v.CameByLetterOf != 0)
+                        {
+                            kin++;
+                        }
+                        else if (v.ArrivedAtTick > 0UL)
                         {
                             nomads++;
                         }
@@ -490,6 +513,14 @@ public sealed class ZzLibrary
                 }
             }
 
+            if (Environment.GetEnvironmentVariable("ZZ_TRACE") is not null && year >= 10 && year <= 24)
+            {
+                _o.WriteLine($"ZZT {arm} {seed} year {year} people {world.Population} adults {world.Villagers.Count(v => v.Alive && v.CanWork)} "
+                    + $"kin {kin} starved {starved} births {births} nomads {nomads} held {world.FoodTheVillageHolds()} need {world.FoodABirthNeeds(world.Population)} "
+                    + $"harvest {world.FoodProducedLastYear} eaten {world.FoodEatenLastYear} letters {world.Households.Sum(h => h.LettersWritten)} "
+                    + $"waiting {world.Households.Count(h => h.AnswerWaiting)} food {FoodHeld(world)}");
+            }
+
             if (died < 0 && world.Population == 0)
             {
                 died = year;
@@ -498,7 +529,33 @@ public sealed class ZzLibrary
 
         _o.WriteLine(
             $"ZZB {arm} {seed} alive {world.Population} peak {peak} starved {starved} cold {cold} other {other} "
-            + $"nomads {nomads} posed {posed} births {births} died {died} food {FoodHeld(world)}");
+            + $"nomads {nomads} posed {posed + kin} births {births} died {died} food {FoodHeld(world)} kin {kin} "
+            + $"libraries {world.Libraries.Count}");
+    }
+
+    /// <summary>A library on the first clear tile nearest the lived-in homes' middle — a well-placed one (the granary's ground rule).</summary>
+    private static void StandALibraryAmongTheHomes(SimWorld world)
+    {
+        List<GridPos> homes = LivedIn(world).Select(h => h.HomeTile!.Value).ToList();
+        GridPos middle = homes.Count == 0
+            ? world.Map.FoundingSite
+            : new GridPos((int)homes.Average(t => t.X), (int)homes.Average(t => t.Y));
+        for (int radius = 0; radius < 30; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    var tile = new GridPos(middle.X + dx, middle.Y + dy);
+                    if (world.CanBuildAt(BuildingKind.Granary, tile).Allowed)
+                    {
+                        world.Libraries.Add(new Library { Position = Point.CentreOf(tile), Name = "library 1", Shelves = world.Config.LibraryShelves });
+                        world.SchoolLearned = true;
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     public static IEnumerable<object[]> Valleys()

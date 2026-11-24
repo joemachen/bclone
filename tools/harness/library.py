@@ -50,9 +50,10 @@ def saves(folder, arms):
             if e is None:
                 row += ' | --'
                 continue
-            row += f' | {e["posed"]:3}/{e["people"]:3}/{e["starved"]:3}'
-            for k in ('people', 'nomads', 'posed', 'births', 'starved', 'cold', 'left'):
-                totals[a][k] += e[k]
+            # D869: the real rule's relatives are `kin` (a posed arm's are `posed`); letters and answers standing at the end.
+            row += f' | {e["posed"] + e.get("kin", 0):3}/{e["people"]:3}/{e["starved"]:3}'
+            for k in ('people', 'nomads', 'posed', 'kin', 'letters', 'waiting', 'births', 'starved', 'cold', 'left'):
+                totals[a][k] += e.get(k, 0)
         print(row)
     for a in arms:
         print(a.ljust(10), dict(totals[a]))

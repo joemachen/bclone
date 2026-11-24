@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868); ✅ step 4, measured again with the real code (D869, §4.9).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -189,6 +189,44 @@ Seeds 200–299, fifty years, letters at every home from Year 15 (the library be
   bargain the birth gate already strikes for children in these valleys (D155: *growth arrives and starvation is still a
   minority of deaths*). No valley dies that would not have.
 
+### 4.9 Measured again, with the real code (D869, step 4)
+
+The same instrument, with the shipped rule instead of a pose (`ZZ_ARM=real`: the walk for paper, the hashed answer within 24
+letters, the bed and the food test; every other arm letters **off**). His 15 lived-in villages, ten years on:
+
+| Arm | Relatives | Nomads | Births | Starved | Left | People at the end |
+|---|---|---|---|---|---|---|
+| Letters off (the shipped rule switched off) | — | 65 | 104 | **0** | 6 | 507 |
+| ⭐ **Letters on — the real rule** | **40** | 66 | 115 | **0** | 0 | **565** |
+| §4.4's prediction (posed: 12 tiles, 0–6 years, food test) | 35 | 66 | 112 | 0 | 4 | 553 |
+
+- **The bar is met** (§10): relatives about **six in ten** of the nomads' number (40 against 66; the prediction said half),
+  and **nobody starved** — Larkspur, the 17-person village the two caps alone starved in §4.4, takes 7 relatives and ends at
+  31 with nobody lost. 128 letters were written; 3 answers stood waiting at the end.
+- **Letters off reproduces D864's village exactly** (507 people, 65 nomads, 104 births, 0 starved) — the switch truly
+  turns the borrowing off, and a village with no library in reach is untouched.
+- The real rule brings a few more than the pose: the walk answers on the 1st–24th letter a season apart, so some homes are
+  answered in the first year, where the pose waited a hashed 0–6 years from the spring a home first qualified.
+- *Left* 6 → 0 is one run of fifteen villages; not claimed as an effect.
+
+The 100 unattended valleys, fifty years, a library stood in the middle of the lived-in homes at Year 15 (an unattended
+village never raises its gifted one), letters on:
+
+| Arm | Relatives (valleys) | Starved (valleys) | Dead valleys | Alive at 50 | Nomads | Births |
+|---|---|---|---|---|---|---|
+| Letters off | — | 635 (54) | 16 | 1,292 | 1,910 | 595 |
+| ⭐ **Letters on — the real rule** | **143 (35)** | **714 (55)** | 17 | 1,271 | 1,887 | 528 |
+| §4.7's prediction (posed, food test) | 144 (36) | 749 (54) | 16 | 1,291 | 1,914 | — |
+
+- **As predicted:** the food test mostly says no in a valley nobody plants for, relatives come to a third of them, and
+  starvation rises **12 %** (the prediction said 18 %) — the birth gate's own bargain. 25 valleys starve more and 22 less.
+- ⚠️ **One valley died that had not, and it was not the relatives** — seed 215, traced year by year: **no relative had come**
+  when it starved out in Years 20–21 (its two answers stood on food, refused as they should be); it went into the same famine
+  without letters too and lost 9 of its 13. What differed was the food held going in (387 against 539 in Year 20): the
+  adults' walks for paper are time, and in a valley already starving that was the last of its margin. A harness valley
+  (D447), not a player's — the walk's cost is the tavern evening's at a sixth of its rate.
+- Fewer births (528 against 595): a relative takes the bed and the food to spare a child would have.
+
 ### 4.8 What the numbers are not
 
 - **Ten years is less than a generation**, so the generation cap was never reached on the saves; its length (call 2) is a
@@ -357,7 +395,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
    (`VillageMap.WhereTheyWalkTo`): kin to their household's door, a band to the camp as before. ⚠️ **Kin walk in without
    holding the village at 1×** — one relative is a household's news, said in the log; a band is the village's and stops it
    (D572). Joe's word changes that.
-4. **Measured again on his saves with the real code** (D855's shape): relatives, nomads, starved, people.
+4. ✅ **Measured again on his saves with the real code** (D869, §4.9; D855's shape): relatives, nomads, starved, people.
 5. **Joe plays it** — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
    line, a relative arrive; then the merge at his word.
 
