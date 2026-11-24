@@ -309,6 +309,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.WalkingToTheRiver => false,
         VillagerState.DrawingAtTheRiver => false,
 
+        // The library's borrowing (`library-borrowing.md §5.1`): a household's errand, nobody's trade.
+        VillagerState.WalkingToTheLibrary => false,
+        VillagerState.AtTheLibrary => false,
+
         // Tending is the look only (D511): no trade grows from it, and nor does the walk back to the
         // steading — which is why that walk is its own state and not `TravelingHome`, which counts.
         VillagerState.WalkingOutToTend => false,

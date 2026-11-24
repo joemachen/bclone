@@ -78,6 +78,27 @@
 >   it, so a painted shape's picture reaches past its cells (Joe's field over a quarry — apart in the sim, overlapping on screen).
 >   `ZoneOutline.Trace(…, keepClearOf:)` pins the corners near somebody else's ground. And a geometry check that reads only a
 >   polyline's POINTS misses a side that cuts across — walk the sides.
+> - **⛔ TRAP (D864): AN ARRIVAL CAPPED BY A ROOM IS NOT CAPPED BY THE LARDER.** Letters to kin held by Joe's two caps (a spare
+>   bed, one a generation) starved 15 of his people in ten years and nearly tripled the unattended valleys' famine: a bed asks the
+>   house, not the village's food. Births learned this in D153 (*"bred to ninety-two … thirty-three starved"*). Any new way for
+>   people to arrive asks the birth gate's food half too — or says why not.
+> - **⛔ TRAP (D864): A HARNESS COUNTER KEYED ON "FIRST SEEN ALIVE" RE-COUNTS THE DEAD.** `wasAlive.Add(id)` for a newcomer
+>   re-added a dead newborn every tick, so the first pass read 11,622 births and 20,136 starved. Keep a seen-set apart from the
+>   alive-set; read one save's yearly lines before reading a table.
+> - **⛔ TRAP (D867): A BUILDING GIVEN IN A TEST IS NOT A BUILDING RAISED.** `Libraries.Add(...)` skips what raising one does
+>   (`LearnTheSchool`), and a save with a library loads `SchoolLearned` true — so a save-and-load of the posed village hashed
+>   differently, and it looked like the new fields were saved wrong. Diff the two saves' text before suspecting the code;
+>   pose a gift the whole way (`AVillageWithALibrary` sets `SchoolLearned`). And posing people raises what the birth gate
+>   asks (D409's food a head): a test that fills a house with children can fail the food half on that alone.
+> - **⛔ TRAP (D870): A SIGNAL PRESSES A BUTTON NOBODY CAN SEE.** D868's probe pressed the library's *Letters to kin* switch with
+>   `EmitSignal(Pressed)` and read the sim flip — green — while the switch's row was built hidden (`InspectorRow` rows start
+>   `Visible = false`; `ShowSettings` shows them) and Joe found no switch at all. A probe that works a control asks
+>   `IsVisibleInTree()` before it presses; a new inspector row needs its line in `ShowSettings`.
+> - **⛔ TRAP (D868): A PROBE MUTANT THAT NEVER RAN THE PROBE READS GREEN.** Python's `subprocess.run(..., shell=True)` on Windows
+>   is cmd, so `KITH_PROBE_WIDTHS=1 "$GODOT" …` set nothing and ran nothing: five view mutants printed *"green — (no library
+>   line)"*. Pass the probe's switch in `env=` and the exe as a list, and count a missing line as a failure, never a pass. And
+>   pose apart what a check tells apart: a roof posed where the founders stand made the house and the camp one tile, and
+>   "walks to the door, not the camp" scored zero.
 > - **⛔ TRAP (D854): A WORKPLACE DID NOT KNOW WHICH BUILDING IT STOOD IN** — seven places read it off the trade
 >   (`JobsCatalog.WorksAt(workplace.Kind)`), so a second building for one trade is read as the first everywhere. Ask
 >   `SimWorld.BuildingKindOf(workplace)`; a new building for an existing trade goes on `JobRow.AlsoWorksAt` and sets
@@ -11041,6 +11062,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **MARRIAGE BETWEEN KIN IS NOT PREVENTED ANYWHERE (a known gap, D865).** The sim keeps no parent links — a villager has a `Generation` count and a household, nothing more — and `HouseholdSystem.FindPartner` refuses only someone of the same household. So two siblings who have both left home can pair today, and kin who came by letter can pair with the host family once either has moved out. A real bar wants parents recorded at birth (a save field and a rule); his to say whether it is wanted.
+
+- ⏸️ **GRADUATES HOLD THE COLD-WINTER WORRY FOUR TIMES AS OFTEN (found by D864's measurement, 2026-11-23; not built, not a slice yet).** On his 15 lived-in saves over ten years, 79 of 401 graduate adult-winters reached six days at the get-warm line against 132 of 2,733 for everybody else. The school's B(i) (D753) lets a graduate stay out toward `school_heed_percent` 80 beside the village, and W2 counts every day past `seek_shelter_percent` 50 as a cold day. Two of his rules pulling against each other: his to say whether a graduate's cold day should be counted at her own line.
+
+- ⏸️ **THE LIBRARY'S BORROWING — LETTERS TO KIN, THEN THE ALMANAC (Joe, 2026-11-22; started 2026-11-23, *"systems: library"*).** **✅ MERGED INTO `main` AT HIS WORD (D871, 2026-11-23, *"Yes, merge"*); NOT PUSHED; `slice/library-borrowing` DELETED. ▶️ Push at his word.** ~~🔨 being built on `slice/library-borrowing`~~ (D863). 📏📝 **Measured and specced (D864, `specs/library-borrowing.md`); ⏸️ FIVE CALLS HIS (§9), nothing built:** (1) any adult borrows; (2) a generation = 24 years from the last kin; (3) a letter a season, answered within six years by hash; (4) ⭐ new — kin come only with food to spare (the birth gate's food half; his two caps alone starved 15 of his people in ten years); (5) the almanac not now — it changes nothing (99.3 % of homes have their wood in at winter's first day, no cold deaths) — kept for W8. ✅ **All five as recommended, every default, and two additions (D865): kin's place in the family and marriage stated (§5.3a), a letters on/off switch on the library card and the letters waiting shown (§5.4–5.4a). 🔨 Building, §7's order — ✅ step 1, the walk for paper and the letter at home (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868) — paper in hand (a stand-in), the cards' lines, the switch, the walk-in to the door; ✅ step 4, measured again with the real code (D869): on his saves 40 relatives against 66 nomads, nobody starved; 🎮 step 5, he played it (D870): *"everything else worked as expected"* — the switch's row shown (it was built hidden), a relative's arrival at 1× like the nomads (his call). ▶️ His look at the two fixes, then the merge at his word.** Joe's play note: the library gives no reason to build it near homes. His pick: a villager walks from home to the library in spare time and carries a book home (the walk in the one cost field, the tavern's reach shape); **letters to kin** bring one relative up the valley to join that household — *a spare bed in it, at most one a household a generation*; **the almanac** has a household lay in its firewood earlier and come in from the cold sooner. ⛔ Not a contentment comfort (it would empty the tavern), not faster apprenticeship (D209), not a yield that climbs with a count (D196, D34). Spec first (`specs/library-borrowing.md`), measured on his saves; ⏸️ its calls his before anything is built.
+
 - ⏸️ **THE PROFESSIONS PANEL — A HEIGHT LIMIT AND A SCROLL BAR (Joe, 2026-11-22, playing W3).** Moved here from the art lane's list (D842): the panel is drawn in `Main.cs`, the systems lane's, so the coordinating session gave it to the open slice. **🔨 Built on `slice/w3-tavern` (D842):** the table in a scroll, as tall as its rows up to 360 logical px, then it scrolls; the probe's `professions height:` line poses every trade learned.
 
 - ✅ **W14, THE MARKET STAND — PLAYED AND MERGED INTO `main` AT HIS WORD (D859, *"played it, merge"*); not pushed.** *(Read until D859:)* ⏸️ **W14, THE MARKET STAND (D839, Joe: *"The long walk"*) — 🔨 being built on `slice/w14-market-stand` (2026-11-22, Joe: *"start the market stand"*) — 📏 measured and 📝 specced (D851, `specs/market-stand.md`); ✅ every call answered (D852 — four as recommended; call 2 his: each stall has its own one marketer, outside the professions number); 🔨 building.** *(Read "⏸️ FIVE CALLS HIS (§9) … nothing built until he answers" until D852.)* *(Read "measured on his saves first, then `specs/market-stand.md` and his calls" until D851.)* *(Read "QUEUED AFTER W3, NOT CLAIMED; NOTHING BUILT, NO SPEC" until 2026-11-22.)* A small market (one marketer's seat, half the store and half the starting limit a good, a handcart) for the far houses, learned once enough households have made a very long shopping trip — the number measured on his saves first. Its own slice after W3 merges.
@@ -11053,6 +11080,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   word (D838): ale brews to its limit, tavern or not, and is kept in the granary. 🐞 **His play (D843):** his tavern stood
   14–26 tiles' walk from every home, so nobody came and the card still said "Open of an evening"; the card now counts the
   homes within reach. ✅ **His call (D847, *"Keep 12"*): `tavern_reach_tiles` stays 12 — the tavern goes among the homes.**
+
+- ⏸️ 🎨 **ART LANE — THE LIBRARY'S BORROWING (D868; `library-borrowing.md §8`, the art lane's list, D774).** Asked, not drawn here: **paper in hand** — a villager walking home from the library with a letter or a few sheets (the cask's precedent). Until then `VillageMap.DrawThePaper` draws a stand-in sheet at the walker's side, opposite the pail, while `Villager.CarryingPaper`; take it out when the figure carries its own. The library's own drawing, if still a stand-in, is now a building people walk to; nothing new is asked of it. No new building, good or trade.
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** 🔨 **The two buildings
   on the map: being built on `art`** (A199, 2026-11-23, Joe via the coordinator: *"art: tavern and brewery real buildings"*;

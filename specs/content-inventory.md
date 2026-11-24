@@ -100,6 +100,7 @@ have been **rows** since D210, D218 and D222; the enums are aliases for the buil
 | **Tended patches** (foraging) | ✅ | +10 % forage. PEOPLE, from mastering foraging |
 | *How a technique lives* | ✅ | **Unknown → Known** when someone masters the trade here (a founder's mastery does not count); **kept** while any master is alive; **Established** once written in a library, which is **automatic at mastery** if a shelf is free (D204; `library_shelves` 5); **lost** when the last master dies and no library holds it. An elder who is the only master is flagged *at risk* |
 | **The library** (literacy) | ✅ | A **gift** after **15 years of a kept granary** (`literacy_years`) — free materials, the work owed |
+| **Borrowing — letters to kin** | ✅ | A home within **12 tiles' walk** of a library fetches paper a season apart and writes to kin; a relative (18–30, a surname of their own, 20 food) comes on a hashed letter within 24 when there is a **bed** and the village has **food to spare**, one a household **a generation** (24 years); a village-wide switch on every library's card (D863–D871, `library-borrowing.md`) |
 | **The town hall** | ✅ | A **gift** when the **last founder dies** (D252) |
 | **The quarry** | ✅ | Learned by doing: **200 stone dug by hand** — paid for |
 | **The smithy** | ✅ | A **gift** after **50 iron dug by hand** (D444) |

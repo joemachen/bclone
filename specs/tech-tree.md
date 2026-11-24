@@ -170,6 +170,8 @@ There is no button that instantly preserves a technique. You spend a year of you
 - **Burns.** Fire stops being flavour and becomes the most consequential random event in the game — one bad night can undo three generations of recording.
 - **Upgradeable** (timber → stone → vaulted), buying down decay and fire risk.
 
+**⭐ Borrowing (📝 specced, not built — D864, `library-borrowing.md`):** a villager walks from home to a library within 12 tiles and carries paper home; a letter now and then brings one relative up the valley — the reason to build a library near homes (Joe's play note, D863).
+
 **Emergent consequence worth protecting:** because capacity is per-building and buildings burn, **copying a record into a second library** becomes something a player would deliberately do. It costs a shelf slot in each place and a scribe's season, and it survives one fire. The sensible layout is libraries kept *apart*, not one grand central archive.
 
 That is monastic manuscript culture arriving from two rules with no special-case system. It also gives the late game a permanent sink for scribe labour that is not "unlock more stuff" — it is **insurance**, which is exactly right for a game with no win condition.

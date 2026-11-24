@@ -1767,6 +1767,48 @@ public sealed record SimConfig
     public int TavernStock { get; init; } = 20;
 
     // ---------------------------------------------------------------
+    //  THE LIBRARY'S BORROWING (`specs/library-borrowing.md`, D864–D865)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// How far a home may be from a library, in tiles of the one cost field, for its adults to walk there for paper — the
+    /// tavern's reach (Joe, D865: the default accepted). The walk, never a ring (D120): a library across a river is far.
+    /// </summary>
+    /// <remarks>Measured (D864): 39 of the 86 homes in his ten villages with a library stand within 12 tiles of it.</remarks>
+    [JsonPropertyName("library_reach_tiles")]
+    public int LibraryReachTiles { get; init; } = 12;
+
+    /// <summary>Days a household waits after a letter before fetching paper for the next — a season (Joe's call 3, D865).</summary>
+    [JsonPropertyName("letter_every_days")]
+    public int LetterEveryDays { get; init; } = 30;
+
+    /// <summary>Ticks at the library taking paper — half a day, the tavern's sit.</summary>
+    [JsonPropertyName("library_sit_ticks")]
+    public int LibrarySitTicks { get; init; } = 2;
+
+    /// <summary>
+    /// Where the letters switch starts for a new village (Joe's addition 2, D865) — the Nomads switch's shape. The village's
+    /// own switch is <c>SimWorld.LettersEnabled</c>, saved and hashed when off, toggled on the library's card.
+    /// </summary>
+    [JsonPropertyName("letters_enabled")]
+    public bool LettersEnabled { get; init; } = true;
+
+    /// <summary>
+    /// A household's letters are answered within this many (`library-borrowing.md §5.2`, Joe's call 3, D865): the answer comes
+    /// with the letter numbered <c>hash(seed, household, generation) mod this + 1</c> — 24 letters a season apart, so within
+    /// six years, and a different letter for every house and generation. A hash, never a draw.
+    /// </summary>
+    [JsonPropertyName("letters_answered_within")]
+    public int LettersAnsweredWithin { get; init; } = 24;
+
+    /// <summary>
+    /// Years after kin last came to a household before it writes again (Joe's call 2A, D865) — D719's 22–25 years between
+    /// generations, as one number the card can say: <i>"kin may come again from Year 67"</i>.
+    /// </summary>
+    [JsonPropertyName("letters_generation_years")]
+    public int LettersGenerationYears { get; init; } = 24;
+
+    // ---------------------------------------------------------------
     //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
     // ---------------------------------------------------------------
     // ⚠️ PROVISIONAL, EVERY ONE, AND SAID SO: the rows need a price to exist, and nothing can raise either building
@@ -6866,6 +6908,9 @@ public sealed record SimConfig
             ("brewery_capacity", BreweryCapacity), ("tavern_logs", TavernLogs), ("tavern_work_ticks", TavernWorkTicks),
             ("tavern_capacity", TavernCapacity), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
             ("tavern_sit_ticks", TavernSitTicks), ("tavern_stock", TavernStock),
+            ("library_reach_tiles", LibraryReachTiles), ("letter_every_days", LetterEveryDays),
+            ("library_sit_ticks", LibrarySitTicks), ("letters_answered_within", LettersAnsweredWithin),
+            ("letters_generation_years", LettersGenerationYears),
         })
         {
             if (value < 1)
