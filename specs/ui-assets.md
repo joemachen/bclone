@@ -20,6 +20,8 @@ The game lays out at **1280 × 800 logical pixels** and stretches to the window 
 | Joe today: 1920 × 1080, 75 % | **≈ 1.0** |
 | Largest: 3840-wide (4K), dial at 115 % | **3.45** |
 
+⏭️ *A213 (not yet built): today's 75 % becomes the dial's 100 % and the dial 75–150 % (`hud.md §11`); the physical sizes in this table do not change, only the number the dial shows.*
+
 So a 20-logical icon lands between **11 and 69 physical pixels** (A101: raised from 14, which landed at 8–48 and was
 a speck on Joe's screen in every Phase 1 direction). **Every master is painted at 4 × its logical size or more**, and
 every icon must still read at 8 px (§1.3) — the test stays stricter than the smallest real case.
@@ -104,8 +106,11 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/light.png` | 8 × 8 | 32 × 32 | A small round wash, inked: a card's working light. | working, stopped |
 | `controls/rule-h.png` / `rule-v.png` | any × 2 | 256 × 8, 9-patch 16/0/16/0 | **A pen stroke** that thickens and tapers at its ends. | — |
 | `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. | — |
+| `controls/underline-lapis.png` · `underline-gold.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **The same swash in lapis** (`#30488c`, held and on) **and in gold leaf** (`#c4983e`, new until clicked) — `hud.md §8.3, §10` (A216). Painted by `p2_controls.jsx`, the underline's own stroke and dry brush; not wired until `slice/hud`. | — |
+| `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. | ticked, disabled (45 %) |
 | `controls/grip.png` | 10 × 14 | 40 × 56 | Two columns of three ink dots (today's `⋮⋮`). | normal, hover |
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
+| `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. Not wired until `slice/hud`. | pinned |
 | `controls/close.png` | 14 × 14 | 56 × 56 | A pen cross (today's `✕`). | normal, hover (rubric) |
 | `controls/find.png` | 14 × 14 | 56 × 56 | A ringed eye, or a magnifying lens. | normal, hover |
 | `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | **An arrow to or from a pen line** (the sheet's edge): folding up / unfolding — no roll (A115). | normal, hover |
@@ -265,7 +270,7 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 | Set | Files |
 |---|---|
 | Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
-| Controls | 16 pieces, ~30 files with states |
+| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin) |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |
