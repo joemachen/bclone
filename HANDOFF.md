@@ -11073,6 +11073,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   village scored **zero** at `windows:`: the pose had hidden the very default the line checks. D419's trap, one layer over.
 - **A mutate script must refuse an empty side and a mutant text that already exists** (D876): an empty-string deletion
   could not be reversed (it matches everywhere), and the reverse stopped halfway with four mutants still in the tree.
+- **Mutants run together can mask each other** (D878): counting the larders into the food figure and the runway at ×3
+  landed on 7 seasons again, and `runway:` scored zero in the combined build — alone it went red. Run arithmetic mutants
+  that feed the same number one at a time.
+- **A shared registry answers for more than one panel** (D878): `_goodRows` holds the `more ▾` popup's rows *and* the stock
+  limits', so "every good has a row" was true with the popup missing five goods. Ask whose row it is.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

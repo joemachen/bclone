@@ -1,3 +1,4 @@
+using Kith.Sim.Core;
 using Kith.Sim.World;
 using Godot;
 
@@ -32,6 +33,9 @@ public partial class Main
 
     /// <summary>The slip's width as last set — written only when it changes, so the layout is not asked again for nothing.</summary>
     private float _stripWidthSet = -1f;
+
+    /// <summary>The probe's reading of the strip on one line at the founding, logical px.</summary>
+    private float StripOnOneLineAtTheFounding { get; set; }
 
     /// <summary>The season's icon, the name (Metamorphous), the date, then Pause and 1×–10× — the strip's first group.</summary>
     private HBoxContainer BuildTheNameAndTime()
@@ -265,9 +269,16 @@ public partial class Main
     {
         Refresh();
         var faults = new List<string>();
-        // ⏭️ Step 5 (hud.md §6.1–6.2) folds the food goods into one figure and hides a good or a headcount at zero; until then
-        // the strip holds every cell and takes three lines, so "one line at the founding, two at most" is step 5's clause.
+        // ⭐ A new village is one line (hud.md §6, D877): the food goods folded into one figure, a good or headcount at zero gone.
+        StripOnOneLineAtTheFounding = StripOnOneLine();
         int foundingAt1280 = StripLinesAt(Mathf.Min(StripOnOneLine(), StripRoom(1280f)));
+        int foundingAt1422 = StripLinesAt(Mathf.Min(StripOnOneLine(), StripRoom(1422f)));
+        // ⚠️ One line at 16:9 (Joe's 1920 × 1080 is 1,422 logical); at 16:10 a real founding is two — the sim marks logs and
+        // firewood short at zero there, and a shortage never hides (A208). The mock's Day 1 had neither, so it fitted.
+        if (foundingAt1422 != 1 || foundingAt1280 > 2)
+        {
+            faults.Add($"at the founding the strip takes {foundingAt1280} line(s) at 1,280 (two at most) and {foundingAt1422} at 1,422 (want one)");
+        }
 
         // The layout's own width, read back — the rest of this line computes from the rule, and a rule nobody applies passes.
         float wanted = Mathf.Min(StripOnOneLine(), StripRoom(Size.X));
@@ -277,6 +288,21 @@ public partial class Main
         }
 
         Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
+
+        // Every cell shown for the pose (a zero hides it); the Refresh at the end puts each back as the village has it.
+        foreach ((Goods _, Control cell, Label _, Label _) in _frontCells)
+        {
+            cell.Visible = true;
+        }
+
+        foreach (Label count in new[] { _adultsCell, _childrenCell, _inSchoolCell, _eldersCell })
+        {
+            count.GetParent<Control>().Visible = true;
+        }
+
+        _unhousedLabel.Visible = true;
+        _foodFigure.Text = "+12,345";
+        _runwayLabel.Text = "· lasts over 10 years";
         var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _inSchoolCell, _eldersCell, _onTheGround };
         cells.AddRange(_goodsReadouts.Select(r => r.Held));
         var was = cells.Select(c => c.Text).ToList();
@@ -304,7 +330,7 @@ public partial class Main
             int lines = StripLinesAt(slip);
             float ends = Edge + (slip * _uiScale);
             widths.Add($"{window:F0}: {lines} line(s), ends {ends:F0} of {RightColumnBegins(window):F0}");
-            if ((lines > 1 && one <= room) || ends > RightColumnBegins(window))
+            if (lines > 2 || (lines > 1 && one <= room) || ends > RightColumnBegins(window))
             {
                 faults.Add($"at {window:F0} wide the strip ({one:F0} on one line, room {room:F0}) takes {lines} line(s) and ends at {ends:F0}, the right column at {RightColumnBegins(window):F0}");
             }
@@ -361,7 +387,7 @@ public partial class Main
 
         Refresh();
         return faults.Count == 0
-            ? $"[widths] bars: ✅ {foundingAt1280} line(s) at the founding at 1,280 (step 5 makes it one); {cells.Count} cells at +12,345 and the longest date: "
+            ? $"[widths] bars: ✅ at the founding one line at 1,422 and {foundingAt1280} at 1,280 ({StripOnOneLineAtTheFounding:F0} on one line); {cells.Count} cells and the food figure at +12,345 and the longest date: "
               + $"{one:F0} on one line, so {string.Join("; ", widths)}; the left column clears the strip posed; no 20×, skip or PAUSED on it; "
               + "the slip laid out as its rule says; paused at 4×, Pause and 4× held, and Pause and Space resume at 4×"
             : $"[widths] bars: ⛔ {string.Join("; ", faults)}";
@@ -416,5 +442,80 @@ public partial class Main
         return faults.Count == 0
             ? "[widths] dev bar: ✅ a debug build: 20×, Skip 1y, Skip 10y and the frame readout on a floating bar that is no window; key 5 holds 20×"
             : $"[widths] dev bar: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ <c>zeros:</c> (<c>hud.md §6.2</c>, step 5; A208) — every good on the strip's front is shown exactly when the stores
+    /// hold some, or the village is short of it (its amber), or its limit is met (its ⚠); one stone posed in the cart shows
+    /// stone, taken back hides it. Asked at the founding and again twelve years in, where shortages are likelier; it says how
+    /// many goods it saw at zero and short — the case that must never hide.
+    /// </summary>
+    private string TheZerosLeaveTheFront(string when)
+    {
+        SimWorld world = _loop.World;
+        Refresh();
+        var faults = new List<string>();
+        int shortAtZero = 0;
+        foreach ((Goods goods, Control cell, Label held, Label mark) in _frontCells)
+        {
+            bool isShort = held.HasThemeColorOverride("font_color");
+            bool want = world.InStores(goods) > 0 || isShort || mark.Text.Length > 0;
+            shortAtZero += isShort && world.InStores(goods) == 0 ? 1 : 0;
+            if (cell.Visible != want)
+            {
+                faults.Add($"{world.GoodsCatalog.NameOf(goods)} at {world.InStores(goods)}{(isShort ? ", short" : string.Empty)} is {(cell.Visible ? "shown" : "hidden")}");
+            }
+        }
+
+        // The food goods are folded into the figure (call 4); none is on the front.
+        foreach ((Goods goods, Control _, Label _, Label _) in _frontCells.Where(c => world.GoodsCatalog.Edible(c.Goods)))
+        {
+            faults.Add($"{world.GoodsCatalog.NameOf(goods)} is on the front, not folded into the food figure");
+        }
+
+        // `more ▾` keeps every good the village knows, the front's too, zeros and all (§6.2).
+        for (int id = 0; id < world.GoodsCatalog.Count; id++)
+        {
+            // ⚠️ Asked of the popup's own rows: the stock limits register theirs in `_goodRows` too, and this clause scored
+            // ZERO against a popup missing the front's goods until it asked whose row it was (D878).
+            if (!_goodRows.Exists(r => (int)r.Goods == id && _morePopup.IsAncestorOf(r.Cells[0])))
+            {
+                faults.Add($"{world.GoodsCatalog.NameOf((Goods)id)} is not under more ▾");
+            }
+        }
+
+        // A headcount at zero leaves too: children, students and elders when there are any, adults only beside them.
+        int children = world.Villagers.Count(v => v.Alive && v.LifeStage == LifeStage.Child);
+        int elders = world.Villagers.Count(v => v.Alive && v.LifeStage == LifeStage.Elder);
+        int pupils = world.Villagers.Count(v => v.Alive && v.IsPupil);
+        foreach ((Label count, bool want, string name) in new[]
+        {
+            (_childrenCell, children > 0, "children"), (_inSchoolCell, pupils > 0, "students"), (_eldersCell, elders > 0, "elders"),
+            (_adultsCell, children > 0 || pupils > 0 || elders > 0, "adults"),
+        })
+        {
+            if (count.GetParent<Control>().Visible != want)
+            {
+                faults.Add($"{name} {(want ? "hidden" : "shown")} with {children} children, {pupils} students, {elders} elders");
+            }
+        }
+
+        (Goods _, Control stoneCell, Label _, Label _) = _frontCells.Find(c => c.Goods == Goods.Stone);
+        if (world.TheCart is StoreBuilding cart && stoneCell is not null && world.InStores(Goods.Stone) == 0)
+        {
+            cart.Store.Add(Goods.Stone, 1);
+            Refresh();
+            bool one = stoneCell.Visible;
+            cart.Store.TryTake(Goods.Stone, 1);
+            Refresh();
+            if (!one || (stoneCell.Visible && !_frontCells.Find(c => c.Goods == Goods.Stone).Held.HasThemeColorOverride("font_color")))
+            {
+                faults.Add($"one stone in the cart left stone {(one ? "shown" : "hidden")}, taken back {(stoneCell.Visible ? "shown" : "hidden")}");
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] zeros ({when}): ✅ every good on the front shown only while held, short or stopped ({_frontCells.Count(c => c.Cell.Visible)} of {_frontCells.Count} shown, {shortAtZero} at zero and short); one stone shows stone, taken back hides it; no food good on the front, every good under more ▾; each headcount shown only when there are any ({children} children, {pupils} students, {elders} elders)"
+            : $"[widths] zeros ({when}): ⛔ {string.Join("; ", faults)}";
     }
 }

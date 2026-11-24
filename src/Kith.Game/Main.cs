@@ -593,6 +593,9 @@ public partial class Main : Control
         GD.Print(TheFarmSaysWhatItGrows());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
+        GD.Print(TheZerosLeaveTheFront("at the founding"));
+        GD.Print(TheFoodFigureIsTheVillages());
+        GD.Print(TheRunwayIsTheSum());
         GD.Print(TheDevBarHoldsTheDebugTools());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
         GD.Print(TheWindowIsFullScreenByDefault());
@@ -685,6 +688,7 @@ public partial class Main : Control
         _onTheGround.Text = "+1,234";
         ForceUpdateTransform();
         ProbePanelWidths("twelve years in, with heaps posed");
+        GD.Print(TheZerosLeaveTheFront("twelve years in"));
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
@@ -829,25 +833,22 @@ public partial class Main : Control
             _headers[i].ButtonPressed = wereOpen[i];
         }
 
-        // ⭐ AND THE TOP BAR (D378), which is content-sized rather than given a width, so the
-        // question for it is not "did it outgrow its box" but "did it move between the two
-        // passes" — the founding against twelve years of heaps, larders and a grown village.
+        // ⭐ AND THE TOP STRIP. Until D878 the question was "did it move between the two passes" (D378's fixed bar); since
+        // the strip hides a good at zero its width moves by design (hud.md §6), so the question is the one its room asks —
+        // does it stay inside the room before the right column (`StripRoom`), wrapping rather than widening.
         Vector2 bar = _topBar.GetCombinedMinimumSize();
-        bool moved = _barMeasured is Vector2 first && !first.IsEqualApprox(bar);
-        widened += moved ? 1 : 0;
+        bool past = bar.X > StripRoom(Size.X) + 0.5f;
+        widened += past ? 1 : 0;
         GD.Print(
             $"[widths] panel top   at ({_topBar.Position.X:F0}, {_topBar.Position.Y:F0}) "
-            + $"size {_topBar.Size.X:F0}x{_topBar.Size.Y:F0}, wants {bar.X:F0}x{bar.Y:F0}"
-            + (moved ? $"  ⛔ moved from {_barMeasured!.Value.X:F0}x{_barMeasured.Value.Y:F0} at the founding" : string.Empty));
-        _barMeasured ??= bar;
+            + $"size {_topBar.Size.X:F0}x{_topBar.Size.Y:F0}, wants {bar.X:F0}x{bar.Y:F0} of {StripRoom(Size.X):F0}"
+            + (past ? "  ⛔ past its room before the right column" : string.Empty));
 
         GD.Print(widened == 0
             ? $"[widths] panels: ✅ none wider than it was given, {when}"
             : $"[widths] panels: ⛔ {widened} widened past the width they were given, {when}");
     }
 
-    /// <summary>The top bar's minimum at the founding, so the second pass can say whether it moved.</summary>
-    private Vector2? _barMeasured;
 
     /// <summary>
     /// The top bars at their longest: every number posed at six figures and a sign, the clock
@@ -1569,6 +1570,7 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (true, true, true, true, true, true, true, true);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
+        _everyTradePosed = true;
         RefreshTheStrip();
 
         float table = _professionsTable.GetCombinedMinimumSize().Y;
@@ -1578,8 +1580,9 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
+        _everyTradePosed = false;
         RefreshTheStrip();
-        float founding = _professionsScroll.GetCombinedMinimumSize().Y;
+        float founding = _professionsScroll.Visible ? _professionsScroll.GetCombinedMinimumSize().Y : 0f;
 
         var faults = new List<string>();
         if (table <= ProfessionsHeight)
@@ -1592,9 +1595,10 @@ public partial class Main : Control
             faults.Add($"every trade learned, the table stands {shown:F0}px against a ceiling of {ProfessionsHeight:F0}");
         }
 
-        if (founding > shown + 0.5f || founding <= 0f)
+        // A new village has no trade with a seat (hud.md §9.2): the table is gone and its line stands in its place.
+        if (founding > shown + 0.5f || (founding <= 0f && _noTradeYet is not { Visible: true }))
         {
-            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling");
+            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling, nor gone with its line shown");
         }
 
         return faults.Count == 0
@@ -1615,41 +1619,43 @@ public partial class Main : Control
     private string OnlyTheKnownTradesHaveRows()
     {
         SimWorld world = _loop.World;
-        var hidden = new List<string>();
+        var shown = new List<string>();
         var wrong = new List<string>();
         foreach ((JobKind kind, Control[] cells) in _professionRows)
         {
-            bool known = EarnedYet(world.JobsCatalog.WorksAt(kind));
-            if (!cells[0].Visible)
+            // ⭐ The rule, asked of the sim here (hud.md §9.2): learned, and a workplace of it standing or being built.
+            bool want = EarnedYet(world.JobsCatalog.WorksAt(kind)) && world.Workplaces.Exists(w => w.Kind == kind);
+            if (cells[0].Visible)
             {
-                hidden.Add(world.JobsCatalog.NameOf(kind));
+                shown.Add(world.JobsCatalog.NameOf(kind));
             }
 
-            if (System.Array.Exists(cells, c => c.Visible != known))
+            if (System.Array.Exists(cells, c => c.Visible != want))
             {
                 wrong.Add(world.JobsCatalog.NameOf(kind));
             }
         }
 
-        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || hidden.Count == 0)
+        bool lineRight = _noTradeYet is { } line && line.Visible == (shown.Count == 0) && _professionsScroll is { } scroll && scroll.Visible == (shown.Count > 0);
+        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || !lineRight)
         {
-            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; hidden: "
-                + $"{string.Join(", ", hidden)}; disagreeing with the bar: {string.Join(", ", wrong)} "
-                + "— a trade not yet learned must have no row, and every learned one a whole row";
+            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; shown: {string.Join(", ", shown)}; "
+                + $"disagreeing with the rule: {string.Join(", ", wrong)}; the no-trade line and the table {(lineRight ? "right" : "wrong")} "
+                + "— a row only for a learned trade with a workplace standing or being built, else the one line";
         }
 
-        bool quarryWas = _quarryKnown;
-        _quarryKnown = true;
-        RefreshTheStrip();
-        (JobKind _, Control[] quarrier) = _professionRows.Find(r => r.Kind == JobKind.Quarrier);
-        bool cameBack = System.Array.TrueForAll(quarrier, c => c.Visible);
-        _quarryKnown = quarryWas;
-        RefreshTheStrip();
+        // Posed: every learned trade shown (the height probe's pose), the line gone — and back.
+        _everyTradePosed = true;
+        ShowTheKnownTrades();
+        int posed = _professionRows.Count(r => r.Cells[0].Visible);
+        bool lineGone = _noTradeYet is { Visible: false };
+        _everyTradePosed = false;
+        ShowTheKnownTrades();
 
-        return cameBack
-            ? $"[widths] trades: ✅ at the founding the rows not yet learned are hidden ({string.Join(", ", hidden)}), "
-                + "every row agrees with the bar, and the quarrier's row appears when the quarry is learned"
-            : "[widths] trades: ⛔ the quarry learned and the strip refreshed, and the quarrier still has no row";
+        return posed > 0 && lineGone
+            ? $"[widths] trades: ✅ rows for the trades with a seat ({(shown.Count == 0 ? "none at the founding, and the line in their place" : string.Join(", ", shown))}), "
+                + $"every row agrees with the rule; with every learned trade posed {posed} rows and the line gone"
+            : $"[widths] trades: ⛔ every learned trade posed showed {posed} rows, the line {(lineGone ? "gone" : "still shown")}";
     }
 
     private void ProbeTheControlBar()
@@ -3383,6 +3389,14 @@ public partial class Main : Control
         _inSchoolCell.Text = pupils.ToString();
         _eldersCell.Text = elders.ToString();
 
+        // ⭐ A HEADCOUNT AT ZERO LEAVES THE STRIP (A208, hud.md §6 item 4): children, students and elders when there are any;
+        // adults only beside another kind — alone they restate "villagers".
+        _childrenCell.GetParent<Control>().Visible = children > 0;
+        _inSchoolCell.GetParent<Control>().Visible = pupils > 0;
+        _eldersCell.GetParent<Control>().Visible = elders > 0;
+        _adultsCell.GetParent<Control>().Visible = children > 0 || pupils > 0 || elders > 0;
+        RefreshTheFoodFigure(world, adults + elders, children);
+
         // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
         int unhoused = 0;
         for (int i = 0; i < world.Households.Count; i++)
@@ -3394,7 +3408,8 @@ public partial class Main : Control
         }
 
         bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
-        _unhousedLabel.Text = $"{unhoused} unhoused";
+        _unhousedLabel.Text = $"·  {unhoused} unhoused";
+        _unhousedLabel.Visible = unhoused > 0;
         UiLook.Tint(_unhousedLabel, nowhereToBuild ? UiLook.Text : UiLook.Faint);
         ShowShortfall(
             _unhousedLabel,
@@ -3499,6 +3514,14 @@ public partial class Main : Control
             mark.TooltipText = why ?? string.Empty;
         }
 
+        // ⭐ A GOOD AT ZERO LEAVES THE FRONT (A208, Joe: "the bar can hide goods") — ⛔ but a shortage never hides: a good the
+        // village is short of keeps its amber (D378's `ShowShortfall`, the colour override read back), and a met limit its ⚠.
+        for (int i = 0; i < _frontCells.Count; i++)
+        {
+            (Goods goods, Control cell, Label held, Label mark) = _frontCells[i];
+            cell.Visible = world.InStores(goods) > 0 || held.HasThemeColorOverride("font_color") || mark.Text.Length > 0;
+        }
+
         // ⛔ NO FOOD TOTAL ON THE BAR, AND NO SHORTAGE AMBER FOR ONE (D410, Joe: *"why do i still
         // see 'food' in the top bar? remove it."* — and asked where its two jobs should go, *"Remove
         // it entirely"*). Forage, wheat, fish and meat are read one by one, as their limits are
@@ -3591,6 +3614,7 @@ public partial class Main : Control
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
+        ShowTheTradesWithASeat(world);
         _ableAdultsReadout.Text = $"Able adults: {world.AbleAdults}";
         _laborerReadout.Text = $"Laborers: {world.Laborers}";
 
@@ -4673,11 +4697,18 @@ public partial class Main : Control
     {
         SimWorld world = _loop.World;
         HBoxContainer goods = BarRow();
+
+        // ⭐ ONE FOOD FIGURE, AND THE FOOD GOODS FOLDED INTO IT (hud.md §6.1–6.2, A209, call 4): forage, wheat, fish and meat
+        // are in its tooltip and in `more ▾`. Every other good shows while the stores hold any (`Refresh`).
+        AddTheFoodFigure(goods);
         foreach (Goods[] row in BarRows)
         {
             foreach (Goods good in row)
             {
-                AddGoodsCell(goods, world, good);
+                if (!world.GoodsCatalog.Edible(good))
+                {
+                    AddGoodsCell(goods, world, good);
+                }
             }
         }
 
@@ -4729,7 +4760,11 @@ public partial class Main : Control
         mark.AddThemeColorOverride("font_color", LightStopped);
         held.GetParent().AddChild(mark);
         _limitMarks.Add((goods, mark));
+        _frontCells.Add((goods, (Control)held.GetParent(), held, mark));
     }
+
+    /// <summary>The goods on the strip's front, each with its whole cell — hidden at zero unless short or stopped (A208).</summary>
+    private readonly List<(Goods Goods, Control Cell, Label Held, Label Mark)> _frontCells = new();
 
     /// <summary>Room for one ⚠ at the bar's size.</summary>
     private const float LimitMarkWidth = 18f;
@@ -4777,11 +4812,8 @@ public partial class Main : Control
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
-            if (OnTheFrontOfTheBar(goods))
-            {
-                continue;
-            }
-
+            // ⭐ EVERY GOOD, the front's too (hud.md §6.2): a good at zero leaves the strip's front, so `more ▾` is where every
+            // good the village knows stays with its zero (D502 still hides what it does not know).
             Control chip = UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
             Label name = Muted(world.GoodsCatalog.NameOf(goods));
             table.AddChild(chip);
@@ -4808,19 +4840,6 @@ public partial class Main : Control
         };
 
         return more;
-    }
-
-    private static bool OnTheFrontOfTheBar(Goods goods)
-    {
-        foreach (Goods[] row in BarRows)
-        {
-            if (System.Array.IndexOf(row, goods) >= 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private PopupPanel _morePopup = null!;
@@ -5653,6 +5672,11 @@ public partial class Main : Control
         counts.AddChild(_laborerReadout);
         body.AddChild(counts);
 
+        // ⭐ ON A NEW VILLAGE, NO TRADE ROWS AND ONE LINE (hud.md §9.2, call 1): a zero row only means something once there is
+        // a seat to fill.
+        _noTradeYet = Wrapped(Muted("A trade shows here once its building is raised or being built."));
+        body.AddChild(_noTradeYet);
+
         // ⭐ A CEILING AND A SCROLL BAR (Joe, 2026-11-22, playing W3: "The professions tab needs a height limit and a scroll
         // bar") — the brewer and the tavern keeper took the table past the bottom of his screen. As tall as its rows up to
         // `ProfessionsHeight`, then it scrolls: the build queue's shape (D730). Re-measured where a row appears
@@ -5779,18 +5803,67 @@ public partial class Main : Control
             return;
         }
 
+        int shown = 0;
         for (int i = 0; i < _professionRows.Count; i++)
         {
             (JobKind kind, Control[] cells) = _professionRows[i];
-            bool known = TradeKnown(kind);
+            bool known = TradeKnown(kind) && (HasASeat(kind) || _everyTradePosed);
+            shown += known ? 1 : 0;
             foreach (Control cell in cells)
             {
                 cell.Visible = known;
             }
         }
 
+        // No row: the table goes, and the line says why (hud.md §9.2).
+        if (_professionsScroll is not null)
+        {
+            _professionsScroll.Visible = shown > 0;
+        }
+
+        if (_noTradeYet is not null)
+        {
+            _noTradeYet.Visible = shown == 0;
+        }
+
         // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
         FitTheProfessionsScroll();
+    }
+
+    /// <summary>The line Professions shows with no trade row yet.</summary>
+    private Label? _noTradeYet;
+
+    /// <summary>The probe's pose: every learned trade's row shown, seat or none — the height probe's ceiling needs them all.</summary>
+    private bool _everyTradePosed;
+
+    /// <summary>
+    /// ⭐ Whether a trade has a seat — a workplace of it standing or being built (hud.md §9.2, call 1): a site is a
+    /// <c>Workplace</c> too (<c>IsSite</c>), and nobody works a trade without its workplace. ⛔ Not per frame: the set is
+    /// rebuilt when the workplaces' count or <c>BuildingGeneration</c> moves (<see cref="ShowTheTradesWithASeat"/>).
+    /// </summary>
+    private bool HasASeat(JobKind kind) => (int)kind < _seated.Length && _seated[(int)kind];
+
+    private bool[] _seated = System.Array.Empty<bool>();
+
+    private (SimWorld? World, int Workplaces, int Generation) _seatedFor;
+
+    /// <summary>From <c>Refresh</c>: the rows follow the workplaces when, and only when, they change.</summary>
+    private void ShowTheTradesWithASeat(SimWorld world)
+    {
+        var key = (world, world.Workplaces.Count, world.BuildingGeneration);
+        if (key == _seatedFor)
+        {
+            return;
+        }
+
+        _seatedFor = key;
+        _seated = new bool[System.Enum.GetValues<JobKind>().Length];
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            _seated[(int)world.Workplaces[i].Kind] = true;
+        }
+
+        ShowTheKnownTrades();
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
