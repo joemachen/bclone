@@ -11067,7 +11067,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   list, check out the LF-only `.import` rewrites by name). Their colours taken on the slice (D845): ale and the brewer
   `#9a5e14`, the keeper `#8a2f3e`. Still asked: the two buildings on the map, the cask, the figures.
   🔨 **The cask and the brewer's and keeper's figures: being built on `art`** (A203, 2026-11-23, Joe via the coordinator:
-  *"cask and figures"*; spec and mocks first, his look before any code).
+  *"cask and figures"*; spec and mocks first, his look before any code). ✍️ **Specced and mocked (A203):
+  `specs/tavern-figures-art.md`, `D:\Projects\brushes\tavern\figures\w3_figures_mock.jpg`. ⏸️ Five calls his (§6), each
+  recommended: the brewer (leather apron, the mash oar); the keeper (to the ankle, a cloth on the shoulder); the cask in
+  the arms; keep the two colours; his OK for `PersonPainter.cs`, `VillageMap.PeopleProbe.cs`, `TradeGlyph.cs`.**
 
 - ⏸️ **W7, A SECOND CROP — BARLEY (D821, *"Yes, barley first"*).** **🔨 being built on `slice/w7-barley` (2026-11-21)** —
   spec first, `specs/barley.md`: barley as a good, how a farm is told what to grow, what the village does with two crops,
