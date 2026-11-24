@@ -12,15 +12,17 @@
 
 ### 1.1 How big things get on screen
 The game lays out at **1280 × 800 logical pixels** and stretches to the window (`canvas_items`); the **UI-size dial runs
-55–115 %** (default 75 %, D305). One logical pixel of UI is therefore drawn at:
+75–150 %** (default 100 %; until D875 it read 55–115 at 75 — the same sizes, `hud.md §11`). One logical pixel of UI is
+therefore drawn at:
 
 | Case | Physical px per logical px |
 |---|---|
-| Smallest: a 1280-wide window, dial at 55 % | **0.55** |
-| Joe today: 1920 × 1080, 75 % | **≈ 1.0** |
-| Largest: 3840-wide (4K), dial at 115 % | **3.45** |
+| Smallest: a 1280-wide window, dial at 75 % (version 1's 55) | **0.56** |
+| Joe today: 1920 × 1080, 100 % (version 1's 75) | **≈ 1.0** |
+| Largest: 3840-wide (4K), dial at 150 % (version 1's 115) | **3.38** |
 
-⏭️ *A213 (not yet built): today's 75 % becomes the dial's 100 % and the dial 75–150 % (`hud.md §11`); the physical sizes in this table do not change, only the number the dial shows.*
+✅ *Relabelled at D875 (A213): the dial's 100 draws at 0.75 of the layout; no physical size in this table moved beyond the
+ends' rounding (55 → 56.25 % drawn, 115 → 112.5 %).*
 
 So a 20-logical icon lands between **11 and 69 physical pixels** (A101: raised from 14, which landed at 8–48 and was
 a speck on Joe's screen in every Phase 1 direction). **Every master is painted at 4 × its logical size or more**, and

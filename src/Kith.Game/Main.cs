@@ -562,7 +562,7 @@ public partial class Main : Control
         _probed = true;
 
         GD.Print(
-            $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
+            $"[widths] window {Size.X:F0} x {Size.Y:F0}, the dial at {_uiScalePercent}%, drawn at {_uiScale * 100f:F0}%");
         GD.Print(WhatsHereOpensWhereItBelongs());
 
         ProbePanelWidths("at the founding");
@@ -700,6 +700,7 @@ public partial class Main : Control
         GD.Print(_map.TheGhostStartsTowardTheStore());
         GD.Print(TheCardSaysWhereItsDoorIs());
         GD.Print(TheSettingsComeBackAsTheyWent());
+        GD.Print(TheDialsHundredIsWhatSeventyFiveWas());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());
         GD.Print(SpaceIsPressedNotHeld());
@@ -2765,6 +2766,9 @@ public partial class Main : Control
     /// <see cref="FormerTitles"/>.
     /// </summary>
     internal const string LoreTitle = "Lore";
+
+    /// <summary>The roster's title — the window the settings file remembers it by.</summary>
+    internal const string RosterTitle = "The village";
     private PanelContainer _treePanel = null!;
     private TechTreeView _treeView = null!;
     private bool _treeEverOpened;
@@ -5334,7 +5338,7 @@ public partial class Main : Control
         // ⚠️ D306's own lesson arriving from the other side: it gave every panel its own scroll
         // because panels used to borrow the column's — and the two panels whose content already
         // scrolled are the two it broke. *A self-scrolling control needs a HEIGHT, not a scroll.*
-        VBoxContainer body = InColumn(right: false, 0, "The village");
+        VBoxContainer body = InColumn(right: false, 0, RosterTitle);
 
         _roster = MakeTheRoster();
         ShowTheRosterOrder();
@@ -6405,13 +6409,21 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// ⭐ <b>The default is 75%</b> (Joe, 2026-09-06, having played the build bar at 80%). It is
-    /// the <em>opening</em> value only — the dial still runs 55–115% and the player's turn of it
-    /// wins. *A default is what the map looks like before anybody has opened Settings, which is
-    /// the only view most players will ever judge it on.*
+    /// the <em>opening</em> value only — the player's turn of the dial wins. *A default is what the
+    /// map looks like before anybody has opened Settings, which is the only view most players will
+    /// ever judge it on.* ⭐ <b>That 75 % reads 100 % since A213</b> (Joe: <i>"what I use as 75% should
+    /// be 100% size going forward"</i>): the dial runs 75–150 and its 100 draws at 0.75 (<see cref="DrawnScale"/>),
+    /// so no drawn size moved.
     /// </para>
     /// </remarks>
     // ⭐ The dial's numbers live in `PlayerSettings` (D504) — one source for the dial and the file.
-    private float _uiScale = PlayerSettings.DefaultUiScalePercent / 100f;
+    private float _uiScale = DrawnScale(PlayerSettings.DefaultUiScalePercent);
+
+    /// <summary>
+    /// ⭐ What the dial's percent draws at (<c>hud.md §11</c>, A213): <c>percent / 100 × 0.75</c> —
+    /// <see cref="PlayerSettings.DrawnPercentAtTheDialsHundred"/>, the one constant — so 100 % is what 75 % was.
+    /// </summary>
+    internal static float DrawnScale(int percent) => percent / 100f * (PlayerSettings.DrawnPercentAtTheDialsHundred / 100f);
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>

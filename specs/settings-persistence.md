@@ -9,6 +9,9 @@ never hashed).
 **Status:** ✍️ **SPECCED (D504). ✅ BUILT (D505) on `slice/settings-persistence` — the sim half and the
 view, guards §8 red-checked; no golden moved. ✅ PLAYED by Joe (*"it holds up"*) and merged (D506, 2026-10-05)** —
 his play is what saw a real launch write the file and a drag remembered; the probe is hermetic by design (§7) and cannot drag.
+✅ **Version 2 (D875, `hud.md §11`, A213; Joe's call 6, A215):** the dial runs 75–150 % at default 100, drawing what 55–115 at
+75 drew (×0.75, `PlayerSettings.DrawnPercentAtTheDialsHundred`); a version-1 file's size is read at ×4/3 and its windows'
+*shown* forgotten once, then it is written back as version 2 (§6).
 ✅ **`roster_sort` added (D609; played and merged, D615):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
 Owner: Joe + Claude Code.
 
@@ -55,7 +58,7 @@ by an exception to this line.
 
 | Group | What | Key |
 |---|---|---|
-| View | UI size (55–115 %, steps of 5; default 75) | `ui_scale_percent` |
+| View | UI size (75–150 %, steps of 5; default 100 — what version 1's 75 drew, D875) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
 | View | *The village* panel's order (D609; its column titles since D616): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
@@ -99,8 +102,8 @@ by an exception to this line.
 
 ```json
 {
-  "version": 1,
-  "ui_scale_percent": 75,
+  "version": 2,
+  "ui_scale_percent": 100,
   "routes": "selected",
   "toggles": { "grid": false, "paths": false, "snap": false },
   "windows": {
@@ -126,7 +129,8 @@ by an exception to this line.
 |---|---|
 | No file (first launch) | Defaults. Nothing said: nothing is wrong. |
 | Not JSON / not an object | Defaults. The file is **copied to `settings.json.bad` first**, so the next save cannot destroy what the player may want to read; Godot's error stream and the audit log say which file and why. |
-| `ui_scale_percent` out of range or off the step | Clamped to 55–115 and rounded to the nearest 5; a warning says what was read and what is used. |
+| `ui_scale_percent` out of range or off the step | Clamped to 75–150 and rounded to the nearest 5; a warning says what was read and what is used. |
+| ⭐ A `"version": 1` file (every file written before D875) | Its `ui_scale_percent` is read at ×4/3, rounded and brought onto the dial (75 → 100, 55 → 75, 115 → 150); **every window's `shown` is forgotten once** (call 6: a saved shown beats a default, and every version-1 file held the roster shown), folds and places kept; one INFO line says both; **and the file is written back as version 2 at once**, so neither happens twice. No `version` at all is read as this build's (the game has always written one — a file without is a hand edit). |
 | `routes` not one of the three | Default; a warning. |
 | `roster_sort` not one of the three | Default (`name`); a warning. |
 | A value of the wrong type (`"grid": "yes"`) | That key is default; a warning. The rest of the file still counts. |
@@ -139,7 +143,7 @@ an INFO line *"Settings read from …"* — the audit trail is where a player's 
 
 ## 7. ⛔ The probe never reads the player's file
 
-The probe (`KITH_PROBE_WIDTHS`) asserts the **defaults**: `bar height 151` is the bar at 75 %, the
+The probe (`KITH_PROBE_WIDTHS`) asserts the **defaults**: `bar height 151` is the bar at 75 % *(183 since A120; the dial's 100 since D875)*, the
 `windows` line requires *Stock limits* to start hidden and *Professions* open, the `map toggles` line
 reads every tick. **If the probe read Joe's own file, his UI size would move the bar height and his
 ticks would redden the probe on his machine and not on anybody else's.** So under the probe the settings
@@ -152,7 +156,11 @@ file it deletes.
 1. No file → defaults, no problem.
 2. A record with every field set survives save → load unchanged.
 3. Not JSON → defaults, one problem naming the file, and `settings.json.bad` holds the original bytes.
-4. Scale 30 / 200 / 77 → 55 / 115 / 75, each with a warning.
+4. Scale 30 / 200 / 77 / 78 / 148 → 75 / 150 / 75 / 80 / 150, each with a warning *(55 / 115 / 75 on the version-1 dial until D875)*.
+4a. ⭐ Version 2 (D875): the dial's constants; a version-1 75 / 55 / 115 / 80 / 90 / 100 → 100 / 75 / 150 / 105 / 120 / 135 with one INFO
+   line; a version-1 file's windows forget `shown` and keep fold and place; written back it is version 2 and reads the same
+   again; a version-1 file with nothing to move says nothing, and no version is this build's. The view's `ui scale:` probe line
+   (`hud.md §14` step 2) checks the game opens at 100 % drawn at 0.75 and the write-back.
 5. An unknown `routes` → default, a warning. An unknown `roster_sort` likewise, and each of the three read as written (D609).
 6. A wrong-typed value → that key default, the others read, a warning.
 7. Unknown keys and `version: 99` → what is known is read, a warning.

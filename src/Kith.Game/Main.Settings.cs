@@ -48,7 +48,7 @@ public partial class Main
     /// <summary>The village is built and its settings applied — before this, building the panels is not a change.</summary>
     private bool _settingsLive;
 
-    /// <summary>The UI size as the dial has it, a whole percent — <see cref="_uiScale"/> is this over a hundred.</summary>
+    /// <summary>The UI size as the dial has it, a whole percent — <see cref="_uiScale"/> is what it draws at (<see cref="DrawnScale"/>).</summary>
     private int _uiScalePercent = PlayerSettings.DefaultUiScalePercent;
 
     private Label _scaleReading = null!;
@@ -161,6 +161,23 @@ public partial class Main
         }
 
         SetUiScale(_settings.UiScalePercent ?? PlayerSettings.DefaultUiScalePercent);
+
+        WriteBackWhatWasBroughtForward();
+    }
+
+    /// <summary>
+    /// ⭐ A version-1 file brought forward (<c>hud.md §11</c>) is written back at once as version 2, so the ×4/3 and the
+    /// windows' one reset happen once — never again at the next launch, after the player has opened the roster.
+    /// </summary>
+    private void WriteBackWhatWasBroughtForward()
+    {
+        if (_settings.MigratedFrom is null)
+        {
+            return;
+        }
+
+        _settings = _settings with { MigratedFrom = null };
+        WriteTheSettings(_settings);
     }
 
     /// <summary>Into the audit log, once it exists: where the settings came from, and anything wrong with them.</summary>
@@ -189,7 +206,7 @@ public partial class Main
     private void SetUiScale(int percent)
     {
         _uiScalePercent = PlayerSettings.OnTheDial(percent);
-        _uiScale = _uiScalePercent / 100f;
+        _uiScale = DrawnScale(_uiScalePercent);
         if (_scaleReading is not null)
         {
             _scaleReading.Text = $"{_uiScalePercent}%";
@@ -462,6 +479,103 @@ public partial class Main
     }
 
     /// <summary>
+    /// ⭐ THE DIAL'S 100 IS WHAT 75 WAS (<c>hud.md §11</c>, step 2; A213, Joe's call 6): the game opens at 100 % drawn at 0.75;
+    /// a version-1 file's 75 reads 100 and draws at 0.75, its ends come to 75 and 150, its windows forget <i>shown</i> and keep
+    /// their folds and places, and it is written back as version 2 that reads the same again; the dial stops at its ends.
+    /// </summary>
+    private string TheDialsHundredIsWhatSeventyFiveWas()
+    {
+        var faults = new List<string>();
+        PlayerSettings founding = CaptureSettings();
+        float drawnWas = _uiScale;
+        if (_uiScalePercent != 100 || !Mathf.IsEqualApprox(_uiScale, 0.75f))
+        {
+            faults.Add($"the game opens at {_uiScalePercent} % drawn at {_uiScale:F3} (want 100 % at 0.750)");
+        }
+
+        if (!Mathf.IsEqualApprox(_topBar.Scale.X, _uiScale))
+        {
+            faults.Add($"the top bar is drawn at {_topBar.Scale.X:F3}, not the dial's {_uiScale:F3}");
+        }
+
+        string scratch = ProjectSettings.GlobalizePath("user://probe-settings-v1.json");
+        PlayerSettings Read(string text, List<PlayerSettingsProblem> problems)
+        {
+            System.IO.File.WriteAllText(scratch, text);
+            return PlayerSettingsFile.Load(scratch, problems);
+        }
+
+        var said = new List<PlayerSettingsProblem>();
+        PlayerSettings v1 = Read(
+            $$"""{ "version": 1, "ui_scale_percent": 75, "windows": { "{{RosterTitle}}": { "shown": true, "open": false, "side": "left", "x": 40, "y": 120 } } }""",
+            said);
+        WindowPrefs? roster = v1.Windows.GetValueOrDefault(RosterTitle);
+        if (v1.UiScalePercent != 100 || !Mathf.IsEqualApprox(DrawnScale(v1.UiScalePercent ?? 0), 0.75f) || v1.MigratedFrom != 1)
+        {
+            faults.Add($"a version-1 75 reads {v1.UiScalePercent} drawn at {DrawnScale(v1.UiScalePercent ?? 0):F3}, brought from {v1.MigratedFrom} (want 100 at 0.750, from 1)");
+        }
+
+        if (roster != new WindowPrefs(null, false, new WindowPlace(PlayerSettings.LeftSide, 40, 120)))
+        {
+            faults.Add($"a version-1 {RosterTitle} reads {roster} (want shown forgotten, the fold and place kept)");
+        }
+
+        foreach ((int old, int now) in new[] { (55, 75), (115, 150) })
+        {
+            int? read = Read($$"""{ "version": 1, "ui_scale_percent": {{old}} }""", new List<PlayerSettingsProblem>()).UiScalePercent;
+            if (read != now)
+            {
+                faults.Add($"a version-1 {old} reads {read}, not {now}");
+            }
+        }
+
+        // ---- written back once, as version 2, and read again it does not move ----
+        string? pathWas = _settingsPath;
+        PlayerSettings settingsWas = _settings;
+        _settingsPath = scratch;
+        _settings = v1;
+        WriteBackWhatWasBroughtForward();
+        string written = System.IO.File.ReadAllText(scratch);
+        var again = new List<PlayerSettingsProblem>();
+        PlayerSettings twice = PlayerSettingsFile.Load(scratch, again);
+        _settingsPath = pathWas;
+        _settings = settingsWas;
+        System.IO.File.Delete(scratch);
+        if (!written.Contains("\"version\": 2", StringComparison.Ordinal) || twice.UiScalePercent != 100 || twice.MigratedFrom is not null || again.Count > 0)
+        {
+            faults.Add($"written back the file reads {twice.UiScalePercent}, brought from {twice.MigratedFrom}, {again.Count} problem(s), version 2 {written.Contains("\"version\": 2", StringComparison.Ordinal)}");
+        }
+
+        // ---- applied, it draws at 0.75 and the dial stops at its ends ----
+        ApplySettings(v1);
+        if (!Mathf.IsEqualApprox(_uiScale, 0.75f))
+        {
+            faults.Add($"applied, a version-1 75 draws at {_uiScale:F3}");
+        }
+
+        SetUiScale(PlayerSettings.LargestUiScalePercent + PlayerSettings.UiScaleStep);
+        int top = _uiScalePercent;
+        SetUiScale(PlayerSettings.SmallestUiScalePercent - PlayerSettings.UiScaleStep);
+        int bottom = _uiScalePercent;
+        if (top != 150 || bottom != 75)
+        {
+            faults.Add($"the dial runs {bottom}–{top}, not 75–150");
+        }
+
+        ApplySettings(founding);
+        ArrangeDefaults();
+        if (!Mathf.IsEqualApprox(_uiScale, drawnWas))
+        {
+            faults.Add("the probe did not put the dial back");
+        }
+
+        return faults.Count == 0
+            ? $"[widths] ui scale: ✅ opens at 100 % drawn at 0.75; a version-1 75 reads 100 at 0.75, 55 → 75 and 115 → 150; its "
+              + $"{RosterTitle} forgets shown and keeps its fold and place; written back as version 2, read again unmoved; the dial runs 75–150"
+            : $"[widths] ui scale: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
     /// ⭐ Every setting goes out and comes back as it went — <b>a probe line</b> (§8, view guards 1–2).
     /// </summary>
     /// <remarks>
@@ -562,8 +676,9 @@ public partial class Main
                 : new WindowPrefs(null, null, place);
         }
 
-        // ⚠️ At 90, not 100: at 100 a drawn width IS the laid-out width, and a place that forgot the
-        // scale would come back right anyway. Measured: that mutant scored zero at 100.
+        // ⚠️ At 90, not 100: at 100 a drawn width WAS the laid-out width, and a place that forgot the
+        // scale would come back right anyway. Measured: that mutant scored zero at 100. (Since A213 100 draws at 0.75 and
+        // 133⅓ would be the blind one — off the dial's steps, so no pose can land on it.)
         PlayerSettings places = founding with { UiScalePercent = 90, Windows = placed };
         ApplySettings(places);
         PlaceWhatThePlayerPlaced();
