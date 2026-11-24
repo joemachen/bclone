@@ -108,6 +108,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. | — |
 | `controls/underline-lapis.png` · `underline-gold.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **The same swash in lapis** (`#30488c`, held and on) **and in gold leaf** (`#c4983e`, new until clicked) — `hud.md §8.3, §10` (A216). Painted by `p2_controls.jsx`, the underline's own stroke and dry brush; not wired until `slice/hud`. | — |
 | `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. | ticked, disabled (45 %) |
+| `controls/button-wax-normal.png` · `-hover` · `-pressed` · `-focus` · `-disabled` | 9-patch, 250 × 46 drawn | 1064 × 248 (4 ×), margins 150 / 100 / 150 / 100, reaching 8 px past the box | **The primary button as a slab of the seal's wax** (A224, `logo.md §8`) — the seal's recipe on a long pour, the word in a pressed field; hover warms the wax, pressed turns its light over, *focus* is the slab's edge inked heavier alone (drawn over the state), disabled at 45 %. Every red primary: the title's and the new valley's *Found*. | normal, hover, pressed, focus, disabled |
 | `controls/grip.png` | 10 × 14 | 40 × 56 | Two columns of three ink dots (today's `⋮⋮`). | normal, hover |
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
 | `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. Not wired until `slice/hud`. | pinned |
@@ -254,9 +255,10 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 |---|---|---|
 | *(title band)* | — | the title screen's band down the left is `chrome/sheet.png` (A114: the hanging scroll is retired) |
 | `screens/seal.png` | 512 × 512 | **a wax seal, blank** (the name is a placeholder) — lumpy edge, a pressed ring, lit upper left |
+| `screens/seal-k.png` | 512 × 512 | **Kith's seal, the logo** (A220–A222, `logo.md`): the blank seal, same script and seed, the title's K (Grenze Gotisch 400) pressed into its well |
 | *(new game)* | — | the new-game screen's sheet is `chrome/sheet-large.png` (A114: the modal with its roll is retired) |
 | `screens/tech-card-known.png` · `-fogged.png` · `-locked.png` | 9-patch 352 × 320, margins 24 | the tech tree's cards: known in its building's colour wash, fogged as a grey silhouette (`tech-tree-map.md §3.6`), locked inked only |
-| `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Kith.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
+| `icon.png` + `icon.ico` (16, 32, 48, 256) | 512 × 512 | **the app and window icon** — Kith's seal (A222, `logo.md`): `icon.png` is `config/icon`, `icon.ico` is `config/windows_native_icon`, its 16 and 32 from the small cut (no ring, the K to the edge); the Godot logo `icon.svg` deleted |
 | `screens/splash.png` | 1920 × 1080 | the boot splash on parchment (today Godot's) — `project.godot`'s `boot_splash` |
 
 ## 6. Later, each its own mock first (not specced here)
@@ -270,13 +272,13 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 | Set | Files |
 |---|---|
 | Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
-| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin) |
+| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin; +5, A224: the wax button) |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |
 | Tools | 12 |
 | Seasons, alerts, moments | 9 |
-| Screens | 6 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's |
+| Screens | 7 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's; A222: Kith's seal, `seal-k` |
 | **Total** | **≈ 160 files**, of which the icons are 113 |
 | Optional | ~10 |
 

@@ -51,6 +51,15 @@ internal static class ParchmentLook
 
     private static Texture2D Tex(string path) => GD.Load<Texture2D>(Ui + path);
 
+    /// <summary>The primary button's wax, one file a state (A224): <c>controls/button-wax-normal.png</c> and the rest, 1064 × 248.</summary>
+    internal const string WaxButton = "controls/button-wax-";
+
+    /// <summary>The wax's fixed ends, master px (left, top, right, bottom): the lumps, drips, glint and the field's round ends.</summary>
+    internal static readonly Vector4 WaxMargins = new(150, 100, 150, 100);
+
+    /// <summary>Logical px the wax reaches past the button's box on every side (the painting's 32 master px of lumps and drips).</summary>
+    internal const float WaxOutset = 8f;
+
     /// <summary>The theme.</summary>
     internal static Theme Build()
     {
@@ -160,15 +169,11 @@ internal static class ParchmentLook
 
         theme.SetColor("font_color", UiLook.TitleItem, Ink);
 
-        // The primary: the new valley's one red button, in the heading face, an ink ring round it when it has the keyboard.
+        // The primary: the new valley's one wax button, in the heading face; with the keyboard on it, its wax inked heavier
+        // (A224 — the ink box round it, A180's, sat square round a lumpy slab).
         theme.SetTypeVariation(UiLook.TitlePrimary, UiLook.PrimaryButton);
         theme.SetFont("font", UiLook.TitlePrimary, header);
         theme.SetFontSize("font_size", UiLook.TitlePrimary, 22);
-        var ring = new StyleBoxFlat { DrawCenter = false, BorderColor = Ink };
-        ring.SetBorderWidthAll(2);
-        ring.SetCornerRadiusAll(4);
-        ring.SetExpandMarginAll(4);
-        theme.SetStylebox("focus", UiLook.TitlePrimary, ring);
     }
 
     private static void NewValley(Theme theme)
@@ -184,20 +189,24 @@ internal static class ParchmentLook
         theme.SetFont("reading_font", t, GD.Load<FontFile>("res://fonts/Cardo/Cardo-Regular.ttf"));
         theme.SetFont("blackletter", t, theme.DefaultFont);
 
-        // The one primary button: filled rubric, paper words (6.4 : 1 on the rubric, 8.5 held), larger than the panel's 16.
+        // ⭐ The one primary button: a slab of the seal's wax (A224, `logo.md §8`; Joe: "can we make the button look 'wax-y'
+        // too?", then "Yes, build it") — painted by the seal's recipe at 4 × (`D:\Projects\brushes\logo\wax_button.jsx`),
+        // lit upper left, the word in a pressed field; pressed turns the light over, as a seal pressed in; hover warms the
+        // wax; disabled is it at 45 %. Focus is the slab's own edge inked heavier, drawn over whichever state it is in. Paper
+        // words, larger than the panel's 16: the wax behind them reads 8.9 : 1 typical, 6.3 its lightest tenth (A224's
+        // capture; the probe measures the painting). Every lump, drip and the field's round ends sit in the fixed ends
+        // (150 master px), so a wider button — the new valley's Found — stretches plain wax; it reaches 8 px past its box.
+        // The word keeps 22 px from the ends and 9 above and below: the field's round ends curve in 15 px, and a 40 px
+        // button (Found, at 6) squeezed the field until the word's tails crossed its rim (A224's capture).
         theme.SetTypeVariation(UiLook.PrimaryButton, "Button");
-        foreach ((string state, Color fill) in new[]
+        foreach ((string state, string file) in new[]
         {
-            ("normal", Rubric), ("hover", Rubric.Lightened(0.08f)), ("pressed", RubricInk), ("hover_pressed", RubricInk),
-            ("disabled", Rubric with { A = 0.45f }), ("focus", Rubric),
+            ("normal", "normal"), ("hover", "hover"), ("pressed", "pressed"), ("hover_pressed", "pressed"), ("disabled", "disabled"), ("focus", "focus"),
         })
         {
-            var box = new StyleBoxFlat { BgColor = fill, BorderColor = RubricInk, ContentMarginLeft = 16, ContentMarginRight = 16 };
-            box.ContentMarginTop = 6;
-            box.ContentMarginBottom = 6;
-            box.SetBorderWidthAll(1);
-            box.SetCornerRadiusAll(3);
-            theme.SetStylebox(state, UiLook.PrimaryButton, state == "focus" ? new StyleBoxEmpty() : box);
+            PaintedPatch wax = PaintedPatch.Make(Tex(WaxButton + file + ".png"), 0.25f, WaxMargins, new Vector4(22, 9, 22, 9));
+            wax.Outset = new Vector4(WaxOutset, WaxOutset, WaxOutset, WaxOutset);
+            theme.SetStylebox(state, UiLook.PrimaryButton, wax);
         }
 
         foreach (string colour in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })

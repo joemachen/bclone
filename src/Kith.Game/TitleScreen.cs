@@ -41,8 +41,37 @@ public sealed partial class TitleScreen : Control
     /// <summary>Where the village's houses centre in that picture, as shares of its width and height (the tool's framing B).</summary>
     internal static readonly Vector2 VillageInPicture = new(0.56f, 0.50f);
 
+    /// <summary>
+    /// ⭐ Kith's seal, the logo (A220–A223, `specs/logo.md`; Joe: <i>"i also want to see it here in the main menu somewhere"</i>,
+    /// then <i>"A, above the name"</i>): the game's wax seal with the title's K pressed into it, 512 × 512, its wax 382 wide.
+    /// </summary>
+    internal const string SealPath = "res://textures/ui/screens/seal-k.png";
+
+    /// <summary>The seal's box, square: 118 px shows its wax at 88 (the picture is 512 with the wax 382 across).</summary>
+    internal const float SealBox = 118f;
+
+    /// <summary>The wax inside the box: 13.6 px of clear canvas above it, 16.4 below (rows 59–441 of 512).</summary>
+    internal const float SealWaxTop = 13.6f, SealWaxBottom = 101.6f;
+
+    /// <summary>
+    /// Where the K's capital starts under the name's top edge: the blackletter at 96 px carries a tall empty band above its
+    /// capitals (measured on the 1280 × 800 capture, A223: 46.6 px).
+    /// </summary>
+    internal const float NameCapTop = 46f;
+
+    /// <summary>
+    /// Where the seal's box ends under the name's top edge: its wax (16.4 px above the box's foot) ends 20 px above the
+    /// name's capitals, as Joe's mock A had it (A223: 18 left 45 px of paper between them, which read as two things).
+    /// </summary>
+    internal const float SealFoot = 43f;
+
+    /// <summary>Clear paper the seal keeps above it, inside the sheet's margins, or it is not shown (a short window).</summary>
+    internal const float SealGap = 8f;
+
     /// <summary>The picture, loaded once and held (art trap 69: a resource is never loaded and dropped).</summary>
     private static Texture2D? _seasons;
+
+    private static Texture2D? _seal;
 
     private readonly SimConfig _config;
     private readonly string _build;
@@ -102,6 +131,9 @@ public sealed partial class TitleScreen : Control
 
     /// <summary>For the probe: <i>Kith</i>.</summary>
     internal Label TitleLabel { get; private set; } = null!;
+
+    /// <summary>For the probe: Kith's seal above the name.</summary>
+    internal TextureRect Seal { get; private set; } = null!;
 
     /// <summary>For the probe: the version at the foot.</summary>
     internal Label VersionLabel { get; private set; } = null!;
@@ -309,6 +341,7 @@ public sealed partial class TitleScreen : Control
 
         TitleLabel.AddThemeFontSizeOverride("font_size", 96);
         column.AddChild(TitleLabel);
+        PressTheSeal();
         column.AddChild(new ColorRect { Color = UiLook.SelectedEdge, CustomMinimumSize = new Vector2(120, 2), SizeFlagsHorizontal = SizeFlags.ShrinkCenter });
         column.AddChild(new Control { CustomMinimumSize = new Vector2(0, 36) });
 
@@ -447,6 +480,44 @@ public sealed partial class TitleScreen : Control
             item.FocusNeighborTop = item.GetPathTo(ShownItems[(i + ShownItems.Count - 1) % ShownItems.Count]);
         }
     }
+
+    /// <summary>
+    /// ⭐ Kith's seal above the name (A223, `logo.md §7`), laid over the sheet as a child of the name and outside the column's
+    /// layout, so the menu stands where it stood (Joe's mock A). Shown only while the paper above the name holds it.
+    /// </summary>
+    private void PressTheSeal()
+    {
+        _seal ??= ResourceLoader.Exists(SealPath) ? GD.Load<Texture2D>(SealPath) : null;
+        Seal = new TextureRect
+        {
+            Texture = _seal,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            TextureFilter = TextureFilterEnum.LinearWithMipmaps,
+            MouseFilter = MouseFilterEnum.Ignore,
+            AnchorLeft = 0.5f,
+            AnchorRight = 0.5f,
+            AnchorTop = 0f,
+            AnchorBottom = 0f,
+            OffsetLeft = -SealBox / 2f,
+            OffsetRight = SealBox / 2f,
+            OffsetTop = SealFoot - SealBox,
+            OffsetBottom = SealFoot,
+        };
+        if (_seal is null)
+        {
+            GD.PushError($"[Kith] the title's seal is missing at {SealPath}");
+        }
+
+        TitleLabel.AddChild(Seal);
+        TitleLabel.ItemRectChanged += FitTheSeal;
+    }
+
+    /// <summary>On the name's move (a resize), never per frame: the seal shows only where the paper above the name holds it.</summary>
+    private void FitTheSeal() => Seal.Visible = _seal is not null && SealFits(TitleLabel.Position.Y);
+
+    /// <summary>Pure: does the seal's wax, with its clear paper, fit above a name whose top is this far down the column?</summary>
+    internal static bool SealFits(float nameTop) => nameTop + SealFoot - SealBox + SealWaxTop >= SealGap;
 
     /// <summary>The panel's width: the share of the window, never narrower than what it holds. On every resize, never per frame.</summary>
     private void PlaceThePanel()
