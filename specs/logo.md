@@ -1,7 +1,7 @@
 # Kith's seal — the logo and the app icon
 
 **Status (A222, 2026-11-23): ✅ in the game on `art` — Joe took all three calls as recommended (*"Yes, as recommended"*);
-✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). **A224: the red primary button in wax** (§8, *"Yes, build it"*). ✅ Seen and approved (A225, *"Looks right"*); ✅ merged into `main` at his word (A226, `ed8fb89`), not pushed.** Claimed A220, painted A221.
+✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). **A224: the red primary button in wax** (§8, *"Yes, build it"*). ✅ Seen and approved (A225, *"Looks right"*); ✅ merged into `main` at his word (A226, `ed8fb89`), pushed (A227).** Claimed A220, painted A221.
 
 Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
 **a K pressed into the game's own painted seal**, not a new one.
