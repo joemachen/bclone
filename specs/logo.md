@@ -1,7 +1,7 @@
 # Kith's seal — the logo and the app icon
 
-**Status (A221, 2026-11-23): painted and mocked, ⏸️ Joe's calls (§5); not in the game.** The PNGs and the icon are
-made and wait outside git in `D:\Projects\brushes\logo\png\`; nothing in `src/` has changed. Claimed in A220.
+**Status (A222, 2026-11-23): ✅ in the game on `art` — Joe took all three calls as recommended (*"Yes, as recommended"*);
+⏸️ his eyes on the taskbar and window icon (`.\run.bat`), then the merge at his word.** Claimed A220, painted A221.
 
 Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
 **a K pressed into the game's own painted seal**, not a new one.
@@ -59,14 +59,14 @@ taskbar and a light one, each also blown up.
 - **The K's double stem** (Grenze Gotisch's K has a hairline slit down its stem) reads as "lK" at 32–48. It is the
   title's own K, so it is kept; a single-stem K would be another face.
 
-## 4. Wiring (when Joe says)
+## 4. Wiring (A222, done)
 
 `project.godot`: `config/icon="res://icon.png"` and `config/windows_native_icon="res://icon.ico"`; the Godot logo
 `icon.svg` (and its `.import`) removed — nothing else names it. All in the art lane's files (HANDOFF's lane table:
 *"`project.godot` (… the icon), `icon.svg`"*). There is no `boot_splash` or `export_presets.cfg` today; an export preset's
 icon is the `.ico` when one is made.
 
-## 5. ⏸️ Joe's calls
+## 5. Joe's calls — ✅ all three as recommended (A222)
 
 1. **The look** (A on the sheet) — as painted.
 2. **The icon's small sizes** — recommended: 16 and 32 from the small cut, 48 and 256 from the logo (row 2), against

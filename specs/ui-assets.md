@@ -254,9 +254,10 @@ a trunk · `harvest-stone.png` a pick in rock · `harvest-iron.png` a pick in or
 |---|---|---|
 | *(title band)* | — | the title screen's band down the left is `chrome/sheet.png` (A114: the hanging scroll is retired) |
 | `screens/seal.png` | 512 × 512 | **a wax seal, blank** (the name is a placeholder) — lumpy edge, a pressed ring, lit upper left |
+| `screens/seal-k.png` | 512 × 512 | **Kith's seal, the logo** (A220–A222, `logo.md`): the blank seal, same script and seed, the title's K (Grenze Gotisch 400) pressed into its well |
 | *(new game)* | — | the new-game screen's sheet is `chrome/sheet-large.png` (A114: the modal with its roll is retired) |
 | `screens/tech-card-known.png` · `-fogged.png` · `-locked.png` | 9-patch 352 × 320, margins 24 | the tech tree's cards: known in its building's colour wash, fogged as a grey silhouette (`tech-tree-map.md §3.6`), locked inked only |
-| `icon.svg` + `icon.ico` (16, 32, 48, 256) | 1024 × 1024 source | **the app and window icon** — today the Godot logo; replaces `src/Kith.Game/icon.svg` (the art lane's, HANDOFF's lane table). ⏸️ Waits on the name, or uses the blank seal until then |
+| `icon.png` + `icon.ico` (16, 32, 48, 256) | 512 × 512 | **the app and window icon** — Kith's seal (A222, `logo.md`): `icon.png` is `config/icon`, `icon.ico` is `config/windows_native_icon`, its 16 and 32 from the small cut (no ring, the K to the edge); the Godot logo `icon.svg` deleted |
 | `screens/splash.png` | 1920 × 1080 | the boot splash on parchment (today Godot's) — `project.godot`'s `boot_splash` |
 
 ## 6. Later, each its own mock first (not specced here)
@@ -276,7 +277,7 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 | Trades | 18 |
 | Tools | 12 |
 | Seasons, alerts, moments | 9 |
-| Screens | 6 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's |
+| Screens | 7 (+ the `.ico`) — A114: the title band and new-game sheet are chrome's; A222: Kith's seal, `seal-k` |
 | **Total** | **≈ 160 files**, of which the icons are 113 |
 | Optional | ~10 |
 

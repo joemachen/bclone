@@ -25,7 +25,8 @@ config/custom_user_dir_name="Godot/app_userdata/bclone"
 config/description="A generational village-builder. Phase 0: one villager, one resource loop."
 run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://icon.png"
+config/windows_native_icon="res://icon.ico"
 
 [autoload]
 

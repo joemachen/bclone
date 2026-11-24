@@ -266,7 +266,7 @@ gathering-radius ring; home-to-work route lines. All 🟨, all functional. Wheth
 | New-game screen | Flat dark backdrop, live valley preview, ringed camp (`NewGameScreen.cs:143–208`) | — | B7 | 🟨 |
 | Pause | 55% black dim, slate panel, "Paused" 26pt (`PauseScreen.cs:40–63`) | — | B7 | 🟨 |
 | Settings, saves | Default rows in a PanelSkin window | — | B7 | 🟨 |
-| **App / window icon** | ⚠️ **the stock Godot logo** (`icon.svg`, `project.godot:22`); `export_presets.cfg:56` `application/icon=""`, so the .exe has the default icon | An app icon (.svg + .ico) | B1 | ⬜ |
+| **App / window icon** | ✅ **Kith's seal** (A222, `logo.md`): `icon.png` (`config/icon`) and `icon.ico` (`config/windows_native_icon`); the Godot logo deleted. No `export_presets.cfg` today — a preset's `application/icon` is the `.ico` | An app icon (.png + .ico) | B1 | ✅ |
 | Boot splash | ⚠️ Godot's default splash (no `boot_splash` setting) | A splash | B1 | ⬜ |
 
 ## 13. What is finished
