@@ -3,7 +3,9 @@
 > **Status: ✍️ SPECCED AND MOCKED (A229, 2026-11-23); round 1's looks turned down (*"the parchment looks like a quilt"*),
 > round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour) and turned down (*"no, i hate them both"*);
 > round 3 mocked (A231, §5b: (e) full-bleed watercolour, at two strengths); *Continue* lifting the paint into the live map
-> specced (A232, §6a); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
+> specced (A232, §6a). ✅ **Joe chose (e) and the lift (A233): *"Yes, (e) and the lift"*.** 🔨 **The look built as two
+> shaders and three baked textures (A233, §5b), proved through the real title by a scratch harness, NOT YET WIRED into
+> `TitleScreen`;** ⏸️ calls 2–4 (§9) still his.** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -184,10 +186,38 @@ real title) and `title_snapshot_round3_detail.jpg` (1:1).
   wash**: houses, trees and the river bank stay drawn.
 - **Two strengths**: **(e)** and **(e+)** (the same marks about half as strong again: darker glazes, more backruns, more
   splatter). The build takes one strength, or a strength between them.
-- **Built as:** the canvas shader of §5a (d), without the paper edge. The washes come from the picture's own mip levels. The
-  glazes, backruns and paper come from baked noise masks (`textures/ui/title/watercolour-mask.png`, a paper tile), so they
-  are the same on every village and cost nothing at save time. ⚠️ The mock's median washes are a stand-in; the shader's will
-  differ in detail and want his eyes again in the game.
+- **Built as (A233), two passes:**
+  - **`shaders/title_watercolour_wash.gdshader` — the washes, drawn ONCE** into a `SubViewport` the picture's size when the
+    title opens. It is a generalised Kuwahara: eight overlapping sectors of a disc round each pixel, each a weighted mean,
+    and the flatter a sector the more it counts. It reads the picture's own mips at a level set by the finish map: 0.9 at
+    the heart, 1.8 between, 2.8 in the outskirts, set by eye against the mock. ⚠️ The square four-quadrant Kuwahara was
+    tried first and **left blocks along the edges of the broad washes**. The round sectors with soft weights have none.
+  - **`shaders/title_watercolour.gdshader` — the paint, every frame**, as the backdrop's material, about 45 taps a pixel:
+    - each wash's dried rim (the washes' gradient) and an eight-tap halo of pigment fading in from it;
+    - the baked marks;
+    - a touch more colour and 5 % of the paper's light;
+    - granulation in the tooth, more in the heavier washes;
+    - the game's ink lines (the picture's luminance against its own mip 1.8), put back on top;
+    - the paper's relief.
+
+    **`strength`** runs 1 = (e), 0 = the plain picture: the lift (§6a) is that uniform run down.
+  - **The baked textures** (`textures/ui/title/`, lossless, painted by `D:\Projects\brushes\title-snapshot\bake_wc.py`):
+    - **`watercolour-wash.png`** (2560 × 1440 RGBA, 2.4 MB) holds every mark that does not read the picture: the glazes,
+      the wet-in-wet drift, mottling, brush strokes, backruns, dry-brush skips and splatters. Each of these is an affine map
+      of the colour under it (`col × M + paper × b`), so they are baked once as M (rgb ÷ 1.3) and b (alpha), by running them
+      over black and over white. They are drawn from look3's own random stream, so **they fall exactly where the mock's
+      did**.
+    - **`watercolour-finish.png`** (640 × 360): how finished each place is.
+    - **`watercolour-paper.png`** (512 × 512, tiles): the tooth, the fine tooth and the relief.
+  - **Proved through the real title** (the scratch `title_wc.gd`, the shaders set on the backdrop from outside) on his
+    Thornfield, at strength 1, ½ and 0:
+    - at 1 it is the mock, a shade more painterly in the outskirts;
+    - at 0 it is the plain picture: a mean difference of 1.1 / 255, all of it the 3840 capture scaled through mips, which
+      a 2560 `title.jpg` shown 1:1 will not have;
+    - building pass 1 and both materials takes 220 ms.
+  - **Not wired:** `TitleScreen` still shows the four seasons plain. Wiring it is call 4 (the files outside the lane).
+    ⚠️ The fallback four seasons go through the same two passes, but their picture is not framed on a heart, so the finish
+    map's fine heart lands on the valley picture's (0.64, 0.50), which is where its village is already set (A189).
 
 **§2–§4 hold**: the picture taken at save time, one `title.jpg` a village, framed on the homes' middle, the season the save's own.
 The fallback (no picture) is the four seasons under the same treatment.
@@ -262,7 +292,7 @@ and Joe can play it).
 
 ## 9. ⏸️ Joe's calls
 
-1. **The look — now §5b (A231):** ⭐ **(e) full-bleed watercolour at the first strength**, which is clearly painted and keeps the village readable at a glance. **(e+)**, the stronger one, goes muddier in the forests. *Or a strength between them.* Round 2 answered (A231): *"no, i hate them both"*, and round 2's text is kept below for the record. ~~**The look.**~~ **Answered (A230): neither** — *"i dont really like any of them. the parchment looks like a quilt."* **Now the look of §5a:** ⭐ **(d) deeper watercolour** — it is the game's own medium carried further, the village stays the subject and fills the screen, and the paper's white sets off the parchment panel rather than repeating it. *Or:* **(c) a manuscript page** — the most "ancient", a frame and margins painted once and reused for every village, but the village is smaller inside its frame, and the panel is then a second parchment beside a vellum page. *(Round 1, kept for the record:)* ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
+1. ✅ **ANSWERED (A233): *"Yes, (e) and the lift"*.** **The look — now §5b (A231):** ⭐ **(e) full-bleed watercolour at the first strength**, which is clearly painted and keeps the village readable at a glance. **(e+)**, the stronger one, goes muddier in the forests. *Or a strength between them.* Round 2 answered (A231): *"no, i hate them both"*, and round 2's text is kept below for the record. ~~**The look.**~~ **Answered (A230): neither** — *"i dont really like any of them. the parchment looks like a quilt."* **Now the look of §5a:** ⭐ **(d) deeper watercolour** — it is the game's own medium carried further, the village stays the subject and fills the screen, and the paper's white sets off the parchment panel rather than repeating it. *Or:* **(c) a manuscript page** — the most "ancient", a frame and margins painted once and reused for every village, but the village is smaller inside its frame, and the panel is then a second parchment beside a vellum page. *(Round 1, kept for the record:)* ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
    picture and the parchment panel read as one object; its marks sit at the edges and folds, leaving the village clear. The oil's
    crack web lies over everything, and its dark lines are the same weight as the map's own ink (paths, fences, contours), so it
    competes with them, most in the village itself (`title_snapshot_detail.jpg`). *Or:* **(a) oil craquelure** — the closer match
@@ -275,7 +305,7 @@ and Joe can play it).
    lane builds them now; and **the save-time hook in `Main.Saves.cs`** after `slice/hud` merges — ⭐ **the art lane makes it, on
    `art`, as its own commit, after the HUD's merge**, since it is ~10 lines and the piece is otherwise whole. *Or:* the systems lane
    makes it as its next commit after the HUD.
-5. **Continue lifts the paint into the game** (§6a, his idea, A232). ⭐ **Yes, as §6a**: about two seconds, the live map opening on the picture's own frame, a plain fade wherever the picture and the opened save differ. It goes in the load path with the hook in call 4, after the HUD's merge. *Or:* a plain crossfade from the picture to the game, with no lift and no matched frame.
+5. ✅ **ANSWERED (A233): yes, the lift.** **Continue lifts the paint into the game** (§6a, his idea, A232). ⭐ **Yes, as §6a**: about two seconds, the live map opening on the picture's own frame, a plain fade wherever the picture and the opened save differ. It goes in the load path with the hook in call 4, after the HUD's merge. *Or:* a plain crossfade from the picture to the game, with no lift and no matched frame.
 
 ## 10. Order of work
 
