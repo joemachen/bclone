@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868); ✅ step 4, measured again with the real code (D869, §4.9).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868); ✅ step 4, measured again with the real code (D869, §4.9); 🎮 step 5, Joe played it (D870): the switch fixed, kin at 1×.** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -342,7 +342,7 @@ started from `letters_enabled` (true) in the data file, the village's own, saved
 on every library's card, *"Letters to kin: on"* / *"off"* (the card's `Marker: ON` precedent). Off: nobody fetches paper,
 no letter is counted, and no kin come — an answer already standing waits until it is back on, and the card says *"Letters
 to kin are off — nobody writes, and nobody comes."* One switch for the village rather than one a library: a library has no
-id (D396), and a family writes to its kin, not to a building. Not on the new-game screen unless Joe asks — the card is
+id (D396), and a family writes to its kin, not to a building. ✅ **Joe, D870: *"i think it should be a global toggle"* — it is: switching it on any library's card switches it for the village, and every card shows the same.** ⚠️ **Two libraries do not bring twice the kin** (Joe asked, D870): a household writes through the nearest library in reach, one letter a season, one relative a generation, whatever stands near it; a second library only brings more homes within a walk. ⛔ D868 built the switch's row hidden and never showed it (`InspectorRow` builds rows hidden), so Joe could not see it; D870 shows it, and the probe now asks that it is on screen, not only that a signal can press it. Not on the new-game screen unless Joe asks — the card is
 where the library is.
 
 ### 5.5 The almanac — not built now (call 5)
@@ -394,9 +394,9 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
    valley: [Letters to kin: ON]"*, the full-store marker's shape. **The walk-in** now walks each arrival to where they stand
    (`VillageMap.WhereTheyWalkTo`): kin to their household's door, a band to the camp as before. ⚠️ **Kin walk in without
    holding the village at 1×** — one relative is a household's news, said in the log; a band is the village's and stops it
-   (D572). Joe's word changes that.
+   (D572). Joe's word changes that. ✅ **Changed by Joe, D870: *"a relative's arrival should drop the game to 1× like the nomads"*** — a relative's walk-in now holds the village at 1× as a band's does (no popup — he asked for the 1×; the log line says who came).
 4. ✅ **Measured again on his saves with the real code** (D869, §4.9; D855's shape): relatives, nomads, starved, people.
-5. **Joe plays it** — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
+5. 🎮 **Joe plays it** (D870: *"everything else worked as expected"*; the switch fixed, kin at 1×) — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
    line, a relative arrive; then the merge at his word.
 
 ## 8. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request

@@ -93,8 +93,8 @@ public partial class VillageMap
     /// <summary>
     /// Look for arrivals since the last look and begin their walk-in — and for departures in the same window, and begin
     /// their walk out (5b). Called by the shell <b>before</b> it shows any moment — the map's own draw runs after the
-    /// moment panel would already be up. Returns whether a band's walk-in began (kin by letter walk in without holding the
-    /// village, D868; a walk out holds nothing, so it is not said).
+    /// moment panel would already be up. Returns whether a walk-in began — a band's or a relative's, both hold the village at
+    /// 1× (D870; a walk out holds nothing, so it is not said).
     /// </summary>
     public bool WatchForArrivals(SimWorld world)
     {
@@ -234,13 +234,13 @@ public partial class VillageMap
 
     /// <summary>
     /// Begin the walk-in for <paramref name="ids"/>, one walk for each place they walk to (<see cref="WhereTheyWalkTo"/>), along
-    /// the valley's own route; anyone with no route appears where they stand, as before. Returns whether <b>a band's</b> walk
-    /// began — what holds the village at 1×. ⭐ Kin walk in quietly (D868): one relative up the valley is a household's news, said
-    /// in the log; a band is the village's, and stops it (D572).
+    /// the valley's own route; anyone with no route appears where they stand, as before. Returns whether a walk began — what
+    /// holds the village at 1×, for kin as for a band (Joe, D870: <i>"a relative's arrival should drop the game to 1× like the
+    /// nomads"</i>; D868 had let kin walk in quietly).
     /// </summary>
-    private bool BeginWalkIn(SimWorld world, List<int> ids)
+    internal bool BeginWalkIn(SimWorld world, List<int> ids)
     {
-        bool aBand = false;
+        bool began = false;
         foreach (IGrouping<GridPos, int> group in ids.GroupBy(id => WhereTheyWalkTo(world, id)))
         {
             List<GridPos> route = WalkInRoute(world, group.Key);
@@ -250,10 +250,10 @@ public partial class VillageMap
             }
 
             BeginWalkIn(route, group.ToList());
-            aBand |= group.Any(id => world.FindVillager(id) is not { CameByLetterOf: not 0 });
+            began = true;
         }
 
-        return aBand;
+        return began;
     }
 
     /// <summary>Begin a walk-in along <paramref name="route"/> for <paramref name="ids"/>, the lowest id leading — the live door and the probe's.</summary>

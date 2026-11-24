@@ -145,6 +145,12 @@ public partial class Main
 
         /// <summary>The library's <i>Letters to kin</i> switch (Joe's addition 2, D865) — the village's, on every library's card.</summary>
         public Button? Letters { get; set; }
+
+        /// <summary>
+        /// Its row. ⛔ An inspector row is built hidden (`InspectorRow`) and shown by <c>ShowSettings</c> — D868 dropped this and
+        /// the switch was never on screen (Joe, playing D868: <i>"i dont see the letters to kin switch"</i>, D870).
+        /// </summary>
+        public VBoxContainer? LettersRow { get; set; }
         public VBoxContainer? GroundRow { get; set; }
         public Label? GroundLabel { get; set; }
 
@@ -1054,7 +1060,7 @@ public partial class Main
             // every library's card, in the full-store marker's shape. Off: nobody fetches paper and no kin come.
             case CardKind.Library:
             {
-                (_, HFlowContainer lettersControls) = InspectorRow(body, Muted("Kin up the valley:"));
+                (c.LettersRow, HFlowContainer lettersControls) = InspectorRow(body, Muted("Kin up the valley:"));
                 c.Letters = new Button
                 {
                     Text = "Letters to kin: ON",
@@ -1231,6 +1237,7 @@ public partial class Main
             }
 
             case CardKind.Library:
+                c.LettersRow!.Visible = true;
                 c.Letters!.Text = world.LettersEnabled ? "Letters to kin: ON" : "Letters to kin: off";
                 break;
 
@@ -4208,6 +4215,13 @@ public partial class Main
             }
             else
             {
+                // ⛔ ON SCREEN, NOT ONLY PRESSABLE (D870): a signal presses a hidden button too, and D868's line was green
+                // while Joe could not see the switch. Every ancestor visible, the card's fold open as the game opens it.
+                if (!toggle.IsVisibleInTree())
+                {
+                    faults.Add("the letters switch is on the library's card but not shown");
+                }
+
                 toggle.EmitSignal(BaseButton.SignalName.Pressed);
                 RefreshCards(world);
                 if (world.LettersEnabled || toggle.Text != "Letters to kin: off"
@@ -4285,6 +4299,14 @@ public partial class Main
                 faults.Add($"a relative walks in to {VillageMap.WhereTheyWalkTo(world, member.Id)}, not their household's door {home.HomeTile}");
             }
 
+            // ⭐ And their walk-in holds the village at 1×, as a band's does (Joe, D870: "a relative's arrival should drop the
+            // game to 1× like the nomads") — `BeginWalkIn`'s answer is what the shell slows down on.
+            if (!_map.BeginWalkIn(world, new List<int> { member.Id }))
+            {
+                faults.Add("a relative's walk-in does not hold the village at 1×");
+            }
+
+            _map.ClearWalkInsForTheProbe();
             member.CameByLetterOf = 0;
             if (VillageMap.WhereTheyWalkTo(world, member.Id) != camp)
             {
@@ -4307,7 +4329,7 @@ public partial class Main
         return faults.Count == 0
             ? $"[widths] library: ✅ a library's card says who borrows (\"{borrowing}\"), an answer waiting, and letters off by its "
                 + $"switch, not in amber; a household's card reads its letters, amber while an answer waits; a relative's card says whose "
-                + $"kin; the widest line holds {CardWidth:F0} ({widest:F0}); a relative walks in to their household's door, a band to the camp"
+                + $"kin; the widest line holds {CardWidth:F0} ({widest:F0}); a relative walks in to their household's door at 1×, a band to the camp; the switch is on screen"
             : $"[widths] library: ⛔ {string.Join("; ", faults)}";
     }
 
