@@ -5985,7 +5985,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             // ⭐ Paper from the library is a letter once it is home (`library-borrowing.md §5.1`) — at their own door only.
             if (villager.CarryingPaper && villager.Tile == world.HomePlaceOf(villager))
             {
-                WriteTheLetter(world, villager);
+                world.WriteALetter(villager);
             }
 
             // ⭐ And the household's cart is parked at the door (`handcart.md §4`) — `RestPointFor` sends a pusher home,
@@ -6261,23 +6261,6 @@ public sealed partial class BehaviorSystem : ISimSystem
         world.HouseholdOf(villager).LastLetterDay = world.Today;
         villager.State = VillagerState.AtTheLibrary;
         villager.ActionTicksRemaining = world.Config.LibrarySitTicks;
-    }
-
-    /// <summary>
-    /// Home with paper (§5.1): the letter is written, the household's count rises, and the first letter of a household's writing
-    /// is said once in the log.
-    /// </summary>
-    private static void WriteTheLetter(SimWorld world, Villager villager)
-    {
-        villager.CarryingPaper = false;
-        Household household = world.HouseholdOf(villager);
-        household.LettersWritten++;
-        if (household.LettersWritten == 1)
-        {
-            world.Narrate(
-                $"{villager.FullName} wrote to kin in the lowlands. {world.Clock.SeasonAndYear()}.",
-                Logging.LogCategory.Life);
-        }
     }
 
     /// <summary>Arrived on a tavern's errand (W3): a drinker sits down to a cup; the keeper takes an armful or puts it in.</summary>

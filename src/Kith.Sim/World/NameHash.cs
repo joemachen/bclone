@@ -63,6 +63,9 @@ public static class NameHash
     /// <summary>What a boat's share of each good its neighbour makes is picked by (`trade.md §4.3`, D595).</summary>
     public const int TradeCargoSalt = 14;
 
+    /// <summary>What a household's answering letter is picked by, keyed on how many times kin have answered it (`library-borrowing.md §6`).</summary>
+    public const int LetterSalt = 15;
+
     /// <summary>
     /// splitmix64's finaliser folded over the seed, the id, the salt and the attempt in turn —
     /// <c>SplitMix64.Fold</c>, well spread even for adjacent ids.
@@ -139,6 +142,13 @@ public static class NameHash
     /// <summary>A nomad's rhythm in <c>[0, ticksPerDay)</c>.</summary>
     public static int NomadRhythm(ulong seed, int key, int ticksPerDay) =>
         ticksPerDay <= 1 ? 0 : (int)(Mix(seed, key, NomadRhythmSalt, 0) % (ulong)ticksPerDay);
+
+    /// <summary>
+    /// The letter — <c>[1, within]</c> — on which household <paramref name="householdId"/>'s kin answer, for the
+    /// <paramref name="answered"/>th time kin have come to it (`library-borrowing.md §5.2`). ⛔ A hash, never a draw.
+    /// </summary>
+    public static int AnsweringLetter(ulong seed, int householdId, int answered, int within) =>
+        within <= 1 ? 1 : 1 + (int)(Mix(seed, householdId, LetterSalt, answered) % (ulong)within);
 
     /// <summary>A nomad's age in <c>[from, to]</c>.</summary>
     public static int NomadAge(ulong seed, int key, int from, int to) =>

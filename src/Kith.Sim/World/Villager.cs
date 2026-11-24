@@ -407,6 +407,13 @@ public sealed class Villager
     /// </summary>
     public bool CarryingPaper { get; set; }
 
+    /// <summary>
+    /// The household whose letter brought them up the valley (`library-borrowing.md §5.3a`, Joe's addition 1) — kin of that
+    /// household, which is all the kinship the sim keeps (there are no parent links); 0 for everybody else. Read by the cards
+    /// alone. Saved and hashed sparsely.
+    /// </summary>
+    public int CameByLetterOf { get; internal set; }
+
     /// <summary>Evenings at the tavern this season (W3) — read at the season's turn by contentment, then cleared. Saved; hashed sparsely.</summary>
     public int TavernEveningsThisSeason { get; set; }
 
@@ -1072,6 +1079,7 @@ public sealed class Villager
             // W3's (D834) — optional keys, so a save from before reads nobody who has been to a tavern.
             ["last_tavern_day"] = LastTavernDay != 0 ? LastTavernDay : null,
             ["carrying_paper"] = CarryingPaper ? true : null,
+            ["came_by_letter_of"] = CameByLetterOf != 0 ? CameByLetterOf : null,
             ["tavern_evenings_this_season"] = TavernEveningsThisSeason != 0 ? TavernEveningsThisSeason : null,
             ["contentment_comforts"] = ContentmentComforts != 0 ? ContentmentComforts : null,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
@@ -1148,6 +1156,7 @@ public sealed class Villager
             SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
             LastTavernDay = save.HasValue("last_tavern_day") ? save.Int("last_tavern_day") : 0,
             CarryingPaper = save.HasValue("carrying_paper") && save.Bool("carrying_paper"),
+            CameByLetterOf = save.HasValue("came_by_letter_of") ? save.Int("came_by_letter_of") : 0,
             TavernEveningsThisSeason = save.HasValue("tavern_evenings_this_season") ? save.Int("tavern_evenings_this_season") : 0,
             ContentmentComforts = save.HasValue("contentment_comforts") ? save.Int("contentment_comforts") : 0,
             BirthTick = save.Long("birth_tick"),

@@ -302,12 +302,20 @@ public sealed partial class SimWorld
     /// <summary>A surname nobody living carries and no other family of this band took — the founding's rule, keyed on the band.</summary>
     private string NomadSurnameFor(int knockIndex, int family, HashSet<string> surnames)
     {
+        return SurnameNobodyCarries(1_000_000 + (knockIndex * 8) + family, surnames);
+    }
+
+    /// <summary>
+    /// A surname nobody living carries and not in <paramref name="taken"/>, hashed on <paramref name="key"/> — the founding's
+    /// rule, shared by a band's families and by kin come up the valley at a letter (`library-borrowing.md §5.3`).
+    /// </summary>
+    private string SurnameNobodyCarries(int key, HashSet<string> taken)
+    {
         IReadOnlyList<string> names = Config.HouseholdNames;
-        int key = 1_000_000 + (knockIndex * 8) + family;
         for (int attempt = 0; attempt < names.Count * 4; attempt++)
         {
             string candidate = NameHash.Surname(Seed, key, attempt, names);
-            if (!surnames.Contains(candidate) && !Households.Exists(h => LivingMembersOf(h) > 0 && h.Surname == candidate))
+            if (!taken.Contains(candidate) && !Households.Exists(h => LivingMembersOf(h) > 0 && h.Surname == candidate))
             {
                 return candidate;
             }

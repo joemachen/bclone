@@ -350,6 +350,29 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)household.LastLetterDay);
             }
 
+            if (household.KinId != 0)
+            {
+                hash = MixByte(hash, 0x94);
+                hash = MixUInt32(hash, (uint)household.KinId);
+            }
+
+            if (household.LetterWriterId != 0)
+            {
+                hash = MixByte(hash, 0x95);
+                hash = MixUInt32(hash, (uint)household.LetterWriterId);
+            }
+
+            if (household.KinAnswered != 0)
+            {
+                hash = MixByte(hash, 0x96);
+                hash = MixUInt32(hash, (uint)household.KinAnswered);
+            }
+
+            if (household.AnswerWaiting)
+            {
+                hash = MixByte(hash, 0x97);
+            }
+
             if (household.HomePosition is not null)
             {
             }
@@ -1478,6 +1501,7 @@ public static class StateHash
 
         // The library's borrowing: paper in hand on the way home — sparse, so nobody carrying none hashes as before.
         hash = MixSparse(hash, 24u, villager.CarryingPaper ? 1 : 0);
+        hash = MixSparse(hash, 25u, villager.CameByLetterOf);
 
         // Gone from the valley (W2 step 5): sparse, so a village nobody has left hashes as it did. The state is mixed above.
         if (villager.LeftAtTick is ulong left)

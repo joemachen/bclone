@@ -1793,6 +1793,21 @@ public sealed record SimConfig
     [JsonPropertyName("letters_enabled")]
     public bool LettersEnabled { get; init; } = true;
 
+    /// <summary>
+    /// A household's letters are answered within this many (`library-borrowing.md §5.2`, Joe's call 3, D865): the answer comes
+    /// with the letter numbered <c>hash(seed, household, generation) mod this + 1</c> — 24 letters a season apart, so within
+    /// six years, and a different letter for every house and generation. A hash, never a draw.
+    /// </summary>
+    [JsonPropertyName("letters_answered_within")]
+    public int LettersAnsweredWithin { get; init; } = 24;
+
+    /// <summary>
+    /// Years after kin last came to a household before it writes again (Joe's call 2A, D865) — D719's 22–25 years between
+    /// generations, as one number the card can say: <i>"kin may come again from Year 67"</i>.
+    /// </summary>
+    [JsonPropertyName("letters_generation_years")]
+    public int LettersGenerationYears { get; init; } = 24;
+
     // ---------------------------------------------------------------
     //  TRADE AND THE HERD (D590, `specs/trade.md §11` commit 1, `specs/livestock.md §0`)
     // ---------------------------------------------------------------
@@ -6894,7 +6909,8 @@ public sealed record SimConfig
             ("tavern_capacity", TavernCapacity), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
             ("tavern_sit_ticks", TavernSitTicks), ("tavern_stock", TavernStock),
             ("library_reach_tiles", LibraryReachTiles), ("letter_every_days", LetterEveryDays),
-            ("library_sit_ticks", LibrarySitTicks),
+            ("library_sit_ticks", LibrarySitTicks), ("letters_answered_within", LettersAnsweredWithin),
+            ("letters_generation_years", LettersGenerationYears),
         })
         {
             if (value < 1)

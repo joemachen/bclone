@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -226,19 +226,30 @@ six years of a season's letter, a different letter for every household and gener
 clock; nothing here touches `SimWorld.Rng`). Then, on the answering letter's arrival home:
 
 1. **A bed** — the household still has one (Joe's cap).
-2. **Food to spare** — the birth gate's food half (§3), asked of the village as a child's birth is (**call 4**).
+2. **Food to spare** — the birth gate's food half (§3), asked of the village as a child's birth is (**call 4**;
+   `SimWorld.TheVillageHasFoodToSpare`, the same two doors the birth gate reads).
 3. Both hold → **kin come** (§5.3). Either fails → the answer **stands, said once**, and kin come at the first season's turn
-   both hold (*"A letter came for the Haywards: Tamsin will come when there is a bed for her"* / *"… when the village has
-   food to spare."*). Writing stops while an answer stands.
+   both hold (*"A letter came back for the Hayward household: kin will come when there is a bed in the house."* / *"… when
+   the village has food to spare."*). Writing stops while an answer stands.
 
-After kin come, the household's `KinCameYear` is set; it writes again `letters_generation_years` later, with a fresh hash.
-A couple that moves into a house standing empty is a new family there: the count and the year are cleared (`MoveInTogether`).
+*As built (D867):* the refusal names no relative and no pronoun — the sim has no gender (D467), and a name said years before
+the relative comes could differ from the one that arrives (the first-name rule skips a name somebody living has taken). ⚠️
+**The bed is asked when the answer comes, not again at the door:** paper is fetched only with a spare bed, so the bed refusal
+is a child born between the library and the letter — or a bed filled while an answer waited on food. Paper brought home after
+the house has stopped writing (letters off, an answer standing, kin come meanwhile) is put away uncounted.
+
+After kin come, the household's `KinId` is set (the generation's clock runs from their arrival, `KinMayComeAgainFrom`); it
+writes again `letters_generation_years` later, with a fresh hash keyed on `KinAnswered`, how many times kin have answered that
+house. A couple that moves into a house standing empty is a new family there: its letters, its standing answer and its kin are
+cleared (`Household.BecomeTheFamilyOf`, called by `MoveInTogether`) — but **not `KinAnswered`**, or two families in one house
+would be answered on the same letter by the same relative.
 
 ### 5.3 Who comes
 
 **One unmarried adult of 18–30** (hashed, as a nomad's age), kin to the household — **a surname of their own from the
 lowlands** (the nomads' rule: one no living villager carries, D558's one-surname village answered a second way), a first
-name by the nomads' rule, a lifespan and a rhythm by the nomads' hashes, `Generation` 1 and `ArrivedAtTick` set (new to the
+name by the nomads' rule, a lifespan and a rhythm by the nomads' hashes (`SurnameNobodyCarries`, `NomadNameFor` — one copy
+each, shared with the band), `Generation` 1 and `ArrivedAtTick` set (new to the
 valley, like a nomad), carrying `nomads_food_each` (20) into the household's larder (`FoodEverBroughtIn`, the
 conservation guard's ledger). They appear at the household's door; the view walks them in from the valley's edge (the
 nomads' walk-in, D573 — view only). From there the village does what it already does: they work, they pair, they move out to
@@ -271,8 +282,8 @@ household."* Read off the code first:
 
 - **The walk**: someone leaves home, walks to the library, walks back with paper in hand (art lane, §8).
 - **The log** — the first letter of a generation, once: *"Hilde Hayward wrote to her cousin in the lowlands. Winter, Year 40."*
-  The answer: *"Tamsin Brook has come up the valley to live with the Haywards, at Hilde's letter. Spring, Year 43."* A
-  refusal, once: *"A letter came for the Haywards: Tamsin will come when there is a bed for her."*
+  The answer: *"Tamsin Brook has come up the valley to live with the Hayward household, at Hilde's letter. Spring, Year
+  43."* A refusal, once: *"A letter came back for the Hayward household: kin will come when there is a bed in the house."*
 - **The library's card** (D843's lesson, `SayTheLibrary`): *"Lends paper to 7 of 9 homes within a 12-tile walk — 3 are
   writing to kin."* With none in reach: *"No home is within a 12-tile walk, so nobody comes to borrow. A library draws the
   homes around it: build it near them."*
@@ -281,7 +292,9 @@ household."* Read off the code first:
 - **The person's card**: *"Came up the valley in Year 43, at the Haywards' letter — kin of the Haywards."*
 - ⭐ **Letters waiting on an answer, on the library's card** (Joe's addition, D865): *"3 homes are writing to kin — 14 letters
   out, none answered yet."* And while an answer stands: *"… 1 answer waits on a bed."* / *"… on food to spare."* Counted
-  from the households when the card is drawn, never stored (D335).
+  from the households when the card is drawn, never stored (D335). *As built (D867):* *"Lends paper to 7 of 9 homes within
+  a 12-tile walk — 2 are writing to kin, 9 letters out, 1 answer waits on a bed, kin have come to 3 homes."* — *"none
+  answered yet"* only while no house in reach has had an answer.
 
 #### 5.4a Letters on and off — Joe's addition 2 (D865)
 
@@ -307,8 +320,12 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 - **No draw.** The answering letter is `NameHash.Mix(seed, householdId, LetterSalt, generationIndex)`; the relative's
   name, surname, age, lifespan and rhythm are keyed `3_000_000 + household × 64 + generation` (clear of the nomads'
   `1_000_000 + …` keys and every villager id).
-- **New state** — on the household: `LettersWritten`, `LastLetterDay`, `KinCameYear`, `AnswerStanding` (none / bed / food);
-  on the villager: the two walk states and `CameByLetterOf` (the household whose letter brought them, for the card).
+- **New state** — on the household: `LettersWritten`, `LastLetterDay`, `KinId`, `LetterWriterId`, `KinAnswered`,
+  `AnswerWaiting` (hash tags `0x92`–`0x97`); on the villager: the two walk states, `CarryingPaper` (tag 24) and
+  `CameByLetterOf` (tag 25, the household whose letter brought them, for the card). *As built (D867):* the spec's
+  `KinCameYear` became `KinId` — the year is the relative's own `ArrivedAtTick`, and the card wants their name; and
+  `AnswerStanding (none / bed / food)` became a bool — what it waits on is asked when wanted (`WhatTheAnswerWaitsOn`, D335).
+  ⚠️ Kin keys are `3_000_000 + household × 64 + (KinAnswered mod 64)`.
   **Hashed sparsely** (nought when none, `MixSparse`), **saved** (absent when nought) — the save format stays 13 (D806's
   precedent: a new field a format-13 save lacks reads nought).
 - **Not hashed**: the library's card count (derived, D335).
@@ -321,7 +338,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 1. ✅ **The walk** (D866) — `library_reach_tiles`, `letter_every_days`, `library_sit_ticks`, `letters_enabled` (validated); the switch; `WalkToTheLibrary`, the
    offer, the two states, paper home, `LettersWritten`; the library's card count and its letters-waiting line. Guards: an adult in reach walks there and
    back and the count rises; out of reach, a full house, a closed library, a child — nobody goes; the card counts.
-2. **The answer** — `letters_answered_within`, `letters_generation_years`; the hashed letter; the bed and food gates; kin
+2. ✅ **The answer** (D867) — `letters_answered_within`, `letters_generation_years`; the hashed letter; the bed and food gates; kin
    come (§5.3); a standing answer said once and kept; the generation clock; cleared on a new family. Guards: an answer on
    its hashed letter; refused by a full house, then by an empty larder, then honoured; never twice in a generation; the same
    seed the same relative; the conservation guard sees the 20 food come in; save and load mid-answer.

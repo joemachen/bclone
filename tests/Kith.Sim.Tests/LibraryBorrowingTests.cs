@@ -31,7 +31,8 @@ public sealed class LibraryBorrowingTests
     [Fact]
     public void AnAdultInReachFetchesPaperAndTheLetterIsWrittenAtHome()
     {
-        SimConfig config = Config with { LetterEveryDays = 10 };
+        // Never answered inside the run: kin coming would clear the count this test follows (that is step 2's, LibraryKinTests).
+        SimConfig config = Config with { LetterEveryDays = 10, LettersAnsweredWithin = 10_000 };
         (SimLoop loop, SimWorld world, Library library) = AVillageWithALibrary(config);
         Villager child = AChildIn(world, world.Households.First(h => h.HasHome));
 
@@ -185,7 +186,7 @@ public sealed class LibraryBorrowingTests
     /// A child of eight posed into a household — the nomads' shape (`SimWorld.Settle`): the founding's village has no child for its
     /// first years, so without one the "never a child" guard has nobody to refuse (D326's zero, found and fixed).
     /// </summary>
-    private static Villager AChildIn(SimWorld world, Household household)
+    internal static Villager AChildIn(SimWorld world, Household household)
     {
         SimConfig c = world.Config;
         int id = world.NextVillagerId();
@@ -229,9 +230,9 @@ public sealed class LibraryBorrowingTests
     /// The fixture's village kept warm and fed, with a library stood as near the founding as one may stand — given, as the
     /// village's first library is (`TechniqueTests.GiveThemALibrary`'s shape), not built.
     /// </summary>
-    internal static (SimLoop Loop, SimWorld World, Library Library) AVillageWithALibrary(SimConfig config)
+    internal static (SimLoop Loop, SimWorld World, Library Library) AVillageWithALibrary(SimConfig config, InMemoryLogSink? sink = null)
     {
-        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimLoop loop = SimFactory.CreatePhase0(config, sink ?? new InMemoryLogSink());
         SimWorld world = loop.World;
         ToolsTests.KeepTheVillageWarmAndFed(world);
         GridPos site = world.Map.FoundingSite;
@@ -250,6 +251,10 @@ public sealed class LibraryBorrowingTests
 
                     var library = new Library { Position = Point.CentreOf(tile), Name = "library 1", Shelves = config.LibraryShelves };
                     world.Libraries.Add(library);
+
+                    // As a library raised does (`LearnTheSchool`) — and as a save with a library loads, so a save and load
+                    // of this village hashes alike.
+                    world.SchoolLearned = true;
                     return (loop, world, library);
                 }
             }

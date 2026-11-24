@@ -382,7 +382,7 @@ public sealed class SaveLoadTests : IDisposable
             "LeftAtTick",
 
             // The tavern (W3, D836) — saved and hashed sparsely (`TavernTests.EveryTavernFieldIsHashedAndSaved`).
-            "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts", "CarryingPaper",
+            "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts", "CarryingPaper", "CameByLetterOf",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
@@ -394,7 +394,7 @@ public sealed class SaveLoadTests : IDisposable
             "Id", "_surname", "GivenName", "HomePosition", "HomeFacing", "WhyHere", "FencedTiles", "LastBirthYear",
             "DayForAChild", "ToppingUpFood", "ToppingUpFirewood", "Water", "Stockpile", "_memberIds",
             "HomeRaisedAtTick", "HomeRepairedAtTick", "HomeClosed", "HandcartUses", "HomeKind", "KeepsItsHouse", "WalkedFar",
-            "FireOutHeldUntil", "DryDaysThisSeason", "LettersWritten", "LastLetterDay",
+            "FireOutHeldUntil", "DryDaysThisSeason", "LettersWritten", "LastLetterDay", "KinId", "LetterWriterId", "KinAnswered", "AnswerWaiting",
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {

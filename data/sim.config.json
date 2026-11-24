@@ -1099,6 +1099,12 @@
   "letter_every_days": 30,
   "library_sit_ticks": 2,
   "letters_enabled": true,
+  // The answer (step 2): a household's letters are answered on a hashed letter within
+  // letters_answered_within (24, six years of a season's letter); kin come when there is
+  // a bed and the village has food to spare (the birth gate's food half, his call 4),
+  // and a household writes again letters_generation_years (24) after kin last came.
+  "letters_answered_within": 24,
+  "letters_generation_years": 24,
 
   // THE TAILOR'S SHOP (clothing.md 3.5-3.6, D659): leather to coats, the mill's
   // batch shape. Half a hunt's hide a coat; a sew between a bake (4) and a hunt
