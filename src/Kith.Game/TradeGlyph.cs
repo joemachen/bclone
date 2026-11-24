@@ -96,7 +96,8 @@ public sealed partial class TradeGlyph : Control
         JobKind.Herdsman => new Color("#8a4b32"),
         JobKind.Merchant => new Color("#5f6f8c"),
 
-        // ⏳ W3's two, stand-ins until the art lane chooses (`tavern.md §9`): the brewer an ale amber, the keeper a hearth red.
+        // W3's two (D845), kept as chosen by the art lane (A203, Joe: "All as recommended"): the brewer an ale amber, the keeper
+        // a wine red — on their icons, roofs and figures alike.
         JobKind.Brewer => new Color("#9a5e14"),
         JobKind.TavernKeeper => new Color("#8a2f3e"),
 

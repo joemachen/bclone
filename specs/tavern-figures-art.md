@@ -1,6 +1,7 @@
 # W3's cask and the brewer's and keeper's figures (A203)
 
-> **Status: ✍️ SPECCED AND MOCKED (A203, 2026-11-23); ⏸️ FIVE CALLS JOE'S (§6), NOTHING BUILT.** Art lane (CLAUDE.md
+> **Status: 🔨 BUILT ON `art` (A204, 2026-11-23) — Joe: *"All as recommended"* on §6's five calls; ⏸️ his play, then the
+> merge at his word. Specced and mocked A203.** Art lane (CLAUDE.md
 > *Two tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\tavern\figures\w3_figures_mock.jpg`, painted by the game's own `PersonPainter` — today's file and a
 > proposed copy (`PersonPainter.cand.cs`, made by `cand.py`), run outside the game by a scratch harness (`harness/`), so
@@ -91,3 +92,18 @@ front and side, none walking away; the two trade colours as §3.4.
 
 A brewer's working pose (they are unseen at work), ale's colour in `GoodsPalette` (`#9a5e14` since D845, still marked
 *"a stand-in until the art lane takes its colour from the painting"*), a jug or tankard in the keeper's hand, the cask on the shoulder.
+
+## 8. As built (A204)
+
+Joe, 2026-11-23: *"All as recommended"* — the five calls of §6 as written.
+
+- **Code:** `PersonPainter.cs` — the brewer's and keeper's rows of `LookOf` (the leather apron, `Tool.Oar`; the ankle and
+  `TradeLook.Cloth`), the oar in `ToolBehind`, `ShoulderCloth` after the cloak, the cask in `LoadFront` (`Goods.Ale`), the
+  cask's oak and iron the yard's; `TradeGlyph.cs` — the two *"stand-ins"* comments made true, no colour moved;
+  `VillageMap.TavernFiguresProbe.cs` (new) — the probe line, hooked onto `painted villagers:` by one line of
+  `VillageMap.PeopleProbe.cs` (art trap 73).
+- **The mock is the build:** the built `PersonPainter.cs` differs from the mock's copy only by comments, so every figure
+  on `w3_figures_mock.jpg` is what the game paints.
+- **Probe** `brewer and keeper:` — colours are matched within 22 a channel: the painter's wash darkens a fill by ~15
+  (linen `#f0ebdf` paints `#e1dcd0`). The cask hidden walking away and no grey oval are compared with the same figure
+  carrying nothing, not counted. Red-check 19 mutants, 19 red, each a ⛔ on the part it aims at, none a crash; ⚠️ one sub-check scored zero on its first run and was fixed: *no grey oval* matched the grey within 8 a channel, which the wash puts out of reach, so the break was caught by the oak count instead. Matched within 22 and that mutant re-run alone: red (115 grey px against 43 with empty arms).
