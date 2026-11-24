@@ -4,8 +4,8 @@
 > AND THE WINDOWS' BUTTONS A COLUMN (A215: *"stack the window buttons as a narrow column"*, *"agree on the 9 calls"*).**
 > ✅ **The art lane's controls painted and in on `art` (A216, Joe: *"Yes, paint them"*; the pinned pin too, A217: *"Yes, paint
 > it"*), not wired** (§8.3).
-> ▶️ Next: they merge into `main` at his word, then `slice/hud` (§14). The build
-> is its own **systems slice** after `slice/library-borrowing` merges: every bar, window and panel below is drawn in
+> ✅ Merged into `main` at his word (A218, *"Merge art"*). ▶️ Next: `slice/hud` (§14). The build
+> is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
 >
