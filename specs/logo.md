@@ -1,0 +1,80 @@
+# Kith's seal — the logo and the app icon
+
+**Status (A221, 2026-11-23): painted and mocked, ⏸️ Joe's calls (§5); not in the game.** The PNGs and the icon are
+made and wait outside git in `D:\Projects\brushes\logo\png\`; nothing in `src/` has changed. Claimed in A220.
+
+Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
+**a K pressed into the game's own painted seal**, not a new one.
+
+## 1. What it is
+
+The blank wax seal (`textures/ui/screens/seal.png`, A104, `ui-assets.md §5`) with the title's **K** pressed into its
+well. A monogram, not a wordmark: a mark that still reads at 16 px. The blank seal was always meant to carry the name;
+the icon has waited on it since A104.
+
+- **The seal is the game's, unchanged.** Painted by the same script (`D:\Projects\brushes\ui\ps\p2_chrome.jsx`, item
+  `seal-k`) with the blank seal's seed. Outside the letter the logo matches `seal.png` to 2/255 (measured, premultiplied).
+  Today's script repaints the blank seal to within 2/255 of the committed file, so the pipeline has not drifted since A104.
+- **The K is the title's:** Grenze Gotisch, the variable font at weight 400 — its default, and what the title sets
+  (`ParchmentLook.cs`, `TitleScreen.cs`, no variation). Photoshop cannot see the font (it is not installed), so the
+  glyph is rendered from the font file (`brushes\logo\k_mask.py`, at 4× then down) and used in Photoshop only as a
+  selection. No font install needed.
+- **Pressed, lit as the seal is lit (from the upper left):** the K's floor darkened, its upper-left inner wall in
+  shade, its lower-right inner wall catching the light (`K` in the script: depth 6 px, floor `#2a0604` at 80 %, shade
+  `#220503` at 80 %, light `#f2a088` screened at 62 % — the seal's own rim-light colour).
+- **Colours:** the seal's own: wax `#9a2418`, light `#e8866a`, shade `#2e0804`, pressed face `#7e1a10`, ink `#2a2018`.
+  No new colour.
+- **Placement:** the K's box centred on the well (256, 250 of 512), its farthest pixel 95 px from the centre (the
+  well's face is 117.6 px, its shaded ring ~14 px): 130 × 146 px.
+
+**Measured (the acceptance bar from the outside chat's script, met on the paint, luminance 0–255):**
+
+| Check | Measured |
+|---|---|
+| K centred in the well | box centre (256.0, 250.0) = the well's centre |
+| reads as debossed: lit edge on the K's lower-right inner wall | lower-right wall 104, upper-left wall 26, floor 24 |
+| highlights on the seal's upper-left rim, shade lower right | rim upper left 92, lower right 31 |
+
+## 2. Files
+
+| File | Size | What |
+|---|---|---|
+| `textures/ui/screens/seal-k.png` | 512 × 512 | **the logo** — beside the blank seal, which stays for anything that wants it bare |
+| `icon.png` (project root) | 512 × 512 | the logo cut to its own bounds and squared: Godot's `config/icon`, the window icon |
+| `icon.ico` (project root) | 16, 32, 48, 256 | the Windows icon (`config/windows_native_icon`): Windows picks the frame for the size it draws |
+| `brushes\logo\png\seal-k-small.png` | 512 × 512 | **the small cut**: the same seal and seed, no pressed ring, the K out to the wax's edge (reach 150 px) — the 16 and 32 frames only; outside git |
+
+PSDs in `D:\Projects\brushes\logo\psd\`. Rebuild: `logo.ps1` (paints both), `make_icon.py` (the icon), `sheet.py`
+(the mock). The outside chat's flat-seal script is kept there too (`build-kith-seal.ps1`) — reference only.
+
+## 3. Small sizes
+
+`D:\Projects\brushes\logo\logo_a220.jpg`: the seals large, and the icon at 16, 32 and 48 px on parchment, a dark
+taskbar and a light one, each also blown up.
+
+- **48 px:** the logo reads — the seal, its ring, a K.
+- **32 px:** the logo's K reads, small; the small cut's is plain.
+- **16 px:** **the logo's K goes to mush** — about 6 px tall inside the ring, a smudge in a red disc. The small cut
+  (the K about 9 px tall, no ring) reads as a dark K on red wax. Hence the icon's two sources (§2).
+- **The K's double stem** (Grenze Gotisch's K has a hairline slit down its stem) reads as "lK" at 32–48. It is the
+  title's own K, so it is kept; a single-stem K would be another face.
+
+## 4. Wiring (when Joe says)
+
+`project.godot`: `config/icon="res://icon.png"` and `config/windows_native_icon="res://icon.ico"`; the Godot logo
+`icon.svg` (and its `.import`) removed — nothing else names it. All in the art lane's files (HANDOFF's lane table:
+*"`project.godot` (… the icon), `icon.svg`"*). There is no `boot_splash` or `export_presets.cfg` today; an export preset's
+icon is the `.ico` when one is made.
+
+## 5. ⏸️ Joe's calls
+
+1. **The look** (A on the sheet) — as painted.
+2. **The icon's small sizes** — recommended: 16 and 32 from the small cut, 48 and 256 from the logo (row 2), against
+   the logo at every size (row 1).
+3. **`icon.svg`** — recommended: replaced by `icon.png` and `icon.ico`, the Godot logo deleted.
+
+## 6. Next, not built
+
+- **A wordmark lockup** — "Kith" in Grenze Gotisch beside the seal, for store pages and trailers. At Joe's word.
+- **The splash** (`screens/splash.png`, A104) carries the blank seal, *"the name goes on when it is chosen"*. Not wired,
+  so not repainted here.
