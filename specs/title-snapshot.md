@@ -4,8 +4,10 @@
 > round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour) and turned down (*"no, i hate them both"*);
 > round 3 mocked (A231, §5b: (e) full-bleed watercolour, at two strengths); *Continue* lifting the paint into the live map
 > specced (A232, §6a). ✅ **Joe chose (e) and the lift (A233): *"Yes, (e) and the lift"*.** 🔨 **The look built as two
-> shaders and three baked textures (A233, §5b), proved through the real title by a scratch harness, NOT YET WIRED into
-> `TitleScreen`;** ⏸️ calls 2–4 (§9) still his.** Art lane (CLAUDE.md *Two tracks*),
+> shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
+> newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
+> UNPLAYED. NOT YET BUILT: the save-time hook (nothing calls `TitleSnapshot` yet) and the lift — both wait for `slice/hud`'s
+> merge;** ⏸️ call 6 (§9), the year's turn. Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -30,7 +32,7 @@ them changes.
 
 ## 2. What the title shows
 
-- **The picture of the newest village that has one** (⏸️ call 2): the title walks its save list (it already has it, newest first —
+- **The picture of the newest village that has one** (✅ call 2): the title walks its save list (it already has it, newest first —
   `TheSavesOnDisk` reads each save's head for *Continue* and *Load…*, D805) and takes the first save whose village folder holds
   a picture. **No save is opened, and no extra save head is read.** One JPG decoded on the title's open (about 0.9 MB at
   2560 × 1440) and held for as long as the title is up.
@@ -60,7 +62,16 @@ only for a village with a home standing**, so the title shows his newest village
 - **The season** is the world's own — the save's — through the season the map already draws; nothing is overridden.
 - **Size: 2560 × 1440** (16:9, his screen), **JPG at quality 90: 0.92 MB** for Thornfield (85: 0.73 MB). Encoding it took 12 ms
   in the mock's script.
-- **⚠️ Cost — owed by the build, measured before it is wired:** a second map's first draw bakes its own valley (the ground, the
+- **✅ Cost, measured (A234)** on his Thornfield at 2560 × 1440 (scratch `measure.gd`, vsync off, a plain frame 15 ms, an F5
+  save under 24 ms but its first at 37 and 414): a second map from nothing held **one frame for 1.7 s**, almost all of it the
+  ground's bake. **It now borrows what the live map has made** (`VillageMap.BorrowTheGroundOf`: the ground, the woods, the lanes
+  and their field, the painted land's shapes, the buildings, the figures), renders once and is encoded off the main thread:
+  **two frames of about 41 and 28 ms.** Against today's saves that is one or two frames longer, so **it is over the budget
+  below, by about 25 ms** — ⏸️ call 6. The borrowed picture is the unborrowed one but for the villagers, whom the first build
+  read before their figures were painted (mean 0.04 / 255 apart); it is now drawn until every figure is. The ground and the
+  woods are shared rather than copied; the live map draws first in the frame. ⚠️ **No probe line guards the borrowing or the
+  picture** (headless draws nothing): the hook's line is owed one (§8).
+- **⚠️ Cost — as specced, before it was measured:** a second map's first draw bakes its own valley (the ground, the
   watercolour layers) and that may take hundreds of ms. **The budget: a year's-turn autosave hitches no more than today's**
   (measured on his Thornfield, before and after, the frame log's `[frame]` lines). If the second map is over it, the picture is
   taken only at the quits and the named saves — they already pause the game — and the folder's picture then lags the year's-turn
@@ -215,7 +226,9 @@ real title) and `title_snapshot_round3_detail.jpg` (1:1).
     - at 0 it is the plain picture: a mean difference of 1.1 / 255, all of it the 3840 capture scaled through mips, which
       a 2560 `title.jpg` shown 1:1 will not have;
     - building pass 1 and both materials takes 220 ms.
-  - **Not wired:** `TitleScreen` still shows the four seasons plain. Wiring it is call 4 (the files outside the lane).
+  - **Wired (A234):** `TitleScreen.ShowTheVillage` picks the picture, `PaintIt` lays the two passes over it. A village's picture
+    is 2560 across where the look was tuned on a 3840 capture, so both shaders now measure every reach and mip in a 3840-wide
+    picture's texels, whatever its size: the wired title over a 2560 `title.jpg` is **0.88 / 255** from the shot he approved.
     ⚠️ The fallback four seasons go through the same two passes, but their picture is not framed on a heart, so the finish
     map's fine heart lands on the valley picture's (0.64, 0.50), which is where its village is already set (A189).
 
@@ -265,7 +278,7 @@ written. So the live map can open on exactly the frame the title shows, and the 
 |---|---|---|
 | The surface: layers, shader, painting script | `textures/ui/title/aged-*.png` (+ `.import`), `shaders/title_aged.gdshader`, `tools/title-aged/` | ✅ art's own |
 | The title reads the newest picture and lays the surface | `TitleScreen.cs`, `TitleScreen.Probe.cs` | art built them (A180, A190, A223), outside the lane's table — ⏸️ call 4 |
-| Drawing and writing the picture | a new `TitleSnapshot.cs` (the second map, the framing, the JPG) — no existing file changes | art (a new view file) — call 4 |
+| Drawing and writing the picture | a new `TitleSnapshot.cs` (the second map, the framing, the JPG) and a new `VillageMap.Still.cs` (what it borrows, which only the map can hand over) — no existing file changes | ✅ art (new view files) — call 4, A234 |
 | **The save-time hook**: call `TitleSnapshot` after each save and autosave, and at the quits | **`Main.Saves.cs`** (`Autosave`, `SaveUnderAName`, the three quit paths) — ~10 lines | ⛔ **systems** |
 | The `title:` probe line's new checks | `Main.cs`'s `ProbeTheTitle` asks `TitleScreen.Probe.cs`; ~3 lines if a new check needs a door | ⛔ **systems** |
 
@@ -287,6 +300,10 @@ and Joe can play it).
   posed world, no disk: the heart at (0.64, 0.50) ± 1 px at 2560 × 1440, 32 px a tile; no home, no picture.
 - **The hook** (systems, after the HUD): under the probe nothing is written; the `save:` line's scratch folder gets a `title.jpg`
   beside its save.
+- **Built (A234):** the `title:` line's own — the paint over the picture (each shader declaring every uniform it is handed, the
+  washes once and the picture's size, full strength), which picture it picks over posed saves on a scratch folder it deletes, a
+  file that is not a picture, a heart's place in its picture, a founding with no heart. **Red-check: 12 mutants, 12 red.** The
+  three loud `ERROR` lines about `probe-title\broken\title.jpg` in a probe are that check's, meant.
 - Red-checked, the reds counted (D326). The four checks as `CLAUDE.md` says; **the suite by D846's rule** — this piece changes no
   sim, data or test file, so it is skipped and the record says so.
 
@@ -297,15 +314,18 @@ and Joe can play it).
    crack web lies over everything, and its dark lines are the same weight as the map's own ink (paths, fences, contours), so it
    competes with them, most in the village itself (`title_snapshot_detail.jpg`). *Or:* **(a) oil craquelure** — the closer match
    to KCD2 and the more dramatic of the two.
-2. **Which village.** ⭐ **The newest village with a home standing** — a founding writes no picture, so the title keeps showing
+2. ✅ **ANSWERED (A234): *"Yes to all three"*.** **Which village.** ⭐ **The newest village with a home standing** — a founding writes no picture, so the title keeps showing
    his last real village. *Or:* the newest save, whatever it holds (tonight: an empty valley at tick 0).
-3. **One picture a village** (`title.jpg` in its save folder, rewritten at each save), not one per save file. ⭐ **Yes** — the same
+3. ✅ **ANSWERED (A234): yes.** **One picture a village** (`title.jpg` in its save folder, rewritten at each save), not one per save file. ⭐ **Yes** — the same
    picture on the title, and no change to the sim's save code.
-4. **His OK for the files outside the lane** (§7): `TitleScreen.cs` / `.Probe.cs` and a new `TitleSnapshot.cs` — ⭐ **yes**, the art
+4. ✅ **ANSWERED (A234): yes.** **His OK for the files outside the lane** (§7): `TitleScreen.cs` / `.Probe.cs` and a new `TitleSnapshot.cs` — ⭐ **yes**, the art
    lane builds them now; and **the save-time hook in `Main.Saves.cs`** after `slice/hud` merges — ⭐ **the art lane makes it, on
    `art`, as its own commit, after the HUD's merge**, since it is ~10 lines and the piece is otherwise whole. *Or:* the systems lane
    makes it as its next commit after the HUD.
 5. ✅ **ANSWERED (A233): yes, the lift.** **Continue lifts the paint into the game** (§6a, his idea, A232). ⭐ **Yes, as §6a**: about two seconds, the live map opening on the picture's own frame, a plain fade wherever the picture and the opened save differ. It goes in the load path with the hook in call 4, after the HUD's merge. *Or:* a plain crossfade from the picture to the game, with no lift and no matched frame.
+6. ⏸️ **The year's turn (A234).** A picture costs two frames of about 41 and 28 ms on Thornfield (§3), over the budget by about
+   25 ms. ⭐ **Take it at every save all the same**, the year's turn included, as his brief says. *Or:* only when he quits,
+   saves by name or presses F5, so the year's turn costs what it does today; a crash would then leave last session's picture.
 
 ## 10. Order of work
 

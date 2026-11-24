@@ -11,6 +11,8 @@ shader_type canvas_item;
 uniform sampler2D picture : filter_linear_mipmap, repeat_disable;
 uniform sampler2D finish : filter_linear, repeat_disable;
 
+// The look was tuned on a picture 3840 across (A233); a 2560 one paints the same washes, at two thirds the texels.
+const float TUNED_ACROSS = 3840.0;
 const int R = 4;
 const int N = 8;
 
@@ -18,7 +20,9 @@ void fragment() {
     float f = texture(finish, UV).r;
     // lod 0.9 at the heart (~7 px washes), 1.8 between (~14 px), 2.8 in the outskirts (~28 px), by eye against the mock
     float lod = 2.8 - 1.0 * smoothstep(0.15, 0.55, f) - 0.9 * smoothstep(0.55, 0.95, f);
-    vec2 px = exp2(lod) / vec2(textureSize(picture, 0));
+    vec2 size = vec2(textureSize(picture, 0));
+    lod = max(0.0, lod + log2(size.x / TUNED_ACROSS));
+    vec2 px = exp2(lod) / size;
     vec3 m[N];
     vec3 s[N];
     float w[N];

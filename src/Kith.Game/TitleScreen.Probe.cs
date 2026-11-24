@@ -12,7 +12,7 @@ public sealed partial class TitleScreen
 {
     /// <summary>What a green line says it checked.</summary>
     internal const string WhatTheTitleShowed =
-        "the four seasons behind, covering the window, the village right of the panel at 16:10, 16:9 and 21:9; a parchment sheet docked left, Kith in the blackletter, the items in the heading face; with no save Continue and Load… "
+        "the four seasons behind with no village's picture, covering the window, the village right of the panel at 16:10, 16:9 and 21:9, painted by two shaders with every uniform theirs; over saves the newest village's picture that opens, never a refused save's, the four seasons where the picture will not read; a village's picture centred so its heart sits at 0.64, 0.50; a parchment sheet docked left, Kith in the blackletter, the items in the heading face; with no save Continue and Load… "
         + "hidden and New village the red primary with the keyboard; over a save Continue the primary and New village plain; "
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
         + "ticks as last left, a tick goes to the file, Back returns; Kith's seal centred above the name, its wax clear of it "
@@ -73,6 +73,8 @@ public sealed partial class TitleScreen
 
         faults.AddRange(TheSettingsWork());
         faults.AddRange(TheSeasonsBehind());
+        faults.AddRange(ThePaintOver(this));
+        faults.AddRange(TheVillagesPicture());
         faults.AddRange(TheSealAbove());
         faults.AddRange(TheWaxButton());
         return faults;
@@ -96,15 +98,145 @@ public sealed partial class TitleScreen
             yield return $"the backdrop is laid {Backdrop.StretchMode} (want covering the window, centred)";
         }
 
-        foreach (Vector2 window in new[] { new Vector2(1280, 800), new Vector2(1920, 1080), new Vector2(2560, 1080) })
+        foreach ((string what, Vector2 of, Vector2 size) in new[]
         {
-            Vector2 at = WhereTheVillageLands(new Vector2(3840, 2160), window);
-            float panel = Mathf.Max(window.X * PanelShare, Band.GetCombinedMinimumSize().X);
-            if (at.X < panel + (window.X * 0.05f) || at.X > window.X * 0.9f || at.Y < window.Y * 0.2f || at.Y > window.Y * 0.8f)
+            ("the four seasons' village", VillageInPicture, new Vector2(3840, 2160)),
+            ("a village's heart", TitleSnapshot.HeartInPicture, (Vector2)TitleSnapshot.PictureSize),
+        })
+        {
+            foreach (Vector2 window in new[] { new Vector2(1280, 800), new Vector2(1920, 1080), new Vector2(2560, 1080) })
             {
-                yield return $"at {window.X:0} × {window.Y:0} the village lands at {at.X:0}, {at.Y:0} (want right of the {panel:0} px panel, inside the window)";
+                Vector2 at = WhereTheVillageLands(of, size, window);
+                float panel = Mathf.Max(window.X * PanelShare, Band.GetCombinedMinimumSize().X);
+                if (at.X < panel + (window.X * 0.05f) || at.X > window.X * 0.9f || at.Y < window.Y * 0.2f || at.Y > window.Y * 0.8f)
+                {
+                    yield return $"at {window.X:0} × {window.Y:0} {what} lands at {at.X:0}, {at.Y:0} (want right of the {panel:0} px panel, inside the window)";
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// The watercolour over whatever is behind (A233–A234, `title-snapshot.md §5b`): the washes drawn once at the picture's size, the
+    /// paint on the backdrop at full strength, each shader declaring every uniform it is handed — a shader that did not compile
+    /// declares none (art trap 6: a material holds whatever it is told).
+    /// </summary>
+    private static IEnumerable<string> ThePaintOver(TitleScreen title)
+    {
+        Texture2D? picture = title.Backdrop.Texture;
+        if (title.Backdrop.Material is not ShaderMaterial paint || title.Washes is not { } washes
+            || (washes.GetChildCount() > 0 ? washes.GetChild(0) : null) is not TextureRect { Material: ShaderMaterial wash } drawn || picture is null)
+        {
+            yield return "the picture behind the title is not painted (no paint on the backdrop, or no washes)";
+            yield break;
+        }
+
+        foreach ((string what, ShaderMaterial material, string path, string[] wants) in new[]
+        {
+            ("the washes", wash, "title_watercolour_wash.gdshader", new[] { "picture", "finish" }),
+            ("the paint", paint, "title_watercolour.gdshader", new[] { "picture", "washes", "marks", "finish", "paper", "strength" }),
+        })
+        {
+            string[] declared = material.Shader.GetShaderUniformList().Select(u => u.AsGodotDictionary()["name"].AsString()).ToArray();
+            if (material.Shader.ResourcePath.GetFile() != path || wants.Any(u => !declared.Contains(u)))
+            {
+                yield return $"{what} are {material.Shader.ResourcePath.GetFile()} declaring {string.Join(", ", declared)} (want {path} declaring {string.Join(", ", wants)})";
+            }
+
+            foreach (string uniform in wants.Where(u => u != "strength" && material.GetShaderParameter(u).AsGodotObject() is null))
+            {
+                yield return $"{what} are handed no {uniform}";
+            }
+        }
+
+        if (!ReferenceEquals(wash.GetShaderParameter("picture").AsGodotObject(), picture) || !ReferenceEquals(paint.GetShaderParameter("picture").AsGodotObject(), picture)
+            || (Vector2)washes.Size != picture.GetSize() || drawn.Size != picture.GetSize() || paint.GetShaderParameter("strength").AsSingle() != 1f
+            || washes.RenderTargetUpdateMode == SubViewport.UpdateMode.Always)
+        {
+            yield return $"the paint is not over the picture shown: washes {washes.Size} of a {picture.GetSize()} picture, drawn {drawn.Size}, {washes.RenderTargetUpdateMode}, strength {paint.GetShaderParameter("strength")}";
+        }
+    }
+
+    /// <summary>
+    /// Which picture a title shows over saves (A234, `title-snapshot.md §2, §8`), on a scratch folder it deletes: the newest village
+    /// that has one and opens; a refused save's and a founding's passed by; one that is not a picture, the four seasons — and a
+    /// picture's centre, from its heart.
+    /// </summary>
+    private IEnumerable<string> TheVillagesPicture()
+    {
+        string scratch = System.IO.Path.GetFullPath(ProjectSettings.GlobalizePath("user://probe-title"));
+        try
+        {
+            SaveListing At(string village, string? refusal = null) =>
+                new(System.IO.Path.Combine(scratch, village, "autosave-1.save"), village, refusal);
+
+            void Put(string village, byte[] bytes)
+            {
+                System.IO.Directory.CreateDirectory(System.IO.Path.Combine(scratch, village));
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(scratch, village, TitleSnapshot.FileName), bytes);
+            }
+
+            using Image small = Image.CreateEmpty(64, 36, false, Image.Format.Rgb8);
+            byte[] jpg = small.SaveJpgToBuffer();
+            Put("refused", jpg);
+            Put("lived-in", jpg);
+            Put("older", jpg);
+            Put("broken", new byte[] { 1, 2, 3, 4 });
+
+            SaveListing[] saves = { At("founding"), At("refused", "from another age"), At("lived-in"), At("lived-in"), At("older") };
+            string want = System.IO.Path.Combine(scratch, "lived-in", TitleSnapshot.FileName);
+            if (PictureOf(saves) != want)
+            {
+                yield return $"over a founding, a refused save and two villages the title picks {PictureOf(saves) ?? "nothing"} (want {want})";
+            }
+
+            foreach (string fault in Posed(saves, want, new Vector2(64, 36)))
+            {
+                yield return fault;
+            }
+
+            foreach (string fault in Posed(new[] { At("broken") }, null, new Vector2(3840, 2160)))
+            {
+                yield return $"over a picture that is not one: {fault}";
+            }
+        }
+        finally
+        {
+            if (System.IO.Directory.Exists(scratch))
+            {
+                System.IO.Directory.Delete(scratch, recursive: true);
+            }
+        }
+
+        Vector2 heart = new(12f, -7f);
+        Vector2 at = (((heart - TitleSnapshot.CentreFor(heart)) * TitleSnapshot.PixelsPerTile) + ((Vector2)TitleSnapshot.PictureSize / 2f)) / TitleSnapshot.PictureSize;
+        if (at.DistanceTo(new Vector2(0.64f, 0.50f)) > 1f / 2560f)
+        {
+            yield return $"a village's heart is drawn at {at} of its picture (want 0.64, 0.50)";
+        }
+
+        if (TitleSnapshot.HeartOf(Kith.Sim.Core.SimWorld.Create(_config)) is Vector2 founding)
+        {
+            yield return $"a founding with no home has a heart at {founding} (want none, so no picture)";
+        }
+    }
+
+    /// <summary>A title over these saves, in the tree for the asking.</summary>
+    private IEnumerable<string> Posed(SaveListing[] saves, string? picture, Vector2 size)
+    {
+        var posed = new TitleScreen(_config, saves, _build, _doors);
+        AddChild(posed);
+        var faults = new List<string>();
+        if (posed.VillagePicture != picture || posed.Backdrop.Texture?.GetSize() != size)
+        {
+            faults.Add($"the title shows {posed.VillagePicture ?? "no village"} at {posed.Backdrop.Texture?.GetSize()} (want {picture ?? "no village"}, {size})");
+        }
+
+        faults.AddRange(ThePaintOver(posed));
+        RemoveChild(posed);
+        posed.QueueFree();
+        PrimaryItem.GrabFocus();
+        return faults;
     }
 
     /// <summary>

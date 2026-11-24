@@ -20,6 +20,7 @@ uniform float strength : hint_range(0.0, 1.5) = 1.0;
 const vec3 LUM = vec3(0.299, 0.587, 0.114);
 const vec3 PAPER = vec3(0.968, 0.950, 0.912);
 const float M_SCALE = 1.3;
+const float TUNED_ACROSS = 3840.0;   // every reach below is in texels of a picture this wide (A233), whatever the picture's size
 
 float rim_at(vec2 uv, vec2 ps) {
     float lx = dot(texture(washes, uv + vec2(1.5, 0.0) * ps).rgb - texture(washes, uv - vec2(1.5, 0.0) * ps).rgb, LUM);
@@ -29,7 +30,8 @@ float rim_at(vec2 uv, vec2 ps) {
 
 void fragment() {
     float k = strength;
-    vec2 size = vec2(textureSize(picture, 0));
+    vec2 real = vec2(textureSize(picture, 0));
+    vec2 size = real * (TUNED_ACROSS / real.x);
     vec2 ps = 1.0 / size;
     vec3 pic = texture(picture, UV).rgb;
     float f = texture(finish, UV).r;
@@ -63,7 +65,7 @@ void fragment() {
 
     // the game's own ink lines, lifted off the picture, back over the washes
     float l0 = dot(pic, LUM);
-    float ink = clamp((dot(textureLod(picture, UV, 1.8).rgb, LUM) - l0 - 0.05) * 5.0, 0.0, 1.0) * (0.55 + 0.35 * f);
+    float ink = clamp((dot(textureLod(picture, UV, 1.8 + log2(real.x / TUNED_ACROSS)).rgb, LUM) - l0 - 0.05) * 5.0, 0.0, 1.0) * (0.55 + 0.35 * f);
     col *= 1.0 - 0.75 * ink * k;
 
     // the paper's relief, lit from the upper left
