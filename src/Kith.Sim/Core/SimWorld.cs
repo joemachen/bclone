@@ -930,31 +930,6 @@ public sealed partial class SimWorld : IObstacles
     }
 
     /// <summary>
-    /// ⭐ All the food the village is holding — its stores <em>and</em> its workplaces (D161).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>This exists because <see cref="Workplace.Store"/> is about to be written to for the
-    /// first time.</b> It has been on the type since D30 and nothing has ever put anything in
-    /// it, so <see cref="FoodInGranaries"/> and <see cref="TotalFood"/> have never once
-    /// disagreed. The farm fills a local store (`crops-and-orchards.md §3.1`), and on that day
-    /// they diverge by up to a hundred food per farm — with the **birth gate**, the village-wide
-    /// reason to gather, and the food stock limit all reading the blind one.
-    /// </para>
-    /// <para>
-    /// <b>The failure it prevents is a village that quietly stops having children</b> because
-    /// its food is in the wrong building — D155's symptom from a new direction, and structurally
-    /// D81's bug: one comparison asking two different questions. D81 is recorded as *D76's seam
-    /// for the fifth time*. **Found by writing the spec, before the farm existed.**
-    /// </para>
-    /// <para>
-    /// <b>⚠️ Larders are deliberately excluded, and that boundary is load-bearing.</b> This sits
-    /// between the two readers that already exist: wider than the granaries, narrower than
-    /// <see cref="TotalFood"/>. A household's larder is food already *distributed* — counting it
-    /// here would re-add the household term D153 deliberately removed from the birth gate.
-    /// </para>
-    /// </remarks>
-    /// <summary>
     /// Food in the households' larders — <b>the part no rule reads</b> (D394, Joe: *"I don't want
     /// what is in the home larders to count against the limit. The limit should be what is in
     /// storage, in transit to storage and in markets — what is available to villagers outside of
@@ -1113,6 +1088,31 @@ public sealed partial class SimWorld : IObstacles
         return $"Nobody is posted here — {why}.{waiting}";
     }
 
+    /// <summary>
+    /// ⭐ All the food the village is holding — its stores <em>and</em> its workplaces (D161).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>This exists because <see cref="Workplace.Store"/> is about to be written to for the
+    /// first time.</b> It has been on the type since D30 and nothing has ever put anything in
+    /// it, so <see cref="FoodInGranaries"/> and <see cref="TotalFood"/> have never once
+    /// disagreed. The farm fills a local store (`crops-and-orchards.md §3.1`), and on that day
+    /// they diverge by up to a hundred food per farm — with the **birth gate**, the village-wide
+    /// reason to gather, and the food stock limit all reading the blind one.
+    /// </para>
+    /// <para>
+    /// <b>The failure it prevents is a village that quietly stops having children</b> because
+    /// its food is in the wrong building — D155's symptom from a new direction, and structurally
+    /// D81's bug: one comparison asking two different questions. D81 is recorded as *D76's seam
+    /// for the fifth time*. **Found by writing the spec, before the farm existed.**
+    /// </para>
+    /// <para>
+    /// <b>⚠️ Larders are deliberately excluded, and that boundary is load-bearing.</b> This sits
+    /// between the two readers that already exist: wider than the granaries, narrower than
+    /// <see cref="TotalFood"/>. A household's larder is food already *distributed* — counting it
+    /// here would re-add the household term D153 deliberately removed from the birth gate.
+    /// </para>
+    /// </remarks>
     public int FoodTheVillageHolds()
     {
         int total = FoodInGranaries();
@@ -15849,18 +15849,52 @@ public sealed partial class SimWorld : IObstacles
 
         world.Log(LogLevel.Debug, "sim", $"World created (seed={seed}).");
 
-        if (world.Villagers.Count == 1)
-        {
-            world.Narrate($"{world.Villager.Name} begins. {world.Clock.SeasonAndYear()}, no food stored.", LogCategory.Life);
-        }
-        else
-        {
-            world.Narrate(
-                $"{world.Villagers.Count} exiles arrive in {world.Households.Count} households. " +
-                $"{world.Clock.SeasonAndYear()}, no food stored.", LogCategory.Life);
-        }
+        // ⭐ THE FOUNDING LINE SAYS WHAT THE STORES HOLD (`hud.md §14` step 9, D882; A207): it read "no food stored" while the
+        // cart held 1,200 food — a hard-coded sentence the strip's food figure now contradicts. "No food stored" only when
+        // there is none.
+        string held = world.WhatTheFoundingHolds(out bool food);
+        string when = world.Clock.SeasonAndYear() + (food ? "." : ", no food stored.");
+        world.Narrate(
+            world.Villagers.Count == 1
+                ? $"{world.Villager.Name} begins{held}. {when}"
+                : $"{world.Villagers.Count} exiles arrive in {world.Households.Count} households{held}. {when}",
+            LogCategory.Life);
 
         return world;
+    }
+
+    /// <summary>
+    /// What the founding's stores hold, as the founding line says it — <i>" with a cart: 1,200 food and 20 stone tools"</i>
+    /// (the food first, as <see cref="FoodTheVillageHolds"/> counts it, then every other good held in the catalogue's
+    /// order), or nothing when the stores are empty.
+    /// </summary>
+    internal string WhatTheFoundingHolds(out bool food)
+    {
+        var items = new List<string>();
+        int edible = FoodTheVillageHolds();
+        food = edible > 0;
+        if (food)
+        {
+            items.Add($"{edible.Grouped()} food");
+        }
+
+        for (int id = 0; id < GoodsCatalog.Count; id++)
+        {
+            var goods = (Goods)id;
+            int held = GoodsCatalog.Edible(goods) ? 0 : InStores(goods);
+            if (held > 0)
+            {
+                items.Add($"{held.Grouped()} {GoodsCatalog.NameOf(goods)}");
+            }
+        }
+
+        if (items.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        string list = items.Count == 1 ? items[0] : string.Join(", ", items.Take(items.Count - 1)) + " and " + items[^1];
+        return (TheCart is not null ? " with a cart: " : " with stores of ") + list;
     }
 
     /// <summary>

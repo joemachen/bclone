@@ -25,7 +25,7 @@ had the order as one list since D104: `SimWorld.BuildQueue()`.
 ## 2. The shape — `Main.BuildQueue.cs`
 
 - **A window titled *Build queue*.** It is built by `Floating` like *Stock limits*, so it is in
-  `_windows`. That gives it a Settings tick under *Windows*, a ✕ on its header, and a remembered
+  `_windows`. That gives it a Settings tick under *Windows* *(its word on the windows' column since D876, `hud.md §9.3`)*, a ✕ on its header, and a remembered
   shown/open/place in the settings file by its title. None of that is new code.
 - **⭐ Off by default.** `Wanted = false` and hidden at build, exactly as *Stock limits* is (D380).
   The tick starts unticked. Once the player ticks it, the settings file remembers that, as for any

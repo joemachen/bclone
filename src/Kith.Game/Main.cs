@@ -355,6 +355,7 @@ public partial class Main : Control
         _halted = true;
         _driver.SpeedMultiplier = 0.0;
         _speedLabel.Text = "STOPPED";
+        _speedLabel.Visible = true;
 
         string sentence = TheVillageStoppedBecause(fault);
         _villageLog.AppendText(
@@ -554,6 +555,7 @@ public partial class Main : Control
             if (_probeFrames == 12)
             {
                 _whatsHerePosedOn = PoseWhatsHere();
+                PoseTheRosterOpen(true);
             }
 
             return;
@@ -562,7 +564,7 @@ public partial class Main : Control
         _probed = true;
 
         GD.Print(
-            $"[widths] window {Size.X:F0} x {Size.Y:F0}, drawn at {_uiScale * 100f:F0}%");
+            $"[widths] window {Size.X:F0} x {Size.Y:F0}, the dial at {_uiScalePercent}%, drawn at {_uiScale * 100f:F0}%");
         GD.Print(WhatsHereOpensWhereItBelongs());
 
         ProbePanelWidths("at the founding");
@@ -585,11 +587,17 @@ public partial class Main : Control
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());
         GD.Print(TheWordsReadOnParchment());
+        GD.Print(TheRubricMeansWrongAndLapisMeansOn());
         GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheFarmSaysWhatItGrows());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
+        GD.Print(TheZerosLeaveTheFront("at the founding"));
+        GD.Print(TheFoodFigureIsTheVillages());
+        GD.Print(TheRunwayIsTheSum());
+        GD.Print(TheAmountsAreInLiningFigures());
+        GD.Print(TheDevBarHoldsTheDebugTools());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
         GD.Print(TheWindowIsFullScreenByDefault());
         GD.Print(F5SavesAndF7SaysWhenThereIsNothing());
@@ -603,6 +611,7 @@ public partial class Main : Control
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
+        PoseTheRosterOpen(false);
         GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheHillsAreShadedAndSaid());
         GD.Print(TheHomeCardSaysTheShopWalk());
@@ -649,7 +658,7 @@ public partial class Main : Control
         GD.Print(TheRiverKeepsTheGamesSpeed());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
-        GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
+        GD.Print(EveryWindowHasItsWordAndOpensAsItShould());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
@@ -659,6 +668,8 @@ public partial class Main : Control
         GD.Print(_map.TheFieldsStayInsideTheirFences());
 
         ProbeTheControlBar();
+        GD.Print(NoTwoFloatersMeet());
+        GD.Print(WhatIsNewIsGoldUntilClicked());
         GD.Print(TheRedBrushIsOnTheBar());
         GD.Print(_map.ABrushShowsWhatItPaints());
         GD.Print(TheAnnounceIsAHintNotALogLine());
@@ -680,6 +691,7 @@ public partial class Main : Control
         _onTheGround.Text = "+1,234";
         ForceUpdateTransform();
         ProbePanelWidths("twelve years in, with heaps posed");
+        GD.Print(TheZerosLeaveTheFront("twelve years in"));
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
@@ -699,6 +711,7 @@ public partial class Main : Control
         GD.Print(_map.TheGhostStartsTowardTheStore());
         GD.Print(TheCardSaysWhereItsDoorIs());
         GD.Print(TheSettingsComeBackAsTheyWent());
+        GD.Print(TheDialsHundredIsWhatSeventyFiveWas());
         GD.Print(TheVillageSavesAndLoads());
         GD.Print(ThePauseOpensAndCloses());
         GD.Print(SpaceIsPressedNotHeld());
@@ -823,25 +836,22 @@ public partial class Main : Control
             _headers[i].ButtonPressed = wereOpen[i];
         }
 
-        // ⭐ AND THE TOP BAR (D378), which is content-sized rather than given a width, so the
-        // question for it is not "did it outgrow its box" but "did it move between the two
-        // passes" — the founding against twelve years of heaps, larders and a grown village.
+        // ⭐ AND THE TOP STRIP. Until D878 the question was "did it move between the two passes" (D378's fixed bar); since
+        // the strip hides a good at zero its width moves by design (hud.md §6), so the question is the one its room asks —
+        // does it stay inside the room before the right column (`StripRoom`), wrapping rather than widening.
         Vector2 bar = _topBar.GetCombinedMinimumSize();
-        bool moved = _barMeasured is Vector2 first && !first.IsEqualApprox(bar);
-        widened += moved ? 1 : 0;
+        bool past = bar.X > StripRoom(Size.X) + 0.5f;
+        widened += past ? 1 : 0;
         GD.Print(
             $"[widths] panel top   at ({_topBar.Position.X:F0}, {_topBar.Position.Y:F0}) "
-            + $"size {_topBar.Size.X:F0}x{_topBar.Size.Y:F0}, wants {bar.X:F0}x{bar.Y:F0}"
-            + (moved ? $"  ⛔ moved from {_barMeasured!.Value.X:F0}x{_barMeasured.Value.Y:F0} at the founding" : string.Empty));
-        _barMeasured ??= bar;
+            + $"size {_topBar.Size.X:F0}x{_topBar.Size.Y:F0}, wants {bar.X:F0}x{bar.Y:F0} of {StripRoom(Size.X):F0}"
+            + (past ? "  ⛔ past its room before the right column" : string.Empty));
 
         GD.Print(widened == 0
             ? $"[widths] panels: ✅ none wider than it was given, {when}"
             : $"[widths] panels: ⛔ {widened} widened past the width they were given, {when}");
     }
 
-    /// <summary>The top bar's minimum at the founding, so the second pass can say whether it moved.</summary>
-    private Vector2? _barMeasured;
 
     /// <summary>
     /// The top bars at their longest: every number posed at six figures and a sign, the clock
@@ -1467,78 +1477,6 @@ public partial class Main : Control
             : $"[widths] full screen: ⛔ {string.Join("; ", faults)}";
     }
 
-    private string TheBarsHoldTheirShape()
-    {
-        Refresh();
-        ForceUpdateTransform();
-        Vector2 before = _topBar.GetCombinedMinimumSize();
-        Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
-
-        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _inSchoolCell, _eldersCell, _onTheGround };
-        foreach ((Goods _, Label held) in _goodsReadouts)
-        {
-            cells.Add(held);
-        }
-
-        foreach (Label cell in cells)
-        {
-            cell.Text = "+12,345";
-        }
-
-        // ⚠ in every limit slot as well (D409): the mark comes and goes, and the bar must not move.
-        foreach ((Goods _, Label mark) in _limitMarks)
-        {
-            mark.Text = "⚠";
-        }
-
-        string clockWas = _clockLabel.Text;
-        _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
-        string unhousedWas = _unhousedLabel.Text;
-        _unhousedLabel.Text = "12,345 unhoused";
-
-        ForceUpdateTransform();
-        Vector2 after = _topBar.GetCombinedMinimumSize();
-        Vector2 popupAfter = _morePopup.GetContentsMinimumSize();
-
-        _clockLabel.Text = clockWas;
-        _unhousedLabel.Text = unhousedWas;
-        Refresh();
-
-        float barEnds = Edge + (after.X * _uiScale);
-        float columnBegins = 1280f - Edge - DefaultPanelWidth;
-        string where = $"the bar ends at {barEnds:F0}px and the right column begins at {columnBegins:F0}px at {_uiScale * 100f:F0}%";
-
-        if (!before.IsEqualApprox(after))
-        {
-            return $"[widths] bars: ⛔ posing every cell at +12,345 moves the bar {before.X:F0}x{before.Y:F0} → {after.X:F0}x{after.Y:F0}";
-        }
-
-        if (!popupBefore.IsEqualApprox(popupAfter))
-        {
-            return $"[widths] bars: ⛔ posing the popup's rows moves it {popupBefore.X:F0}x{popupBefore.Y:F0} → {popupAfter.X:F0}x{popupAfter.Y:F0}";
-        }
-
-        // ⭐ Where they meet, the right column starts under the bars (A113) — measured by the same rule the layout uses.
-        bool meets = TheBarMeetsTheRightColumn(after.X, 1280f);
-        float highest = float.MaxValue;
-        foreach ((PanelContainer panel, bool right) in _docked)
-        {
-            highest = right && panel.Visible ? Mathf.Min(highest, panel.Position.Y) : highest;
-        }
-
-        if (meets && highest < TopOfTheLeftColumn() - 1f)
-        {
-            return $"[widths] bars: ⛔ {where} — they meet, and a right-column window still starts at {highest:F0}px, above the bars' foot at {TopOfTheLeftColumn():F0}px";
-        }
-
-        return barEnds < columnBegins
-            ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}"
-            : meets
-                ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}, so the "
-                  + $"right column starts under the bars, at {TopOfTheLeftColumn():F0}px"
-                : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
-    }
-
     /// <summary>
     /// The error boundary, posed — <b>a throw the sim never made, handed to the handler, and the
     /// sentence it produces</b> (D364). Last, because it stops the village.
@@ -1635,6 +1573,7 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (true, true, true, true, true, true, true, true);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
+        _everyTradePosed = true;
         RefreshTheStrip();
 
         float table = _professionsTable.GetCombinedMinimumSize().Y;
@@ -1644,8 +1583,9 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
+        _everyTradePosed = false;
         RefreshTheStrip();
-        float founding = _professionsScroll.GetCombinedMinimumSize().Y;
+        float founding = _professionsScroll.Visible ? _professionsScroll.GetCombinedMinimumSize().Y : 0f;
 
         var faults = new List<string>();
         if (table <= ProfessionsHeight)
@@ -1658,9 +1598,10 @@ public partial class Main : Control
             faults.Add($"every trade learned, the table stands {shown:F0}px against a ceiling of {ProfessionsHeight:F0}");
         }
 
-        if (founding > shown + 0.5f || founding <= 0f)
+        // A new village has no trade with a seat (hud.md §9.2): the table is gone and its line stands in its place.
+        if (founding > shown + 0.5f || (founding <= 0f && _noTradeYet is not { Visible: true }))
         {
-            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling");
+            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling, nor gone with its line shown");
         }
 
         return faults.Count == 0
@@ -1681,263 +1622,43 @@ public partial class Main : Control
     private string OnlyTheKnownTradesHaveRows()
     {
         SimWorld world = _loop.World;
-        var hidden = new List<string>();
+        var shown = new List<string>();
         var wrong = new List<string>();
         foreach ((JobKind kind, Control[] cells) in _professionRows)
         {
-            bool known = EarnedYet(world.JobsCatalog.WorksAt(kind));
-            if (!cells[0].Visible)
+            // ⭐ The rule, asked of the sim here (hud.md §9.2): learned, and a workplace of it standing or being built.
+            bool want = EarnedYet(world.JobsCatalog.WorksAt(kind)) && world.Workplaces.Exists(w => w.Kind == kind);
+            if (cells[0].Visible)
             {
-                hidden.Add(world.JobsCatalog.NameOf(kind));
+                shown.Add(world.JobsCatalog.NameOf(kind));
             }
 
-            if (System.Array.Exists(cells, c => c.Visible != known))
+            if (System.Array.Exists(cells, c => c.Visible != want))
             {
                 wrong.Add(world.JobsCatalog.NameOf(kind));
             }
         }
 
-        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || hidden.Count == 0)
+        bool lineRight = _noTradeYet is { } line && line.Visible == (shown.Count == 0) && _professionsScroll is { } scroll && scroll.Visible == (shown.Count > 0);
+        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || !lineRight)
         {
-            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; hidden: "
-                + $"{string.Join(", ", hidden)}; disagreeing with the bar: {string.Join(", ", wrong)} "
-                + "— a trade not yet learned must have no row, and every learned one a whole row";
+            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; shown: {string.Join(", ", shown)}; "
+                + $"disagreeing with the rule: {string.Join(", ", wrong)}; the no-trade line and the table {(lineRight ? "right" : "wrong")} "
+                + "— a row only for a learned trade with a workplace standing or being built, else the one line";
         }
 
-        bool quarryWas = _quarryKnown;
-        _quarryKnown = true;
-        RefreshTheStrip();
-        (JobKind _, Control[] quarrier) = _professionRows.Find(r => r.Kind == JobKind.Quarrier);
-        bool cameBack = System.Array.TrueForAll(quarrier, c => c.Visible);
-        _quarryKnown = quarryWas;
-        RefreshTheStrip();
+        // Posed: every learned trade shown (the height probe's pose), the line gone — and back.
+        _everyTradePosed = true;
+        ShowTheKnownTrades();
+        int posed = _professionRows.Count(r => r.Cells[0].Visible);
+        bool lineGone = _noTradeYet is { Visible: false };
+        _everyTradePosed = false;
+        ShowTheKnownTrades();
 
-        return cameBack
-            ? $"[widths] trades: ✅ at the founding the rows not yet learned are hidden ({string.Join(", ", hidden)}), "
-                + "every row agrees with the bar, and the quarrier's row appears when the quarry is learned"
-            : "[widths] trades: ⛔ the quarry learned and the strip refreshed, and the quarrier still has no row";
-    }
-
-    private void ProbeTheControlBar()
-    {
-        if (_controlBar is null)
-        {
-            GD.Print("[widths] --- control bar: NOT BUILT ---");
-            return;
-        }
-
-        // ⛔⛔ POSED AT ITS WIDEST, BECAUSE MEASURING IT AS IT STARTS IS THE BUG THIS PROBE EXISTS
-        // TO CATCH (D242, extended 2026-08-29 for the town hall). **Every look anybody takes at
-        // the UI is a look at a young village** — and this bar's two conditional groups, Knowledge
-        // and Civic, are hidden until the village can write and until its founders are gone. The
-        // bar the player has in year sixty is a bar with two more categories in it, and until now
-        // *the tool built to measure the growing bar was itself only ever measuring the young one.*
-        //
-        // ⚠️ Shown, then measured, then put back — the probe quits immediately afterwards, but
-        // leaving the game in a state it could not have reached on its own is how an instrument
-        // starts lying about something else.
-        // ⛔⛔ AND NOW IT HAS A THIRD WAY TO HIDE FROM ITS OWN INSTRUMENT: THE TABS. Two thirds of
-        // the strip is hidden at any moment, so a probe that measured what was showing would
-        // measure the BUILD tab, report a bar that fits, and ship the *"correct at startup, wrong
-        // later"* fault this whole method exists because of. **Every button on the strip is shown
-        // at once**, which is wider than any tab will ever be — a deliberate over-estimate, and
-        // the right direction to be wrong in.
-        // ⭐ THE FILTERS SAY WHICH GROUPS HOLD ANYTHING YET (D396): at the founding *Knowledge*,
-        // *Civic* and *Other* are greyed — no library until literacy, no hall until the founders
-        // are gone, nothing modded — and *Works* is not. Read before the pose below shows
-        // everything, because the pose is exactly the state this line must not mistake for real.
-        var greyed = new List<string>();
-        var lit = new List<string>();
-        foreach ((BuildCategory? category, Button button) in _filterButtons)
-        {
-            if (category is BuildCategory chip)
-            {
-                (button.Disabled ? greyed : lit).Add(chip.ToString());
-            }
-        }
-
-        bool greyRight = greyed.Contains("Knowledge") && greyed.Contains("Civic") && greyed.Contains("Other")
-            && lit.Contains("Works") && lit.Contains("Storage");
-        GD.Print(greyRight
-            ? $"[widths] filters: ✅ greyed at the founding: {string.Join(", ", greyed)}; lit: {string.Join(", ", lit)}"
-            : $"[widths] filters: ⛔ greyed at the founding: {string.Join(", ", greyed)}; lit: {string.Join(", ", lit)} — Knowledge, Civic and Other should be greyed and Works and Storage lit");
-
-        var wereShowing = new List<(Button Button, bool Was)>(_strip.Count);
-        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
-        {
-            wereShowing.Add((entry.Button, entry.Button.Visible));
-            entry.Button.Visible = true;
-        }
-
-        // And all three Build homes as buttons, as in a village that has learned the manor (D721), and Rebuild older homes (D723).
-        foreach ((BuildingKind _, Button button) in _homesAs)
-        {
-            wereShowing.Add((button, button.Visible));
-            button.Visible = true;
-        }
-
-        if (_rebuildOlder is not null)
-        {
-            wereShowing.Add((_rebuildOlder, _rebuildOlder.Visible));
-            _rebuildOlder.Visible = true;
-        }
-
-        // And the Records button the hall will show (D397) — posed for the same reason.
-        bool recordsWas = _recordsButton?.Visible ?? false;
-        if (_recordsButton is not null)
-        {
-            _recordsButton.Visible = true;
-        }
-
-        // And the Tree (D440): hidden until the village learns by doing, posed here so the bar is
-        // measured as it will be in year ten.
-        bool treeWas = _treeButton?.Visible ?? false;
-        if (_treeButton is not null)
-        {
-            _treeButton.Visible = true;
-        }
-
-        // Every child of the filter row AND the tab note at once — wider than any real tab,
-        // which is the deliberate over-estimate this probe exists to make.
-        bool filterWas = _filterRow.Visible;
-        bool noteWas = _tabNote.Visible;
-        _filterRow.Visible = true;
-        _tabNote.Visible = true;
-        foreach (Node chip in _filterRow.GetChildren())
-        {
-            if (chip is Control control)
-            {
-                control.Visible = true;
-            }
-        }
-
-        // A flow container's minimum is recomputed on the next layout pass, not on assignment.
-        _controlBar.QueueSort();
-        ForceUpdateTransform();
-
-        GD.Print($"[widths] --- control bar, POSED with every tab, every filter and every "
-            + $"category the village will ever unlock showing at once: "
-            + $"is {_controlBar.Size.X:F0} wide "
-            + $"of a {Size.X:F0} window, and {_controlBar.Size.Y:F0} tall ---");
-
-        foreach (Node child in _controlBar.GetChildren())
-        {
-            if (child is not Control row)
-            {
-                continue;
-            }
-
-            float wants = row.GetCombinedMinimumSize().X;
-
-            // ⭐⭐ THE NUMBER THAT ACTUALLY DECIDES WRAPPING, AND `wants` IS NOT IT (2026-08-29).
-            // **An `HFlowContainer`'s minimum width is its WIDEST SINGLE CHILD** — so `wants` is
-            // blind to how many buttons are on the row, and adding a whole category moved it by
-            // exactly zero. *That is the property that made the flow container collapse the bar
-            // into a corner in the first place (D242), read from the other side.*
-            //
-            // What fills a row is the SUM, and that is what says how close the bar is to needing
-            // another line. Printed beside `wants` rather than instead of it: the two answer
-            // different questions, and the day one of them is the bug you want both on screen.
-            float laidEndToEnd = 0f;
-            int shown = 0;
-            foreach (Node grandchild in row.GetChildren())
-            {
-                if (grandchild is Control item && item.Visible)
-                {
-                    laidEndToEnd += item.GetCombinedMinimumSize().X;
-                    shown++;
-                }
-            }
-
-            string verdict = wants > _controlBar.Size.X + 1f
-                ? "  ⛔ WANTS MORE THAN IT HAS — this row runs off the screen"
-                : laidEndToEnd > _controlBar.Size.X + 1f
-                    ? "  ⚠️ wraps — its contents do not fit on one line"
-                    : string.Empty;
-
-            GD.Print($"[widths] bar    {row.GetType().Name} wants {wants:F0}, "
-                + $"{shown} items end to end want {laidEndToEnd:F0}, "
-                + $"is {row.Size.X:F0} x {row.Size.Y:F0}{verdict}");
-        }
-
-        foreach ((Button button, bool was) in wereShowing)
-        {
-            button.Visible = was;
-        }
-
-        if (_recordsButton is not null)
-        {
-            _recordsButton.Visible = recordsWas;
-        }
-
-        if (_treeButton is not null)
-        {
-            _treeButton.Visible = treeWas;
-        }
-
-        _filterRow.Visible = filterWas;
-        _tabNote.Visible = noteWas;
-
-        // ⭐⭐ AND THE HEIGHT OF EACH TAB IN TURN, WHICH IS THE THING JOE ACTUALLY REPORTED.
-        // The pose above measures the widest the bar can ever be; this measures whether the bar
-        // MOVES. **A bar that is two rows on two tabs and three on the third makes the map jump
-        // every time the player switches**, and no width figure can say so — only the same
-        // number read three times can. *The over-estimate and the comparison are different
-        // questions and the probe now answers both.*
-        // ⛔⛔ EVERY TAB **AND EVERY FILTER**, because the first version of this probe measured
-        // the tabs at the default filter and reported a steady 151 — and Joe then found BUILD
-        // taller than the others and *"build → civic collapses the bottom bar when empty"*.
-        // **The strip row is what moves**: ALL wraps to two rows, and a category with nothing in
-        // it has no rows at all. *A probe that varies one dimension of a two-dimensional space
-        // reports a steadiness that does not exist.*
-        BuildTab wasOn = _tab;
-        BuildCategory? filterWasSet = _filter;
-        var heights = new List<string>();
-        float shortest = float.MaxValue;
-        float tallest = 0f;
-        string shortestAt = string.Empty;
-        string tallestAt = string.Empty;
-
-        foreach (BuildTab tab in new[] { BuildTab.Build, BuildTab.Removal, BuildTab.Harvest })
-        {
-            foreach (BuildCategory? category in TheFilterStates(tab))
-            {
-                _tab = tab;
-                _filter = category;
-                RefreshTheStrip();
-                _controlBar.QueueSort();
-                ForceUpdateTransform();
-
-                float tall = _controlBar.Size.Y;
-                string where = $"{tab}/{(category is null ? "ALL" : category.ToString())}";
-                heights.Add($"{where} {tall:F0}");
-
-                if (tall < shortest)
-                {
-                    shortest = tall;
-                    shortestAt = where;
-                }
-
-                if (tall > tallest)
-                {
-                    tallest = tall;
-                    tallestAt = where;
-                }
-            }
-        }
-
-        _tab = wasOn;
-        _filter = filterWasSet;
-        RefreshTheStrip();
-        _controlBar.QueueSort();
-        ForceUpdateTransform();
-
-        GD.Print($"[widths] bar height, every tab and filter: {string.Join(", ", heights)}");
-        GD.Print(
-            tallest - shortest <= 1f
-                ? $"[widths] bar height: ✅ {tallest:F0} everywhere"
-                : $"[widths] bar height: ⛔ {shortest:F0} at {shortestAt} to {tallest:F0} at "
-                    + $"{tallestAt} — the map jumps by {tallest - shortest:F0}px");
+        return posed > 0 && lineGone
+            ? $"[widths] trades: ✅ rows for the trades with a seat ({(shown.Count == 0 ? "none at the founding, and the line in their place" : string.Join(", ", shown))}), "
+                + $"every row agrees with the rule; with every learned trade posed {posed} rows and the line gone"
+            : $"[widths] trades: ⛔ every learned trade posed showed {posed} rows, the line {(lineGone ? "gone" : "still shown")}";
     }
 
     /// <summary>
@@ -2332,7 +2053,7 @@ public partial class Main : Control
 
         switch (key.Keycode)
         {
-            case Key.Space: SetSpeed(_driver.IsPaused ? 1.0 : 0.0); break;
+            case Key.Space: SetSpeed(_driver.IsPaused ? _resumeSpeed : 0.0); break;
             case Key.Key1: SetSpeed(1.0); break;
             case Key.Key2: SetSpeed(2.0); break;
             case Key.Key3: SetSpeed(4.0); break;
@@ -2340,7 +2061,7 @@ public partial class Main : Control
 
             // ⭐ 5 IS 20x (D706, Joe: *"1x = 1, 2x = 2, 4x = 3, 10x = 4, 20x = 5"*). The 20x button has
             // been on the bar since 2026-08-29; the key was the one missing from the row.
-            case Key.Key5: SetSpeed(20.0); break;
+            case Key.Key5 when OS.IsDebugBuild(): SetSpeed(20.0); break; // the dev bar's (hud.md §7, A212)
             case Key.Tab: CycleDetail(); break;
             case Key.P: ToggleWear(); break;
 
@@ -2364,7 +2085,12 @@ public partial class Main : Control
             // window should disappear with the esc button"*) — the ✕'s own path, so the selection
             // clears with it. A tool in hand goes down first; the next Esc closes the window.
             case Key.Escape:
-                if (_map.IsPlacing)
+                // ⭐ An open flyout goes first (hud.md §8.2, D879), then a tool, then What's here, then the pause.
+                if (_flyoutOpen)
+                {
+                    CloseTheFlyout();
+                }
+                else if (_map.IsPlacing)
                 {
                     _map.PutTheToolDown();
                 }
@@ -2503,11 +2229,8 @@ public partial class Main : Control
     /// <summary><i>Rebuild older homes</i> (D723) — beside the <i>Build homes as</i> buttons, shown once a house above the cabin is learned.</summary>
     private CheckBox? _rebuildOlder;
 
-    private readonly List<(BuildTab Tab, Button Button)> _tabButtons = new();
 
-    private readonly List<(BuildCategory? Category, Button Button)> _filterButtons = new();
 
-    private HFlowContainer _filterRow = null!;
 
     private HFlowContainer _stripRow = null!;
 
@@ -2518,13 +2241,12 @@ public partial class Main : Control
     /// sits in the filter row and is written for every tab, so the row is always exactly one
     /// line tall and the bar never moves under the cursor.
     /// </remarks>
-    private Label _tabNote = null!;
 
     /// <summary>Square or round, for the brush (D327). Sits on the filter row, on every tab.</summary>
     /// <remarks>
     /// ⚠️ Nullable and null-checked in <see cref="RefreshTheStrip"/>, because that method runs from
     /// inside <c>BuildControlPanel</c> before this is assigned — the same ordering hazard
-    /// <see cref="PinTheBarHeight"/> guards against with its two-field test.
+    /// the bar's old height pin guarded against with its two-field test (gone with the tabs, D879).
     /// </remarks>
     private Button? _shapeButton;
 
@@ -2561,7 +2283,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.AFreeLibraryIsOwed || !_libraryButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_libraryButton, world.AFreeLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_libraryButton, world.AFreeLibraryIsOwed);
 
         // ⭐ THE NAME COMES FROM THE CATALOGUE AND THE STAR IS ADDED TO IT, rather than the word
@@ -2734,7 +2460,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.AFreeSmithyIsOwed || !_smithyButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_smithyButton, world.AFreeSmithyIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_smithyButton, world.AFreeSmithyIsOwed);
         _smithyButton.Text = world.AFreeSmithyIsOwed
             ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.Smithy)) + " ★"
@@ -2764,6 +2494,15 @@ public partial class Main : Control
     /// <see cref="FormerTitles"/>.
     /// </summary>
     internal const string LoreTitle = "Lore";
+
+    /// <summary>
+    /// The roster's title — the window the settings file remembers it by. <i>People</i> since D876 (call 8, A215: shorter on the
+    /// windows' column, and the title follows); <see cref="FormerTitles"/> keeps what <i>The village</i> remembered.
+    /// </summary>
+    internal const string RosterTitle = "People";
+
+    /// <summary>The stock limits' window — <i>Stores</i> since D876 (call 8); it was <i>Stock limits</i>.</summary>
+    internal const string StoresTitle = "Stores";
     private PanelContainer _treePanel = null!;
     private TechTreeView _treeView = null!;
     private bool _treeEverOpened;
@@ -2858,13 +2597,7 @@ public partial class Main : Control
             _treeButton.Visible = world.ShownTheTechTree;
         }
 
-        // ⭐ B2 (D486, Joe: *"'Tree' is not in Settings until the tech tree is first unlocked"*).
-        // Settings makes a tick for every window, so the Tree was listed from the founding while
-        // its button was hidden. The same latch gates both.
-        if (WindowOf(_treePanel)?.Tick is CheckBox treeTick)
-        {
-            treeTick.Visible = world.ShownTheTechTree;
-        }
+        // ⭐ B2 (D486): not offered until the tech tree is first unlocked — its word on the column is `_treeButton` itself.
 
         ulong season = world.Tick / (ulong)world.Config.TicksPerSeason;
         if (_treePanel.Visible && season != _treeSeason)
@@ -2891,7 +2624,7 @@ public partial class Main : Control
         if (WindowOf(_treePanel) is ShellWindow window)
         {
             window.Wanted = true;
-            window.Tick?.SetPressedNoSignal(true);
+            window.Toggle?.SetPressedNoSignal(true);
         }
 
         _treePanel.Visible = true;
@@ -2925,7 +2658,11 @@ public partial class Main : Control
             return;
         }
 
-        UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        // ⚠️ Owed wins; otherwise a building marked new keeps its gold (D880) — this runs every refresh.
+        if (world.ATownHallIsOwed || !_townHallButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_townHallButton, world.ATownHallIsOwed ? UiLook.Owed : UiLook.Text);
+        }
         UiIcons.MarkOwed(_townHallButton, world.ATownHallIsOwed);
 
         _townHallButton.Text = world.ATownHallIsOwed
@@ -3359,7 +3096,12 @@ public partial class Main : Control
         }
 
         _driver.SpeedMultiplier = multiplier;
-        _speedLabel.Text = _driver.IsPaused ? "PAUSED" : $"{_driver.SpeedMultiplier:0.#}x";
+        if (multiplier > 0.0)
+        {
+            _resumeSpeed = multiplier;
+        }
+
+        HoldTheSpeed();
     }
 
     // ---------------------------------------------------------------
@@ -3441,6 +3183,14 @@ public partial class Main : Control
         _inSchoolCell.Text = pupils.ToString();
         _eldersCell.Text = elders.ToString();
 
+        // ⭐ A HEADCOUNT AT ZERO LEAVES THE STRIP (A208, hud.md §6 item 4): children, students and elders when there are any;
+        // adults only beside another kind — alone they restate "villagers".
+        _childrenCell.GetParent<Control>().Visible = children > 0;
+        _inSchoolCell.GetParent<Control>().Visible = pupils > 0;
+        _eldersCell.GetParent<Control>().Visible = elders > 0;
+        _adultsCell.GetParent<Control>().Visible = children > 0 || pupils > 0 || elders > 0;
+        RefreshTheFoodFigure(world, adults + elders, children);
+
         // Counted by household, not by villager: a roofless family is rare and `HouseholdOf` is a scan per call.
         int unhoused = 0;
         for (int i = 0; i < world.Households.Count; i++)
@@ -3452,7 +3202,8 @@ public partial class Main : Control
         }
 
         bool nowhereToBuild = world.NeedsMoreResidentialLand && unhoused > 0;
-        _unhousedLabel.Text = $"{unhoused} unhoused";
+        _unhousedLabel.Text = $"·  {unhoused} unhoused";
+        _unhousedLabel.Visible = unhoused > 0;
         UiLook.Tint(_unhousedLabel, nowhereToBuild ? UiLook.Text : UiLook.Faint);
         ShowShortfall(
             _unhousedLabel,
@@ -3460,7 +3211,9 @@ public partial class Main : Control
             unhoused == 1
                 ? "1 person has no roof and the painted land is full — paint more housing"
                 : $"{unhoused} people have no roof and the painted land is full — paint more housing");
-        _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
+        _clockLabel.Text = world.Clock.ToString();
+        _householdsLabel.Text = $"·  {LivingHouseholds(world)} households";
+        ShowTheSeason(world.Clock.Season);
         if (_nomadsTick.ButtonPressed != world.NomadsEnabled)
         {
             _nomadsTick.SetPressedNoSignal(world.NomadsEnabled);
@@ -3468,12 +3221,14 @@ public partial class Main : Control
 
         _seedLabel.Text = TheRunLine(world);
 
-        // The Settings ticks read the windows' state rather than remembering what they were set
-        // to (D380): a ✕ on a panel writes `Wanted`, and the tick follows next frame.
+        // The column's words read the windows' state rather than remembering what they were set
+        // to (D380): a ✕ on a panel writes `Wanted`, and the word follows next frame.
         for (int i = 0; i < _windows.Count; i++)
         {
-            _windows[i].Tick?.SetPressedNoSignal(_windows[i].Wanted);
+            _windows[i].Toggle?.SetPressedNoSignal(_windows[i].Wanted);
         }
+
+        _settingsWord?.SetPressedNoSignal(_settingsPanel.Visible);
 
         // WHAT IS IN THE STORES, one cell per good (D83). Totals across every granary and
         // warehouse, not the first of each (D38) — a village that has built a second one should
@@ -3551,6 +3306,14 @@ public partial class Main : Control
             string? why = world.WhyTheLimitIsMet(goods);
             mark.Text = why is null ? string.Empty : "⚠";
             mark.TooltipText = why ?? string.Empty;
+        }
+
+        // ⭐ A GOOD AT ZERO LEAVES THE FRONT (A208, Joe: "the bar can hide goods") — ⛔ but a shortage never hides: a good the
+        // village is short of keeps its amber (D378's `ShowShortfall`, the colour override read back), and a met limit its ⚠.
+        for (int i = 0; i < _frontCells.Count; i++)
+        {
+            (Goods goods, Control cell, Label held, Label mark) = _frontCells[i];
+            cell.Visible = world.InStores(goods) > 0 || held.HasThemeColorOverride("font_color") || mark.Text.Length > 0;
         }
 
         // ⛔ NO FOOD TOTAL ON THE BAR, AND NO SHORTAGE AMBER FOR ONE (D410, Joe: *"why do i still
@@ -3645,6 +3408,7 @@ public partial class Main : Control
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
+        ShowTheTradesWithASeat(world);
         _ableAdultsReadout.Text = $"Able adults: {world.AbleAdults}";
         _laborerReadout.Text = $"Laborers: {world.Laborers}";
 
@@ -4611,6 +4375,9 @@ public partial class Main : Control
         // Last of the panels, because it lists the ones built before it.
         BuildSettingsPanel();
         BuildControlPanel();
+        BuildTheWindowsColumn();
+        StartTheSeen(_viewToRestore);
+        BuildTheDevBar();
 
         // ⭐ START PAUSED (Joe, 2026-08-25): the player unpauses to begin. It was 1.0, so
         // the valley started running the moment the window appeared — and the founding is
@@ -4678,12 +4445,23 @@ public partial class Main : Control
         _topBar = _panels[^1];
         _topBar.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
 
-        var boxes = new HBoxContainer();
-        boxes.AddThemeConstantOverride("separation", 10);
-        body.AddChild(boxes);
+        // ⭐ THE STRIP (hud.md §6, D877): one slip, its groups in a flow — name and time, the goods, the people, the nomads
+        // switch — that wraps a whole group onto a second line only when one line would reach the right column (Joe:
+        // "Wrap to two lines"). Its width is set where the window, the scale or a cell's showing changes (`FitTheStrip`).
+        _stripSlip = new PanelContainer();
+        _stripSlip.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
+        body.AddChild(_stripSlip);
 
-        boxes.AddChild(BuildResourcesBox());
-        boxes.AddChild(BuildVillagersBox());
+        _topStrip = new HFlowContainer();
+        _topStrip.AddThemeConstantOverride("h_separation", StripGap);
+        _topStrip.AddThemeConstantOverride("v_separation", 3);
+        _stripSlip.AddChild(_topStrip);
+
+        _topStrip.AddChild(BuildTheNameAndTime());
+        _topStrip.AddChild(BuildResourcesBox());
+        _topStrip.AddChild(BuildVillagersBox());
+        _topStrip.AddChild(BuildTheNomadsSwitch());
+        RefuseKeyboardFocus(_topStrip);
     }
 
     /// <summary>The bar itself, for the probe and for whatever has to sit below it.</summary>
@@ -4709,34 +4487,28 @@ public partial class Main : Control
         new[] { Goods.Logs, Goods.Firewood, Goods.Stone, Goods.Iron, Goods.Tools },
     };
 
-    private PanelContainer BuildResourcesBox()
+    /// <summary>The strip's goods (hud.md §6.2): every good on the front in `BarRows`' order, then <c>more ▾</c> — one group.</summary>
+    private HBoxContainer BuildResourcesBox()
     {
         SimWorld world = _loop.World;
-        var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
+        HBoxContainer goods = BarRow();
 
-        var rows = new VBoxContainer();
-        rows.AddThemeConstantOverride("separation", 3);
-        box.AddChild(rows);
-
-        // ⛔ The four foods, each on its own — no "food" umbrella before them (D410, Joe's word;
-        // it was D394's total). Each has its own limit and its own ⚠ (D409).
-        HBoxContainer first = BarRow();
-        rows.AddChild(first);
-        foreach (Goods goods in BarRows[0])
+        // ⭐ ONE FOOD FIGURE, AND THE FOOD GOODS FOLDED INTO IT (hud.md §6.1–6.2, A209, call 4): forage, wheat, fish and meat
+        // are in its tooltip and in `more ▾`. Every other good shows while the stores hold any (`Refresh`).
+        AddTheFoodFigure(goods);
+        foreach (Goods[] row in BarRows)
         {
-            AddGoodsCell(first, world, goods);
+            foreach (Goods good in row)
+            {
+                if (!world.GoodsCatalog.Edible(good))
+                {
+                    AddGoodsCell(goods, world, good);
+                }
+            }
         }
 
-        HBoxContainer second = BarRow();
-        rows.AddChild(second);
-        foreach (Goods goods in BarRows[1])
-        {
-            AddGoodsCell(second, world, goods);
-        }
-
-        second.AddChild(BuildTheMoreButton(world));
-        return box;
+        goods.AddChild(BuildTheMoreButton(world));
+        return goods;
     }
 
     private static HBoxContainer BarRow()
@@ -4783,7 +4555,11 @@ public partial class Main : Control
         mark.AddThemeColorOverride("font_color", LightStopped);
         held.GetParent().AddChild(mark);
         _limitMarks.Add((goods, mark));
+        _frontCells.Add((goods, (Control)held.GetParent(), held, mark));
     }
+
+    /// <summary>The goods on the strip's front, each with its whole cell — hidden at zero unless short or stopped (A208).</summary>
+    private readonly List<(Goods Goods, Control Cell, Label Held, Label Mark)> _frontCells = new();
 
     /// <summary>Room for one ⚠ at the bar's size.</summary>
     private const float LimitMarkWidth = 18f;
@@ -4831,11 +4607,8 @@ public partial class Main : Control
         for (int id = 0; id < world.GoodsCatalog.Count; id++)
         {
             var goods = (Goods)id;
-            if (OnTheFrontOfTheBar(goods))
-            {
-                continue;
-            }
-
+            // ⭐ EVERY GOOD, the front's too (hud.md §6.2): a good at zero leaves the strip's front, so `more ▾` is where every
+            // good the village knows stays with its zero (D502 still hides what it does not know).
             Control chip = UiIcons.Or("goods", world.GoodsCatalog.NameOf(goods), () => Chip(ChipColour(goods)));
             Label name = Muted(world.GoodsCatalog.NameOf(goods));
             table.AddChild(chip);
@@ -4864,19 +4637,6 @@ public partial class Main : Control
         return more;
     }
 
-    private static bool OnTheFrontOfTheBar(Goods goods)
-    {
-        foreach (Goods[] row in BarRows)
-        {
-            if (System.Array.IndexOf(row, goods) >= 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     private PopupPanel _morePopup = null!;
     private Label _onTheGround = null!;
     private Label _onTheGroundLabel = null!;
@@ -4892,68 +4652,45 @@ public partial class Main : Control
     /// are the map's own villager colours, so a child on the bar and a child in the valley are
     /// one fact.
     /// </remarks>
-    private PanelContainer BuildVillagersBox()
+    private HBoxContainer BuildVillagersBox()
     {
-        var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
-
-        var lines = new VBoxContainer();
-        lines.AddThemeConstantOverride("separation", 3);
-        box.AddChild(lines);
-
         HBoxContainer counts = BarRow();
-        lines.AddChild(counts);
         _populationCell = AddBarCell(counts, WorldChip(VillageMap.AdultColour), "villagers", HeadcountWidth);
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
         _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
 
-        // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5: "maybe children / in school once schools are the player's"
-        // — "Yes, add it", D817), where the laborers' cell was: the bar keeps five headcounts and its width.
-        _inSchoolCell = AddBarCell(counts, null, "students", HeadcountWidth);  // Joe: "rename in school to students"
+        // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5, D817) — "students" (his word).
+        _inSchoolCell = AddBarCell(counts, null, "students", HeadcountWidth);
         _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
 
-        // The valley's name is the one word that says which run you are watching — derived
-        // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
-        // seed line in Settings: it is a bug report's number, not a player's.
-        var second = new HBoxContainer();
-        second.AddThemeConstantOverride("separation", 0);
-        _clockLabel = Muted(string.Empty);
-        second.AddChild(_clockLabel);
+        // Households beside the people since the strip (hud.md §6.4); they were on the clock's line.
+        _householdsLabel = Muted(string.Empty);
+        counts.AddChild(_householdsLabel);
 
-        // ⭐ THE STANDING UNHOUSED WARNING (D571; Joe, D568: *"the game should indicate to the user that there are
-        // unhoused people and not enough room to build homes"*) — on the households' line, not a sixth cell: a sixth
-        // cell ran the bar 72px under the right column at 75 % (the probe's `bars:` line caught it). The count is
-        // always shown; it lights amber only when the sim has said there is nowhere to build
-        // (`NeedsMoreResidentialLand`, the latch `HouseTheRoofless` sets and clears) — a family with a site being
-        // raised is a number, not a warning.
-        lines.AddChild(second);
-
-        // ⭐ A THIRD LINE (D572): the unhoused count and the Nomads tick. Not on the second line — with the tick there the
-        // households line outgrew the counts row and the bar ran under the right column at the probe's widest pose
-        // (`bars:` 1268 → 1343); a line costs the bar height, never width.
-        var third = new HBoxContainer();
-        third.AddThemeConstantOverride("separation", 0);
+        // ⭐ THE STANDING UNHOUSED COUNT (D571; Joe, D568) — faint until there is nowhere left to build, then ink with its
+        // tooltip (`NeedsMoreResidentialLand`): a family with a site being raised is a number, not a warning.
         _unhousedLabel = Muted(string.Empty);
-        third.AddChild(_unhousedLabel);
+        counts.AddChild(_unhousedLabel);
+        return counts;
+    }
 
-        // ⭐ THE NOMADS TICK (Joe, D568 → D572: *"if nomads are on, that is the permission … there should be a toggle
-        // in the UI in the top info bar that already houses population info. not buried in settings"*). The village's
-        // own switch, exactly as share-out: hashed when off, saved with the village, started from the new-game row;
-        // never a setting (`settings-persistence.md §3`), so not hooked to SettingsChanged. `Refresh` keeps it reading
-        // the world, so a load shows the save's.
-        third.AddChild(Muted("   ·   "));
+    /// <summary>
+    /// ⭐ THE NOMADS SWITCH (Joe, D568 → D572), the strip's last group (hud.md §6 item 5, A207: <i>"keep nomads toggle in top
+    /// bar"</i>). The village's own switch: hashed when off, saved with the village, never a setting.
+    /// </summary>
+    private HBoxContainer BuildTheNomadsSwitch()
+    {
+        var group = new HBoxContainer();
         _nomadsTick = new CheckBox
         {
-            Text = "nomads may come to the valley",
+            Text = "nomads may come",
             ButtonPressed = true,
             TooltipText = "Bands of nomads come up the valley every few years and settle here. Off: nobody comes, and an empty valley is never found again.",
         };
         _nomadsTick.AddThemeFontSizeOverride("font_size", 12);
         _nomadsTick.Toggled += on => _loop.World.NomadsEnabled = on;
-        third.AddChild(_nomadsTick);
-        lines.AddChild(third);
-
-        return box;
+        group.AddChild(_nomadsTick);
+        return group;
     }
 
     /// <summary>
@@ -4982,6 +4719,7 @@ public partial class Main : Control
     private static Label Amount(float width = AmountWidth)
     {
         Label label = Body(string.Empty);
+        UiLook.Figures(label); // lining figures (hud.md §12, D881)
         label.HorizontalAlignment = HorizontalAlignment.Right;
         label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
@@ -5167,6 +4905,7 @@ public partial class Main : Control
     private void BuildMinimapPanel()
     {
         VBoxContainer body = InColumn(right: true, 0, "The valley");
+        _minimapPanel = _panels[^1];
 
         _minimap = new Minimap();
         _minimap.LookAt += tile => _map.CentreOn(tile);
@@ -5174,6 +4913,11 @@ public partial class Main : Control
     }
 
     private Minimap _minimap = null!;
+
+    /// <summary>The valley's window (the minimap) and the log's — named for the windows' column (D876).</summary>
+    private PanelContainer _minimapPanel = null!;
+
+    private PanelContainer _villageLogPanel = null!;
 
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
@@ -5183,6 +4927,7 @@ public partial class Main : Control
         // minimum of zero. Measured: `chars 73, size 288x0` — **every line the village had
         // narrated was present and none of it was drawn.** See `BuildRosterPanel`.
         VBoxContainer body = InColumn(right: true, 0, "Village log");
+        _villageLogPanel = _panels[^1];
 
         // ⭐ BBCODE IS ON SO A CELEBRATION CAN READ AS ONE (Joe, 2026-08-27: a discovery should be
         // *"a different font color in the village log"*). ⚠️ **Everything appended must go through
@@ -5333,7 +5078,12 @@ public partial class Main : Control
         // ⚠️ D306's own lesson arriving from the other side: it gave every panel its own scroll
         // because panels used to borrow the column's — and the two panels whose content already
         // scrolled are the two it broke. *A self-scrolling control needs a HEIGHT, not a scroll.*
-        VBoxContainer body = InColumn(right: false, 0, "The village");
+        VBoxContainer body = InColumn(right: false, 0, RosterTitle);
+
+        // ⭐ CLOSED ON A NEW VILLAGE (A211, Joe: *"Close the roster by default"*): one word on the windows' column away.
+        _rosterPanel = _panels[^1];
+        _rosterPanel.Visible = false;
+        _windows[^1].Wanted = false;
 
         _roster = MakeTheRoster();
         ShowTheRosterOrder();
@@ -5718,6 +5468,11 @@ public partial class Main : Control
         counts.AddChild(_laborerReadout);
         body.AddChild(counts);
 
+        // ⭐ ON A NEW VILLAGE, NO TRADE ROWS AND ONE LINE (hud.md §9.2, call 1): a zero row only means something once there is
+        // a seat to fill.
+        _noTradeYet = Wrapped(Muted("A trade shows here once its building is raised or being built."));
+        body.AddChild(_noTradeYet);
+
         // ⭐ A CEILING AND A SCROLL BAR (Joe, 2026-11-22, playing W3: "The professions tab needs a height limit and a scroll
         // bar") — the brewer and the tavern keeper took the table past the bottom of his screen. As tall as its rows up to
         // `ProfessionsHeight`, then it scrolls: the build queue's shape (D730). Re-measured where a row appears
@@ -5770,7 +5525,7 @@ public partial class Main : Control
     private void BuildStockLimitsPanel()
     {
         VBoxContainer body = Floating(
-            Edge + DefaultPanelWidth + 16f, Edge, StockLimitsWidth, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
+            Edge + DefaultPanelWidth + 16f, Edge, StockLimitsWidth, 0f, Corner.TopLeft, StoresTitle, startOpen: true);
 
         _docked.Add((_panels[^1], false));
         _stockLimitsPanel = _panels[^1];
@@ -5844,18 +5599,67 @@ public partial class Main : Control
             return;
         }
 
+        int shown = 0;
         for (int i = 0; i < _professionRows.Count; i++)
         {
             (JobKind kind, Control[] cells) = _professionRows[i];
-            bool known = TradeKnown(kind);
+            bool known = TradeKnown(kind) && (HasASeat(kind) || _everyTradePosed);
+            shown += known ? 1 : 0;
             foreach (Control cell in cells)
             {
                 cell.Visible = known;
             }
         }
 
+        // No row: the table goes, and the line says why (hud.md §9.2).
+        if (_professionsScroll is not null)
+        {
+            _professionsScroll.Visible = shown > 0;
+        }
+
+        if (_noTradeYet is not null)
+        {
+            _noTradeYet.Visible = shown == 0;
+        }
+
         // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
         FitTheProfessionsScroll();
+    }
+
+    /// <summary>The line Professions shows with no trade row yet.</summary>
+    private Label? _noTradeYet;
+
+    /// <summary>The probe's pose: every learned trade's row shown, seat or none — the height probe's ceiling needs them all.</summary>
+    private bool _everyTradePosed;
+
+    /// <summary>
+    /// ⭐ Whether a trade has a seat — a workplace of it standing or being built (hud.md §9.2, call 1): a site is a
+    /// <c>Workplace</c> too (<c>IsSite</c>), and nobody works a trade without its workplace. ⛔ Not per frame: the set is
+    /// rebuilt when the workplaces' count or <c>BuildingGeneration</c> moves (<see cref="ShowTheTradesWithASeat"/>).
+    /// </summary>
+    private bool HasASeat(JobKind kind) => (int)kind < _seated.Length && _seated[(int)kind];
+
+    private bool[] _seated = System.Array.Empty<bool>();
+
+    private (SimWorld? World, int Workplaces, int Generation) _seatedFor;
+
+    /// <summary>From <c>Refresh</c>: the rows follow the workplaces when, and only when, they change.</summary>
+    private void ShowTheTradesWithASeat(SimWorld world)
+    {
+        var key = (world, world.Workplaces.Count, world.BuildingGeneration);
+        if (key == _seatedFor)
+        {
+            return;
+        }
+
+        _seatedFor = key;
+        _seated = new bool[System.Enum.GetValues<JobKind>().Length];
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            _seated[(int)world.Workplaces[i].Kind] = true;
+        }
+
+        ShowTheKnownTrades();
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
@@ -5954,6 +5758,7 @@ public partial class Main : Control
         int asked = _loop.World.JobLimits.For(kind) ?? 0;
 
         Label amount = Body($"{asked}");
+        UiLook.Figures(amount);
         amount.CustomMinimumSize = new Vector2(18, 0);
         amount.HorizontalAlignment = HorizontalAlignment.Right;
 
@@ -6078,195 +5883,6 @@ public partial class Main : Control
     // it is in. Deleted rather than left, on D98's rule that a number nothing reads is a lie
     // waiting to be found — and these were the exact numbers whose hand-tuning D113 replaced.
 
-    /// <summary>Speed, what the map draws, and what the player can ask the village for.</summary>
-    private void BuildControlPanel()
-    {
-        // ⭐ SPANS THE WINDOW (2026-08-27). It hung off the bottom-right corner and took its
-        // width from whatever the widest row demanded — which is how it came to run off the
-        // LEFT edge, since a panel pinned right grows leftward without limit. Pinned on both
-        // sides it can only ever be as wide as the window, and the rows below wrap inside it.
-        VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomRight, spanWidth: true);
-        body.AddThemeConstantOverride("separation", 8);
-        _controlBar = body;
-
-        // ⛔ THE SPEED BAR WRAPS TOO — Joe's screenshot shows **"Pause" clipped to "use"** on the
-        // left edge, which is this row overflowing rather than the build row below it. Ten
-        // controls including *"Centre on village"* is already wider than a narrow window, and
-        // nothing here was ever going to get shorter. Same fix, same reason: an
-        // `HBoxContainer` cannot fail gracefully, and the first thing it throws away is the
-        // control the player reaches for most.
-        var controls = new HFlowContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        controls.AddThemeConstantOverride("h_separation", 6);
-        controls.AddThemeConstantOverride("v_separation", 4);
-        body.AddChild(controls);
-
-        controls.AddChild(SpeedButton("Pause", 0.0));
-        controls.AddChild(SpeedButton("1x", 1.0));
-        controls.AddChild(SpeedButton("2x", 2.0));
-        controls.AddChild(SpeedButton("4x", 4.0));
-        controls.AddChild(SpeedButton("10x", 10.0));
-
-        // ⭐ 20x (Joe, 2026-08-29, for QA: *"i also sometimes dont want to spend 20 minutes
-        // starting up to get to a later-stage QA item"*).
-        //
-        // ⚠️ AND IT IS NOWHERE NEAR THE CEILING, WHICH IS WORTH KNOWING BEFORE ANYONE ADDS 40x.
-        // `target_ticks_per_second` is **0.75**, so 20x asks for 15 ticks a second — a quarter of
-        // a tick per frame at 60fps, against `max_ticks_per_frame` of 250. **The spiral guard does
-        // not begin to bite until roughly 20,000x.** The limit is not the driver and it is not the
-        // sim: measured, the sim runs **58 years in 1.53 seconds** (18,218 ticks/sec, ~24,000x).
-        // *The speed buttons are a pacing choice, not a performance one* — which is why the answer
-        // to "get me to year 58" is `SkipYears` below and not a bigger number here.
-        controls.AddChild(SpeedButton("20x", 20.0));
-
-        _speedLabel = Body(string.Empty);
-        controls.AddChild(_speedLabel);
-
-        AddTheSkipControls(controls);
-
-        controls.AddChild(new VSeparator());
-
-        // ⛔⛔ ROUTES, GROUND, PROFESSIONS AND LIMITS HAVE LEFT THIS BAR (Joe, 2026-09-06:
-        // *"move all of these from the control bar into settings"*). ⭐ **Professions and Limits
-        // needed no new home** — every titled panel is registered in `_windows` by `Floating`,
-        // so both have been switchable from Settings since the day they were written, and
-        // adding them again would have made two controls for one state. *He asked not to
-        // duplicate them and the registry is why that was already true.*
-        // ⭐ Routes and Ground move to Settings' **"On the map"** group, beside the full-store
-        // and idle markers and the wildlife — every one of them answers *"what is drawn on the
-        // valley"*, which is the question this bar had no business holding a quarter of.
-        // ⚠️ They are still BUTTONS rather than checkboxes: Routes is a three-way cycle and
-        // Ground is on/off-with-a-reading, and a checkbox cannot say either.
-
-        // With a valley this size and free panning, getting lost is easy and a way
-        // back is not optional.
-        var recentre = new Button { Text = "Centre on village" };
-        recentre.Pressed += () => _map.CentreOnTheVillage();
-        controls.AddChild(recentre);
-
-        // ⭐ THE WAY BACK TO EVERY WINDOW YOU SWITCHED OFF (Joe). It lives on the control bar
-        // rather than in a panel, because the control bar is the one thing that is always
-        // there — a settings menu reachable only from a window you might have hidden would be
-        // a door that locks behind you. **It is the last of the four to survive here, and it
-        // is the one that cannot move**: Settings is now the door to Routes, Ground,
-        // Professions and Limits alike, so a Settings button hidden inside Settings would lock
-        // every one of them away at once.
-        var settings = new Button { Text = "Settings" };
-        settings.Pressed += ToggleSettings;
-        controls.AddChild(settings);
-
-        // ⭐ RECORDS, ONE CLICK AWAY, ONCE THE HALL STANDS (D397, Joe: *"that button should also
-        // show up in the main control bar when town hall is built, so it is one click away,
-        // because it will eventually open a window with a ton of useful information"*). Beside
-        // Settings for Settings' reason — the bar is the one thing that is always there.
-        // ⛔ Not wired yet; it says so (D103).
-        _recordsButton = new Button { Text = "Records", Visible = false };
-        _recordsButton.Pressed += OpenTheRecords;
-        controls.AddChild(_recordsButton);
-
-        // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
-        // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
-        _treeButton = new Button { Text = LoreTitle, Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
-        _treeButton.Pressed += ToggleTheTree;
-        controls.AddChild(_treeButton);
-
-        // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
-        // the whole point: *"give me more room to see the game map"* (D305) was answered by
-        // shrinking the furniture, and this answers the other half by having less of it.
-        controls.AddChild(new VSeparator());
-        AddTheTabs(controls);
-
-        // Uncaptioned and on the end, because it belongs to no tab — it puts down whichever
-        // tool is in your hand, including the harvest brushes two rows below.
-        controls.AddChild(TheCancelButton());
-
-        // The bar's main row is headers, every word of it (A120, Joe: *"BUILD is considered a header - everything in that
-        // main row is"*).
-        UiLook.HeadersIn(controls);
-
-        // ⭐ THE FILTER, AND IT IS A ROW OF ITS OWN BECAUSE IT ANSWERS A DIFFERENT QUESTION.
-        // The tabs say what KIND of act; the chips say which buildings are worth looking at
-        // right now. `TECH-EXAMPLE.md` names forty-five buildings, and forty-five icons in one
-        // strip is a search rather than a browse — which is §1.2's click-farm in another medium.
-        _filterRow = FlowRow();
-        _filterRow.AddChild(Muted("Show:"));
-        AddTheFilters(_filterRow);
-
-        // ⛔⛔ THE BAR MUST NOT CHANGE HEIGHT WHEN THE TAB CHANGES (Joe, 2026-09-06: *"the bar
-        // height collapses if a category doesn't have a 'show' filter. and its weird that the
-        // bar changes heights. set it to the same height across all 3."*). **Hiding this row
-        // was what moved it** — only BUILD has categories to filter, so two tabs in three drew
-        // a two-row bar and one drew three, and the map jumped every time he switched.
-        //
-        // ⭐ **THE ROW STAYS; ITS CONTENTS SWAP.** Reserving a blank strip would have held the
-        // height and said nothing — this holds the height and answers *"what does this tab
-        // do?"*, which REMOVAL and HARVEST had no line for at all. *A constant height bought
-        // with a sentence costs the same pixels as one bought with a spacer.*
-        // ⚠️ `_harvestNote` used to live in the strip row below and is folded in here, because
-        // two tabs owning two different sentences in two different rows is how the height
-        // started varying in the first place.
-        _tabNote = Muted(string.Empty);
-        _filterRow.AddChild(_tabNote);
-
-        // ⭐⭐ THE BRUSH'S SHAPE, BESIDE THE BRUSH RATHER THAN IN SETTINGS (Joe's call, D327).
-        // ⛔ **On the filter row, not the tool strip**, and the reason is measured rather than
-        // aesthetic: the strip already wraps to two rows on BUILD + ALL, so a fourth tool button
-        // there is a candidate third row — and the bar's height is pinned across every tab × filter
-        // from the tallest of them. **This row is one line on every tab and has room.**
-        // ⚠️ It is a BUTTON that reads its own state rather than a checkbox, per the rule this bar
-        // already follows: a checkbox cannot say which of two shapes is chosen.
-        _shapeButton = new Button { Text = string.Empty, TooltipText = "The brush's shape (B)" };
-        _shapeButton.Pressed += () => _map.CycleBrushShape();
-        _filterRow.AddChild(_shapeButton);
-        _map.BrushChanged += RelabelTheBrush;
-        RelabelTheBrush();
-
-        body.AddChild(_filterRow);
-
-        _stripRow = FlowRow();
-        body.AddChild(_stripRow);
-        BuildTheStrip();
-        RefreshTheStrip();
-
-        // ⛔⛔ NO BUTTON ON THIS BAR MAY KEEP KEYBOARD FOCUS (D706, Joe: *"space for pause should be
-        // pressed, not held"*). Space was a toggle all along — `_UnhandledKeyInput` filters
-        // `Pressed: true, Echo: false` — and the pause still read as "held", because a Godot `Button`
-        // defaults to `FocusMode.All`: the speed button the player last CLICKED kept keyboard focus,
-        // Godot maps Space to `ui_accept`, and a focused `BaseButton` fires `Pressed` on the key's
-        // RELEASE. So the press reached the handler and paused the village, and the release pressed
-        // "1x" again. **A focus leak, not a preference** — which is why there is no settings option
-        // for it. Swept once here rather than set at twelve creation sites; the `space:` probe line
-        // faults any button under the bar that takes focus, so a later addition cannot leak quietly.
-        // `LineEdit` and `SpinBox` are not buttons and are left alone (the WASD poll already asks
-        // `GuiGetFocusOwner() is LineEdit`).
-        RefuseKeyboardFocus(body);
-
-        // ⭐ THE BAR RELIGHTS ITSELF FROM THE MAP, NOT FROM THE BUTTON THAT WAS PRESSED. Wiring
-        // each button to light its own tab would go wrong the moment anything else changed the
-        // tool — right-clicking to cancel, or the ground brush being handed over from a
-        // building's panel. **One source, and it is the thing that actually knows.**
-        _map.ToolChanged += RelightTheStrip;
-
-        // ⚠️ PROFESSIONS AND STOCK LIMITS HAVE LEFT THIS BAR (Joe: *"the professions and stock
-        // limits slide-up menus suck for UX"*). They were toggles that unfolded the control bar
-        // upward over the map — so the two controls you most want to watch the effect of were
-        // the two that hid the effect. They are their own collapsible panel now, on the left,
-        // where they can be left open while the village gets on with it.
-
-        // ⛔ THE YELLOW LINE IS GONE FROM THE BAR (D396, Joe's QA pass: *"remove the yellow
-        // warning line"*). The refusal or the warning, in the words the sim already produced,
-        // goes to the village log instead — the one place the player already reads for what
-        // happened — so a *"can't build here"* is still said (§1.1) and the bar holds its height.
-        _map.PlacementMessageChanged += SayInTheLog;
-
-        // ⭐ THE ANNOUNCE IS A HINT, NOT A LOG LINE (D397, Joe: *"that should be tooltip stuff, not
-        // village log stuff"*). It lands on the lit button's tooltip when the strip relights.
-        _map.ToolAnnounced += _ => RelightTheStrip();
-
-        body.AddChild(Wrapped(Muted(
-            "space to pause · 1-5 speed · WASD pan · wheel zoom · r turn · tab routes · "
-            + "home recentre · c fold panels · h hide them")));
-    }
-
     // ---------------------------------------------------------------
     //  The furniture the panels are made of
     // ---------------------------------------------------------------
@@ -6286,6 +5902,7 @@ public partial class Main : Control
     /// </remarks>
     private void FitFloaters()
     {
+        FitTheStrip();
         for (int i = 0; i < _floaters.Count; i++)
         {
             (PanelContainer panel, bool right, bool bottom, bool spans) = _floaters[i];
@@ -6305,10 +5922,6 @@ public partial class Main : Control
                 panel.OffsetLeft = Edge;
                 panel.OffsetRight = Edge + wanted - Size.X;
 
-                // ⭐ AND ONCE IT IS AS WIDE AS IT IS GOING TO BE, PIN HOW TALL IT IS. Width has
-                // to be settled first: the strip wraps to the width it is given, so measuring
-                // the height before this line would measure a bar of the wrong shape.
-                PinTheBarHeight(wanted);
             }
 
             panel.PivotOffset = new Vector2(
@@ -6355,6 +5968,9 @@ public partial class Main : Control
             PlaceWhatThePlayerPlaced();
             KeepWindowsOnScreen();
         }
+
+        PlaceTheWindowsColumn();
+        PlaceTheToolBar();
     }
 
 
@@ -6404,13 +6020,21 @@ public partial class Main : Control
     /// </para>
     /// <para>
     /// ⭐ <b>The default is 75%</b> (Joe, 2026-09-06, having played the build bar at 80%). It is
-    /// the <em>opening</em> value only — the dial still runs 55–115% and the player's turn of it
-    /// wins. *A default is what the map looks like before anybody has opened Settings, which is
-    /// the only view most players will ever judge it on.*
+    /// the <em>opening</em> value only — the player's turn of the dial wins. *A default is what the
+    /// map looks like before anybody has opened Settings, which is the only view most players will
+    /// ever judge it on.* ⭐ <b>That 75 % reads 100 % since A213</b> (Joe: <i>"what I use as 75% should
+    /// be 100% size going forward"</i>): the dial runs 75–150 and its 100 draws at 0.75 (<see cref="DrawnScale"/>),
+    /// so no drawn size moved.
     /// </para>
     /// </remarks>
     // ⭐ The dial's numbers live in `PlayerSettings` (D504) — one source for the dial and the file.
-    private float _uiScale = PlayerSettings.DefaultUiScalePercent / 100f;
+    private float _uiScale = DrawnScale(PlayerSettings.DefaultUiScalePercent);
+
+    /// <summary>
+    /// ⭐ What the dial's percent draws at (<c>hud.md §11</c>, A213): <c>percent / 100 × 0.75</c> —
+    /// <see cref="PlayerSettings.DrawnPercentAtTheDialsHundred"/>, the one constant — so 100 % is what 75 % was.
+    /// </summary>
+    internal static float DrawnScale(int percent) => percent / 100f * (PlayerSettings.DrawnPercentAtTheDialsHundred / 100f);
 
     /// <summary>A panel stacked into one of the side columns.</summary>
     /// <remarks>
@@ -6529,10 +6153,7 @@ public partial class Main : Control
         // *What's here* starts where it started (B3): beside its tile, from the next one.
         _whatsHereWasDragged = false;
 
-        if (_frameCounter is not null)
-        {
-            _frameCounter.Position = new Vector2(Edge, leftY - Edge);
-        }
+        PlaceTheDevBar(leftY);
 
         // The passing banner is centred at the top and 460 wide, which now runs under the
         // villagers box; it drops below the bar with the column.
@@ -6619,8 +6240,9 @@ public partial class Main : Control
             return Edge;
         }
 
-        float tall = Mathf.Max(_topBar.Size.Y, _topBar.GetCombinedMinimumSize().Y) * _uiScale;
-        return Edge + tall + Edge;
+        // ⭐ Below where TWO lines of strip would end (D877): the strip wraps a group onto a second line when one would reach
+        // the right column, and a left column that started under one line would be covered the day it did.
+        return Edge + StripTwoLinesTall() + Edge;
     }
 
     private int _settling;
@@ -7080,7 +6702,9 @@ public partial class Main : Control
         public required string Name { get; init; }
         public required PanelContainer Panel { get; init; }
         public bool Wanted { get; set; } = true;
-        public CheckBox? Tick { get; set; }
+
+        /// <summary>Its word on the windows' column (D876; Settings' tick until then) — What's here has none.</summary>
+        public Button? Toggle { get; set; }
     }
 
     /// <summary>The window a panel belongs to, or null for the two that are not windows (Settings, the bars).</summary>
@@ -7121,6 +6745,9 @@ public partial class Main : Control
     private PanelContainer _professionsPanel = null!;
 
     private PanelContainer _stockLimitsPanel = null!;
+
+    /// <summary>The roster, <i>People</i> — closed on a new village (A211).</summary>
+    private PanelContainer _rosterPanel = null!;
 
     private PanelContainer _settingsPanel = null!;
 
@@ -7233,25 +6860,9 @@ public partial class Main : Control
         // hint line the control bar already carries is not repeated here.
         body.AddChild(Muted("Windows"));
 
-        // ⛔ THE TICK READS THE STATE; IT DOES NOT ONLY WRITE IT (D380). These were `ButtonPressed
-        // = true` once at build: *Stock limits* read ticked while hidden from the founding, and
-        // *What's here* untick held for a frame. `Refresh` syncs every tick from `Wanted`.
-        foreach (ShellWindow window in _windows)
-        {
-            var shown = new CheckBox { Text = window.Name, ButtonPressed = window.Wanted };
-            shown.AddThemeFontSizeOverride("font_size", 12);
-            shown.Toggled += on =>
-            {
-                window.Wanted = on;
-                window.Panel.Visible = on;
-
-                // A tick set is asking for the window, so it undoes a ✕ on What's here (B3).
-                _whatsHereShut &= !(on && window.Panel == _whatsHerePanel);
-                SettingsChanged();
-            };
-            window.Tick = shown;
-            body.AddChild(shown);
-        }
+        // ⛔ THE WINDOW TICKS HAVE GONE TO THE WINDOWS' COLUMN (D876, `hud.md §9.3`, A215): one word a window in the
+        // bottom-left corner shows or hides it, held in lapis while shown. Settings keeps display and game settings only —
+        // and the reset below, which is about where windows sit, not whether.
 
         // ⭐ Joe: *"'reset all panels' could maybe be a settings button."* Under Windows, because
         // it is about windows; run once after the first layout pass and then never automatically.
@@ -7264,6 +6875,18 @@ public partial class Main : Control
         // ⭐ THE ONE DIAL JOE ASKED FOR: *"smaller please. give me more room to see the game
         // map."* It reaches every panel, every card and the control bar, so the whole furniture
         // shrinks together rather than four font sizes drifting apart.
+        // ⭐ KEYS (hud.md §8.4, D879): the hotkey line left the bar; a key with a button is in its tooltip, and the keys with
+        // none are here, one a line.
+        _keysList = new VBoxContainer();
+        body.AddChild(Muted("Keys"));
+        foreach (string line in KeysWithNoButton)
+        {
+            Label key = Muted(line);
+            key.AddThemeFontSizeOverride("font_size", 12);
+            _keysList.AddChild(key);
+        }
+
+        body.AddChild(_keysList);
         body.AddChild(Muted("Size"));
 
         var sizing = new HBoxContainer();
@@ -7776,6 +7399,7 @@ public partial class Main : Control
             CustomMinimumSize = new Vector2(74, 0),
         };
         amount.SetValueNoSignal(starts ?? 0);
+        UiLook.Figures(amount.GetLineEdit());
 
         var clear = new Button { Text = "clear", Flat = true, Disabled = starts is null };
 
@@ -8079,189 +7703,6 @@ public partial class Main : Control
     /// </remarks>
     private static string Titled(string name) =>
         name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
-
-    /// <summary>BUILD / REMOVAL / HARVEST.</summary>
-    private void AddTheTabs(Container into)
-    {
-        foreach ((BuildTab Tab, string Label) entry in new[]
-        {
-            (BuildTab.Build, "BUILD"),
-            (BuildTab.Removal, "REMOVAL"),
-            (BuildTab.Harvest, "HARVEST"),
-        })
-        {
-            BuildTab captured = entry.Tab;
-            var button = new Button { Text = entry.Label, ToggleMode = true };
-            button.Pressed += () =>
-            {
-                _tab = captured;
-                RefreshTheStrip();
-            };
-
-            _tabButtons.Add((captured, button));
-            into.AddChild(button);
-        }
-    }
-
-    /// <summary>ALL, and one chip per category.</summary>
-    /// <summary>
-    /// ⭐⭐ ONE HEIGHT FOR THE CONTROL BAR, WHATEVER TAB AND FILTER THE PLAYER IS ON.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>Joe, 2026-09-06, twice:</b> *"the build tab still pushes the whole bottom bar taller
-    /// than the cancel tab, removal tab, and harvest tab. build → civic collapses the bottom bar
-    /// when empty … uniform height across all please!"*
-    /// </para>
-    /// <para>
-    /// ⛔⛔ <b>THE FIRST ATTEMPT FIXED ONE ROW AND MEASURED ONE DIMENSION, AND THAT IS THE
-    /// LESSON.</b> D312 stopped the *filter row* hiding and the probe then reported a steady 151
-    /// across the three tabs — **because it walked the tabs at one filter.** The strip row is the
-    /// other axis: ALL wraps to two rows, a category with nothing in it has none, and the
-    /// placement sentence is a third row that comes and goes with the tool in your hand.
-    /// *A probe that varies one dimension of a two-dimensional space reports a steadiness that
-    /// does not exist, and it reported it convincingly enough to ship.*
-    /// </para>
-    /// <para>
-    /// ⭐ <b>So the bar is pinned to its own tallest configuration rather than to any row's
-    /// height.</b> Every tab × every filter is measured, and the largest wins. It is recomputed only when something that could change the answer changes —
-    /// the width, the UI scale, or how many buildings are unlocked — because it costs a layout
-    /// pass per state and `FitFloaters` runs every frame.
-    /// </para>
-    /// <para>
-    /// ⭐ The placement line that used to be reserved here at two lines — the one case that could
-    /// still grow the bar — went to the village log (D396), so nothing on the bar changes height
-    /// with what the player does any more.
-    /// </para>
-    /// </remarks>
-    private void PinTheBarHeight(float wanted)
-    {
-        if (_controlBar is null)
-        {
-            return;
-        }
-
-        // The three things that can change the answer. Anything else — the tab, the filter, the
-        // tool — is a state this method already walks, so it must not trigger a recompute.
-        int earned = 0;
-        foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
-        {
-            if (EarnedYet(entry.Kind))
-            {
-                earned++;
-            }
-        }
-
-        // And a house the family tree has taught shows its Build homes as button (D721).
-        foreach ((BuildingKind kind, Button _) in _homesAs)
-        {
-            if (EarnedYet(kind))
-            {
-                earned++;
-            }
-        }
-
-        // The hall standing shows the Records button on the controls row (D397) — a fourth thing.
-        if (_recordsButton is { Visible: true })
-        {
-            earned += 1000;
-        }
-
-        var key = new Vector3(Mathf.Round(wanted), Mathf.Round(_uiScale * 1000f), earned);
-        if (key == _barPinnedFor)
-        {
-            return;
-        }
-
-        _barPinnedFor = key;
-
-        BuildTab wasOn = _tab;
-        BuildCategory? filterWas = _filter;
-
-        // Measure from unpinned, or the pin from the last window size becomes a floor that can
-        // only ever grow — a bar that never gets shorter when the window gets wider.
-        _controlBar.CustomMinimumSize = new Vector2(0f, 0f);
-
-        float tallest = 0f;
-        foreach (BuildTab tab in new[] { BuildTab.Build, BuildTab.Removal, BuildTab.Harvest })
-        {
-            foreach (BuildCategory? category in TheFilterStates(tab))
-            {
-                _tab = tab;
-                _filter = category;
-                RefreshTheStrip();
-                _controlBar.QueueSort();
-                ForceUpdateTransform();
-                tallest = Mathf.Max(tallest, _controlBar.Size.Y);
-            }
-        }
-
-        _tab = wasOn;
-        _filter = filterWas;
-        RefreshTheStrip();
-
-        _controlBar.CustomMinimumSize = new Vector2(0f, tallest);
-        _controlBar.QueueSort();
-    }
-
-    /// <summary>What the bar's pinned height was last computed for — width, scale, unlocks.</summary>
-    private Vector3 _barPinnedFor = new(-1f, -1f, -1f);
-
-    /// <summary>Every filter the player can be looking at on a tab — ALL, plus the categories.</summary>
-    /// <remarks>
-    /// Only BUILD has a filter row, so the other two tabs have exactly one state. Used by the
-    /// width probe, which has to walk tab × filter rather than tab alone (D314).
-    /// </remarks>
-    private static IEnumerable<BuildCategory?> TheFilterStates(BuildTab tab)
-    {
-        yield return null;
-
-        if (tab != BuildTab.Build)
-        {
-            yield break;
-        }
-
-        foreach (BuildCategory category in System.Enum.GetValues<BuildCategory>())
-        {
-            yield return category;
-        }
-    }
-
-    private void AddTheFilters(Container into)
-    {
-        foreach ((BuildCategory? Category, string Label) entry in new (BuildCategory?, string)[]
-        {
-            (null, "All"),
-            (BuildCategory.Works, "Works"),
-            (BuildCategory.Food, "Food"),
-            (BuildCategory.Resources, "Resources"),
-            (BuildCategory.Storage, "Storage & trade"),
-            (BuildCategory.Knowledge, "Knowledge"),
-            (BuildCategory.Civic, "Civic"),
-            (BuildCategory.Homes, "Homes"),
-            (BuildCategory.Other, "Other"),
-        })
-        {
-            BuildCategory? captured = entry.Category;
-            var button = new Button { Text = entry.Label, ToggleMode = true };
-            button.Pressed += () =>
-            {
-                _filter = captured;
-                RefreshTheStrip();
-            };
-
-            _filterButtons.Add((captured, button));
-            into.AddChild(button);
-        }
-    }
-
-    /// <summary>Put down whatever is in hand.</summary>
-    private Button TheCancelButton()
-    {
-        var stop = new Button { Text = "Cancel" };
-        stop.Pressed += () => _map.PutTheToolDown();
-        return stop;
-    }
 
     /// <summary>
     /// Every button the bar will ever show, built once from the <b>catalogue</b>.
@@ -8616,39 +8057,14 @@ public partial class Main : Control
     /// </remarks>
     private void RefreshTheStrip()
     {
-        // ⛔ THE ROW ITSELF NEVER HIDES — that is the whole of Joe's constant-height ask. What
-        // changes is which of its children are showing: the chips on BUILD, one sentence
-        // otherwise. **Both are a single line, so the bar is three rows on every tab.**
+        // ⭐ THE FLYOUT SHOWS ONE CATEGORY'S BUILDINGS, OR REMOVE'S OR HARVEST'S TOOLS (hud.md §8, D879): `_tab` and
+        // `_filter` say which, `_flyoutOpen` whether it is up. Paint land and Move are the bar's own, always there.
         bool building = _tab == BuildTab.Build;
-        foreach (Node child in _filterRow.GetChildren())
-        {
-            if (child is Control control)
-            {
-                control.Visible = building;
-            }
-        }
-
-        // ⛔ THE SHAPE BUTTON IS EXEMPT FROM THE LOOP ABOVE, WHICH HIDES THIS ROW'S CHILDREN OFF
-        // BUILD (D327). It is a setting rather than a filter — it belongs to the brush, and all
-        // three tabs have brushes on them. **Always visible is also what keeps this row one line
-        // on every tab**, which is the whole of Joe's constant-height ask.
-        if (_shapeButton is not null)
-        {
-            _shapeButton.Visible = true;
-        }
-
-        _tabNote.Visible = !building;
-        _tabNote.Text = _tab switch
-        {
-            BuildTab.Removal => "— taking a building back is a builder's job, and costs half what raising it did",
-            _ => "— painted ground is felled or dug by whoever is spare",
-        };
-
         foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
         {
             bool onThisTab = entry.Tab == _tab;
             bool pastTheFilter = _tab != BuildTab.Build || _filter is null || _filter == entry.Category;
-            entry.Button.Visible = onThisTab && pastTheFilter && EarnedYet(entry.Kind);
+            entry.Button.Visible = _barTools.Contains(entry.Button) || (onThisTab && pastTheFilter && EarnedYet(entry.Kind));
         }
 
         // Build homes as (D721): on Build, under All and Homes, each as it is learned.
@@ -8671,24 +8087,20 @@ public partial class Main : Control
         // mode and every one of them re-enters here when pressed, so writing `ButtonPressed`
         // directly would be a loop waiting on Godot's exact signal semantics to not close it.
         // *Not relying on that is cheaper than checking it.*
-        foreach ((BuildTab tab, Button button) in _tabButtons)
+        // ⭐ A CATEGORY WITH NOTHING EARNED IN IT IS HIDDEN (A210, Joe: "hide them") — it was greyed (D396), which kept the
+        // filter row's width; the categories are flyout buttons now, so nothing's width depends on them. Held in lapis while
+        // its flyout is open.
+        foreach ((BuildCategory category, Button button) in _categoryButtons)
         {
-            button.SetPressedNoSignal(tab == _tab);
+            button.Visible = AnythingEarnedIn(category);
+            button.SetPressedNoSignal(_flyoutOpen && building && _filter == category);
         }
 
-        foreach ((BuildCategory? category, Button button) in _filterButtons)
+        _removeButton?.SetPressedNoSignal(_flyoutOpen && _tab == BuildTab.Removal);
+        _harvestButton?.SetPressedNoSignal(_flyoutOpen && _tab == BuildTab.Harvest);
+        if (_flyout is not null)
         {
-            button.SetPressedNoSignal(category == _filter);
-
-            // ⭐ A CATEGORY WITH NOTHING EARNED IN IT IS GREYED, NOT HIDDEN (D396, Joe's QA pass:
-            // *Knowledge* and *Civic* sat clickable from the founding and opened onto an empty
-            // strip; *Other* has never held anything). Disabled keeps the row's width, so the
-            // bar's pinned height does not move for it; a modded row lights *Other* the day it
-            // exists, and the library and the hall light theirs the day they are earned.
-            if (category is BuildCategory chip)
-            {
-                button.Disabled = !AnythingEarnedIn(chip);
-            }
+            _flyout.Visible = _flyoutOpen && _furnitureShown;
         }
 
         RelightTheStrip();
@@ -8699,7 +8111,7 @@ public partial class Main : Control
     {
         foreach ((BuildTab Tab, BuildCategory Category, Button Button, BuildingKind? Kind, ToolMark? Mark) entry in _strip)
         {
-            if (entry.Tab == BuildTab.Build && entry.Category == category && EarnedYet(entry.Kind))
+            if (entry.Tab == BuildTab.Build && entry.Category == category && EarnedYet(entry.Kind) && !_barTools.Contains(entry.Button))
             {
                 return true;
             }
@@ -8776,11 +8188,18 @@ public partial class Main : Control
             _ => null,
         };
 
-        foreach ((BuildTab tab, Button button) in _tabButtons)
+        // A held bar button is the open flyout; the tint says where your hand is — different questions, different channels.
+        BuildingKind? inHand = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
+        foreach ((BuildCategory category, Button button) in _categoryButtons)
         {
-            // A pressed tab is where you are looking; the tint says where your hand is. They are
-            // different questions and they are answered in different channels on purpose.
-            UiLook.Tint(button, held == tab ? UiLook.Held : UiLook.Text);
+            bool holds = inHand is BuildingKind kind && CategoryOf(kind, System.Enum.IsDefined(kind)) == category;
+            UiLook.Tint(button, holds ? UiLook.Held : UiLook.Text);
+        }
+
+        if (_removeButton is not null)
+        {
+            UiLook.Tint(_removeButton, held == BuildTab.Removal ? UiLook.Held : UiLook.Text);
+            UiLook.Tint(_harvestButton, held == BuildTab.Harvest ? UiLook.Held : UiLook.Text);
         }
 
         BuildingKind? building = tool == VillageMap.MapTool.Building ? _map.PendingBuilding : null;
@@ -8808,6 +8227,9 @@ public partial class Main : Control
         }
 
         _rebuildOlder?.SetPressedNoSignal(_loop.World.RebuildsOlderHomes);
+
+        // ⭐ New, until clicked (D880): gold last, over the hand's tint.
+        MarkWhatIsNew();
     }
 
     /// <summary>Which mark on the strip a tool is drawn by, or null for the buildings.</summary>
@@ -8939,64 +8361,6 @@ public partial class Main : Control
         return wrong.Count == 0
             ? $"[widths] map toggles: ✅ all {_viewToggles.Count} ticks match the map"
             : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
-    }
-
-    /// <summary>
-    /// Every Settings window tick equals its window's state, and a window that starts hidden
-    /// starts unticked — <b>a probe line</b> (D380).
-    /// </summary>
-    /// <remarks>
-    /// Red on the code it replaced: the ticks were written <c>true</c> once at build, so *Stock
-    /// limits* read *"the tick says True, the window is hidden"* from the first frame.
-    /// </remarks>
-    private string EveryWindowTickSaysWhatTheWindowIsDoing()
-    {
-        Refresh();
-        var wrong = new List<string>();
-        for (int i = 0; i < _windows.Count; i++)
-        {
-            ShellWindow window = _windows[i];
-            bool ticked = window.Tick?.ButtonPressed ?? window.Wanted;
-            if (ticked != window.Wanted)
-            {
-                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Wanted ? "wanted" : "not wanted")}");
-            }
-
-            // What's here also answers to the selection, so only the others are held to it.
-            if (window.Panel != _whatsHerePanel && window.Panel.Visible != window.Wanted)
-            {
-                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Panel.Visible ? "shown" : "hidden")}");
-            }
-        }
-
-        bool limitsStartHidden = _windows.Exists(w => w.Panel == _stockLimitsPanel && !w.Wanted && !w.Panel.Visible);
-        if (!limitsStartHidden)
-        {
-            wrong.Add("Stock limits should start hidden and unticked");
-        }
-
-        // D730 (Joe: *"this panel should be off by default in the settings"*).
-        bool queueStartsHidden = _windows.Exists(w => w.Panel == _buildQueuePanel && !w.Wanted && !w.Panel.Visible);
-        if (!queueStartsHidden)
-        {
-            wrong.Add("Build queue should start hidden and unticked");
-        }
-
-        // B1 (Joe, 2026-10-04): the Professions window is shown AND unfolded at the founding.
-        if (!_professionsPanel.Visible || !_professionsBody.Visible)
-        {
-            wrong.Add("Professions should start shown and open");
-        }
-
-        // B2 (D486): before the tree is first shown, Settings does not list it.
-        if (!_loop.World.ShownTheTechTree && WindowOf(_treePanel)?.Tick is { Visible: true })
-        {
-            wrong.Add($"{LoreTitle} is listed in Settings before it is shown");
-        }
-
-        return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; {LoreTitle} is not in Settings until it is shown"
-            : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
     /// <summary>The bare tile the probe opened <i>What's here</i> on (B3), or null if it found none.</summary>
@@ -9169,10 +8533,9 @@ public partial class Main : Control
                 faults.Add($"pressing Destroy put {_map.Tool} in hand");
             }
 
-            Button removal = _tabButtons.Find(t => t.Tab == BuildTab.Removal).Button;
-            if (UiLook.TintOf(removal) == UiLook.Text)
+            if (UiLook.TintOf(_removeButton) == UiLook.Text)
             {
-                faults.Add("the Removal tab did not light");
+                faults.Add("Remove ▴ did not light");
             }
 
             if (!destroy.Button.ButtonPressed)
@@ -9285,10 +8648,13 @@ public partial class Main : Control
 
         // ⭐⭐ AND THE WHOLE FRAME, ON ITS OWN ROW (D528). The row above times the sim step and a smoothed draw;
         // neither can see one long frame, which is what moves every dot at once.
-        _frameCounter.Text =
+        // ⭐ Short on the dev bar, whole in its tooltip (D883): the two full lines stood the bar ~900 px wide at 2560.
+        string dropped = _driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty;
+        _frameCounter.Text = $"{Engine.GetFramesPerSecond()} fps  ·  {_ticksThisFrame} tick/frame{dropped}";
+        _frameCounter.TooltipText =
             $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}"
             + $"  ·  {_ticksThisFrame} tick/frame, {caughtUp}, slowest step {_slowestStepMs:F1}ms"
-            + (_driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty)
+            + dropped
             + $"\n{_frameWatch.Summary}";
     }
 

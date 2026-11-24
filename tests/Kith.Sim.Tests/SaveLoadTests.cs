@@ -574,6 +574,25 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Equal(300UL, opened.Header!.Tick);
     }
 
+    /// <summary>
+    /// ⭐ The view's own section (`hud.md §8.3`, D880): what the player has looked at — the bar's "new" marks — rides in the
+    /// save beside the village, untouched by the sim and never hashed, and comes back out as it went in. A save without
+    /// one (every save before D880) opens with none.
+    /// </summary>
+    [Fact]
+    public void TheViewsSectionComesBackAsItWentAndAnOlderSaveHasNone()
+    {
+        var view = new JsonObject { ["seen"] = new JsonArray("category:Works", "building:3") };
+        SaveOpened opened = SaveFile.Open(Saved(doc => doc["view"] = view.DeepClone()), VillageFixtures.Village);
+        Assert.Null(opened.Refusal);
+        Assert.NotNull(opened.View);
+        Assert.Equal(view.ToJsonString(), opened.View!.ToJsonString());
+
+        SaveOpened older = SaveFile.Open(Saved(), VillageFixtures.Village);
+        Assert.Null(older.Refusal);
+        Assert.Null(older.View);
+    }
+
     [Fact]
     public void AnotherFormatIsRefusedNamingTheBuildThatWroteIt()
     {

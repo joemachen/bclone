@@ -116,6 +116,27 @@ internal static class UiLook
         Theme is { } theme && theme.HasFont(name, Type) ? theme.GetFont(name, Type) : null;
 
     /// <summary>
+    /// ⭐ An amount in lining figures (<c>hud.md §12</c>, D881; call 7): set in the reading face, Cardo, whose 0 is a 0 —
+    /// Grenze Gotisch's old-style 0 reads as <i>o</i>. For amounts on their own (the strip, <c>more ▾</c>, the stock
+    /// limits, the professions' numbers, the build queue's columns, the dev bar); figures inside a sentence stay in the
+    /// body face. On slate the mark names nothing and the label keeps its face.
+    /// </summary>
+    internal static void Figures(Control control)
+    {
+        if (ReadingFace is Font cardo)
+        {
+            control.AddThemeFontOverride("font", cardo);
+        }
+    }
+
+    /// <summary>
+    /// A painted control the look names — a card's pin, normal, under the pointer and pinned (<c>hud.md §8.3</c>, A217) — or
+    /// null on slate, where the control keeps the glyph it had.
+    /// </summary>
+    internal static Texture2D? NamedIcon(string name) =>
+        Theme is { } theme && theme.HasIcon(name, Type) ? theme.GetIcon(name, Type) : null;
+
+    /// <summary>
     /// Mark this label or button as a header — a window's title, a card's, a card's section head — so a look that names a
     /// header face sets it in that (A120, Joe's Metamorphous). On slate the mark names nothing and the text is as it was.
     /// </summary>
@@ -176,6 +197,12 @@ internal static class UiLook
 
     /// <summary>The bar's tab that is held open.</summary>
     internal static Color Held => Named("held", new Color(1f, 0.85f, 0.4f));
+
+    /// <summary>New, until clicked (hud.md §8.3, D880): the gold word; slate's owed gold.</summary>
+    internal static Color New => Named("new", new Color(1f, 0.85f, 0.4f));
+
+    /// <summary>The gold-leaf swash under a new word, or null on slate.</summary>
+    internal static StyleBox? NewSwash => NamedBox("new_swash");
 
     /// <summary>A refusal or a failure said in words: a save that failed, a valley that will not found.</summary>
     internal static Color Refused => Named("refused", new Color(1f, 0.55f, 0.45f));

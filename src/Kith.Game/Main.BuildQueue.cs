@@ -209,12 +209,14 @@ public partial class Main
         name.CustomMinimumSize = new Vector2(SiteNameRoom(name), 0);
 
         Label materials = Body(string.Empty);
+        UiLook.Figures(materials);
         materials.ClipText = true;
         materials.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         materials.CustomMinimumSize = new Vector2(BuildQueueMaterialsWidth, 0);
         materials.MouseFilter = MouseFilterEnum.Pass;
 
         Label work = Body(string.Empty);
+        UiLook.Figures(work);
         work.HorizontalAlignment = HorizontalAlignment.Right;
         work.CustomMinimumSize = new Vector2(BuildQueueWorkWidth, 0);
 
@@ -282,9 +284,9 @@ public partial class Main
         var faults = new List<string>();
         SimWorld world = _loop.World;
         ShellWindow? window = WindowOf(_buildQueuePanel);
-        if (window?.Tick is not CheckBox tick)
+        if (window?.Toggle is not Button tick)
         {
-            return "[widths] build queue: ⛔ the window has no Settings tick";
+            return "[widths] build queue: ⛔ the window has no word on the windows' column";
         }
 
         bool wasWanted = window.Wanted;

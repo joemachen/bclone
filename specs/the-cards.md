@@ -71,7 +71,7 @@ Joe asked whether to make the card bigger: no — a card is 268 by D367/D376's r
 the card) and hides the
 moment the selection has a card. Its ✕ clears the selection — it is about what you clicked, like a
 card — and ✅ **since B3 (D488, Joe: *"stay closed if closed"*) it stays shut until a bare right-click
-or its Settings tick asks again** (it used to return on the next bare-ground left-click; Esc and a
+or its Settings tick asks again** *(What's here has no word on the windows' column since D876, so a bare right-click is its door)* (it used to return on the next bare-ground left-click; Esc and a
 second right-click on the same tile shut it the same way). ✅ **B3 also: it is as tall as its text**,
 up to 460 logical, past which it scrolls with its bar (D367's fixed 460 reversed at Joe's word —
 *"it is very tall"*); **it opens on top** of the other windows (raised the frame it appears, as a card

@@ -16,7 +16,15 @@ namespace Kith.Sim.Persistence;
 /// <param name="Header">The save's header, when it could be read at all.</param>
 /// <param name="Refusal">The player's sentence (§7's table), or <c>null</c> on success.</param>
 /// <param name="Detail">What exactly was wrong — the audit log's, not the player's.</param>
-public sealed record SaveOpened(SimLoop? Loop, SaveHeader? Header, string? Refusal, string? Detail);
+public sealed record SaveOpened(SimLoop? Loop, SaveHeader? Header, string? Refusal, string? Detail)
+{
+    /// <summary>
+    /// The save's <c>"view"</c> section, as it was written, or null — the view's own facts about how the player has looked
+    /// at the village (the bar's <i>new</i> marks, `hud.md §8.3`, D880). ⛔ The sim never reads it and it is never hashed:
+    /// what the player has looked at is not a fact about the village (D335's line). A save without one opens with none.
+    /// </summary>
+    public JsonObject? View { get; init; }
+}
 
 /// <summary>
 /// A save on disk: gzip'd JSON, written whole or not at all, and read through one door that turns every
@@ -243,7 +251,7 @@ public static class SaveFile
 
             SimConfig config = SaveGame.ConfigFor(data, header);
             SimLoop loop = SaveGame.Load(document, config, logger);
-            return new SaveOpened(loop, header, null, null);
+            return new SaveOpened(loop, header, null, null) { View = document["view"]?.DeepClone() as JsonObject };
         }
         catch (SaveDataException ex)
         {

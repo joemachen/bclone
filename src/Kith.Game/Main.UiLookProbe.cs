@@ -161,6 +161,123 @@ public partial class Main
     }
 
     /// <summary>
+    /// ⭐ RED FOR WARNINGS, LAPIS FOR SELECTED, HELD AND ON (<c>hud.md §10</c>, step 1; A207): the art lane's five controls
+    /// (A216–A217) load at their master size with mipmaps; no pressed, held, selected or ticked style in the look is rubric —
+    /// each is lapis; every warning role still is rubric; and a card on the screen wears the painted pin, lapis when pinned.
+    /// </summary>
+    private string TheRubricMeansWrongAndLapisMeansOn()
+    {
+        var faults = new List<string>();
+        const string controls = "res://textures/ui/controls/";
+        foreach ((string file, int w, int h) in new[]
+        {
+            ("underline-lapis", 256, 12), ("underline-gold", 256, 12), ("checkbox-ticked-lapis", 56, 56),
+            ("checkbox-ticked-lapis-disabled", 56, 56), ("pin-pinned-lapis", 56, 56),
+        })
+        {
+            Texture2D? texture = ResourceLoader.Exists(controls + file + ".png") ? GD.Load<Texture2D>(controls + file + ".png") : null;
+            if (texture is null)
+            {
+                faults.Add($"{file}.png does not load");
+            }
+            else if (texture.GetWidth() != w || texture.GetHeight() != h)
+            {
+                faults.Add($"{file}.png is {texture.GetWidth()}x{texture.GetHeight()}, not its master {w}x{h}");
+            }
+            else if (texture.GetImage() is not { } image || !image.HasMipmaps())
+            {
+                faults.Add($"{file}.png has no mipmaps");
+            }
+        }
+
+        static string FileOf(Texture2D? texture) =>
+            (texture is SizedTexture sized ? sized.Source : texture)?.ResourcePath.GetFile() ?? "nothing";
+
+        static bool Red(Color c) => c.IsEqualApprox(ParchmentLook.RubricInk) || c.IsEqualApprox(ParchmentLook.Rubric);
+
+        Theme look = ParchmentLook.Build();
+        string t = UiLook.Type;
+        foreach ((string role, Color want) in new[] { ("held", ParchmentLook.Lapis), ("selected_edge", ParchmentLook.LapisFill) })
+        {
+            if (!look.GetColor(role, t).IsEqualApprox(want))
+            {
+                faults.Add($"{role} is {look.GetColor(role, t).ToHtml(false)}, not lapis");
+            }
+        }
+
+        foreach (string type in new[] { "Button", "CheckBox", "CheckButton", "OptionButton", "MenuButton" })
+        {
+            foreach (string colour in new[] { "font_pressed_color", "font_hover_pressed_color" })
+            {
+                if (!look.GetColor(colour, type).IsEqualApprox(ParchmentLook.Lapis))
+                {
+                    faults.Add($"a pressed {type}'s {colour} is {look.GetColor(colour, type).ToHtml(false)}, not lapis");
+                }
+            }
+        }
+
+        foreach (string state in new[] { "pressed", "hover_pressed" })
+        {
+            string swash = look.GetStylebox(state, "Button") is PaintedPatch held ? FileOf(held.Texture) : "no painted swash";
+            if (swash != "underline-lapis.png")
+            {
+                faults.Add($"a {state} button's swash is {swash}");
+            }
+        }
+
+        foreach (string type in new[] { "CheckBox", "CheckButton" })
+        {
+            foreach ((string icon, string want) in new[] { ("checked", "checkbox-ticked-lapis.png"), ("checked_disabled", "checkbox-ticked-lapis-disabled.png") })
+            {
+                if (FileOf(look.GetIcon(icon, type)) != want)
+                {
+                    faults.Add($"a {type}'s {icon} seal is {FileOf(look.GetIcon(icon, type))}");
+                }
+            }
+        }
+
+        if (look.GetIcon("grabber_highlight", "HSlider")?.GetImage() is not { } grip || Red(grip.GetPixel(9, 9) with { A = 1f }))
+        {
+            faults.Add("a held slider's grip is rubric");
+        }
+
+        foreach (string role in new[] { "stopped", "refused", "log_death" })
+        {
+            if (!look.GetColor(role, t).IsEqualApprox(ParchmentLook.RubricInk))
+            {
+                faults.Add($"the warning {role} is not rubric");
+            }
+        }
+
+        // ---- a card on the screen wears the painted pin, its head lapis when pinned ----
+        if (_loop.World.TheCart is not StoreBuilding cart)
+        {
+            faults.Add("no cart to open a card on");
+        }
+        else if (UiLook.WearsALook)
+        {
+            OpenCard(new CardSubject(CardKind.Store, cart.Id));
+            Card open = _selectedCard!;
+            string rest = FileOf(open.Pin.Icon);
+            open.Pin.ButtonPressed = true;
+            string pinned = FileOf(open.Pin.Icon);
+            open.Pin.ButtonPressed = false;
+            string after = FileOf(open.Pin.Icon);
+            if (rest != "pin.png" || pinned != "pin-pinned-lapis.png" || after != "pin.png" || open.Pin.Text.Length != 0)
+            {
+                faults.Add($"a card's pin wears {rest}, pinned {pinned}, unpinned again {after}, text '{open.Pin.Text}' (want pin.png, pin-pinned-lapis.png, pin.png, none)");
+            }
+
+            CloseCard(open);
+        }
+
+        return faults.Count == 0
+            ? "[widths] ui colours: ✅ the five lapis and gold controls load at their masters with mipmaps; held, selected, every "
+              + "pressed font and swash and the ticked seal are lapis; stopped, refused and deaths stay rubric; a card's pin is painted, lapis when pinned"
+            : $"[widths] ui colours: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
     /// ⭐ EVERY WORD THE PARCHMENT LOOK COLOURS READS ON IT (Non-Negotiable §1.1, <c>ui-assets.md §1.3</c>): each text role's
     /// ink against the sheet and against its darkest mottle (−10 a channel), 4.5 : 1 at least (WCAG's sum, sRGB).
     /// </summary>

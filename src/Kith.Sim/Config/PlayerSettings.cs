@@ -40,17 +40,29 @@ public sealed record PlayerSettingsProblem(LogLevel Level, string Sentence);
 /// </remarks>
 public sealed record PlayerSettings
 {
-    /// <summary>The file format this build writes.</summary>
-    public const int CurrentVersion = 1;
+    /// <summary>
+    /// The file format this build writes. ⭐ 2 since <c>hud.md §11</c> (A213): the dial's numbers moved, so a version-1
+    /// file's size is read at ×4/3 and its windows' <i>shown</i> forgotten once (<see cref="MigratedFrom"/>).
+    /// </summary>
+    public const int CurrentVersion = 2;
 
-    /// <summary>The smallest the UI-size dial goes.</summary>
-    public const int SmallestUiScalePercent = 55;
+    /// <summary>The smallest the UI-size dial goes (version 1's 55, a hair larger — A213).</summary>
+    public const int SmallestUiScalePercent = 75;
 
-    /// <summary>The largest the UI-size dial goes.</summary>
-    public const int LargestUiScalePercent = 115;
+    /// <summary>The largest the UI-size dial goes (version 1's 115, a hair smaller).</summary>
+    public const int LargestUiScalePercent = 150;
 
-    /// <summary>The UI size before anybody turns the dial (Joe, 2026-09-06).</summary>
-    public const int DefaultUiScalePercent = 75;
+    /// <summary>
+    /// The UI size before anybody turns the dial — what Joe chose as 75 % (2026-09-06, D305) is 100 % since A213
+    /// (<i>"what I use as 75% should be 100% size going forward"</i>).
+    /// </summary>
+    public const int DefaultUiScalePercent = 100;
+
+    /// <summary>
+    /// ⭐ What the dial's 100 % draws, as a percent of the logical layout: 75, so the new 100 % draws exactly what the old
+    /// 75 % did and no drawn size moved (A213). The view's scale is <c>percent / 100 × this / 100</c> — one constant.
+    /// </summary>
+    public const int DrawnPercentAtTheDialsHundred = 75;
 
     /// <summary>One press of the dial.</summary>
     public const int UiScaleStep = 5;
@@ -69,6 +81,12 @@ public sealed record PlayerSettings
 
     /// <summary>The UI size, a whole percent on the dial's steps.</summary>
     public int? UiScalePercent { get; init; }
+
+    /// <summary>
+    /// The older version this was read from and brought forward, or null — never written; the view writes the file back
+    /// once when it is set, so the move happens once (<c>hud.md §11</c>).
+    /// </summary>
+    public int? MigratedFrom { get; init; }
 
     /// <summary>One of <see cref="RoutesLevels"/>.</summary>
     public string? Routes { get; init; }
@@ -169,6 +187,9 @@ public sealed record PlayerSettings
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
+
+    /// <summary>A version-1 size on this dial: ×4/3, rounded, then onto the dial — 75 → 100, 55 → 75, 115 → 150 (A213).</summary>
+    public static int FromVersionOne(int percent) => OnTheDial(((percent * 4) + 1) / 3);
 
     /// <summary>A UI size read from anywhere, brought onto the dial: clamped, and rounded to the nearest step.</summary>
     public static int OnTheDial(int percent)
@@ -310,17 +331,30 @@ public static class PlayerSettingsFile
 
         var unknown = doc.Select(pair => pair.Key).Where(key => !KnownKeys.Contains(key)).ToList();
 
-        if (doc["version"] is JsonNode versionNode
-            && TryInt(versionNode, out int version)
-            && version > PlayerSettings.CurrentVersion)
+        // ⚠️ No version is this build's: the game has always written one, so a file without is a hand edit, read as it reads.
+        int version = PlayerSettings.CurrentVersion;
+        if (doc["version"] is JsonNode versionNode && TryInt(versionNode, out int written))
         {
-            Warn($"written by a newer build (version {version}); reading what this one knows.");
+            version = written;
+            if (version > PlayerSettings.CurrentVersion)
+            {
+                Warn($"written by a newer build (version {version}); reading what this one knows.");
+            }
         }
+
+        bool versionOne = version <= 1;
+        var moved = new List<string>();
 
         int? scale = null;
         if (doc["ui_scale_percent"] is JsonNode scaleNode)
         {
-            if (TryInt(scaleNode, out int read))
+            if (TryInt(scaleNode, out int read) && versionOne)
+            {
+                // ⭐ hud.md §11 (A213): version 1's dial read 55–115 at 75; this one reads 75–150 at 100, drawing the same.
+                scale = PlayerSettings.FromVersionOne(read);
+                moved.Add($"its UI size {read} % is {scale} % on this build's dial, drawn the same");
+            }
+            else if (TryInt(scaleNode, out read))
             {
                 scale = PlayerSettings.OnTheDial(read);
                 if (scale != read)
@@ -374,6 +408,7 @@ public static class PlayerSettingsFile
         }
 
         var windows = new Dictionary<string, WindowPrefs>(StringComparer.Ordinal);
+        bool forgotShown = false;
         foreach ((string title, JsonNode? value) in ObjectAt(doc, "windows", Warn))
         {
             if (value is not JsonObject window)
@@ -383,10 +418,24 @@ public static class PlayerSettingsFile
             }
 
             unknown.AddRange(window.Select(pair => pair.Key).Where(key => !KnownWindowKeys.Contains(key)).Select(key => $"windows.{title}.{key}"));
+            bool? shown = BoolAt(window, "shown", $"windows.{title}", Warn);
             windows[title] = new WindowPrefs(
-                BoolAt(window, "shown", $"windows.{title}", Warn),
+                versionOne ? null : shown,
                 BoolAt(window, "open", $"windows.{title}", Warn),
                 PlaceAt(window, $"windows.{title}", Warn));
+            forgotShown |= versionOne && shown is not null;
+        }
+
+        // ⭐ Call 6 (A215): a saved "shown" beats a default (D504), and every version-1 file holds the roster shown — so its
+        // windows forget it once, and open as the new defaults say; their folds and places are kept.
+        if (forgotShown)
+        {
+            moved.Add("which windows are open is reset to the new defaults once (folds and places kept)");
+        }
+
+        if (moved.Count > 0)
+        {
+            problems.Add(new(LogLevel.Info, $"Settings ({path}): a version-1 file — {string.Join("; ", moved)}."));
         }
 
         var rows = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -419,6 +468,7 @@ public static class PlayerSettingsFile
             Toggles = toggles,
             Windows = windows,
             NewGameRows = rows,
+            MigratedFrom = versionOne && moved.Count > 0 ? version : null,
         };
     }
 
