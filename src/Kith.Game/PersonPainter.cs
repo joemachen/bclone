@@ -130,6 +130,12 @@ internal static class PersonPainter
     private static readonly Rgb Cheek = Rgb.Hex("#d8706a");
     private static readonly Rgb Shiver = Rgb.Hex("#3a6ea8");
     private static readonly Rgb Basket = Rgb.Hex("#a8804a");
+    private static readonly Rgb OarBlade = Rgb.Hex("#b08a5a");
+
+    // ⭐ The cask (A203): the yard's casks' oak and iron (`VillageMap.Yards` Timber, YardIron), so ale looks the same carried and stood.
+    private static readonly Rgb Oak = Rgb.Hex("#8a6440");
+    private static readonly Rgb OakEnd = Rgb.Hex("#b08a5e");
+    private static readonly Rgb Hoop = Rgb.Hex("#4b4e54");
 
     private static readonly Rgb[] Pigments = Hexes("#c4432c", "#33529e", "#3f8458", "#c87a86", "#c99a3c", "#e6dcc4", "#8e2e3c", "#5f7aa8");
     private static readonly Rgb[] Skins = Hexes("#f2d6b8", "#ecc9a6", "#dcb28c", "#c69468", "#a06e48", "#7c5236");
@@ -169,6 +175,9 @@ internal static class PersonPainter
         Book,
         Basket,
         Stick,
+
+        /// <summary>The brewer's mash oar: a pole taller than the head, a slotted wooden blade at its foot (A203).</summary>
+        Oar,
     }
 
     private enum Length
@@ -178,7 +187,7 @@ internal static class PersonPainter
         Knee,
     }
 
-    private readonly record struct TradeLook(Rgb Colour, Head Head, Tool Tool, Length Length, Rgb? Apron = null, Rgb? Hood = null);
+    private readonly record struct TradeLook(Rgb Colour, Head Head, Tool Tool, Length Length, Rgb? Apron = null, Rgb? Hood = null, bool Cloth = false);
 
     /// <summary>
     /// The trades as the mocks drew them (<c>villager-art.md §3b</c>): <see cref="TradeGlyph.ColourOf"/>'s colour (the
@@ -207,9 +216,11 @@ internal static class PersonPainter
         JobKind.Carpenter => new(Rgb.F(0.78f, 0.60f, 0.38f), Head.RedCap, Tool.Saw, Length.Knee),
         JobKind.Teacher => new(Rgb.Hex("#4a5ea8"), Head.Scholar, Tool.Book, Length.Ankle),
 
-        // ⏳ W3's stand-ins (`tavern.md §9`): the brewer aproned like the miller, the keeper like the baker — the art lane's to draw.
-        JobKind.Brewer => new(Rgb.Hex("#9a5e14"), Head.Coif, Tool.None, Length.Calf, Apron: Linen),
-        JobKind.TavernKeeper => new(Rgb.Hex("#8a2f3e"), Head.Bare, Tool.None, Length.Calf, Apron: Linen),
+        // ⭐ W3's two (A203, `tavern-figures-art.md`; Joe: "All as recommended"): the brewer in the smith's leather apron
+        // with the mash oar — parted from the baker's white apron and coif at every zoom; the keeper to the ankle, a linen
+        // cloth over one shoulder.
+        JobKind.Brewer => new(Rgb.Hex("#9a5e14"), Head.Bare, Tool.Oar, Length.Calf, Apron: Rgb.Hex("#6a4a34")),
+        JobKind.TavernKeeper => new(Rgb.Hex("#8a2f3e"), Head.Bare, Tool.None, Length.Ankle, Apron: Linen, Cloth: true),
         _ => new(Rgb.Hex("#a89a80"), Head.Bare, Tool.None, Length.Knee),
     };
 
@@ -252,7 +263,7 @@ internal static class PersonPainter
         internal Length Length;
         internal Rgb? Apron, Hood;
         internal float K = 1f, HeadK = 1f, Stoop, Sway;
-        internal bool CoatOn, CartOn, Cold, Elder;
+        internal bool CoatOn, CartOn, Cold, Elder, Cloth;
 
         /// <summary>The cloak's colour — the household's dye (A143).</summary>
         internal Rgb Cloak;
@@ -283,6 +294,7 @@ internal static class PersonPainter
 
             Apron = look.Apron;
             Hood = look.Hood;
+            Cloth = look.Cloth;
             Sway = (Hash01(i, "sway") - 0.5f) * 0.04f;
             if (f.Stage == LifeStage.Child)
             {
@@ -294,6 +306,7 @@ internal static class PersonPainter
                 Tool = Tool.None;
                 Apron = null;
                 Hood = null;
+                Cloth = false;
                 Length = Length.Knee;
             }
             else if (f.Stage == LifeStage.Elder)
@@ -955,6 +968,16 @@ internal static class PersonPainter
             case Tool.Stick:
                 c.Limb((x + 0.03f, -0.02f), (x, -0.62f), 0.028f, Wood);
                 break;
+            case Tool.Oar:
+                c.Limb((x + 0.01f, -1.10f), (x + 0.01f, -0.24f), tw, Wood);
+                c.Poly(new[] { (x - 0.035f, -0.27f), (x + 0.055f, -0.27f), (x + 0.05f, -0.02f), (x - 0.03f, -0.02f) }, OarBlade);
+                if (c.Detail)
+                {
+                    c.Stroke((x - 0.002f, -0.22f), (x - 0.002f, -0.07f), OarBlade.Shade(0.5f), 0.011f);
+                    c.Stroke((x + 0.024f, -0.22f), (x + 0.024f, -0.07f), OarBlade.Shade(0.5f), 0.011f);
+                }
+
+                break;
             case Tool.Peel:
                 c.Limb((x, -0.15f), (x + 0.08f, -0.95f), tw * 0.9f, Wood);
                 c.Ell(x + 0.09f, -1.02f, 0.07f, 0.09f, Rgb.Hex("#b08a5a"));
@@ -1116,6 +1139,32 @@ internal static class PersonPainter
                 c.Ell(x0 + 0.13f, -0.33f, 0.026f, 0.10f, col);
                 c.Ell(x0 + 0.21f, -0.33f, 0.026f, 0.10f, col);
                 break;
+            // ⭐ Ale is a cask held upright in both arms (A203, `tavern-figures-art.md §3.3`): bellied oak, two hoops, the lid, the hands on its belly.
+            case Goods.Ale:
+            {
+                c.Poly(new[] { (x0 - 0.085f, -0.67f), (x0 + 0.085f, -0.67f), (x0 + 0.108f, -0.535f), (x0 + 0.085f, -0.40f), (x0 - 0.085f, -0.40f), (x0 - 0.108f, -0.535f) }, Oak);
+                c.Ell(x0, -0.67f, 0.085f, 0.024f, OakEnd);
+                if (c.Detail)
+                {
+                    foreach (float sx in new[] { -0.05f, 0f, 0.05f })
+                    {
+                        c.Stroke((x0 + sx, -0.645f), (x0 + (sx * 1.1f), -0.415f), Oak.Shade(0.72f), 0.008f);
+                    }
+                }
+
+                foreach (float hy in new[] { -0.615f, -0.455f })
+                {
+                    c.Stroke((x0 - 0.098f, hy), (x0 + 0.098f, hy), Hoop, 0.020f);
+                }
+
+                foreach (float s in pose == FigurePose.Side ? new[] { 1f } : new[] { -1f, 1f })
+                {
+                    c.Ell(x0 + (s * 0.105f), -0.53f, 0.03f, 0.03f, w.Skin);
+                }
+
+                break;
+            }
+
             case Goods.Clothing:
             case Goods.Leather:
                 for (int k = 0; k < 3; k++)
@@ -1127,6 +1176,28 @@ internal static class PersonPainter
                 break;
             default:
                 c.Ell(x0, -0.55f, 0.10f, 0.08f, col);
+                break;
+        }
+    }
+
+    /// <summary>The keeper's linen cloth over one shoulder.</summary>
+    private static void ShoulderCloth(Canvas c, Who w, FigurePose pose, float top)
+    {
+        if (!w.Cloth)
+        {
+            return;
+        }
+
+        switch (pose)
+        {
+            case FigurePose.Front:
+                c.Poly(new[] { (-0.155f, top - 0.01f), (-0.075f, top - 0.01f), (-0.085f, -0.55f), (-0.15f, -0.565f) }, Linen);
+                break;
+            case FigurePose.Back:
+                c.Poly(new[] { (0.155f, top - 0.01f), (0.075f, top - 0.01f), (0.085f, -0.58f), (0.15f, -0.595f) }, Linen);
+                break;
+            default:
+                c.Poly(new[] { (-0.07f, top - 0.015f), (0.02f, top - 0.015f), (-0.01f, -0.57f), (-0.075f, -0.58f) }, Linen);
                 break;
         }
     }
@@ -1268,6 +1339,7 @@ internal static class PersonPainter
         float top = Gown(c, w, pose, hemSwing);
         (float, float) hand = Arms(c, w, pose, top, f.Hold, f.Walking, f.Beat, workHand);
         CoatFront(c, w, pose, top);
+        ShoulderCloth(c, w, pose, top);
         bool logsUnderHead = w.Good == Goods.Logs && pose != FigurePose.Side;
         if (logsUnderHead)
         {
