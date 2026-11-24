@@ -7,7 +7,7 @@
 > shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
 > newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
 > UNPLAYED. NOT YET BUILT: the save-time hook (nothing calls `TitleSnapshot` yet) and the lift — both wait for `slice/hud`'s
-> merge;** ⏸️ call 6 (§9), the year's turn. Art lane (CLAUDE.md *Two tracks*),
+> merge;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -67,7 +67,7 @@ only for a village with a home standing**, so the title shows his newest village
   ground's bake. **It now borrows what the live map has made** (`VillageMap.BorrowTheGroundOf`: the ground, the woods, the lanes
   and their field, the painted land's shapes, the buildings, the figures), renders once and is encoded off the main thread:
   **two frames of about 41 and 28 ms.** Against today's saves that is one or two frames longer, so **it is over the budget
-  below, by about 25 ms** — ⏸️ call 6. The borrowed picture is the unborrowed one but for the villagers, whom the first build
+  below, by about 25 ms** — ✅ taken at every save all the same (call 6, A235). The borrowed picture is the unborrowed one but for the villagers, whom the first build
   read before their figures were painted (mean 0.04 / 255 apart); it is now drawn until every figure is. The ground and the
   woods are shared rather than copied; the live map draws first in the frame. ⚠️ **No probe line guards the borrowing or the
   picture** (headless draws nothing): the hook's line is owed one (§8).
@@ -77,7 +77,7 @@ only for a village with a home standing**, so the title shows his newest village
   taken only at the quits and the named saves — they already pause the game — and the folder's picture then lags the year's-turn
   autosaves by at most a session. That fallback would be put to Joe, not chosen silently.
 - **Where: one picture a village, `title.jpg` in the village's own save folder** (`saves/<village>-<seed>/`), rewritten at each
-  save (⏸️ call 3). The brief says *"each save and autosave keeps a picture beside it"*; one a folder is the same answer for the
+  save (✅ call 3). The brief says *"each save and autosave keeps a picture beside it"*; one a folder is the same answer for the
   title, which only ever shows the newest, and it needs no change to the sim's save code: autosaves rotate by renaming inside
   `SaveFile.WriteAutosave` (`Kith.Sim`), so a picture per save file would have to rotate with them there — a sim edit that runs the
   suite, for pictures the title never shows.
@@ -323,7 +323,7 @@ and Joe can play it).
    `art`, as its own commit, after the HUD's merge**, since it is ~10 lines and the piece is otherwise whole. *Or:* the systems lane
    makes it as its next commit after the HUD.
 5. ✅ **ANSWERED (A233): yes, the lift.** **Continue lifts the paint into the game** (§6a, his idea, A232). ⭐ **Yes, as §6a**: about two seconds, the live map opening on the picture's own frame, a plain fade wherever the picture and the opened save differ. It goes in the load path with the hook in call 4, after the HUD's merge. *Or:* a plain crossfade from the picture to the game, with no lift and no matched frame.
-6. ⏸️ **The year's turn (A234).** A picture costs two frames of about 41 and 28 ms on Thornfield (§3), over the budget by about
+6. ✅ **ANSWERED (A235): *"Yes, every save"*.** **The year's turn (A234).** A picture costs two frames of about 41 and 28 ms on Thornfield (§3), over the budget by about
    25 ms. ⭐ **Take it at every save all the same**, the year's turn included, as his brief says. *Or:* only when he quits,
    saves by name or presses F5, so the year's turn costs what it does today; a crash would then leave last session's picture.
 
