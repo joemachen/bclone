@@ -47,6 +47,10 @@ public sealed class CivicSystem : ISimSystem
         // here and not before `MortalitySystem`.
         world.KnockIfItIsTime();
 
+        // ⭐ AND KIN UP THE VALLEY (`library-borrowing.md §5.2`): an answer that stood on a bed or on food to spare is asked
+        // again on each season's turn — after this tick's deaths, which may be what freed the bed.
+        world.AnswerTheWaitingLettersAtTheTurn();
+
         // ⭐ AND A DEAD VALLEY RE-FOUNDED (D567): with nobody alive, four nomads walk in a hashed few years on.
         world.RefoundIfTheValleyHasWaited();
     }

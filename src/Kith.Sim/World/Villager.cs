@@ -400,6 +400,20 @@ public sealed class Villager
     /// <summary>The day (<see cref="SimWorld.Today"/>) of their last evening at the tavern (W3); 0 if never. Saved; hashed sparsely.</summary>
     public int LastTavernDay { get; set; }
 
+    /// <summary>
+    /// Paper from the library in hand, on the way home (`library-borrowing.md §5.1`) — set as they take it, cleared at their own
+    /// door, where the letter is written. Not a good: never in <see cref="Carried"/>, so no store or larder can take it (the
+    /// D513 trap). Hashed sparsely; saved only when set.
+    /// </summary>
+    public bool CarryingPaper { get; set; }
+
+    /// <summary>
+    /// The household whose letter brought them up the valley (`library-borrowing.md §5.3a`, Joe's addition 1) — kin of that
+    /// household, which is all the kinship the sim keeps (there are no parent links); 0 for everybody else. Read by the cards
+    /// alone. Saved and hashed sparsely.
+    /// </summary>
+    public int CameByLetterOf { get; set; }
+
     /// <summary>Evenings at the tavern this season (W3) — read at the season's turn by contentment, then cleared. Saved; hashed sparsely.</summary>
     public int TavernEveningsThisSeason { get; set; }
 
@@ -1001,6 +1015,8 @@ public sealed class Villager
             VillagerState.WalkingToTheWell => "walking to the well",
             VillagerState.DrawingWater => "drawing water at the well",
             VillagerState.WalkingToTheTavern => "walking to the tavern",
+            VillagerState.WalkingToTheLibrary => "walking to the library for paper",
+            VillagerState.AtTheLibrary => "at the library, taking paper for a letter",
             VillagerState.AtTheTavern => "spending the evening at the tavern",
             VillagerState.FetchingAle => "fetching ale for the tavern",
             VillagerState.CarryingAle => "carrying ale to the tavern",
@@ -1062,6 +1078,8 @@ public sealed class Villager
             ["seasons_unsettled"] = SeasonsUnsettled != 0 ? SeasonsUnsettled : null,
             // W3's (D834) — optional keys, so a save from before reads nobody who has been to a tavern.
             ["last_tavern_day"] = LastTavernDay != 0 ? LastTavernDay : null,
+            ["carrying_paper"] = CarryingPaper ? true : null,
+            ["came_by_letter_of"] = CameByLetterOf != 0 ? CameByLetterOf : null,
             ["tavern_evenings_this_season"] = TavernEveningsThisSeason != 0 ? TavernEveningsThisSeason : null,
             ["contentment_comforts"] = ContentmentComforts != 0 ? ContentmentComforts : null,
             ["birth_tick"] = SaveWriter.Hex(BirthTick),
@@ -1137,6 +1155,8 @@ public sealed class Villager
             ContentmentCauses = save.HasValue("contentment_causes") ? save.Int("contentment_causes") : 0,
             SeasonsUnsettled = save.HasValue("seasons_unsettled") ? save.Int("seasons_unsettled") : 0,
             LastTavernDay = save.HasValue("last_tavern_day") ? save.Int("last_tavern_day") : 0,
+            CarryingPaper = save.HasValue("carrying_paper") && save.Bool("carrying_paper"),
+            CameByLetterOf = save.HasValue("came_by_letter_of") ? save.Int("came_by_letter_of") : 0,
             TavernEveningsThisSeason = save.HasValue("tavern_evenings_this_season") ? save.Int("tavern_evenings_this_season") : 0,
             ContentmentComforts = save.HasValue("contentment_comforts") ? save.Int("contentment_comforts") : 0,
             BirthTick = save.Long("birth_tick"),

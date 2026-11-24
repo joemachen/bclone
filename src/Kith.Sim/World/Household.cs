@@ -69,6 +69,14 @@ public sealed class Household
     {
         _surname = surname;
         GivenName = null;
+
+        // A new family writes to its own kin (`library-borrowing.md §5.2`): the dead family's letters, answer and generation
+        // go with them. `KinAnswered` stays — it keys the hash, and the house is the same house.
+        LettersWritten = 0;
+        LastLetterDay = 0;
+        KinId = 0;
+        LetterWriterId = 0;
+        AnswerWaiting = false;
     }
 
     /// <summary>
@@ -1251,6 +1259,38 @@ public sealed class Household
     public bool ToppingUpFirewood { get; set; }
 
     /// <summary>
+    /// Letters this household has written to kin in the lowlands (`library-borrowing.md §5.2`) — one each time somebody brings
+    /// paper home from the library. Saved and hashed sparsely (nought when none).
+    /// </summary>
+    public int LettersWritten { get; set; }
+
+    /// <summary>The day (<c>SimWorld.Today</c>) paper was last taken from the library for this household; 0 never.</summary>
+    public int LastLetterDay { get; set; }
+
+    /// <summary>
+    /// The villager whose coming answered this family's letters last (`library-borrowing.md §5.2`) — the generation's clock
+    /// runs from their <c>ArrivedAtTick</c>; 0 while none has come. Cleared for a new family (<see cref="BecomeTheFamilyOf"/>).
+    /// Saved and hashed sparsely.
+    /// </summary>
+    public int KinId { get; set; }
+
+    /// <summary>Who wrote the letter that was answered — said in the log and on the card (<i>"at Hilde's letter"</i>); 0 none.</summary>
+    public int LetterWriterId { get; set; }
+
+    /// <summary>
+    /// How many times kin have answered letters from this house — the key a fresh hash is taken on each generation. ⚠️ Never
+    /// cleared, not even for a new family: two families in one house would otherwise be answered on the same letter by the
+    /// same relative. Saved and hashed sparsely.
+    /// </summary>
+    public int KinAnswered { get; set; }
+
+    /// <summary>
+    /// An answer came and stands (§5.2): kin will come at the first season's turn there is a bed and the village has food to
+    /// spare. The house writes no more while it stands. What it waits on is asked when wanted, never stored (D335).
+    /// </summary>
+    public bool AnswerWaiting { get; set; }
+
+    /// <summary>
     /// The water in the household's jar at home (D778, `water-need.md §5` step 2; Joe's call 1A: a number the household
     /// keeps, not a good) — <b>0 for an empty jar</b>.
     /// </summary>
@@ -1376,6 +1416,12 @@ public sealed class Household
         ["handcart_uses"] = HandcartUses,
         ["fire_out_held_until"] = FireOutHeldUntil != 0 ? FireOutHeldUntil : null,
         ["dry_days_this_season"] = DryDaysThisSeason != 0 ? DryDaysThisSeason : null,
+        ["letters_written"] = LettersWritten != 0 ? LettersWritten : null,
+        ["last_letter_day"] = LastLetterDay != 0 ? LastLetterDay : null,
+        ["kin_id"] = KinId != 0 ? KinId : null,
+        ["letter_writer_id"] = LetterWriterId != 0 ? LetterWriterId : null,
+        ["kin_answered"] = KinAnswered != 0 ? KinAnswered : null,
+        ["answer_waiting"] = AnswerWaiting ? true : null,
         ["larder"] = Stockpile.ToSave(),
         ["members"] = SaveWriter.Ints(_memberIds),
     };
@@ -1404,6 +1450,12 @@ public sealed class Household
             HandcartUses = save.Int("handcart_uses"),
             FireOutHeldUntil = save.HasValue("fire_out_held_until") ? save.Int("fire_out_held_until") : 0,
             DryDaysThisSeason = save.HasValue("dry_days_this_season") ? save.Int("dry_days_this_season") : 0,
+            LettersWritten = save.HasValue("letters_written") ? save.Int("letters_written") : 0,
+            LastLetterDay = save.HasValue("last_letter_day") ? save.Int("last_letter_day") : 0,
+            KinId = save.HasValue("kin_id") ? save.Int("kin_id") : 0,
+            LetterWriterId = save.HasValue("letter_writer_id") ? save.Int("letter_writer_id") : 0,
+            KinAnswered = save.HasValue("kin_answered") ? save.Int("kin_answered") : 0,
+            AnswerWaiting = save.HasValue("answer_waiting") && save.Bool("answer_waiting"),
             Stockpile = Stockpile.FromSave(save.Object("larder")),
         };
 

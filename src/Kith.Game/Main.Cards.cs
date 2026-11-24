@@ -89,6 +89,12 @@ public partial class Main
         /// once it has run dry (D780), in amber. Hidden on every other kind, and for a household nobody lives in.
         /// </summary>
         public required Label Water { get; init; }
+
+        /// <summary>
+        /// Letters to kin (`library-borrowing.md §5.4`, D868): a household's — writing, an answer waiting, who came — and a
+        /// library's borrowing sentence (D843's lesson). The sim's sentences; hidden on every other kind and when there is none.
+        /// </summary>
+        public required Label Letters { get; init; }
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
@@ -136,6 +142,15 @@ public partial class Main
         public VBoxContainer? IdleRow { get; set; }
         public Label? IdleLabel { get; set; }
         public Button? IdleMarker { get; set; }
+
+        /// <summary>The library's <i>Letters to kin</i> switch (Joe's addition 2, D865) — the village's, on every library's card.</summary>
+        public Button? Letters { get; set; }
+
+        /// <summary>
+        /// Its row. ⛔ An inspector row is built hidden (`InspectorRow`) and shown by <c>ShowSettings</c> — D868 dropped this and
+        /// the switch was never on screen (Joe, playing D868: <i>"i dont see the letters to kin switch"</i>, D870).
+        /// </summary>
+        public VBoxContainer? LettersRow { get; set; }
         public VBoxContainer? GroundRow { get; set; }
         public Label? GroundLabel { get; set; }
 
@@ -464,6 +479,11 @@ public partial class Main
         water.Visible = false;
         column.AddChild(water);
 
+        // ---- letters to kin: a household's, a library's (`library-borrowing.md §5.4`, D868) ----
+        Label letters = Wrapped(Muted(string.Empty));
+        letters.Visible = false;
+        column.AddChild(letters);
+
         // ---- a person's sections (D431) ----
         VillagerParts person = BuildPersonParts();
         column.AddChild(person.Box);
@@ -574,6 +594,7 @@ public partial class Main
             House = house,
             Cart = cart,
             Water = water,
+            Letters = letters,
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
@@ -791,6 +812,7 @@ public partial class Main
         card.House.Visible = false;
         card.Cart.Visible = false;
         card.Water.Visible = false;
+        card.Letters.Visible = false;
         card.Portrait.Wear = Condition.Sound;
 
         bool shown = card.Subject.Kind switch
@@ -1034,6 +1056,23 @@ public partial class Main
                 break;
             }
 
+            // ⭐ LETTERS TO KIN, ON AND OFF (Joe's addition 2, D865; `library-borrowing.md §5.4a`) — the village's switch, on
+            // every library's card, in the full-store marker's shape. Off: nobody fetches paper and no kin come.
+            case CardKind.Library:
+            {
+                (c.LettersRow, HFlowContainer lettersControls) = InspectorRow(body, Muted("Kin up the valley:"));
+                c.Letters = new Button
+                {
+                    Text = "Letters to kin: ON",
+                    TooltipText = "On, a home within the library's walk writes to kin in the lowlands while it has a spare bed, "
+                        + "and a relative comes when the village has food to spare. Off, nobody writes and nobody comes — for "
+                        + "every library: a family writes to its kin, not to a building.",
+                };
+                c.Letters.Pressed += () => Act(card, () => _loop.World.LettersEnabled = !_loop.World.LettersEnabled);
+                lettersControls.AddChild(c.Letters);
+                break;
+            }
+
             default:
                 break;
         }
@@ -1196,6 +1235,11 @@ public partial class Main
                 card.Settings.Visible = shown && card.SettingsToggle.ButtonPressed;
                 break;
             }
+
+            case CardKind.Library:
+                c.LettersRow!.Visible = true;
+                c.Letters!.Text = world.LettersEnabled ? "Letters to kin: ON" : "Letters to kin: off";
+                break;
 
             default:
                 break;
@@ -1833,6 +1877,7 @@ public partial class Main
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(home)));
         CartLine(card, CartSentence(world, home));
         WaterLine(card, WaterSentence(world, home), dry: home.Water <= 0);
+        LettersLine(card, world.SayTheHouseholdsLetters(home), amber: home.AnswerWaiting && world.LettersEnabled);
 
         // ⭐ THE HOUSE ITSELF (`house-tiers.md §6`, D722): its tier, what it burns against a cabin, how long it keeps them
         // without a fire — and, while the builders rebuild it, the bridge's sentence (D704) on the status, which wraps.
@@ -2000,7 +2045,9 @@ public partial class Main
         card.Subtitle.Text = $"{Capitalise(TradeWordFor(world, villager))} · {villager.AgeYears} · {home.Name} household"
             + $"\nBorn {world.BirthdayOf(villager)}"
             // ⭐ The family tree the house tiers are learned on (`house-tiers.md §4.4`, D718): "Third generation in the valley".
-            + $"\n{Capitalise(GenerationInTheValley(villager.Generation))}";
+            + $"\n{Capitalise(GenerationInTheValley(villager.Generation))}"
+            // ⭐ Kin come by letter say whose (§5.3a, Joe's addition 1): *"Came up the valley in Year 43, at a letter from …"*.
+            + (world.SayWhoseKin(villager) is string kin ? $"\n{kin}" : string.Empty);
 
         bool hungry = villager.Hunger >= world.Config.EatThreshold;
         bool noted = !string.IsNullOrWhiteSpace(villager.WorkNote);
@@ -2460,6 +2507,11 @@ public partial class Main
         WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
         Wear(card, world.WearOf(library), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(library)));
+
+        // ⭐ AND WHO BORROWS (`library-borrowing.md §5.4`, D843's lesson, Joe's addition): the homes in reach, the letters out
+        // and the answers waiting — amber when nobody can borrow, but not when the player turned letters off (that is a choice).
+        (bool lends, string borrowing) = world.SayTheLibrary(library);
+        LettersLine(card, borrowing, amber: !lends && world.LettersEnabled);
         return true;
     }
 
@@ -2804,6 +2856,14 @@ public partial class Main
     }
 
     /// <summary>Write the household's water line — amber while the jar is dry — or hide it (`water-need.md §5` step 6).</summary>
+    /// <summary>The letters line (D868) — the sim's sentence, or hidden; amber while something waits on the village.</summary>
+    private static void LettersLine(Card card, string? said, bool amber)
+    {
+        card.Letters.Visible = said is not null;
+        card.Letters.Text = said ?? string.Empty;
+        UiLook.Tint(card.Letters, amber ? LightStopped : UiLook.Faint);
+    }
+
     private static void WaterLine(Card card, string? said, bool dry)
     {
         card.Water.Visible = said is not null;
@@ -4102,6 +4162,175 @@ public partial class Main
                 + $"Water / No water with it; the widest line holds {CardWidth:F0} ({widest:F0}); the pail goes out empty, comes home full, "
                 + "and is put down at home, on giving up, or with the dead"
             : $"[widths] water: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ The probe's <c>library:</c> line (`library-borrowing.md §7` step 3, D868): a library posed beside a home, its card
+    /// says the sim's borrowing sentence — the letters out, an answer waiting — and its switch turns letters off and on with
+    /// the card saying so; the household's card reads its letters line, amber while an answer waits; a relative's card says
+    /// whose kin; the widest sentence holds the card's width; and a relative walks in to their household's door, not the camp.
+    /// Everything posed is put back.
+    /// </summary>
+    private string TheLettersAreOnTheCards()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        // A family with a roof — posed if the probe's young village has raised none yet (the contentment line's shape), put back after.
+        Household? home = world.Households.FirstOrDefault(h => h.HomeTile is not null && world.LivingMembersOf(h) > 0)
+            ?? world.Households.FirstOrDefault(h => world.LivingMembersOf(h) > 0);
+        if (home is null)
+        {
+            return "[widths] library: ⛔ no family to stand a library beside";
+        }
+
+        Villager member = world.Villagers.First(v => v.Alive && v.HouseholdId == home.Id);
+        Kith.Sim.Core.Point? roofWas = home.HomePosition;
+        // ⚠️ Four tiles from the camp, never on it: a roof posed where the founders stand makes "walks to the house" and "walks
+        // to the camp" the same tile, and the walk-in's check scored zero against a mutant that sent kin to the camp (D868).
+        GridPos camp = world.BandCamp.ToTile();
+        home.HomePosition ??= Point.CentreOf(new GridPos(camp.X + 4, camp.Y));
+        var library = new Library { Position = Point.CentreOf(home.HomeTile!.Value), Name = "the probe's library", Shelves = 3 };
+        (int letters, bool waiting, bool on, int kinOf) = (home.LettersWritten, home.AnswerWaiting, world.LettersEnabled, member.CameByLetterOf);
+        string? borrowing = null;
+        float widest = 0f;
+        world.Libraries.Add(library);
+        try
+        {
+            world.LettersEnabled = true;
+            home.LettersWritten = 3;
+            home.AnswerWaiting = false;
+            OpenCard(new CardSubject(CardKind.Library, world.Libraries.Count - 1));
+            Card card = _selectedCard!;
+            borrowing = world.SayTheLibrary(library).Sentence;
+            if (!card.Letters.Visible || card.Letters.Text != borrowing
+                || !borrowing.Contains("writing to kin, 3 letters out, none answered yet", StringComparison.Ordinal))
+            {
+                faults.Add($"the library's card reads \"{(card.Letters.Visible ? card.Letters.Text : "(hidden)")}\", not \"{borrowing}\"");
+            }
+
+            // The switch: off, the card says so (not amber — a choice); on again.
+            if (card.Controls.Letters is not Button toggle)
+            {
+                faults.Add("the library's card has no letters switch");
+            }
+            else
+            {
+                // ⛔ ON SCREEN, NOT ONLY PRESSABLE (D870): a signal presses a hidden button too, and D868's line was green
+                // while Joe could not see the switch. Every ancestor visible, the card's fold open as the game opens it.
+                if (!toggle.IsVisibleInTree())
+                {
+                    faults.Add("the letters switch is on the library's card but not shown");
+                }
+
+                toggle.EmitSignal(BaseButton.SignalName.Pressed);
+                RefreshCards(world);
+                if (world.LettersEnabled || toggle.Text != "Letters to kin: off"
+                    || card.Letters.Text != "Letters to kin are off — nobody writes, and nobody comes."
+                    || UiLook.TintOf(card.Letters) == LightStopped)
+                {
+                    faults.Add($"letters off reads \"{toggle.Text}\" / \"{card.Letters.Text}\" (on: {world.LettersEnabled})");
+                }
+
+                toggle.EmitSignal(BaseButton.SignalName.Pressed);
+                RefreshCards(world);
+                if (!world.LettersEnabled || toggle.Text != "Letters to kin: ON")
+                {
+                    faults.Add($"letters back on reads \"{toggle.Text}\" (on: {world.LettersEnabled})");
+                }
+            }
+
+            // An answer standing: counted on the library's card.
+            home.AnswerWaiting = true;
+            RefreshCards(world);
+            if (!card.Letters.Text.Contains("1 answer waits on", StringComparison.Ordinal))
+            {
+                faults.Add($"an answer standing reads \"{card.Letters.Text}\"");
+            }
+
+            foreach (string said in new[]
+            {
+                "Lends paper to 99 of 99 homes within a 12-tile walk — 99 are writing to kin, 999 letters out, 99 answers wait on "
+                    + "a bed, 99 answers wait on food to spare, kin have come to 99 homes.",
+                "No home is within a 12-tile walk, so nobody comes to borrow. A library draws the homes around it: build it near them.",
+            })
+            {
+                LettersLine(card, said, amber: true);
+                ForceUpdateTransform();
+                widest = Mathf.Max(widest, card.Panel.GetCombinedMinimumSize().X);
+            }
+
+            CloseCard(card);
+
+            // ---- the household's card ----
+            OpenCard(new CardSubject(CardKind.Household, home.Id));
+            Card house = _selectedCard!;
+            string? line = world.SayTheHouseholdsLetters(home);
+            if (line is null || !house.Letters.Visible || house.Letters.Text != line || UiLook.TintOf(house.Letters) != LightStopped)
+            {
+                faults.Add($"the household's card reads \"{(house.Letters.Visible ? house.Letters.Text : "(hidden)")}\", not \"{line}\" in amber");
+            }
+
+            home.AnswerWaiting = false;
+            RefreshCards(world);
+            if (house.Letters.Text != "Writing to kin in the lowlands — 3 letters so far." || UiLook.TintOf(house.Letters) == LightStopped)
+            {
+                faults.Add($"a writing household's card reads \"{house.Letters.Text}\"");
+            }
+
+            CloseCard(house);
+
+            // ---- the relative's card, and their walk in ----
+            member.CameByLetterOf = home.Id;
+            OpenCard(new CardSubject(CardKind.Villager, member.Id));
+            Card person = _selectedCard!;
+            if (world.SayWhoseKin(member) is not string kin || !person.Subtitle.Text.EndsWith(kin, StringComparison.Ordinal))
+            {
+                faults.Add($"a relative's card reads \"{person.Subtitle.Text}\"");
+            }
+
+            CloseCard(person);
+            if (home.HomeTile == camp)
+            {
+                faults.Add("the household's door is the camp, so where a relative walks to proves nothing");
+            }
+
+            if (VillageMap.WhereTheyWalkTo(world, member.Id) != home.HomeTile)
+            {
+                faults.Add($"a relative walks in to {VillageMap.WhereTheyWalkTo(world, member.Id)}, not their household's door {home.HomeTile}");
+            }
+
+            // ⭐ And their walk-in holds the village at 1×, as a band's does (Joe, D870: "a relative's arrival should drop the
+            // game to 1× like the nomads") — `BeginWalkIn`'s answer is what the shell slows down on.
+            if (!_map.BeginWalkIn(world, new List<int> { member.Id }))
+            {
+                faults.Add("a relative's walk-in does not hold the village at 1×");
+            }
+
+            _map.ClearWalkInsForTheProbe();
+            member.CameByLetterOf = 0;
+            if (VillageMap.WhereTheyWalkTo(world, member.Id) != camp)
+            {
+                faults.Add("a band's member no longer walks in to the camp");
+            }
+
+            if (widest > CardWidth + 1f)
+            {
+                faults.Add($"the letters line widens a card to {widest:F0}");
+            }
+        }
+        finally
+        {
+            world.Libraries.Remove(library);
+            home.HomePosition = roofWas;
+            (home.LettersWritten, home.AnswerWaiting, world.LettersEnabled, member.CameByLetterOf) = (letters, waiting, on, kinOf);
+            RefreshCards(world);
+        }
+
+        return faults.Count == 0
+            ? $"[widths] library: ✅ a library's card says who borrows (\"{borrowing}\"), an answer waiting, and letters off by its "
+                + $"switch, not in amber; a household's card reads its letters, amber while an answer waits; a relative's card says whose "
+                + $"kin; the widest line holds {CardWidth:F0} ({widest:F0}); a relative walks in to their household's door at 1×, a band to the camp; the switch is on screen"
+            : $"[widths] library: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>

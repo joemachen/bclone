@@ -270,3 +270,15 @@ against a number from an older commit.
 - `ZzTavernSave.cs` — D843's diagnosis on one of Joe's saves (`ZZ_SAVE`, a *copy*): each tavern (open, or why shut), each
   villager's walk from home to it and the tavern within reach, then a year stepped — rests begun at home and evenings by
   adult. Copy in, `--filter ZzTavernSave`, delete.
+- `ZzLibrary.cs` + `library.py` — D864's measurement for `specs/library-borrowing.md §4`. `Measure`: on Joe's saves (`ZZ_SAVES` a
+  copy, the newest per folder, `ZZ_SHARD=k/n`, `ZZ_YEARS` 10) — at load each home's walk to the nearest library and the spare
+  beds (ZZA); stepped on, a line a year (ZZY: people, food, nomads, relatives posed, births, deaths by cause), a line a winter of
+  firewood on Fall's and Winter's first days (ZZF) and of cold days, goings-in and cold deaths, graduates apart (ZZC), and totals
+  (ZZE). `ZZ_ARM=letters` poses a relative (an unmarried adult of 18–30 with `nomads_food_each`) at a spring turn in a home with a
+  spare bed, within `ZZ_REACH` tiles of a library (0 = every home), `ZZ_SPREAD` hashed years after it first qualified, once a
+  household each `ZZ_GEN` (24) years; `ZZ_FOOD=1` asks the birth gate's food half first; `ZZ_CASCADE=0` bars a home holding a
+  relative from writing. `OnTheHarness`: `ZZ_VALLEYS=1`, seeds 200–299 (`ZZ_SEEDS`, `ZZ_ARMS=base,letters`), the nomads
+  harness's opening, 50 years, letters from `ZZ_FROM` (15) — one ZZB line a valley. Copy in, build `-c Release` and read `0
+  Error(s)`, run with `--no-build --filter "FullyQualifiedName~ZzLibrary.Measure"` (or `.OnTheHarness`), delete.
+  `python library.py <logs-folder> base,<arm>,…` prints the saves table; `python library.py <logs-folder> --valleys v1,v2` the
+  valleys'. Logs named `<arm>.<shard>.log`.
