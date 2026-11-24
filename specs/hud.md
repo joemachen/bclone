@@ -2,7 +2,8 @@
 
 > **Status: ✍️ SPECCED AND MOCKED ON `art` (A207–A215, 2026-11-23); NOTHING BUILT. ✅ JOE'S NINE CALLS ALL AS RECOMMENDED,
 > AND THE WINDOWS' BUTTONS A COLUMN (A215: *"stack the window buttons as a narrow column"*, *"agree on the 9 calls"*).**
-> ▶️ Next: the art lane's three controls (§8.3), then `slice/hud` (§14). The build
+> ✅ **The art lane's controls painted and in on `art` (A216, Joe: *"Yes, paint them"*), not wired** (§8.3).
+> ▶️ Next: they merge into `main` at his word, then `slice/hud` (§14). The build
 > is its own **systems slice** after `slice/library-borrowing` merges: every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
@@ -181,9 +182,12 @@ picked. *(Call 5.)*
 - **Remembered per village, in the save, never hashed** — what the player has looked at is not a fact about the village
   (D335's line for derived state). A village loaded from an older save treats everything already earned as seen, so a load
   never lights the whole bar.
-- **The art lane paints** `controls/underline-lapis.png` and `controls/underline-gold.png` (the swash, `ui-assets.md §3`'s
-  row, in each colour) and `controls/checkbox-ticked.png` / `-disabled.png` again in **lapis wax** (§10), with their probe
-  line, before the slice wires them.
+- ✅ **Painted by the art lane (A216)**, in `textures/ui/controls/`, not wired: `underline-lapis.png` and `underline-gold.png`
+  (the swash of `ui-assets.md §3`, one stroke in three inks) and `checkbox-ticked-lapis.png` / `-lapis-disabled.png` (the
+  seal in lapis wax, §10). **New names, not repaints of the red files**, so the game does not go half blue before the slice:
+  step 1 points `ParchmentLook` at them and may then delete `checkbox-ticked*.png` and `underline.png` if nothing else
+  wears them. ⚠️ No probe line yet — every probe lives in `Main.*`, the systems lane's; step 1's `ui colours:` checks each
+  of the four exists, loads at its master size and has mipmaps (the art lane checked exactly that headless, A216).
 
 ### 8.4 Cancel, the brush shape and the hotkeys
 
@@ -304,7 +308,7 @@ Cut from `main` after `slice/library-borrowing` merges. The art lane's files (§
 | Step | What | Probe / tests | Moves the suite? |
 |---|---|---|---|
 | 0 | Joe's calls answered here; the slice claimed | — | no |
-| 1 | **Red and lapis** — `ParchmentLook` roles, the pressed fonts and swash, `UiLook.Held`, the lapis seal and swashes wired | `ui colours:` no pressed / held / ticked style is rubric; every warning role still is | no |
+| 1 | **Red and lapis** — `ParchmentLook` roles, the pressed fonts and swash, `UiLook.Held`, the lapis seal and swashes wired (A216's four files) | `ui colours:` A216's four files load at their master size with mipmaps; no pressed / held / ticked style is rubric; every warning role still is | no |
 | 2 | **UI size** — `× 0.75`, the dial 75–150, settings v2 and its migration (and the windows' one-time reset, call 6) | `ui scale:` a v1 75 reads 100 and draws at 0.75; tests in `PlayerSettingsTests` | **yes** (`Kith.Sim`) |
 | 3 | **Windows** — the defaults (§9.1), the windows' column (§9.3), Settings' ticks gone | `windows:` the valley, log and Professions shown, the roster, Stock limits, Build queue hidden; every titled window has a button in the column | no |
 | 4 | **The strip** — one row; time beside the date, PAUSED gone; the dev bar (§7) | `bars:` one row at `+12,345` everywhere, ends left of the right column; `dev bar:` present in a debug build with 20× and both skips, and the strip holds no 20× | no |
