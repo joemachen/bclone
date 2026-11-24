@@ -137,6 +137,55 @@ public sealed partial class SimWorld
     }
 
     /// <summary>
+    /// ⭐ The household card's letters line (§5.4): who came and when kin may come again; an answer standing, and on what; the
+    /// letters written so far; letters off — or null when the household has nothing to say of letters. Derived, never stored.
+    /// </summary>
+    public string? SayTheHouseholdsLetters(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        if (household.KinId != 0 && !TheGenerationIsOpen(household) && FindVillager(household.KinId) is Villager kin)
+        {
+            Villager? writer = household.LetterWriterId == 0 ? null : FindVillager(household.LetterWriterId);
+            string at = writer is null ? "at a letter from home" : $"at {writer.Name}'s letter";
+            return $"{kin.Name} came up the valley in Year {SimClock.FromTick(kin.ArrivedAtTick, Config).Year}, {at}; kin may "
+                + $"come again from Year {KinMayComeAgainFrom(household)}.";
+        }
+
+        if (!LettersEnabled)
+        {
+            return household.LettersWritten > 0 || household.AnswerWaiting
+                ? "Letters to kin are off in the village — nobody writes, and nobody comes."
+                : null;
+        }
+
+        if (household.AnswerWaiting)
+        {
+            return WhatTheAnswerWaitsOn(household) switch
+            {
+                "a bed" => "A letter came back from kin in the lowlands — they will come when there is a bed in the house.",
+                "food to spare" => "A letter came back from kin in the lowlands — they will come when the village has food to spare.",
+                _ => "A letter came back from kin in the lowlands — they come at the season's turn.",
+            };
+        }
+
+        int letters = household.LettersWritten;
+        return letters == 0 ? null : $"Writing to kin in the lowlands — {letters} {(letters == 1 ? "letter" : "letters")} so far.";
+    }
+
+    /// <summary>
+    /// The person card's line for kin come by letter (§5.3a, Joe's addition 1) — <i>"Came up the valley in Year 43, at a letter
+    /// from the Hayward household — kin of theirs."</i> — or null for everybody else. The household's name as it is now.
+    /// </summary>
+    public string? SayWhoseKin(Villager villager)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        return villager.CameByLetterOf == 0 || FindHousehold(villager.CameByLetterOf) is not Household household
+            ? null
+            : $"Came up the valley in Year {SimClock.FromTick(villager.ArrivedAtTick, Config).Year}, at a letter from the "
+                + $"{household.Name} household — kin of theirs.";
+    }
+
+    /// <summary>
     /// ⭐ The letter, written at the writer's own door (§5.1–§5.2): the household's count rises, the generation's first is said
     /// once, and on the answering letter kin come — or the answer stands, said once. Paper brought home after the house stopped
     /// writing (letters off, an answer standing, kin come meanwhile) is put away uncounted. ⚠️ The bed is <b>not</b> asked here:

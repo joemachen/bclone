@@ -580,6 +580,7 @@ public partial class Main : Control
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
         GD.Print(TheWaterIsOnTheCards());
+        GD.Print(TheLettersAreOnTheCards());
         GD.Print(TheContentmentIsOnTheCard());
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());

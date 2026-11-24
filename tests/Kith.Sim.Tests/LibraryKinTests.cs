@@ -276,6 +276,48 @@ public sealed class LibraryKinTests
         Assert.Equal(0, world.KinMayComeAgainFrom(home));
     }
 
+    /// <summary>
+    /// ⭐ The cards' sentences (§5.4, step 3): the household's — nothing, writing, an answer waiting on a bed, then who came and
+    /// when kin may come again; letters off said; and the relative's own card line. Everybody else's is null.
+    /// </summary>
+    [Fact]
+    public void TheCardsSayTheLetters()
+    {
+        (_, SimWorld world, _) = LibraryBorrowingTests.AVillageWithALibrary(Config with { LettersAnsweredWithin = 1 });
+        (Household home, Villager writer) = AWritingHousehold(world);
+        Assert.Null(world.SayTheHouseholdsLetters(home));
+        Assert.Null(world.SayWhoseKin(writer));
+
+        // Posed, not written: which letter answers is the seed's, and a test that waits on it would sometimes skip this.
+        home.LettersWritten = 1;
+        Assert.Equal("Writing to kin in the lowlands — 1 letter so far.", world.SayTheHouseholdsLetters(home));
+        home.LettersWritten = 5;
+        Assert.Equal("Writing to kin in the lowlands — 5 letters so far.", world.SayTheHouseholdsLetters(home));
+        world.LettersEnabled = false;
+        Assert.Equal("Letters to kin are off in the village — nobody writes, and nobody comes.", world.SayTheHouseholdsLetters(home));
+        world.LettersEnabled = true;
+        home.LettersWritten = 0;
+
+        List<Villager> children = FillTheHouse(world, home);
+        GiveTheVillageFoodToSpare(world);
+        world.WriteALetter(writer);
+        Assert.Equal(
+            "A letter came back from kin in the lowlands — they will come when there is a bed in the house.",
+            world.SayTheHouseholdsLetters(home));
+
+        children[0].Alive = false;
+        world.HonourTheWaitingAnswers();
+        Villager kin = world.Villagers.Single(v => v.CameByLetterOf == home.Id);
+        int year = world.Clock.Year;
+        Assert.Equal(
+            $"{kin.Name} came up the valley in Year {year}, at {writer.Name}'s letter; kin may come again from Year "
+                + $"{year + world.Config.LettersGenerationYears}.",
+            world.SayTheHouseholdsLetters(home));
+        Assert.Equal(
+            $"Came up the valley in Year {year}, at a letter from the {home.Name} household — kin of theirs.",
+            world.SayWhoseKin(kin));
+    }
+
     /// <summary>The shipped numbers are Joe's (D865); the validator refuses a nought.</summary>
     [Fact]
     public void TheShippedAnswerNumbersAreJoesAndTheValidatorRefusesNought()

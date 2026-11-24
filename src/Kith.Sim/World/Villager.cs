@@ -412,7 +412,7 @@ public sealed class Villager
     /// household, which is all the kinship the sim keeps (there are no parent links); 0 for everybody else. Read by the cards
     /// alone. Saved and hashed sparsely.
     /// </summary>
-    public int CameByLetterOf { get; internal set; }
+    public int CameByLetterOf { get; set; }
 
     /// <summary>Evenings at the tavern this season (W3) — read at the season's turn by contentment, then cleared. Saved; hashed sparsely.</summary>
     public int TavernEveningsThisSeason { get; set; }

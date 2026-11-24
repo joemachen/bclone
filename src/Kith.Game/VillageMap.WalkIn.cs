@@ -93,7 +93,8 @@ public partial class VillageMap
     /// <summary>
     /// Look for arrivals since the last look and begin their walk-in — and for departures in the same window, and begin
     /// their walk out (5b). Called by the shell <b>before</b> it shows any moment — the map's own draw runs after the
-    /// moment panel would already be up. Returns whether a walk-in began (a walk out holds nothing, so it is not said).
+    /// moment panel would already be up. Returns whether a band's walk-in began (kin by letter walk in without holding the
+    /// village, D868; a walk out holds nothing, so it is not said).
     /// </summary>
     public bool WatchForArrivals(SimWorld world)
     {
@@ -197,10 +198,18 @@ public partial class VillageMap
         }
     }
 
-    /// <summary>The route a band walks in by: the cheapest edge tile, then the sim's own route from it to the camp. Empty when there is none.</summary>
-    internal static List<GridPos> WalkInRoute(SimWorld world)
+    /// <summary>
+    /// Where an arrival walks in to (D868): kin come by letter to their household's door (`library-borrowing.md §5.3`), everybody
+    /// else — a band, a re-founding — to the camp, as before.
+    /// </summary>
+    internal static GridPos WhereTheyWalkTo(SimWorld world, int id) =>
+        world.FindVillager(id) is { CameByLetterOf: not 0 } kin && world.FindHousehold(kin.CameByLetterOf)?.HomeTile is GridPos home
+            ? home
+            : world.BandCamp.ToTile();
+
+    /// <summary>The route an arrival walks in by: the cheapest edge tile, then the sim's own route from it to <paramref name="camp"/>. Empty when there is none.</summary>
+    internal static List<GridPos> WalkInRoute(SimWorld world, GridPos camp)
     {
-        GridPos camp = world.BandCamp.ToTile();
         var route = new List<GridPos>();
         if (EdgeNearest(world, camp) is not GridPos edge)
         {
@@ -223,17 +232,28 @@ public partial class VillageMap
         return route;
     }
 
-    /// <summary>Begin the walk-in for <paramref name="ids"/> along the valley's own route to the camp; false when there is no route and they appear at the camp as before.</summary>
+    /// <summary>
+    /// Begin the walk-in for <paramref name="ids"/>, one walk for each place they walk to (<see cref="WhereTheyWalkTo"/>), along
+    /// the valley's own route; anyone with no route appears where they stand, as before. Returns whether <b>a band's</b> walk
+    /// began — what holds the village at 1×. ⭐ Kin walk in quietly (D868): one relative up the valley is a household's news, said
+    /// in the log; a band is the village's, and stops it (D572).
+    /// </summary>
     private bool BeginWalkIn(SimWorld world, List<int> ids)
     {
-        List<GridPos> route = WalkInRoute(world);
-        if (route.Count == 0)
+        bool aBand = false;
+        foreach (IGrouping<GridPos, int> group in ids.GroupBy(id => WhereTheyWalkTo(world, id)))
         {
-            return false;
+            List<GridPos> route = WalkInRoute(world, group.Key);
+            if (route.Count == 0)
+            {
+                continue;
+            }
+
+            BeginWalkIn(route, group.ToList());
+            aBand |= group.Any(id => world.FindVillager(id) is not { CameByLetterOf: not 0 });
         }
 
-        BeginWalkIn(route, ids);
-        return true;
+        return aBand;
     }
 
     /// <summary>Begin a walk-in along <paramref name="route"/> for <paramref name="ids"/>, the lowest id leading — the live door and the probe's.</summary>
@@ -492,7 +512,7 @@ public partial class VillageMap
                 }
             }
 
-            List<GridPos> route = WalkInRoute(world);
+            List<GridPos> route = WalkInRoute(world, camp);
             if (route.Count == 0 || route[0] != start || route[^1] != camp)
             {
                 string ends = route.Count > 0 ? $"from {route[0]} to {route[^1]}" : "nowhere";
@@ -640,7 +660,7 @@ public partial class VillageMap
             if (walker is not null)
             {
                 int walkInsWere = _walkIns.Count;
-                BeginWalkIn(WalkInRoute(world), new List<int> { walker.Id });
+                BeginWalkIn(WalkInRoute(world, camp), new List<int> { walker.Id });
                 Vector2 drawn = DrawnCentre(walker);
                 Vector2 atTheEdge = ToScreen(from);
                 Villager? hit = VillagerAt(drawn);

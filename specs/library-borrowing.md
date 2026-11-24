@@ -1,6 +1,6 @@
 # Spec: The library's borrowing — letters to kin (and the almanac)
 
-> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
+> Status: **✅ EVERY CALL ANSWERED (D865, 2026-11-23) — Joe: *"All five calls as recommended. Defaults accepted, with two additions"* (§9, §5.3a, §5.4, §5.4a); 🔨 BUILDING, §7's order: ✅ step 1, the walk (D866); ✅ step 2, the answer and kin up the valley (D867); ✅ step 3, the view (D868).** *(Read "📏 MEASURED AND 📝 SPECCED (D864) — ⏸️ FIVE CALLS JOE'S (§9); NOTHING BUILT" until D865.)* Claimed on
 > `slice/library-borrowing` (D863), cut from `main` (`d3fa78a`). Joe's pick (2026-11-22, his brief, kept outside git and
 > recorded in D863): *"Go with letters to kin. Cap it: an arrival needs a spare bed in that household, and each household
 > gets at most one per generation. We can tune from there. Also do the almanac because why not?"* The instrument is
@@ -342,9 +342,21 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
    come (§5.3); a standing answer said once and kept; the generation clock; cleared on a new family. Guards: an answer on
    its hashed letter; refused by a full house, then by an empty larder, then honoured; never twice in a generation; the same
    seed the same relative; the conservation guard sees the 20 food come in; save and load mid-answer.
-3. **The view** — paper in hand (a stand-in until the art lane's), the household and person card lines, the library card's
+3. ✅ **The view** (D868) — paper in hand (a stand-in until the art lane's), the household and person card lines, the library card's
    switch, the walk-in. The
    probe gains a `library:` line (the card's sentence posed).
+   *As built (D868):* **paper in hand** is a small tilted sheet with two lines of ink, drawn at the walker's side opposite the
+   pail (`VillageMap.DrawThePaper`, the pail's kind of stand-in — `PersonPainter` is left to the art lane). **The cards** read
+   the sim's sentences on one new line, `Card.Letters`: the library's `SayTheLibrary` (amber when nobody can borrow, not when
+   letters are off — that is a choice), the household's `SayTheHouseholdsLetters` (*"Writing to kin in the lowlands — 5 letters
+   so far."* / *"A letter came back from kin in the lowlands — they will come when there is a bed in the house."*, amber /
+   *"Tamsin came up the valley in Year 43, at Hilde's letter; kin may come again from Year 67."* / letters off), and the
+   person's subtitle gains `SayWhoseKin` (*"Came up the valley in Year 43, at a letter from the Hayward household — kin of
+   theirs."* — the household's name as it is now). **The switch** is in the library card's Settings fold, *"Kin up the
+   valley: [Letters to kin: ON]"*, the full-store marker's shape. **The walk-in** now walks each arrival to where they stand
+   (`VillageMap.WhereTheyWalkTo`): kin to their household's door, a band to the camp as before. ⚠️ **Kin walk in without
+   holding the village at 1×** — one relative is a household's news, said in the log; a band is the village's and stops it
+   (D572). Joe's word changes that.
 4. **Measured again on his saves with the real code** (D855's shape): relatives, nomads, starved, people.
 5. **Joe plays it** — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
    line, a relative arrive; then the merge at his word.
