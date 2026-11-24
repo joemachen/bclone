@@ -1,6 +1,7 @@
 # The title's background: your newest village, aged like a painting (A228, A229)
 
-> **Status: ✍️ SPECCED AND MOCKED (A229, 2026-11-23); ⏸️ FOUR CALLS JOE'S (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✍️ SPECCED AND MOCKED (A229, 2026-11-23); round 1's looks turned down (*"the parchment looks like a quilt"*),
+> round 2 mocked (A230, §5a: (c) a manuscript page, (d) deeper watercolour); ⏸️ HIS CALLS (§9); NOTHING BUILT.** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -118,6 +119,46 @@ script moves into `tools/title-aged/` (outside the exported game and the suite) 
 shader (no layers) was weighed: crisper at 4K, no asset, but a port of the picked look rather than the look itself — it would need
 his eyes again. The bake stands at 2560; a 4K window draws it at 1.5×.
 
+## 5a. Round 2 (A230, 2026-11-24) — Joe: *"i dont really like any of them. the parchment looks like a quilt."*
+
+He asked: *"how to make it look more like a freeze-frame of the village captured in an ancient manuscript? Or, lean even deeper
+into the watercolor style?"*, with nine references: four illuminated leaves (a historiated initial on gold, a framed text page,
+a page in acanthus borders, a vellum leaf with penwork sprays) and five watercolours (a harbour, a valley town, a castle on a
+crag, a loose cottage vignette). **Round 1's (a) and (b) are withdrawn**: both laid an *effect* over a full-bleed map. Both new
+directions change **what the picture is**. Painted by `D:\Projects\brushes\title-snapshot\look2.py` (seed 230); nothing is
+copied from his references. Sheets: `title_snapshot_round2.jpg`, `title_snapshot_round2_detail.jpg`.
+
+### (c) A manuscript page — the village as its miniature
+
+- **The screen is a vellum leaf**: warm cream, a soft mottle, the skin's low cockle lit from the upper left, a sparse speckle of
+  follicles, the outer margin a shade darker from handling. The title's parchment panel lies on it as a second sheet.
+- **The village is a framed miniature** right of the panel (34–95 % of the width, 8–92 % of the height), the snapshot cropped
+  round the heart, a touch richer in colour, the leaf's grain through it. **The frame**, outside in: an ink line, a band of
+  burnished gold leaf (worn in places to the red bole), a lapis band with white tracery (a zigzag and dots), a vermilion fillet,
+  an ink line. **Corner bosses**: gold squares, each with a lapis quatrefoil and a vermilion heart.
+- **The margins: penwork** — an inked stem undulating along the top, bottom and right, a tendril spiralling off at every crest
+  ending in a flower, a leaf or a gold dot, leaves in verdigris, lapis, vermilion and rose, hairline sprigs with gold dots between.
+- **Built as:** the page, frame and margins are **one static picture** (`textures/ui/title/page-manuscript.png`), the snapshot
+  set into its window. ⚠️ The mock's penwork is procedural and reads a little mechanical up close; the built margins would be
+  **painted in Photoshop by script**, as every UI control is (`p2_chrome.jsx`'s way), with the mock's layout.
+
+### (d) Deeper watercolour — finished at the heart, loose to the paper
+
+- **Cold-press paper**, warm white, its tooth just visible.
+- **The village painted as a vignette**: the snapshot as it is at the heart (the houses, roads and people crisp); outward it
+  loosens into **flat washes** (the map brought down, its detail taken out by a median, so shapes keep their edges and lose their
+  texture), each wash's edge a shade darker where the pigment ran, the colour diluted toward the paper. **The edge** is a
+  ragged wet edge in places (dark where the pigment pooled as it dried) and feathered into the paper in others, shorter on the
+  panel's side so paper shows between them. **Granulation** in the paper's tooth, a few pale backruns, splatters of the village's
+  own colours flicked past the edge.
+- **Built as:** a canvas shader on the backdrop (`shaders/title_watercolour.gdshader`): the washes from the picture's own mip
+  levels, the edge, dilution and granulation from a baked mask and paper (`textures/ui/title/watercolour-mask.png`, paper tile).
+  Unlike (c), the washes depend on the picture, so they cannot be one static image. ⚠️ The mock's median washes are a
+  stand-in; the shader's will differ in detail and want his eyes again.
+
+**Both keep §2–§4 as written**: the picture taken at save time, one `title.jpg` a village, framed on the homes' middle, the
+season the save's own. The fallback (no picture) is the four seasons under the same treatment.
+
 ## 6. What Joe will see
 
 `.\run.bat`: the title opens over **his newest village with a home**, framed on its houses right of the panel, in the season he
@@ -158,7 +199,7 @@ and Joe can play it).
 
 ## 9. ⏸️ Joe's calls
 
-1. **The look.** ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
+1. ~~**The look.**~~ **Answered (A230): neither** — *"i dont really like any of them. the parchment looks like a quilt."* **Now the look of §5a:** ⭐ **(d) deeper watercolour** — it is the game's own medium carried further, the village stays the subject and fills the screen, and the paper's white sets off the parchment panel rather than repeating it. *Or:* **(c) a manuscript page** — the most "ancient", a frame and margins painted once and reused for every village, but the village is smaller inside its frame, and the panel is then a second parchment beside a vellum page. *(Round 1, kept for the record:)* ⭐ **(b) Aged parchment**, over the snapshot and over the four-seasons fallback. It is the map's own medium, so the
    picture and the parchment panel read as one object; its marks sit at the edges and folds, leaving the village clear. The oil's
    crack web lies over everything, and its dark lines are the same weight as the map's own ink (paths, fences, contours), so it
    competes with them, most in the village itself (`title_snapshot_detail.jpg`). *Or:* **(a) oil craquelure** — the closer match
