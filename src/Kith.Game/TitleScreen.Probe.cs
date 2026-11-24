@@ -15,7 +15,8 @@ public sealed partial class TitleScreen
         "the four seasons behind, covering the window, the village right of the panel at 16:10, 16:9 and 21:9; a parchment sheet docked left, Kith in the blackletter, the items in the heading face; with no save Continue and Load… "
         + "hidden and New village the red primary with the keyboard; over a save Continue the primary and New village plain; "
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
-        + "ticks as last left, a tick goes to the file, Back returns";
+        + "ticks as last left, a tick goes to the file, Back returns; Kith's seal centred above the name, its wax clear of it "
+        + "and inside the sheet, hidden where the paper cannot hold it";
 
     /// <summary>The settings this title reads and writes (the probe poses a second title with them).</summary>
     internal SimConfig Config => _config;
@@ -71,6 +72,7 @@ public sealed partial class TitleScreen
 
         faults.AddRange(TheSettingsWork());
         faults.AddRange(TheSeasonsBehind());
+        faults.AddRange(TheSealAbove());
         return faults;
     }
 
@@ -100,6 +102,45 @@ public sealed partial class TitleScreen
             {
                 yield return $"at {window.X:0} × {window.Y:0} the village lands at {at.X:0}, {at.Y:0} (want right of the {panel:0} px panel, inside the window)";
             }
+        }
+    }
+
+    /// <summary>
+    /// Kith's seal above the name (A223, `logo.md §7`): the logo's picture, shown at the probe's window, its wax centred on the
+    /// name, ending above the name's capitals and below the sheet's top margin; and hidden, never cut, where there is no room.
+    /// </summary>
+    private IEnumerable<string> TheSealAbove()
+    {
+        Texture2D? picture = Seal.Texture;
+        if (picture?.ResourcePath != SealPath || picture.GetWidth() != 512 || picture.GetHeight() != 512)
+        {
+            yield return $"the seal is {picture?.ResourcePath ?? "nothing"} at {picture?.GetWidth()} × {picture?.GetHeight()} (want {SealPath}, 512 × 512)";
+            yield break;
+        }
+
+        if (!Seal.IsVisibleInTree())
+        {
+            yield return $"the seal is hidden at {Size.X:0} × {Size.Y:0} (the name's top {TitleLabel.Position.Y:0} px down the column)";
+            yield break;
+        }
+
+        Rect2 box = Seal.GetGlobalRect(), name = TitleLabel.GetGlobalRect();
+        Rect2 inside = Band.GetGlobalRect().Grow(-Band.GetThemeStylebox("panel").GetMargin(Side.Top));
+        float waxTop = box.Position.Y + (SealWaxTop * box.Size.Y / SealBox), waxFoot = box.Position.Y + (SealWaxBottom * box.Size.Y / SealBox);
+        if (Mathf.Abs(box.GetCenter().X - name.GetCenter().X) > 1f || Mathf.Abs(box.Size.X - SealBox) > 0.5f)
+        {
+            yield return $"the seal's box is {box} (want {SealBox} square, centred on the name at {name.GetCenter().X:0})";
+        }
+
+        float caps = name.Position.Y + NameCapTop;
+        if (waxFoot > caps - 12f || waxFoot < caps - 30f || waxTop < inside.Position.Y)
+        {
+            yield return $"the seal's wax runs {waxTop:0}–{waxFoot:0} px (want below the sheet's margin at {inside.Position.Y:0}, and 12–30 px above the name's capitals at {caps:0})";
+        }
+
+        if (!SealFits(SealBox) || SealFits(SealBox - SealFoot - SealWaxTop))
+        {
+            yield return "a name with no paper above it would still wear the seal, or one with room would not";
         }
     }
 

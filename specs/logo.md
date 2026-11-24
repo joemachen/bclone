@@ -1,7 +1,7 @@
 # Kith's seal — the logo and the app icon
 
 **Status (A222, 2026-11-23): ✅ in the game on `art` — Joe took all three calls as recommended (*"Yes, as recommended"*);
-⏸️ his eyes on the taskbar and window icon (`.\run.bat`), then the merge at his word.** Claimed A220, painted A221.
+✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). ⏸️ His eyes on the title, then the merge at his word.** Claimed A220, painted A221.
 
 Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
 **a K pressed into the game's own painted seal**, not a new one.
@@ -78,3 +78,21 @@ icon is the `.ico` when one is made.
 - **A wordmark lockup** — "Kith" in Grenze Gotisch beside the seal, for store pages and trailers. At Joe's word.
 - **The splash** (`screens/splash.png`, A104) carries the blank seal, *"the name goes on when it is chosen"*. Not wired,
   so not repainted here.
+
+## 7. On the title (A223) — Joe: *"i also want to see it here in the main menu somewhere"*, then *"A, above the name"*
+
+Mocked two ways on his own screenshot (`D:\Projects\brushes\logo\title_a223.jpg`: A above the name, B pressed onto the
+rule under it; a third, beside the name, was the wordmark lockup and left off). Built as A, in `TitleScreen.cs` (outside
+the lane's table; his pick was the OK, as it was put to him — the art lane built this panel in A180 and A190):
+
+- **A child of the name, outside the column's layout,** so the name and the menu stand exactly where they stood (the
+  capture's capitals are on the same line with and without it). `seal-k.png` at a 118 px box — its wax 88 px — centred
+  on the name, the wax ending **20 px above the capitals**, as the mock had it. The blackletter at 96 px carries a 46 px
+  empty band above its capitals (`NameCapTop`), so the first build's foot left 45 px between them and was moved down.
+- **Hidden, never cut, on a short window:** shown only while the paper above the name holds the wax and 8 px clear
+  (`SealFits`, on the name's move — never per frame). It goes with the menu on the Settings page.
+- **Probe** (`title:` line, `TitleScreen.Probe.cs`): the picture is `seal-k.png` at 512, shown at the probe's window,
+  its box 118 square and centred on the name within 1 px, its wax inside the sheet's margin and 12–30 px above the
+  capitals, and the fit rule's two sides. **Red-checked (D326): the foot moved onto the capitals (43 → 80) — 1 ❌, the
+  wax line, and nothing else**; restored by reverse `sed`.
+- Captures (the game's own, 1280 × 800 at 1.8 × on his second screen): `D:\Projects\brushes\logo\title_capture\`.

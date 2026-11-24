@@ -195,6 +195,12 @@ the composite (part 3).
   and 2560 × 1080. **Red-check: 4 mutants, 3 red; one zero written down — the cover rule swapped for fit-inside (`WhereTheVillageLands` mirrors Godot's rule rather than reading it, and the village stays in view either way; the renders are its evidence).**
 - **The four checks:** view build 0 warnings; probe 181 lines, 142 ✅, 0 ⛔, bar 183, `title:` ✅, `done.`; goldens 461, none moved; **suite skipped by D846's rule** (no sim, data or test file differs from `main`, nor from `29658ad`, its last green 2231 / 0 / 5). Renders: `D:\Projects\brushes\title-menu\title_four_seasons.jpg`.
 
+## 4c. ✅ Kith's seal above the name (A223, 2026-11-23) — Joe: *"A, above the name"*
+
+The logo (`textures/ui/screens/seal-k.png`, A220–A222) over the panel's paper above *Kith*, a child of the name outside
+the column's layout so nothing in the menu moves; hidden where the paper cannot hold it. `specs/logo.md §7` has the
+numbers and the probe's checks.
+
 ## 5. Order of work
 
 1. ⏸️ His calls (§7). 2. **Part 1** built, the four checks, the renders — ⏸️ **his play**. 3. He plays his save to maturity
