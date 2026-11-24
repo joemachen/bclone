@@ -110,6 +110,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. | ticked, disabled (45 %) |
 | `controls/grip.png` | 10 × 14 | 40 × 56 | Two columns of three ink dots (today's `⋮⋮`). | normal, hover |
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
+| `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. Not wired until `slice/hud`. | pinned |
 | `controls/close.png` | 14 × 14 | 56 × 56 | A pen cross (today's `✕`). | normal, hover (rubric) |
 | `controls/find.png` | 14 × 14 | 56 × 56 | A ringed eye, or a magnifying lens. | normal, hover |
 | `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | **An arrow to or from a pen line** (the sheet's edge): folding up / unfolding — no roll (A115). | normal, hover |
@@ -269,7 +270,7 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 | Set | Files |
 |---|---|
 | Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
-| Controls | 16 pieces, ~30 files with states (+4, A216: the lapis and gold swashes, the lapis seal) |
+| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin) |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |
