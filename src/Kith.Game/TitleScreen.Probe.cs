@@ -16,7 +16,8 @@ public sealed partial class TitleScreen
         + "hidden and New village the red primary with the keyboard; over a save Continue the primary and New village plain; "
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
         + "ticks as last left, a tick goes to the file, Back returns; Kith's seal centred above the name, its wax clear of it "
-        + "and inside the sheet, hidden where the paper cannot hold it";
+        + "and inside the sheet, hidden where the paper cannot hold it; the primary a slab of the seal's wax in its six states, "
+        + "its focus the slab's edge inked heavier and clear of the word";
 
     /// <summary>The settings this title reads and writes (the probe poses a second title with them).</summary>
     internal SimConfig Config => _config;
@@ -73,6 +74,7 @@ public sealed partial class TitleScreen
         faults.AddRange(TheSettingsWork());
         faults.AddRange(TheSeasonsBehind());
         faults.AddRange(TheSealAbove());
+        faults.AddRange(TheWaxButton());
         return faults;
     }
 
@@ -142,6 +144,87 @@ public sealed partial class TitleScreen
         {
             yield return "a name with no paper above it would still wear the seal, or one with room would not";
         }
+    }
+
+    /// <summary>
+    /// The primary as wax (A224, `logo.md §8`): every state a painted patch of its own file at the master size with mipmaps,
+    /// reaching past the box; focus the edge alone — clear where the word sits, so it never covers it.
+    /// </summary>
+    private IEnumerable<string> TheWaxButton()
+    {
+        foreach ((string state, string file) in new[]
+        {
+            ("normal", "normal"), ("hover", "hover"), ("pressed", "pressed"), ("hover_pressed", "pressed"), ("disabled", "disabled"), ("focus", "focus"),
+        })
+        {
+            string want = ParchmentLook.WaxButton.GetFile() + file + ".png";
+            if (PrimaryItem.GetThemeStylebox(state) is not PaintedPatch { Texture: { } wax } patch || wax.ResourcePath.GetFile() != want)
+            {
+                yield return $"the primary's {state} is not {want}";
+                continue;
+            }
+
+            if (wax.GetWidth() != 1064 || wax.GetHeight() != 248 || wax.GetImage() is not { } image || !image.HasMipmaps())
+            {
+                yield return $"{want} is {wax.GetWidth()} × {wax.GetHeight()} (want 1064 × 248, with mipmaps)";
+                continue;
+            }
+
+            if (patch.Outset != new Vector4(ParchmentLook.WaxOutset, ParchmentLook.WaxOutset, ParchmentLook.WaxOutset, ParchmentLook.WaxOutset))
+            {
+                yield return $"the primary's {state} wax reaches {patch.Outset} past its box (want {ParchmentLook.WaxOutset} each side)";
+            }
+
+            if (file == "focus")
+            {
+                Image ring = image.IsCompressed() ? (Image)image.Duplicate() : image;
+                if (ring.IsCompressed())
+                {
+                    ring.Decompress();
+                }
+
+                float most = 0f;
+                for (int y = 85; y < 165; y += 4)
+                {
+                    for (int x = 150; x < 914; x += 8)
+                    {
+                        most = Mathf.Max(most, ring.GetPixel(x, y).A);
+                    }
+                }
+
+                if (most > 0.02f)
+                {
+                    yield return $"the focus painting covers the word (alpha {most:F2} where it sits)";
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pure of the screen: the wax behind the primary's word — the colour at the lightest tenth of the painted field where the
+    /// word sits (master px 150–914 across, 85–165 down), so a word that reads there reads on all of it but its glints.
+    /// </summary>
+    internal static Color WaxGround(string file)
+    {
+        Image image = GD.Load<Texture2D>("res://textures/ui/" + ParchmentLook.WaxButton + file + ".png").GetImage();
+        if (image.IsCompressed())
+        {
+            image = (Image)image.Duplicate();
+            image.Decompress();
+        }
+
+        var field = new List<(float Lum, Color Colour)>();
+        for (int y = 85; y < 165; y += 2)
+        {
+            for (int x = 150; x < 914; x += 2)
+            {
+                Color c = image.GetPixel(x, y);
+                field.Add(((0.2126f * c.R) + (0.7152f * c.G) + (0.0722f * c.B), c));
+            }
+        }
+
+        field.Sort((a, b) => a.Lum.CompareTo(b.Lum));
+        return field[(int)(field.Count * 0.9f)].Colour with { A = 1f };
     }
 
     /// <summary>The checks on a title posed over a save, already in the tree.</summary>
@@ -219,7 +302,12 @@ public sealed partial class TitleScreen
         {
             if (item == title.PrimaryItem)
             {
-                words.Add((item.Text, item.GetThemeColor("font_color"), ParchmentLook.Rubric));
+                // On the wax (A224): the lightest tenth of the painted field where the word sits, in every state it is read in.
+                foreach ((string file, string colour) in new[] { ("normal", "font_color"), ("hover", "font_hover_color"), ("pressed", "font_pressed_color") })
+                {
+                    words.Add(($"{item.Text} on the {file} wax", item.GetThemeColor(colour), WaxGround(file)));
+                }
+
                 continue;
             }
 

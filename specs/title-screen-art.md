@@ -199,7 +199,8 @@ the composite (part 3).
 
 The logo (`textures/ui/screens/seal-k.png`, A220–A222) over the panel's paper above *Kith*, a child of the name outside
 the column's layout so nothing in the menu moves; hidden where the paper cannot hold it. `specs/logo.md §7` has the
-numbers and the probe's checks.
+numbers and the probe's checks. **A224:** the primary (Continue / New village) is now a slab of the seal's wax, its focus
+the slab's edge inked heavier in place of A180's ink box (`logo.md §8`).
 
 ## 5. Order of work
 

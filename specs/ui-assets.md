@@ -108,6 +108,7 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. | — |
 | `controls/underline-lapis.png` · `underline-gold.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **The same swash in lapis** (`#30488c`, held and on) **and in gold leaf** (`#c4983e`, new until clicked) — `hud.md §8.3, §10` (A216). Painted by `p2_controls.jsx`, the underline's own stroke and dry brush; not wired until `slice/hud`. | — |
 | `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. | ticked, disabled (45 %) |
+| `controls/button-wax-normal.png` · `-hover` · `-pressed` · `-focus` · `-disabled` | 9-patch, 250 × 46 drawn | 1064 × 248 (4 ×), margins 150 / 100 / 150 / 100, reaching 8 px past the box | **The primary button as a slab of the seal's wax** (A224, `logo.md §8`) — the seal's recipe on a long pour, the word in a pressed field; hover warms the wax, pressed turns its light over, *focus* is the slab's edge inked heavier alone (drawn over the state), disabled at 45 %. Every red primary: the title's and the new valley's *Found*. | normal, hover, pressed, focus, disabled |
 | `controls/grip.png` | 10 × 14 | 40 × 56 | Two columns of three ink dots (today's `⋮⋮`). | normal, hover |
 | `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
 | `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. Not wired until `slice/hud`. | pinned |
@@ -271,7 +272,7 @@ founder — counted when `town-hall.md`'s slices 2–4 are specced).
 | Set | Files |
 |---|---|
 | Chrome | 5 (+ 4 optional washes) — A114: 4 sheets and the slip |
-| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin) |
+| Controls | 16 pieces, ~30 files with states (+5, A216–A217: the lapis and gold swashes, the lapis seal, the lapis pin; +5, A224: the wax button) |
 | Goods | 16 |
 | Buildings | 29 × 2 states = 58 |
 | Trades | 18 |

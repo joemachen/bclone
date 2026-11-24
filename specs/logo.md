@@ -1,7 +1,7 @@
 # Kith's seal — the logo and the app icon
 
 **Status (A222, 2026-11-23): ✅ in the game on `art` — Joe took all three calls as recommended (*"Yes, as recommended"*);
-✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). ⏸️ His eyes on the title, then the merge at his word.** Claimed A220, painted A221.
+✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). **A224: the red primary button in wax** (§8, *"Yes, build it"*). ⏸️ His eyes on the title, then the merge at his word.** Claimed A220, painted A221.
 
 Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
 **a K pressed into the game's own painted seal**, not a new one.
@@ -96,3 +96,31 @@ the lane's table; his pick was the OK, as it was put to him — the art lane bui
   capitals, and the fit rule's two sides. **Red-checked (D326): the foot moved onto the capitals (43 → 80) — 1 ❌, the
   wax line, and nothing else**; restored by reverse `sed`.
 - Captures (the game's own, 1280 × 800 at 1.8 × on his second screen): `D:\Projects\brushes\logo\title_capture\`.
+
+## 8. The primary button in wax (A224) — Joe: *"can we make the button look 'wax-y' too? or at least mock it"*, then *"Yes, build it"*
+
+He asked first whether Continue was the seal's colour: nearly — the button was the flat rubric `#9b2d1f`, the wax is poured
+`#9a2418` and painted lit and shaded, so it reads darker (about `#72231a` on his screen). Mocked by the game itself (a
+throwaway theme change, put back), then built:
+
+- **Painted** by the seal's recipe on a long pour (`D:\Projects\brushes\logo\wax_button.jsx`, seed 224,
+  PSDs in `button\psd\`): wax `#9a2418`, light screened upper left, shade multiplied lower right, Sketch Paper and
+  the mottle, lumpy ends, drips off the foot, and the word in a pressed field like the seal's ring. Five files in
+  `textures/ui/controls/` (`ui-assets.md §3`): normal, hover (the wax warmed), pressed (its light turned over, as a seal
+  pressed in), focus (the slab's edge inked heavier **alone** — Godot draws the focus box over the state, so it never
+  covers the word), disabled (45 %).
+- **Every red primary** wears it — the title's and the new valley's *Found*, one style (`ParchmentLook.cs`, outside the
+  lane's table; his *"Yes, build it"* to the plan that named it). A180's ink box round the focused title button is gone:
+  it sat square round a lumpy slab.
+- **9-patch:** margins 150 / 100 / 150 / 100 master px hold every lump, drip, the glint and the field's round ends, so a
+  wider button stretches plain wax; it reaches 8 px past its box. The word keeps 22 px from the ends, 9 above and below:
+  at 16 / 6, *Found* (40 px tall) squeezed the field until "village" crossed its rim and its F met the field's curve.
+  The title's button is unchanged (its 46 px minimum); *Found* grew to 46, and 12 px wider — **the new valley's column
+  wants 383 px, was 371** (the probe's `new game:` line, still ✅).
+- **The words:** paper `#f6ecd8` on the wax — the lightest tenth of the field where the word sits measures 6.3 : 1 on the
+  capture, 8.9 typical (the flat rubric was 6.4).
+- **Probe** (`title:` line): every state a painted patch of its own file at 1064 × 248 with mipmaps, reaching 8 px; the
+  focus painting clear where the word sits; the word read against the lightest tenth of the painted field in the
+  normal, hover and pressed wax (`WaxGround`, measured off the painting, not a constant). **Red-checked: focus given the
+  whole slab — 1 ❌ (its file); ink words on the wax — 1 ❌ (1.70 : 1).** Each restored by reverse `sed`.
+- Captures: `D:\Projects\brushes\logo\button\capture4\` (the title over his save, focused and not; the new valley).
