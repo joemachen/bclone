@@ -236,6 +236,7 @@ public partial class Main
         if (_frameCounter is not null)
         {
             UiLook.Figures(_frameCounter);
+            _frameCounter.MouseFilter = Control.MouseFilterEnum.Pass; // its tooltip holds the whole readout (D883)
             RemoveChild(_frameCounter);
             _frameCounter.Position = Vector2.Zero;
             body.AddChild(_frameCounter);

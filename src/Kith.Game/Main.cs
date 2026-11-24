@@ -8648,10 +8648,13 @@ public partial class Main : Control
 
         // ⭐⭐ AND THE WHOLE FRAME, ON ITS OWN ROW (D528). The row above times the sim step and a smoothed draw;
         // neither can see one long frame, which is what moves every dot at once.
-        _frameCounter.Text =
+        // ⭐ Short on the dev bar, whole in its tooltip (D883): the two full lines stood the bar ~900 px wide at 2560.
+        string dropped = _driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty;
+        _frameCounter.Text = $"{Engine.GetFramesPerSecond()} fps  ·  {_ticksThisFrame} tick/frame{dropped}";
+        _frameCounter.TooltipText =
             $"{Engine.GetFramesPerSecond()} fps  ·  {_map.ZoneTrianglesLastFrame} zone tris  ·  {_map.LastFrame}"
             + $"  ·  {_ticksThisFrame} tick/frame, {caughtUp}, slowest step {_slowestStepMs:F1}ms"
-            + (_driver.DroppedTickCount > 0 ? $"  ·  ⛔ {_driver.DroppedTickCount} dropped" : string.Empty)
+            + dropped
             + $"\n{_frameWatch.Summary}";
     }
 

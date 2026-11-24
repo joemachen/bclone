@@ -17,9 +17,10 @@ public partial class Main
 {
     /// <summary>
     /// ⭐ THE BAR'S PINNED HEIGHT, logical px — measured at D879, one row in every state (a flyout is not the bar), and
-    /// asserted by <c>bar height:</c>. <c>CLAUDE.md</c>'s line carries it. Was 183 (three rows and a hint line) to D878.
+    /// asserted by <c>bar height:</c>. <c>CLAUDE.md</c>'s line carries it. Was 183 (three rows and a hint line) to D878;
+    /// 104 at D879 with its words in the heading face, 110 since D883 in the body face (narrower by a third, taller by 6).
     /// </summary>
-    private const float ToolBarHeight = 104f;
+    private const float ToolBarHeight = 110f;
 
     private PanelContainer _toolBarPanel = null!;
     private HBoxContainer _toolBarRow = null!;
@@ -155,7 +156,9 @@ public partial class Main
         _map.BrushChanged += RelabelTheBrush;
         RelabelTheBrush();
 
-        UiLook.HeadersIn(_toolBarRow);
+        // ⚠️ The body face, not the headers' (D883): set in Metamorphous the row stood 104 logical and 1,160 px wide at
+        // 2560, twice the mock's, and the at-rest screen measured 22.5 % against the spec's 16. The old strip's buttons were
+        // body text too (A120 made only the old main row of tabs headers).
         RefreshTheStrip();
 
         // ⛔⛔ NO BUTTON MAY KEEP KEYBOARD FOCUS (D706): a focused button fires on Space's release.
