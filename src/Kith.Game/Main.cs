@@ -355,6 +355,7 @@ public partial class Main : Control
         _halted = true;
         _driver.SpeedMultiplier = 0.0;
         _speedLabel.Text = "STOPPED";
+        _speedLabel.Visible = true;
 
         string sentence = TheVillageStoppedBecause(fault);
         _villageLog.AppendText(
@@ -592,6 +593,7 @@ public partial class Main : Control
         GD.Print(TheFarmSaysWhatItGrows());
         GD.Print(TheTreeHoldsItsShape());
         GD.Print(TheBarsHoldTheirShape());
+        GD.Print(TheDevBarHoldsTheDebugTools());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
         GD.Print(TheWindowIsFullScreenByDefault());
         GD.Print(F5SavesAndF7SaysWhenThereIsNothing());
@@ -1471,78 +1473,6 @@ public partial class Main : Control
             : $"[widths] full screen: ⛔ {string.Join("; ", faults)}";
     }
 
-    private string TheBarsHoldTheirShape()
-    {
-        Refresh();
-        ForceUpdateTransform();
-        Vector2 before = _topBar.GetCombinedMinimumSize();
-        Vector2 popupBefore = _morePopup.GetContentsMinimumSize();
-
-        var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _inSchoolCell, _eldersCell, _onTheGround };
-        foreach ((Goods _, Label held) in _goodsReadouts)
-        {
-            cells.Add(held);
-        }
-
-        foreach (Label cell in cells)
-        {
-            cell.Text = "+12,345";
-        }
-
-        // ⚠ in every limit slot as well (D409): the mark comes and goes, and the bar must not move.
-        foreach ((Goods _, Label mark) in _limitMarks)
-        {
-            mark.Text = "⚠";
-        }
-
-        string clockWas = _clockLabel.Text;
-        _clockLabel.Text = $"{_loop.World.Name}   ·   Day 30, Autumn, Year 1234   ·   99 households";
-        string unhousedWas = _unhousedLabel.Text;
-        _unhousedLabel.Text = "12,345 unhoused";
-
-        ForceUpdateTransform();
-        Vector2 after = _topBar.GetCombinedMinimumSize();
-        Vector2 popupAfter = _morePopup.GetContentsMinimumSize();
-
-        _clockLabel.Text = clockWas;
-        _unhousedLabel.Text = unhousedWas;
-        Refresh();
-
-        float barEnds = Edge + (after.X * _uiScale);
-        float columnBegins = 1280f - Edge - DefaultPanelWidth;
-        string where = $"the bar ends at {barEnds:F0}px and the right column begins at {columnBegins:F0}px at {_uiScale * 100f:F0}%";
-
-        if (!before.IsEqualApprox(after))
-        {
-            return $"[widths] bars: ⛔ posing every cell at +12,345 moves the bar {before.X:F0}x{before.Y:F0} → {after.X:F0}x{after.Y:F0}";
-        }
-
-        if (!popupBefore.IsEqualApprox(popupAfter))
-        {
-            return $"[widths] bars: ⛔ posing the popup's rows moves it {popupBefore.X:F0}x{popupBefore.Y:F0} → {popupAfter.X:F0}x{popupAfter.Y:F0}";
-        }
-
-        // ⭐ Where they meet, the right column starts under the bars (A113) — measured by the same rule the layout uses.
-        bool meets = TheBarMeetsTheRightColumn(after.X, 1280f);
-        float highest = float.MaxValue;
-        foreach ((PanelContainer panel, bool right) in _docked)
-        {
-            highest = right && panel.Visible ? Mathf.Min(highest, panel.Position.Y) : highest;
-        }
-
-        if (meets && highest < TopOfTheLeftColumn() - 1f)
-        {
-            return $"[widths] bars: ⛔ {where} — they meet, and a right-column window still starts at {highest:F0}px, above the bars' foot at {TopOfTheLeftColumn():F0}px";
-        }
-
-        return barEnds < columnBegins
-            ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}"
-            : meets
-                ? $"[widths] bars: ✅ {cells.Count} cells posed at +12,345 and the bar stays {after.X:F0}x{after.Y:F0}; {where}, so the "
-                  + $"right column starts under the bars, at {TopOfTheLeftColumn():F0}px"
-                : $"[widths] bars: ⛔ {where} — the bar runs under the right column";
-    }
-
     /// <summary>
     /// The error boundary, posed — <b>a throw the sim never made, handed to the handler, and the
     /// sentence it produces</b> (D364). Last, because it stops the village.
@@ -2336,7 +2266,7 @@ public partial class Main : Control
 
         switch (key.Keycode)
         {
-            case Key.Space: SetSpeed(_driver.IsPaused ? 1.0 : 0.0); break;
+            case Key.Space: SetSpeed(_driver.IsPaused ? _resumeSpeed : 0.0); break;
             case Key.Key1: SetSpeed(1.0); break;
             case Key.Key2: SetSpeed(2.0); break;
             case Key.Key3: SetSpeed(4.0); break;
@@ -2344,7 +2274,7 @@ public partial class Main : Control
 
             // ⭐ 5 IS 20x (D706, Joe: *"1x = 1, 2x = 2, 4x = 3, 10x = 4, 20x = 5"*). The 20x button has
             // been on the bar since 2026-08-29; the key was the one missing from the row.
-            case Key.Key5: SetSpeed(20.0); break;
+            case Key.Key5 when OS.IsDebugBuild(): SetSpeed(20.0); break; // the dev bar's (hud.md §7, A212)
             case Key.Tab: CycleDetail(); break;
             case Key.P: ToggleWear(); break;
 
@@ -3366,7 +3296,12 @@ public partial class Main : Control
         }
 
         _driver.SpeedMultiplier = multiplier;
-        _speedLabel.Text = _driver.IsPaused ? "PAUSED" : $"{_driver.SpeedMultiplier:0.#}x";
+        if (multiplier > 0.0)
+        {
+            _resumeSpeed = multiplier;
+        }
+
+        HoldTheSpeed();
     }
 
     // ---------------------------------------------------------------
@@ -3467,7 +3402,9 @@ public partial class Main : Control
             unhoused == 1
                 ? "1 person has no roof and the painted land is full — paint more housing"
                 : $"{unhoused} people have no roof and the painted land is full — paint more housing");
-        _clockLabel.Text = $"{world.Name}   ·   {world.Clock}   ·   {LivingHouseholds(world)} households";
+        _clockLabel.Text = world.Clock.ToString();
+        _householdsLabel.Text = $"·  {LivingHouseholds(world)} households";
+        ShowTheSeason(world.Clock.Season);
         if (_nomadsTick.ButtonPressed != world.NomadsEnabled)
         {
             _nomadsTick.SetPressedNoSignal(world.NomadsEnabled);
@@ -4621,6 +4558,7 @@ public partial class Main : Control
         BuildSettingsPanel();
         BuildControlPanel();
         BuildTheWindowsColumn();
+        BuildTheDevBar();
 
         // ⭐ START PAUSED (Joe, 2026-08-25): the player unpauses to begin. It was 1.0, so
         // the valley started running the moment the window appeared — and the founding is
@@ -4688,12 +4626,23 @@ public partial class Main : Control
         _topBar = _panels[^1];
         _topBar.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
 
-        var boxes = new HBoxContainer();
-        boxes.AddThemeConstantOverride("separation", 10);
-        body.AddChild(boxes);
+        // ⭐ THE STRIP (hud.md §6, D877): one slip, its groups in a flow — name and time, the goods, the people, the nomads
+        // switch — that wraps a whole group onto a second line only when one line would reach the right column (Joe:
+        // "Wrap to two lines"). Its width is set where the window, the scale or a cell's showing changes (`FitTheStrip`).
+        _stripSlip = new PanelContainer();
+        _stripSlip.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
+        body.AddChild(_stripSlip);
 
-        boxes.AddChild(BuildResourcesBox());
-        boxes.AddChild(BuildVillagersBox());
+        _topStrip = new HFlowContainer();
+        _topStrip.AddThemeConstantOverride("h_separation", StripGap);
+        _topStrip.AddThemeConstantOverride("v_separation", 3);
+        _stripSlip.AddChild(_topStrip);
+
+        _topStrip.AddChild(BuildTheNameAndTime());
+        _topStrip.AddChild(BuildResourcesBox());
+        _topStrip.AddChild(BuildVillagersBox());
+        _topStrip.AddChild(BuildTheNomadsSwitch());
+        RefuseKeyboardFocus(_topStrip);
     }
 
     /// <summary>The bar itself, for the probe and for whatever has to sit below it.</summary>
@@ -4719,34 +4668,21 @@ public partial class Main : Control
         new[] { Goods.Logs, Goods.Firewood, Goods.Stone, Goods.Iron, Goods.Tools },
     };
 
-    private PanelContainer BuildResourcesBox()
+    /// <summary>The strip's goods (hud.md §6.2): every good on the front in `BarRows`' order, then <c>more ▾</c> — one group.</summary>
+    private HBoxContainer BuildResourcesBox()
     {
         SimWorld world = _loop.World;
-        var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
-
-        var rows = new VBoxContainer();
-        rows.AddThemeConstantOverride("separation", 3);
-        box.AddChild(rows);
-
-        // ⛔ The four foods, each on its own — no "food" umbrella before them (D410, Joe's word;
-        // it was D394's total). Each has its own limit and its own ⚠ (D409).
-        HBoxContainer first = BarRow();
-        rows.AddChild(first);
-        foreach (Goods goods in BarRows[0])
+        HBoxContainer goods = BarRow();
+        foreach (Goods[] row in BarRows)
         {
-            AddGoodsCell(first, world, goods);
+            foreach (Goods good in row)
+            {
+                AddGoodsCell(goods, world, good);
+            }
         }
 
-        HBoxContainer second = BarRow();
-        rows.AddChild(second);
-        foreach (Goods goods in BarRows[1])
-        {
-            AddGoodsCell(second, world, goods);
-        }
-
-        second.AddChild(BuildTheMoreButton(world));
-        return box;
+        goods.AddChild(BuildTheMoreButton(world));
+        return goods;
     }
 
     private static HBoxContainer BarRow()
@@ -4902,68 +4838,45 @@ public partial class Main : Control
     /// are the map's own villager colours, so a child on the bar and a child in the valley are
     /// one fact.
     /// </remarks>
-    private PanelContainer BuildVillagersBox()
+    private HBoxContainer BuildVillagersBox()
     {
-        var box = new PanelContainer();
-        box.AddThemeStyleboxOverride("panel", UiLook.TopBox(0.94f));
-
-        var lines = new VBoxContainer();
-        lines.AddThemeConstantOverride("separation", 3);
-        box.AddChild(lines);
-
         HBoxContainer counts = BarRow();
-        lines.AddChild(counts);
         _populationCell = AddBarCell(counts, WorldChip(VillageMap.AdultColour), "villagers", HeadcountWidth);
         _adultsCell = AddBarCell(counts, null, "adults", HeadcountWidth);
         _childrenCell = AddBarCell(counts, WorldChip(VillageMap.ChildColour), "children", HeadcountWidth);
 
-        // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5: "maybe children / in school once schools are the player's"
-        // — "Yes, add it", D817), where the laborers' cell was: the bar keeps five headcounts and its width.
-        _inSchoolCell = AddBarCell(counts, null, "students", HeadcountWidth);  // Joe: "rename in school to students"
+        // ⭐ AND HOW MANY OF THEM ARE AT SCHOOL (Joe's play note 5, D817) — "students" (his word).
+        _inSchoolCell = AddBarCell(counts, null, "students", HeadcountWidth);
         _eldersCell = AddBarCell(counts, WorldChip(VillageMap.ElderColour), "elders", HeadcountWidth);
 
-        // The valley's name is the one word that says which run you are watching — derived
-        // from the seed, not drawn from it (`SimWorld.Name`). The tick left this line for the
-        // seed line in Settings: it is a bug report's number, not a player's.
-        var second = new HBoxContainer();
-        second.AddThemeConstantOverride("separation", 0);
-        _clockLabel = Muted(string.Empty);
-        second.AddChild(_clockLabel);
+        // Households beside the people since the strip (hud.md §6.4); they were on the clock's line.
+        _householdsLabel = Muted(string.Empty);
+        counts.AddChild(_householdsLabel);
 
-        // ⭐ THE STANDING UNHOUSED WARNING (D571; Joe, D568: *"the game should indicate to the user that there are
-        // unhoused people and not enough room to build homes"*) — on the households' line, not a sixth cell: a sixth
-        // cell ran the bar 72px under the right column at 75 % (the probe's `bars:` line caught it). The count is
-        // always shown; it lights amber only when the sim has said there is nowhere to build
-        // (`NeedsMoreResidentialLand`, the latch `HouseTheRoofless` sets and clears) — a family with a site being
-        // raised is a number, not a warning.
-        lines.AddChild(second);
-
-        // ⭐ A THIRD LINE (D572): the unhoused count and the Nomads tick. Not on the second line — with the tick there the
-        // households line outgrew the counts row and the bar ran under the right column at the probe's widest pose
-        // (`bars:` 1268 → 1343); a line costs the bar height, never width.
-        var third = new HBoxContainer();
-        third.AddThemeConstantOverride("separation", 0);
+        // ⭐ THE STANDING UNHOUSED COUNT (D571; Joe, D568) — faint until there is nowhere left to build, then ink with its
+        // tooltip (`NeedsMoreResidentialLand`): a family with a site being raised is a number, not a warning.
         _unhousedLabel = Muted(string.Empty);
-        third.AddChild(_unhousedLabel);
+        counts.AddChild(_unhousedLabel);
+        return counts;
+    }
 
-        // ⭐ THE NOMADS TICK (Joe, D568 → D572: *"if nomads are on, that is the permission … there should be a toggle
-        // in the UI in the top info bar that already houses population info. not buried in settings"*). The village's
-        // own switch, exactly as share-out: hashed when off, saved with the village, started from the new-game row;
-        // never a setting (`settings-persistence.md §3`), so not hooked to SettingsChanged. `Refresh` keeps it reading
-        // the world, so a load shows the save's.
-        third.AddChild(Muted("   ·   "));
+    /// <summary>
+    /// ⭐ THE NOMADS SWITCH (Joe, D568 → D572), the strip's last group (hud.md §6 item 5, A207: <i>"keep nomads toggle in top
+    /// bar"</i>). The village's own switch: hashed when off, saved with the village, never a setting.
+    /// </summary>
+    private HBoxContainer BuildTheNomadsSwitch()
+    {
+        var group = new HBoxContainer();
         _nomadsTick = new CheckBox
         {
-            Text = "nomads may come to the valley",
+            Text = "nomads may come",
             ButtonPressed = true,
             TooltipText = "Bands of nomads come up the valley every few years and settle here. Off: nobody comes, and an empty valley is never found again.",
         };
         _nomadsTick.AddThemeFontSizeOverride("font_size", 12);
         _nomadsTick.Toggled += on => _loop.World.NomadsEnabled = on;
-        third.AddChild(_nomadsTick);
-        lines.AddChild(third);
-
-        return box;
+        group.AddChild(_nomadsTick);
+        return group;
     }
 
     /// <summary>
@@ -6122,30 +6035,8 @@ public partial class Main : Control
         controls.AddThemeConstantOverride("v_separation", 4);
         body.AddChild(controls);
 
-        controls.AddChild(SpeedButton("Pause", 0.0));
-        controls.AddChild(SpeedButton("1x", 1.0));
-        controls.AddChild(SpeedButton("2x", 2.0));
-        controls.AddChild(SpeedButton("4x", 4.0));
-        controls.AddChild(SpeedButton("10x", 10.0));
-
-        // ⭐ 20x (Joe, 2026-08-29, for QA: *"i also sometimes dont want to spend 20 minutes
-        // starting up to get to a later-stage QA item"*).
-        //
-        // ⚠️ AND IT IS NOWHERE NEAR THE CEILING, WHICH IS WORTH KNOWING BEFORE ANYONE ADDS 40x.
-        // `target_ticks_per_second` is **0.75**, so 20x asks for 15 ticks a second — a quarter of
-        // a tick per frame at 60fps, against `max_ticks_per_frame` of 250. **The spiral guard does
-        // not begin to bite until roughly 20,000x.** The limit is not the driver and it is not the
-        // sim: measured, the sim runs **58 years in 1.53 seconds** (18,218 ticks/sec, ~24,000x).
-        // *The speed buttons are a pacing choice, not a performance one* — which is why the answer
-        // to "get me to year 58" is `SkipYears` below and not a bigger number here.
-        controls.AddChild(SpeedButton("20x", 20.0));
-
-        _speedLabel = Body(string.Empty);
-        controls.AddChild(_speedLabel);
-
-        AddTheSkipControls(controls);
-
-        controls.AddChild(new VSeparator());
+        // ⛔ THE SPEEDS, PAUSED AND THE SKIPS HAVE LEFT THIS BAR (D877, `hud.md §6–§7`): Pause and 1×–10× sit beside the date
+        // on the strip, 20× and the skips on the dev bar (debug builds only, A212). Why 20× is not a bigger number: D254.
 
         // ⛔⛔ ROUTES, GROUND, PROFESSIONS AND LIMITS HAVE LEFT THIS BAR (Joe, 2026-09-06:
         // *"move all of these from the control bar into settings"*). ⭐ **Professions and Limits
@@ -6166,7 +6057,6 @@ public partial class Main : Control
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
         // the whole point: *"give me more room to see the game map"* (D305) was answered by
         // shrinking the furniture, and this answers the other half by having less of it.
-        controls.AddChild(new VSeparator());
         AddTheTabs(controls);
 
         // Uncaptioned and on the end, because it belongs to no tab — it puts down whichever
@@ -6280,6 +6170,7 @@ public partial class Main : Control
     /// </remarks>
     private void FitFloaters()
     {
+        FitTheStrip();
         for (int i = 0; i < _floaters.Count; i++)
         {
             (PanelContainer panel, bool right, bool bottom, bool spans) = _floaters[i];
@@ -6533,10 +6424,7 @@ public partial class Main : Control
         // *What's here* starts where it started (B3): beside its tile, from the next one.
         _whatsHereWasDragged = false;
 
-        if (_frameCounter is not null)
-        {
-            _frameCounter.Position = new Vector2(Edge, leftY - Edge);
-        }
+        PlaceTheDevBar(leftY);
 
         // The passing banner is centred at the top and 460 wide, which now runs under the
         // villagers box; it drops below the bar with the column.
@@ -6623,8 +6511,9 @@ public partial class Main : Control
             return Edge;
         }
 
-        float tall = Mathf.Max(_topBar.Size.Y, _topBar.GetCombinedMinimumSize().Y) * _uiScale;
-        return Edge + tall + Edge;
+        // ⭐ Below where TWO lines of strip would end (D877): the strip wraps a group onto a second line when one would reach
+        // the right column, and a left column that started under one line would be covered the day it did.
+        return Edge + StripTwoLinesTall() + Edge;
     }
 
     private int _settling;

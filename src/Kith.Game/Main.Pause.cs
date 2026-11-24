@@ -279,6 +279,7 @@ public partial class Main
         // The rule.
         var focusable = new List<string>();
         CollectFocusable(_controlBar, focusable);
+        CollectFocusable(_topStrip, focusable);
         if (focusable.Count > 0)
         {
             faults.Add($"{focusable.Count} bar button(s) take keyboard focus: {string.Join(", ", focusable)}");
@@ -303,10 +304,10 @@ public partial class Main
         Viewport viewport = GetViewport();
         viewport.GuiReleaseFocus();
         string release;
-        Button? oneX = FindButton(_controlBar, "1x");
+        Button? oneX = FindButton(_topStrip, "1×");
         if (oneX is null)
         {
-            faults.Add("no 1x button on the bar");
+            faults.Add("no 1× button on the strip");
             release = "no 1x to click";
         }
         else
