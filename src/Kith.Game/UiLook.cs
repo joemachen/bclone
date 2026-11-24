@@ -116,6 +116,13 @@ internal static class UiLook
         Theme is { } theme && theme.HasFont(name, Type) ? theme.GetFont(name, Type) : null;
 
     /// <summary>
+    /// A painted control the look names — a card's pin, normal, under the pointer and pinned (<c>hud.md §8.3</c>, A217) — or
+    /// null on slate, where the control keeps the glyph it had.
+    /// </summary>
+    internal static Texture2D? NamedIcon(string name) =>
+        Theme is { } theme && theme.HasIcon(name, Type) ? theme.GetIcon(name, Type) : null;
+
+    /// <summary>
     /// Mark this label or button as a header — a window's title, a card's, a card's section head — so a look that names a
     /// header face sets it in that (A120, Joe's Metamorphous). On slate the mark names nothing and the text is as it was.
     /// </summary>

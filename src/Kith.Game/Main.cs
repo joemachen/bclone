@@ -585,6 +585,7 @@ public partial class Main : Control
         GD.Print(TheEstablishedLineReads());
         GD.Print(TheLookIsOneDoor());
         GD.Print(TheWordsReadOnParchment());
+        GD.Print(TheRubricMeansWrongAndLapisMeansOn());
         GD.Print(TheIconsArePainted());
         GD.Print(TheWorkshopSaysWhatItMakes());
         GD.Print(TheFarmSaysWhatItGrows());
