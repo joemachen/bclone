@@ -713,6 +713,7 @@ public partial class Main : Control
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheDialsHundredIsWhatSeventyFiveWas());
         GD.Print(TheVillageSavesAndLoads());
+        GD.Print(EverySaveAsksForThePicture());
         GD.Print(ThePauseOpensAndCloses());
         GD.Print(SpaceIsPressedNotHeld());
 

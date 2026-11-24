@@ -163,7 +163,9 @@ and one style box), and `_ExitTree` already disposes the audit log.
   chose, not the copy.
 - **Quit to desktop** autosaves and calls `GetTree().Quit()` — which does **not** raise
   `NotificationWMCloseRequest`, so the autosave is explicit, never left to the ✕'s handler.
-- The window's ✕ is unchanged: autosave on quit, from a running village only.
+- The window's ✕: autosave on quit, from a running village only. ⭐ **Since A236 Godot's own answer to it is off
+  (`AutoAcceptQuit`)**, because the village's picture takes a few frames: a village saves, is pictured, then closes (0.15 s);
+  anywhere else, or at a second ✕, it closes at once. *Quit to title*, *Quit to desktop* and *Load…* wait the same way.
 
 ## 7. The words
 

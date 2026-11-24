@@ -186,7 +186,8 @@ name and the seed, so two Ashfords are two folders. Autosaves are `autosave-1.sa
 `autosave-2.save` and `autosave-3.save`, rotated. A named save is `<name>.save`.
 
 **When.**
-- **Autosave at the turn of every year** (Spring, Day 1, after the tick that turns it), **and on quit.**
+- **Autosave at the turn of every year** (Spring, Day 1, after the tick that turns it), **and on quit.** *(A236: every save
+  also takes the village's picture for the title, and every way out waits for it — `title-snapshot.md §3`.)*
   It is written between ticks, so there is no half-run tick to capture.
 - **Named saves** whenever the player asks, paused or running. The save is taken between frames, so
   between ticks.

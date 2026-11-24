@@ -108,10 +108,15 @@ public partial class Main
         _loop = opened.Loop;
         _viewToRestore = opened.View;
         _shareCode = opened.Header!.ShareCode;
-        CloseTheTitle();
+        TitleScreen? title = _title; // kept over the village until its paint has lifted (A236)
+        _title = null;
         _loop.World.Log(LogLevel.Info, "shell", $"Opened {named}, saved by build {opened.Header.Build} at {opened.Header.SavedAt}: {_shareCode}.");
         TellTheLogAboutTheSettings();
         StartTheVillage(sinks);
+        if (title is not null)
+        {
+            LiftTheTitle(title, named);
+        }
     }
 
     // ---------------------------------------------------------------
@@ -149,11 +154,11 @@ public partial class Main
         }
     }
 
-    /// <summary><i>Quit to title</i>: autosave, then a fresh scene opens on the title.</summary>
+    /// <summary><i>Quit to title</i>: autosave, the village's picture (A236), then a fresh scene opens on the title.</summary>
     private void QuitToTheTitle()
     {
-        Autosave("on quit to title");
-        GetTree().ReloadCurrentScene();
+        Autosave("on quit to title", leaving: true);
+        LeaveOncePictured(() => GetTree().ReloadCurrentScene());
     }
 
     /// <summary>
@@ -162,8 +167,8 @@ public partial class Main
     /// </summary>
     private void QuitToTheDesktop()
     {
-        Autosave("on quit");
-        GetTree().Quit();
+        Autosave("on quit", leaving: true);
+        LeaveOncePictured(() => GetTree().Quit());
     }
 
     /// <summary>
@@ -190,9 +195,12 @@ public partial class Main
             return;
         }
 
-        Autosave("before loading another");
-        _saveToOpen = (CopyAside, chosen);
-        GetTree().ReloadCurrentScene();
+        Autosave("before loading another", leaving: true);
+        LeaveOncePictured(() =>
+        {
+            _saveToOpen = (CopyAside, chosen);
+            GetTree().ReloadCurrentScene();
+        });
     }
 
     /// <summary>The quicksave's name — one a village, in its folder beside its autosaves and named saves (D816).</summary>
@@ -328,7 +336,7 @@ public partial class Main
     }
 
     /// <summary>An autosave, rotated (§7). A disk that says no is said in the log; the older autosaves stand.</summary>
-    private void Autosave(string when)
+    private void Autosave(string when, bool leaving = false)
     {
         if (_saveFolder is null || _halted)
         {
@@ -339,6 +347,7 @@ public partial class Main
         {
             string written = SaveFile.WriteAutosave(_saveFolder, CaptureTheVillage(), AutosavesKept);
             _loop.World.Log(LogLevel.Info, "shell", $"Autosaved ({when}) to {written}.");
+            PictureTheVillage(leaving);
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
@@ -381,6 +390,7 @@ public partial class Main
         {
             SaveFile.Write(path, CaptureTheVillage());
             _loop.World.Log(LogLevel.Info, "shell", $"Saved as {stem} — {path}.");
+            PictureTheVillage(leaving: false);
             string said = replacing ? $"Saved as {stem}, replacing the earlier save of that name." : $"Saved as {stem}.";
             SayInTheLog(said);
             return (said, true);
@@ -400,12 +410,16 @@ public partial class Main
         return sentence;
     }
 
-    /// <summary>⭐ Quitting writes the autosave (§7) — a village is never lost to the window's ✕.</summary>
+    /// <summary>⭐ Quitting writes the autosave (§7) — a village is never lost to the window's ✕ — and its picture (A236).</summary>
     public override void _Notification(int what)
     {
-        if (what == NotificationWMCloseRequest && _title is null && _newGame is null && _loop is not null)
+        if (what == NotificationWMCloseRequest)
         {
-            Autosave("on quit");
+            TheWindowIsClosing();
+        }
+        else if (what == NotificationEnterTree)
+        {
+            GetTree().AutoAcceptQuit = false; // the ✕ is answered above, once the picture is written
         }
     }
 

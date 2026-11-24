@@ -13,11 +13,10 @@ namespace Kith.Game;
 /// (<c>Main.OpenTheVillage</c>).
 /// </para>
 /// <para>
-/// ⭐ <b>Behind it, one village in the four seasons</b> (A190, `title-screen-art.md §4`; Joe: <i>"B with ink seams"</i>): a picture
-/// the game drew of a save of his, grown to its prime — spring (the thaw), summer, autumn and winter in tilted bands right of the
-/// panel — written by <c>tools/title-capture</c> and loaded here, covering the window and centred, so the village stays in view
-/// from 16:10 to 21:9. ⚠️ It replaced D516's touch, the newest save's valley baked flat, by his brief: the title no longer
-/// shows the player's own village.
+/// ⭐ <b>Behind it, the player's newest village with a home, painted in watercolour</b> (A234, `title-snapshot.md`; Joe: <i>"Yes,
+/// (e) and the lift"</i>, then <i>"Yes to all three"</i>): the <c>title.jpg</c> in the newest save's folder that has one
+/// (<see cref="TitleSnapshot"/>), covering the window and centred, under two shaders. With none, one village in the four seasons
+/// (A190, `title-screen-art.md §4`; Joe: <i>"B with ink seams"</i>), written by <c>tools/title-capture</c>, painted the same way.
 /// </para>
 /// <para>
 /// ⭐⭐ <b>A parchment panel docked left</b> (A180, `title-screen-art.md §2`; Joe's brief, <i>"All as recommended"</i>): the dark
@@ -37,6 +36,14 @@ public sealed partial class TitleScreen : Control
 
     /// <summary>The four seasons, written by <c>tools/title-capture</c> (A190): 3840 × 2160.</summary>
     internal const string BackdropPath = "res://textures/ui/title/valley_seasons.jpg";
+
+    /// <summary>The washes, drawn once over the picture; the paint, every frame, over the washes (A233, `title-snapshot.md §5b`).</summary>
+    internal const string WashShaderPath = "res://shaders/title_watercolour_wash.gdshader", PaintShaderPath = "res://shaders/title_watercolour.gdshader";
+
+    /// <summary>What the two shaders read besides the picture (<c>bake_wc.py</c>'s three).</summary>
+    internal const string MarksPath = "res://textures/ui/title/watercolour-wash.png",
+        FinishPath = "res://textures/ui/title/watercolour-finish.png",
+        PaperPath = "res://textures/ui/title/watercolour-paper.png";
 
     /// <summary>Where the village's houses centre in that picture, as shares of its width and height (the tool's framing B).</summary>
     internal static readonly Vector2 VillageInPicture = new(0.56f, 0.50f);
@@ -71,12 +78,18 @@ public sealed partial class TitleScreen : Control
     /// <summary>The picture, loaded once and held (art trap 69: a resource is never loaded and dropped).</summary>
     private static Texture2D? _seasons;
 
+    /// <summary>The paint's own pictures and shaders, held for the same reason.</summary>
+    private static Texture2D? _marks, _finish, _paper;
+
+    private static Shader? _washShader, _paintShader;
+
     private static Texture2D? _seal;
 
     private readonly SimConfig _config;
     private readonly string _build;
     private readonly SettingsDoors _doors;
 
+    private Panel _floor = null!;
     private TextureRect _backdrop = null!;
     private Label _refusal = null!;
     private VBoxContainer _menu = null!;
@@ -97,7 +110,7 @@ public sealed partial class TitleScreen : Control
         _doors = doors;
     }
 
-    /// <summary>Asked to open the save at this path — <i>Continue</i> or <i>Load…</i>.</summary>
+    /// <summary>Asked to open the save at this path — <i>Continue</i> or <i>Load…</i>, once the panel has slid away (A236).</summary>
     public event Action<string>? LoadAsked;
 
     /// <summary><i>New village</i>: the new-game screen.</summary>
@@ -174,14 +187,20 @@ public sealed partial class TitleScreen : Control
     /// <summary>For the probe: the picture behind the title.</summary>
     internal TextureRect Backdrop => _backdrop;
 
+    /// <summary>The village picture shown, or null over the four seasons.</summary>
+    internal string? VillagePicture { get; private set; }
+
+    /// <summary>For the probe: where the washes are drawn, once — null with the paint missing.</summary>
+    internal SubViewport? Washes { get; private set; }
+
     public override void _Ready()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var floor = new Panel();
-        floor.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
-        floor.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
-        AddChild(floor);
+        _floor = new Panel();
+        _floor.AddThemeStyleboxOverride("panel", UiLook.Backdrop());
+        _floor.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        AddChild(_floor);
 
         _backdrop = new TextureRect
         {
@@ -197,13 +216,33 @@ public sealed partial class TitleScreen : Control
         LinkTheItems();
         PlaceThePanel();
         Resized += PlaceThePanel;
-        PrimaryItem.CallDeferred(Control.MethodName.GrabFocus);
-        ShowTheSeasons();
+        Callable.From(() =>
+        {
+            if (PrimaryItem.IsInsideTree())
+            {
+                PrimaryItem.GrabFocus();
+            }
+        }).CallDeferred();
+        ShowTheVillage();
     }
 
-    /// <summary>Esc on the Settings page goes back to the menu, as its <i>Back</i> does.</summary>
+    /// <summary>
+    /// Esc on the Settings page goes back to the menu, as its <i>Back</i> does. While the paint lifts (A236) a key hurries it, and
+    /// none reaches the village under it.
+    /// </summary>
     public override void _UnhandledKeyInput(InputEvent e)
     {
+        if (Lift is not (LiftStep.None or LiftStep.Arriving or LiftStep.Done))
+        {
+            if (e is InputEventKey { Pressed: true, Echo: false })
+            {
+                Hurry();
+            }
+
+            GetViewport()?.SetInputAsHandled();
+            return;
+        }
+
         if (SettingsPage.Visible && e is InputEventKey { Pressed: true, Keycode: Key.Escape })
         {
             ShowTheMenu();
@@ -216,6 +255,10 @@ public sealed partial class TitleScreen : Control
     {
         _refusal.Text = sentence;
         _refusal.Visible = true;
+        if (Lift != LiftStep.None)
+        {
+            BackToTheTitle();
+        }
     }
 
     /// <summary>For the probe: what pressing <i>New village</i> does.</summary>
@@ -347,10 +390,10 @@ public sealed partial class TitleScreen : Control
 
         SaveListing? newest = NewestThatOpens(Saves);
         ContinueButton = new Button { Text = "Continue", TooltipText = newest?.Line ?? LoadMenu.NoSaveYet, Visible = newest is not null };
-        ContinueButton.Pressed += () => LoadAsked?.Invoke(newest!.Path);
+        ContinueButton.Pressed += () => SlideAwayThenOpen(newest!.Path);
         NewVillageButton = new Button { Text = "New village" };
         NewVillageButton.Pressed += () => NewVillageAsked?.Invoke();
-        LoadButton = new LoadMenu(Saves, path => LoadAsked?.Invoke(path)).Button;
+        LoadButton = new LoadMenu(Saves, SlideAwayThenOpen).Button;
         LoadButton.Visible = Saves.Count > 0;
         SettingsButton = new Button { Text = "Settings" };
         SettingsButton.Pressed += ShowTheSettings;
@@ -529,27 +572,142 @@ public sealed partial class TitleScreen : Control
         Band.OffsetBottom = 0f;
     }
 
-    /// <summary>The four seasons behind the title; a missing picture is said loudly and the paper floor stands.</summary>
-    private void ShowTheSeasons()
+    /// <summary>
+    /// The newest village's picture behind the title, or the four seasons; painted either way. A picture that will not decode, or
+    /// paint that will not load, is said loudly and the title opens on what it has (`title-snapshot.md §2`).
+    /// </summary>
+    private void ShowTheVillage()
     {
-        _seasons ??= ResourceLoader.Exists(BackdropPath) ? GD.Load<Texture2D>(BackdropPath) : null;
-        if (_seasons is null)
+        if (PictureOf(Saves) is string path && Decode(path) is { } village)
         {
-            GD.PushError($"[Kith] the title's picture is missing at {BackdropPath}: run tools/title-capture to write it");
-            return;
+            VillagePicture = path;
+            _backdrop.Texture = village;
+        }
+        else
+        {
+            _seasons ??= ResourceLoader.Exists(BackdropPath) ? GD.Load<Texture2D>(BackdropPath) : null;
+            if (_seasons is null)
+            {
+                GD.PushError($"[Kith] the title's picture is missing at {BackdropPath}: run tools/title-capture to write it");
+                return;
+            }
+
+            _backdrop.Texture = _seasons;
         }
 
-        _backdrop.Texture = _seasons;
+        PaintIt(_backdrop.Texture);
     }
 
     /// <summary>
-    /// Pure: where the village lands in a window the picture covers, centred (<c>KeepAspectCovered</c>'s own rule: scaled to the
-    /// larger of the two ratios, the overflow cut evenly from both sides).
+    /// The picture of the newest village that has one: the folder of the first save that opens and holds a
+    /// <see cref="TitleSnapshot.FileName"/> — a founding writes none (call 2), so the title keeps the last village with a home.
+    /// No save is opened, and each folder is asked for once.
     /// </summary>
-    internal static Vector2 WhereTheVillageLands(Vector2 picture, Vector2 window)
+    internal static string? PictureOf(IReadOnlyList<SaveListing> saves)
+    {
+        var asked = new HashSet<string>(StringComparer.Ordinal);
+        foreach (SaveListing save in saves)
+        {
+            string? folder = save.Refusal is null ? System.IO.Path.GetDirectoryName(save.Path) : null;
+            if (folder is null || !asked.Add(folder))
+            {
+                continue;
+            }
+
+            string picture = System.IO.Path.Combine(folder, TitleSnapshot.FileName);
+            if (System.IO.File.Exists(picture))
+            {
+                return picture;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>A picture off the disk, with the mips the washes read; null and a loud line when it will not be read.</summary>
+    private static ImageTexture? Decode(string path)
+    {
+        string why;
+        try
+        {
+            var image = new Image();
+            Error read = image.LoadJpgFromBuffer(System.IO.File.ReadAllBytes(path));
+            if (read == Error.Ok && !image.IsEmpty())
+            {
+                image.GenerateMipmaps();
+                return ImageTexture.CreateFromImage(image);
+            }
+
+            why = read.ToString();
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            why = ex.Message;
+        }
+
+        GD.PushError($"[Kith] the village's picture for the title could not be read ({why}): {path} — the four seasons stand in");
+        return null;
+    }
+
+    /// <summary>
+    /// The watercolour over <paramref name="picture"/> (A233, `title-snapshot.md §5b`): the washes drawn once into a viewport of
+    /// the picture's size, then the paint as the backdrop's material.
+    /// </summary>
+    private void PaintIt(Texture2D picture)
+    {
+        _marks ??= Load<Texture2D>(MarksPath);
+        _finish ??= Load<Texture2D>(FinishPath);
+        _paper ??= Load<Texture2D>(PaperPath);
+        _washShader ??= Load<Shader>(WashShaderPath);
+        _paintShader ??= Load<Shader>(PaintShaderPath);
+        if (_marks is null || _finish is null || _paper is null || _washShader is null || _paintShader is null)
+        {
+            return; // each is already said; the picture stands unpainted
+        }
+
+        var wash = new ShaderMaterial { Shader = _washShader };
+        wash.SetShaderParameter("picture", picture);
+        wash.SetShaderParameter("finish", _finish);
+        Vector2 size = picture.GetSize();
+        Washes = new SubViewport
+        {
+            Size = new Vector2I((int)size.X, (int)size.Y),
+            Disable3D = true,
+            RenderTargetUpdateMode = SubViewport.UpdateMode.Once,
+        };
+        Washes.AddChild(new TextureRect { Texture = picture, Size = size, Material = wash, MouseFilter = MouseFilterEnum.Ignore });
+        AddChild(Washes);
+
+        var paint = new ShaderMaterial { Shader = _paintShader };
+        paint.SetShaderParameter("picture", picture);
+        paint.SetShaderParameter("washes", Washes.GetTexture());
+        paint.SetShaderParameter("marks", _marks);
+        paint.SetShaderParameter("finish", _finish);
+        paint.SetShaderParameter("paper", _paper);
+        paint.SetShaderParameter("strength", 1f);
+        _backdrop.Material = paint;
+    }
+
+    private static T? Load<T>(string path)
+        where T : Resource
+    {
+        T? loaded = ResourceLoader.Exists(path) ? GD.Load<T>(path) : null;
+        if (loaded is null)
+        {
+            GD.PushError($"[Kith] the title's paint is missing {path}: the picture stands unpainted");
+        }
+
+        return loaded;
+    }
+
+    /// <summary>
+    /// Pure: where the village at <paramref name="at"/> of its picture lands in a window the picture covers, centred
+    /// (<c>KeepAspectCovered</c>'s own rule: scaled to the larger of the two ratios, the overflow cut evenly from both sides).
+    /// </summary>
+    internal static Vector2 WhereTheVillageLands(Vector2 at, Vector2 picture, Vector2 window)
     {
         float scale = Mathf.Max(window.X / picture.X, window.Y / picture.Y);
         Vector2 drawn = picture * scale;
-        return ((window - drawn) / 2f) + (VillageInPicture * drawn);
+        return ((window - drawn) / 2f) + (at * drawn);
     }
 }
