@@ -5,13 +5,13 @@ namespace Kith.Game;
 /// <summary>
 /// ⭐ The paint lifts into the game (A236, `title-snapshot.md §6a`; Joe: <i>"when the player clicks continue, can we transition the
 /// background image smoothly to the playable version?"</i>): the panel slides away, the save opens behind the still picture, the
-/// paint dries off it, and the live map — opened on the picture's own frame — takes over; then the camera eases to the play framing
-/// and the panels fade in.
+/// paint dries off it, and the live map — opened on the picture's own frame — takes over, and the panels
+/// fade in. ⭐ <b>The view stays the snapshot's</b> (A237, Joe: <i>"dont zoom into the village. leave the view as is in the snapshot"</i>).
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>A slow load is a held picture, never a frozen animation</b>: the save opens on a frame when nothing moves, and nothing moves
-/// again until the map has drawn itself.
+/// again until the map has drawn itself. While it is held, <see cref="LoadingWords"/> says why (A237).
 /// </para>
 /// <para>
 /// <b>Where the picture is not of the save opened</b> (<see cref="PictureIsOf"/>) the paint still lifts, then the picture fades to
@@ -20,8 +20,17 @@ namespace Kith.Game;
 /// </remarks>
 public sealed partial class TitleScreen
 {
-    /// <summary>Each part's length: the panel away, the paint off, the picture to the map, the camera and the panels.</summary>
-    internal const double SlideSeconds = 0.3, LiftSeconds = 1.1, FadeSeconds = 0.3, EaseSeconds = 0.9;
+    /// <summary>
+    /// Each part's length: the panel away, the paint off, the picture to the map, the panels in — twice A236's (A237, Joe: <i>"slow
+    /// down the transition by about half - i want the user to see it"</i>).
+    /// </summary>
+    internal const double SlideSeconds = 0.6, LiftSeconds = 2.2, FadeSeconds = 0.6, PanelsSeconds = 1.8;
+
+    /// <summary>How long the words take to come and go.</summary>
+    private const double WordsSeconds = 0.4;
+
+    /// <summary>What is said over the still picture while the save opens (A237, Joe: <i>"maybe 'painting village' or something"</i>).</summary>
+    internal const string LoadingWords = "Painting the village…";
 
     /// <summary>The longest one frame counts for: a frame that hitched must not skip what it held up.</summary>
     private const double LongestStep = 1d / 30d;
@@ -50,8 +59,8 @@ public sealed partial class TitleScreen
         /// <summary>The picture going from over the map.</summary>
         Fading,
 
-        /// <summary>The camera on its way to the play framing, the panels fading in; the player has the game.</summary>
-        Easing,
+        /// <summary>The panels fading in; the player has the game.</summary>
+        Arriving,
 
         /// <summary>Over.</summary>
         Done,
@@ -64,10 +73,13 @@ public sealed partial class TitleScreen
     private VillageMap? _under;
     private IReadOnlyList<CanvasItem> _panels = Array.Empty<CanvasItem>();
     private (Vector2 Centre, float Ppt)? _frame;
-    private (Vector2 Centre, float Ppt) _play, _set;
+    private PanelContainer? _words;
 
     /// <summary>For the probe: how far the lift has got.</summary>
     internal LiftStep Lift { get; private set; }
+
+    /// <summary>For the probe: how far the loading words show, 0 with none up.</summary>
+    internal float WordsShown => _words is { Visible: true } ? _words.Modulate.A : 0f;
 
     /// <summary>For the probe: the paint's strength now.</summary>
     internal float Strength => _backdrop.Material is ShaderMaterial paint ? paint.GetShaderParameter("strength").AsSingle() : 0f;
@@ -96,18 +108,6 @@ public sealed partial class TitleScreen
         return (TitleSnapshot.CentreFor(heart), TitleSnapshot.PixelsPerTile * Mathf.Max(window.X / picture.X, window.Y / picture.Y));
     }
 
-    /// <summary>
-    /// Pure: the camera <paramref name="t"/> of the way between two, easing in and out — the zoom by equal ratios and the centre
-    /// along with it, so the ground slides in a straight line rather than swinging.
-    /// </summary>
-    internal static (Vector2 Centre, float Ppt) Between((Vector2 Centre, float Ppt) from, (Vector2 Centre, float Ppt) to, float t)
-    {
-        float s = Smooth(t);
-        float ppt = from.Ppt * Mathf.Pow(to.Ppt / from.Ppt, s);
-        float w = Mathf.Abs((to.Ppt / from.Ppt) - 1f) < 0.01f ? s : ((1f / from.Ppt) - (1f / ppt)) / ((1f / from.Ppt) - (1f / to.Ppt));
-        return (from.Centre.Lerp(to.Centre, w), ppt);
-    }
-
     private static float Smooth(float t) => t * t * (3f - (2f * t));
 
     /// <summary><i>Continue</i> and <i>Load…</i>: the panel slides away first, so the load holds a still picture.</summary>
@@ -130,7 +130,44 @@ public sealed partial class TitleScreen
             }
         };
         AddChild(_shield);
+        PutUpTheWords();
         Go(LiftStep.Sliding);
+    }
+
+    /// <summary>The loading words on a slip of the HUD's parchment, low in the middle, over the picture and clear of the village.</summary>
+    private void PutUpTheWords()
+    {
+        var label = new Label { Text = LoadingWords, ThemeTypeVariation = UiLook.HeaderLabel };
+        label.AddThemeFontSizeOverride("font_size", 22);
+        _words = new PanelContainer
+        {
+            AnchorLeft = 0.5f,
+            AnchorRight = 0.5f,
+            AnchorTop = 0.9f,
+            AnchorBottom = 0.9f,
+            GrowHorizontal = GrowDirection.Both,
+            GrowVertical = GrowDirection.Both,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        _words.AddThemeStyleboxOverride("panel", UiLook.Strip());
+        var margin = new MarginContainer();
+        margin.AddThemeConstantOverride("margin_left", 18);
+        margin.AddThemeConstantOverride("margin_right", 18);
+        margin.AddThemeConstantOverride("margin_top", 4);
+        margin.AddThemeConstantOverride("margin_bottom", 4);
+        margin.AddChild(label);
+        _words.AddChild(margin);
+        AddChild(_words);
+        SetWords(0f);
+    }
+
+    private void SetWords(float alpha)
+    {
+        if (_words is not null)
+        {
+            _words.Modulate = new Color(1f, 1f, 1f, alpha);
+            _words.Visible = alpha > 0f;
+        }
     }
 
     /// <summary>The save would not open: the panel comes back, with the reason on it.</summary>
@@ -138,6 +175,8 @@ public sealed partial class TitleScreen
     {
         _shield?.QueueFree();
         _shield = null;
+        _words?.QueueFree();
+        _words = null;
         Lift = LiftStep.None;
         Band.Visible = true;
         Band.Modulate = Colors.White;
@@ -146,7 +185,7 @@ public sealed partial class TitleScreen
     }
 
     /// <summary>
-    /// The village is open under this title: <paramref name="hud"/> is hidden until the camera eases, and the map, when the picture
+    /// The village is open under this title: <paramref name="hud"/> is hidden until the picture has gone, and the map, when the picture
     /// is of the save opened, is put on the picture's frame before it first draws, from the village's <paramref name="heart"/>.
     /// </summary>
     internal void LiftOver(VillageMap map, Vector2? heart, string opened, IReadOnlyList<CanvasItem> hud)
@@ -189,6 +228,7 @@ public sealed partial class TitleScreen
                 Band.OffsetLeft = -width * away;
                 Band.OffsetRight = width - (width * away);
                 Band.Modulate = new Color(1f, 1f, 1f, 1f - away);
+                SetWords((float)Math.Clamp((_into - SlideSeconds + WordsSeconds) / WordsSeconds, 0d, 1d));
                 if (Part(SlideSeconds) >= 1f)
                 {
                     Band.Visible = false;
@@ -212,6 +252,7 @@ public sealed partial class TitleScreen
 
             case LiftStep.Lifting:
                 SetStrength(1f - Smooth(Part(LiftSeconds)));
+                SetWords(1f - Part(WordsSeconds));
                 if (Part(LiftSeconds) >= 1f)
                 {
                     _floor.Visible = false; // the picture covers it, and it would hold the map back
@@ -229,21 +270,9 @@ public sealed partial class TitleScreen
 
                 break;
 
-            case LiftStep.Easing:
-                Show(Part(EaseSeconds));
-                if (_frame is not null)
-                {
-                    if (_under!.Camera != _set)
-                    {
-                        _frame = null; // the player has moved it: it is theirs
-                    }
-                    else
-                    {
-                        Aim(Between(_frame.Value, _play, Part(EaseSeconds)));
-                    }
-                }
-
-                if (Part(EaseSeconds) >= 1f)
+            case LiftStep.Arriving:
+                Show(Part(PanelsSeconds));
+                if (Part(PanelsSeconds) >= 1f)
                 {
                     Finish();
                 }
@@ -261,15 +290,10 @@ public sealed partial class TitleScreen
         }
 
         HandTheGameOver();
-        if (_frame is not null)
-        {
-            Aim(_play);
-        }
-
         Finish();
     }
 
-    /// <summary>The picture is gone: the mouse and the keys are the game's, and the camera sets out for where it plays from.</summary>
+    /// <summary>The picture is gone: the mouse, the keys and the camera are the game's, the view where the picture had it.</summary>
     private void HandTheGameOver()
     {
         Visible = false;
@@ -279,14 +303,7 @@ public sealed partial class TitleScreen
             _shield.MouseFilter = MouseFilterEnum.Ignore;
         }
 
-        if (_frame is { } from)
-        {
-            _under!.CentreOnTheVillage();
-            _play = _under.Camera;
-            Aim(from);
-        }
-
-        Go(LiftStep.Easing);
+        Go(LiftStep.Arriving);
     }
 
     private void Finish()
@@ -295,12 +312,6 @@ public sealed partial class TitleScreen
         Lift = LiftStep.Done;
         GetParent()?.RemoveChild(this);
         QueueFree();
-    }
-
-    private void Aim((Vector2 Centre, float Ppt) camera)
-    {
-        _under!.LookAt(camera.Centre, camera.Ppt);
-        _set = _under.Camera;
     }
 
     private void Show(float alpha)

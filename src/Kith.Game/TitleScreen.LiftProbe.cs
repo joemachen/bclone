@@ -10,7 +10,7 @@ public sealed partial class TitleScreen
     internal const string WhatTheLiftHeld =
         "; Continue slides the panel off before it opens anything, a refused save brings it back, the paint comes off only over a drawn "
         + "map, the panels stay hidden until it has, and it hands the game over once; a picture written after the save it is of opens the "
-        + "map on the picture's own frame, the camera eases to the play framing and a moved camera is the player's; a key hurries it";
+        + "map on the picture's own frame, where it stays, and a moved camera is the player's; the loading words are up while the save opens; a key hurries it";
 
     private IEnumerable<string> TheLiftHolds()
     {
@@ -32,22 +32,6 @@ public sealed partial class TitleScreen
             {
                 yield return $"at {window} the live map puts the heart at {at} and ten tiles at {east:F1} px (the picture: {want}, {wantEast:F1})";
             }
-        }
-
-        // The way between: its two ends, always nearer in zoom, and every point of it on one line through a still point.
-        (Vector2 Centre, float Ppt) from = (new Vector2(10f, 5f), 18f), to = (new Vector2(2f, 9f), 34f);
-        float last = 0f;
-        for (int i = 0; i <= 10; i++)
-        {
-            (Vector2 centre, float ppt) = Between(from, to, i / 10f);
-            float off = Mathf.Abs((centre - from.Centre).Cross((to.Centre - from.Centre).Normalized()));
-            bool end = i == 0 ? centre.DistanceTo(from.Centre) < 0.01f && Mathf.Abs(ppt - 18f) < 0.01f : i < 10 || (centre.DistanceTo(to.Centre) < 0.01f && Mathf.Abs(ppt - 34f) < 0.01f);
-            if (off > 0.01f || ppt < last || !end || !centre.IsFinite())
-            {
-                yield return $"{i * 10}% of the camera's way is {centre} at {ppt:F1} px a tile";
-            }
-
-            last = ppt;
         }
 
         foreach (bool matched in new[] { false, true })
@@ -145,7 +129,7 @@ public sealed partial class TitleScreen
             // Refused: nothing is opened with the panel there, it is asked for once, and the panel comes back with the reason.
             TitleScreen refused = Pose(out Func<int> refusedAsked);
             refused.ContinueButton.EmitSignal(BaseButton.SignalName.Pressed);
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 30; i++)
             {
                 refused.StepTheLift(1d / 60d);
             }
@@ -154,22 +138,28 @@ public sealed partial class TitleScreen
 
             if (refusedAsked() != 0 || refused.Band.OffsetLeft >= 0f)
             {
-                faults.Add($"0.2 s after Continue the save was asked for {refusedAsked()} time(s), the panel at {refused.Band.OffsetLeft:F0} px");
+                faults.Add($"0.5 s after Continue the save was asked for {refusedAsked()} time(s), the panel at {refused.Band.OffsetLeft:F0} px");
             }
 
             Step(refused, LiftStep.Asking, most: 8);
             if (refused.Lift != LiftStep.Asking)
             {
-                faults.Add($"Continue pressed twice starts the slide again ({refused.Lift} after 0.33 s)");
+                faults.Add($"Continue pressed twice starts the slide again ({refused.Lift} after 0.63 s)");
                 Step(refused, LiftStep.Asking);
             }
 
+            float said = refused.WordsShown;
             refused.StepTheLift(1d / 60d);
             refused.RefuseTheLoad("posed by the probe");
             if (refusedAsked() != 1 || refused.Lift != LiftStep.None || !refused.Band.Visible || refused.Band.OffsetLeft != 0f
                 || refused.Band.Modulate.A < 1f || !refused.ContinueButton.HasFocus())
             {
                 faults.Add($"a refused save (asked {refusedAsked()} time(s)) leaves the title {refused.Lift}, its panel {(refused.Band.Visible ? "shown" : "hidden")} at {refused.Band.OffsetLeft:F0} px, alpha {refused.Band.Modulate.A:F2}");
+            }
+
+            if (said < 1f || refused.WordsShown > 0f)
+            {
+                faults.Add($"as the save opens the loading words are at {said:F2}, and {refused.WordsShown:F2} once it is refused (want 1, 0)");
             }
 
             RemoveChild(refused);
@@ -189,6 +179,12 @@ public sealed partial class TitleScreen
             for (int i = 0; i < 3; i++)
             {
                 title.StepTheLift(1d / 60d);
+            }
+
+            float held = title.WordsShown;
+            if (held < 1f)
+            {
+                faults.Add($"while the map draws itself the loading words are at {held:F2}");
             }
 
             bool waited = title.Lift == LiftStep.Settling;
@@ -219,18 +215,18 @@ public sealed partial class TitleScreen
                 strength = title.Strength;
             }
 
-            if (title.Lift != LiftStep.Fading || strength > 0.001f || paintFrames < 55 || paintFrames > 80 || title._floor.Visible)
+            if (title.Lift != LiftStep.Fading || strength > 0.001f || paintFrames < 120 || paintFrames > 140 || title.WordsShown > 0f || title._floor.Visible)
             {
-                faults.Add($"the paint took {paintFrames} frames to {strength:F2}, the title then {title.Lift}, its floor {(title._floor.Visible ? "shown" : "hidden")} (want 64, 0, Fading, hidden)");
+                faults.Add($"the paint took {paintFrames} frames to {strength:F2}, the title then {title.Lift}, its floor {(title._floor.Visible ? "shown" : "hidden")}, the words {title.WordsShown:F2} (want 130, 0, Fading, hidden, 0)");
             }
 
-            Step(title, LiftStep.Easing);
+            Step(title, LiftStep.Arriving);
             if (title.Visible || title.MouseFilter != MouseFilterEnum.Ignore || (matched && under.Camera.Centre.DistanceTo(frame.Centre) > 0.01f))
             {
                 faults.Add($"handing over, the title is {(title.Visible ? "shown" : "hidden")}, its mouse {title.MouseFilter}, the map at {under.Camera} (the picture's frame {frame})");
             }
 
-            for (int i = 0; i < 27; i++)
+            for (int i = 0; i < 54; i++)
             {
                 title.StepTheLift(1d / 60d);
             }
@@ -242,16 +238,9 @@ public sealed partial class TitleScreen
                 faults.Add($"the panels came to {half:F2} half way and {panel.Modulate.A:F2} at the end, the title {(title.GetParent() is null ? "gone" : "still there")}");
             }
 
-            if (matched && under.Camera == frame)
+            if (matched && under.Camera != frame)
             {
-                faults.Add("the camera never left the picture's frame");
-            }
-
-            (Vector2 Centre, float Ppt) ended = under.Camera;
-            under.CentreOnTheVillage();
-            if (matched && (under.Camera.Centre.DistanceTo(ended.Centre) > 0.01f || Mathf.Abs(under.Camera.Ppt - ended.Ppt) > 0.01f))
-            {
-                faults.Add($"the camera ended at {ended} (the play framing {under.Camera})");
+                faults.Add($"the view ended at {under.Camera}, not the picture's {frame}");
             }
 
             // Hurried, and moved by the player.
@@ -261,7 +250,7 @@ public sealed partial class TitleScreen
             hurried.LiftOver(under, heart, save, new CanvasItem[] { panel });
             Step(hurried, LiftStep.Lifting);
             hurried._UnhandledKeyInput(new InputEventKey { Keycode = Key.Space, Pressed = true });
-            if (hurried.Lift != LiftStep.Done || panel.Modulate.A != 1f || hurried.GetParent() is not null || (matched && under.Camera.Ppt != ended.Ppt))
+            if (hurried.Lift != LiftStep.Done || panel.Modulate.A != 1f || hurried.GetParent() is not null || (matched && under.Camera != frame))
             {
                 faults.Add($"a key left it {hurried.Lift}, the panels {panel.Modulate.A:F2}, the map at {under.Camera}");
             }
@@ -270,7 +259,7 @@ public sealed partial class TitleScreen
             moved.ContinueButton.EmitSignal(BaseButton.SignalName.Pressed);
             Step(moved, LiftStep.Asking);
             moved.LiftOver(under, heart, save, new CanvasItem[] { panel });
-            Step(moved, LiftStep.Easing);
+            Step(moved, LiftStep.Arriving);
             moved.StepTheLift(1d / 60d);
             under.LookAt(new Vector2(3f, 4f), 20f);
             Step(moved, LiftStep.Done);

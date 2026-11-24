@@ -7,7 +7,7 @@
 > shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
 > newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
 > UNPLAYED.** 🔨 **The HUD merged (D885): the picture is taken at every save and way out, and *Continue* lifts the paint into
-> the live map (A236), on `art`, UNPLAYED;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
+> the live map (A236); ✅ PLAYED by Joe: *"looks super cool"*, with three changes, built (A237), on `art`, those UNPLAYED;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -256,7 +256,7 @@ written. So the live map can open on exactly the frame the title shows, and the 
      dry away and leave the plain snapshot underneath.
   4. The live map takes over **on the same frame**: same centre, same zoom, same season, the people where they stood. A
      short crossfade covers what is not in the picture (animation, the markers).
-  5. The camera **eases from the title's framing** (the village right of where the panel was) **to the play framing**, and the
+  5. *(as specced; the ease dropped, A237)* The camera **eases from the title's framing** (the village right of where the panel was) **to the play framing**, and the
      HUD fades in. Then it is the game.
 - **What the map needs:** a way to open on the picture's frame instead of `CentreOnTheVillage()`. `LookAt(centre, ppt)` already
   exists (A150) and takes both. The centre is the homes' middle shifted by the picture's 0.64. The zoom is 32 px a tile × the
@@ -272,16 +272,21 @@ written. So the live map can open on exactly the frame the title shows, and the 
   the save-time hook (call 4's terms; the HUD merged, D885).
 - **Cost:** none at play time. The shader runs only while the title or the lift is on screen.
 - **Built as (A236):** `TitleScreen.Lift.cs`, a list of steps stepped each frame, a hitched frame counting as 1/30 s:
-  - **the panel away** (0.3 s), then the save is opened on a still frame; a save that will not open brings the panel back;
+  - **the panel away** (0.6 s), then the save is opened on a still frame; a save that will not open brings the panel back;
   - **held** until the map has drawn at least 4 frames, the last without a hitch, every figure painted (150 frames at most);
-  - **the paint off** (1.1 s), **the picture off** (0.3 s), **the camera to the play framing and the panels in** (0.9 s).
-    The player has the game from the moment the picture is gone.
+  - **the paint off** (2.2 s), **the picture off** (0.6 s), **the panels in** (1.8 s). The player has the game from the moment
+    the picture is gone. *(A237, Joe: "slow down the transition by about half - i want the user to see it" — every part twice
+    A236's.)*
+  - ✅ **The view stays the snapshot's** (A237, Joe: *"dont zoom into the village. leave the view as is in the snapshot"*): the
+    camera's ease to the play framing is gone. *Home* or *Centre* frames the village, as ever.
+  - ✅ **"Painting the village…"** (A237, Joe: *"maybe 'painting village' or something"*) on a slip of the HUD's parchment, low in the
+    middle, up before the save opens and gone as the paint starts to lift.
   - **The picture is of the save** when the opened save is its folder's newest and the picture was written after it
     (`PictureIsOf`) — so *Load…* on that save matches too. Otherwise the paint lifts and the picture fades to the usual framing.
   - **A key or a click hurries it** once the paint is coming off; none reaches the village under it. A camera the player moves
-    while it eases is theirs.
-  - **Measured on Thornfield at 2560 × 1440:** his click to the whole game 4.7 s: the panel 0.3, the load 1.9 (held still, as
-    long as it was before), the rest 2.4. Houses, roads and people fall on the same pixel in the picture and the map. What differs, under
+    once the picture has gone is theirs.
+  - **Measured on Thornfield at 2560 × 1440:** his click to the whole game 8.2 s (A237), the last 1.8 of it playable under
+    the panels coming in: the panel 0.6, the load about 2–3 (held still under the words, as long as it was before), the rest 4.6. Houses, roads and people fall on the same pixel in the picture and the map. What differs, under
     the crossfade: the markers and washes the player has on, and the ink. ⚠️ **The picture's ink is finer than the game's**:
     the game draws on a 1422-wide canvas scaled 1.8 times, the picture at 2560 unscaled, as the look was approved. Left as approved.
   - It stands in `OpenTheVillage` (`Main.Saves.cs`) and `LiftTheTitle` (`Main.Title.cs`).
@@ -323,7 +328,7 @@ and Joe can play it).
   And the lift, on `title:`: `PictureIsOf` over a scratch folder, the frame at three windows, the camera's way, and whole lifts
   stepped by hand (refused, over its own picture, over another, hurried, moved). **Red-check: 23 mutants, 22 red** (19 at
   first; three checks tightened). **The zero, written down:** the lift not waiting for every figure, which a headless map
-  cannot pose. ⚠️ **Not guarded, driven by hand in a window instead:** the picture itself, *Quit to title*, F7, the ✕ (0.15 s to close
+  cannot pose. **A237:** the words, the view kept and the new lengths, 14 mutants, 14 red. ⚠️ **Not guarded, driven by hand in a window instead:** the picture itself, *Quit to title*, F7, the ✕ (0.15 s to close
   with its picture), the ✕ minimised (closes at once, the last picture stands).
 - Red-checked, the reds counted (D326). The four checks as `CLAUDE.md` says; **the suite by D846's rule** — this piece changes no
   sim, data or test file, so it is skipped and the record says so.

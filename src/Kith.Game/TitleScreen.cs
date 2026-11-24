@@ -232,7 +232,7 @@ public sealed partial class TitleScreen : Control
     /// </summary>
     public override void _UnhandledKeyInput(InputEvent e)
     {
-        if (Lift is not (LiftStep.None or LiftStep.Easing or LiftStep.Done))
+        if (Lift is not (LiftStep.None or LiftStep.Arriving or LiftStep.Done))
         {
             if (e is InputEventKey { Pressed: true, Echo: false })
             {
