@@ -554,6 +554,7 @@ public partial class Main : Control
             if (_probeFrames == 12)
             {
                 _whatsHerePosedOn = PoseWhatsHere();
+                PoseTheRosterOpen(true);
             }
 
             return;
@@ -604,6 +605,7 @@ public partial class Main : Control
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
+        PoseTheRosterOpen(false);
         GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheHillsAreShadedAndSaid());
         GD.Print(TheHomeCardSaysTheShopWalk());
@@ -650,7 +652,7 @@ public partial class Main : Control
         GD.Print(TheRiverKeepsTheGamesSpeed());
         SaveTheValleyBake();
         GD.Print(EveryTickSaysWhatTheMapIsActuallyDoing());
-        GD.Print(EveryWindowTickSaysWhatTheWindowIsDoing());
+        GD.Print(EveryWindowHasItsWordAndOpensAsItShould());
         GD.Print(_map.TheTreesAreScatteredAndOverhang());
         GD.Print(_map.TheDepositsAreScatteredAndOverhang());
         GD.Print(_map.TheSceneryIsMeshed());
@@ -2767,8 +2769,14 @@ public partial class Main : Control
     /// </summary>
     internal const string LoreTitle = "Lore";
 
-    /// <summary>The roster's title — the window the settings file remembers it by.</summary>
-    internal const string RosterTitle = "The village";
+    /// <summary>
+    /// The roster's title — the window the settings file remembers it by. <i>People</i> since D876 (call 8, A215: shorter on the
+    /// windows' column, and the title follows); <see cref="FormerTitles"/> keeps what <i>The village</i> remembered.
+    /// </summary>
+    internal const string RosterTitle = "People";
+
+    /// <summary>The stock limits' window — <i>Stores</i> since D876 (call 8); it was <i>Stock limits</i>.</summary>
+    internal const string StoresTitle = "Stores";
     private PanelContainer _treePanel = null!;
     private TechTreeView _treeView = null!;
     private bool _treeEverOpened;
@@ -2863,13 +2871,7 @@ public partial class Main : Control
             _treeButton.Visible = world.ShownTheTechTree;
         }
 
-        // ⭐ B2 (D486, Joe: *"'Tree' is not in Settings until the tech tree is first unlocked"*).
-        // Settings makes a tick for every window, so the Tree was listed from the founding while
-        // its button was hidden. The same latch gates both.
-        if (WindowOf(_treePanel)?.Tick is CheckBox treeTick)
-        {
-            treeTick.Visible = world.ShownTheTechTree;
-        }
+        // ⭐ B2 (D486): not offered until the tech tree is first unlocked — its word on the column is `_treeButton` itself.
 
         ulong season = world.Tick / (ulong)world.Config.TicksPerSeason;
         if (_treePanel.Visible && season != _treeSeason)
@@ -2896,7 +2898,7 @@ public partial class Main : Control
         if (WindowOf(_treePanel) is ShellWindow window)
         {
             window.Wanted = true;
-            window.Tick?.SetPressedNoSignal(true);
+            window.Toggle?.SetPressedNoSignal(true);
         }
 
         _treePanel.Visible = true;
@@ -3473,12 +3475,14 @@ public partial class Main : Control
 
         _seedLabel.Text = TheRunLine(world);
 
-        // The Settings ticks read the windows' state rather than remembering what they were set
-        // to (D380): a ✕ on a panel writes `Wanted`, and the tick follows next frame.
+        // The column's words read the windows' state rather than remembering what they were set
+        // to (D380): a ✕ on a panel writes `Wanted`, and the word follows next frame.
         for (int i = 0; i < _windows.Count; i++)
         {
-            _windows[i].Tick?.SetPressedNoSignal(_windows[i].Wanted);
+            _windows[i].Toggle?.SetPressedNoSignal(_windows[i].Wanted);
         }
+
+        _settingsWord?.SetPressedNoSignal(_settingsPanel.Visible);
 
         // WHAT IS IN THE STORES, one cell per good (D83). Totals across every granary and
         // warehouse, not the first of each (D38) — a village that has built a second one should
@@ -4616,6 +4620,7 @@ public partial class Main : Control
         // Last of the panels, because it lists the ones built before it.
         BuildSettingsPanel();
         BuildControlPanel();
+        BuildTheWindowsColumn();
 
         // ⭐ START PAUSED (Joe, 2026-08-25): the player unpauses to begin. It was 1.0, so
         // the valley started running the moment the window appeared — and the founding is
@@ -5172,6 +5177,7 @@ public partial class Main : Control
     private void BuildMinimapPanel()
     {
         VBoxContainer body = InColumn(right: true, 0, "The valley");
+        _minimapPanel = _panels[^1];
 
         _minimap = new Minimap();
         _minimap.LookAt += tile => _map.CentreOn(tile);
@@ -5179,6 +5185,11 @@ public partial class Main : Control
     }
 
     private Minimap _minimap = null!;
+
+    /// <summary>The valley's window (the minimap) and the log's — named for the windows' column (D876).</summary>
+    private PanelContainer _minimapPanel = null!;
+
+    private PanelContainer _villageLogPanel = null!;
 
     /// <summary>The story so far — Banished's event log, in much the same corner.</summary>
     private void BuildLogPanel()
@@ -5188,6 +5199,7 @@ public partial class Main : Control
         // minimum of zero. Measured: `chars 73, size 288x0` — **every line the village had
         // narrated was present and none of it was drawn.** See `BuildRosterPanel`.
         VBoxContainer body = InColumn(right: true, 0, "Village log");
+        _villageLogPanel = _panels[^1];
 
         // ⭐ BBCODE IS ON SO A CELEBRATION CAN READ AS ONE (Joe, 2026-08-27: a discovery should be
         // *"a different font color in the village log"*). ⚠️ **Everything appended must go through
@@ -5339,6 +5351,11 @@ public partial class Main : Control
         // because panels used to borrow the column's — and the two panels whose content already
         // scrolled are the two it broke. *A self-scrolling control needs a HEIGHT, not a scroll.*
         VBoxContainer body = InColumn(right: false, 0, RosterTitle);
+
+        // ⭐ CLOSED ON A NEW VILLAGE (A211, Joe: *"Close the roster by default"*): one word on the windows' column away.
+        _rosterPanel = _panels[^1];
+        _rosterPanel.Visible = false;
+        _windows[^1].Wanted = false;
 
         _roster = MakeTheRoster();
         ShowTheRosterOrder();
@@ -5775,7 +5792,7 @@ public partial class Main : Control
     private void BuildStockLimitsPanel()
     {
         VBoxContainer body = Floating(
-            Edge + DefaultPanelWidth + 16f, Edge, StockLimitsWidth, 0f, Corner.TopLeft, "Stock limits", startOpen: true);
+            Edge + DefaultPanelWidth + 16f, Edge, StockLimitsWidth, 0f, Corner.TopLeft, StoresTitle, startOpen: true);
 
         _docked.Add((_panels[^1], false));
         _stockLimitsPanel = _panels[^1];
@@ -6142,37 +6159,9 @@ public partial class Main : Control
         // ⚠️ They are still BUTTONS rather than checkboxes: Routes is a three-way cycle and
         // Ground is on/off-with-a-reading, and a checkbox cannot say either.
 
-        // With a valley this size and free panning, getting lost is easy and a way
-        // back is not optional.
-        var recentre = new Button { Text = "Centre on village" };
-        recentre.Pressed += () => _map.CentreOnTheVillage();
-        controls.AddChild(recentre);
-
-        // ⭐ THE WAY BACK TO EVERY WINDOW YOU SWITCHED OFF (Joe). It lives on the control bar
-        // rather than in a panel, because the control bar is the one thing that is always
-        // there — a settings menu reachable only from a window you might have hidden would be
-        // a door that locks behind you. **It is the last of the four to survive here, and it
-        // is the one that cannot move**: Settings is now the door to Routes, Ground,
-        // Professions and Limits alike, so a Settings button hidden inside Settings would lock
-        // every one of them away at once.
-        var settings = new Button { Text = "Settings" };
-        settings.Pressed += ToggleSettings;
-        controls.AddChild(settings);
-
-        // ⭐ RECORDS, ONE CLICK AWAY, ONCE THE HALL STANDS (D397, Joe: *"that button should also
-        // show up in the main control bar when town hall is built, so it is one click away,
-        // because it will eventually open a window with a ton of useful information"*). Beside
-        // Settings for Settings' reason — the bar is the one thing that is always there.
-        // ⛔ Not wired yet; it says so (D103).
-        _recordsButton = new Button { Text = "Records", Visible = false };
-        _recordsButton.Pressed += OpenTheRecords;
-        controls.AddChild(_recordsButton);
-
-        // ⭐ THE TREE, ONCE THE VILLAGE HAS LEARNED SOMETHING BY DOING (Joe, D440: *"a 'Tree' button on
-        // the control bar"*). Hidden until then, so the bar is the same bar until the introduction.
-        _treeButton = new Button { Text = LoreTitle, Visible = false, TooltipText = "What the village may yet learn, and what each will take" };
-        _treeButton.Pressed += ToggleTheTree;
-        controls.AddChild(_treeButton);
+        // ⛔ CENTRE, SETTINGS, RECORDS AND LORE HAVE LEFT THIS BAR FOR THE WINDOWS' COLUMN (D876, `hud.md §9.3`) — the
+        // column is the one thing always there now, so Settings' reason for living here (a door that cannot lock behind
+        // you) holds there: <see cref="BuildTheWindowsColumn"/>.
 
         // ⭐ THE TABS SIT WITH THE SPEED CONTROLS, NOT ABOVE THEM (Joe's mockup). One strip is
         // the whole point: *"give me more room to see the game map"* (D305) was answered by
@@ -6360,6 +6349,8 @@ public partial class Main : Control
             PlaceWhatThePlayerPlaced();
             KeepWindowsOnScreen();
         }
+
+        PlaceTheWindowsColumn();
     }
 
 
@@ -7093,7 +7084,9 @@ public partial class Main : Control
         public required string Name { get; init; }
         public required PanelContainer Panel { get; init; }
         public bool Wanted { get; set; } = true;
-        public CheckBox? Tick { get; set; }
+
+        /// <summary>Its word on the windows' column (D876; Settings' tick until then) — What's here has none.</summary>
+        public Button? Toggle { get; set; }
     }
 
     /// <summary>The window a panel belongs to, or null for the two that are not windows (Settings, the bars).</summary>
@@ -7134,6 +7127,9 @@ public partial class Main : Control
     private PanelContainer _professionsPanel = null!;
 
     private PanelContainer _stockLimitsPanel = null!;
+
+    /// <summary>The roster, <i>People</i> — closed on a new village (A211).</summary>
+    private PanelContainer _rosterPanel = null!;
 
     private PanelContainer _settingsPanel = null!;
 
@@ -7246,25 +7242,9 @@ public partial class Main : Control
         // hint line the control bar already carries is not repeated here.
         body.AddChild(Muted("Windows"));
 
-        // ⛔ THE TICK READS THE STATE; IT DOES NOT ONLY WRITE IT (D380). These were `ButtonPressed
-        // = true` once at build: *Stock limits* read ticked while hidden from the founding, and
-        // *What's here* untick held for a frame. `Refresh` syncs every tick from `Wanted`.
-        foreach (ShellWindow window in _windows)
-        {
-            var shown = new CheckBox { Text = window.Name, ButtonPressed = window.Wanted };
-            shown.AddThemeFontSizeOverride("font_size", 12);
-            shown.Toggled += on =>
-            {
-                window.Wanted = on;
-                window.Panel.Visible = on;
-
-                // A tick set is asking for the window, so it undoes a ✕ on What's here (B3).
-                _whatsHereShut &= !(on && window.Panel == _whatsHerePanel);
-                SettingsChanged();
-            };
-            window.Tick = shown;
-            body.AddChild(shown);
-        }
+        // ⛔ THE WINDOW TICKS HAVE GONE TO THE WINDOWS' COLUMN (D876, `hud.md §9.3`, A215): one word a window in the
+        // bottom-left corner shows or hides it, held in lapis while shown. Settings keeps display and game settings only —
+        // and the reset below, which is about where windows sit, not whether.
 
         // ⭐ Joe: *"'reset all panels' could maybe be a settings button."* Under Windows, because
         // it is about windows; run once after the first layout pass and then never automatically.
@@ -8174,11 +8154,7 @@ public partial class Main : Control
             }
         }
 
-        // The hall standing shows the Records button on the controls row (D397) — a fourth thing.
-        if (_recordsButton is { Visible: true })
-        {
-            earned += 1000;
-        }
+        // (The hall's Records word is on the windows' column since D876, so it no longer moves the bar.)
 
         var key = new Vector3(Mathf.Round(wanted), Mathf.Round(_uiScale * 1000f), earned);
         if (key == _barPinnedFor)
@@ -8952,64 +8928,6 @@ public partial class Main : Control
         return wrong.Count == 0
             ? $"[widths] map toggles: ✅ all {_viewToggles.Count} ticks match the map"
             : "[widths] map toggles: ⛔ " + string.Join("; ", wrong);
-    }
-
-    /// <summary>
-    /// Every Settings window tick equals its window's state, and a window that starts hidden
-    /// starts unticked — <b>a probe line</b> (D380).
-    /// </summary>
-    /// <remarks>
-    /// Red on the code it replaced: the ticks were written <c>true</c> once at build, so *Stock
-    /// limits* read *"the tick says True, the window is hidden"* from the first frame.
-    /// </remarks>
-    private string EveryWindowTickSaysWhatTheWindowIsDoing()
-    {
-        Refresh();
-        var wrong = new List<string>();
-        for (int i = 0; i < _windows.Count; i++)
-        {
-            ShellWindow window = _windows[i];
-            bool ticked = window.Tick?.ButtonPressed ?? window.Wanted;
-            if (ticked != window.Wanted)
-            {
-                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Wanted ? "wanted" : "not wanted")}");
-            }
-
-            // What's here also answers to the selection, so only the others are held to it.
-            if (window.Panel != _whatsHerePanel && window.Panel.Visible != window.Wanted)
-            {
-                wrong.Add($"{window.Name}: the tick says {ticked}, the window is {(window.Panel.Visible ? "shown" : "hidden")}");
-            }
-        }
-
-        bool limitsStartHidden = _windows.Exists(w => w.Panel == _stockLimitsPanel && !w.Wanted && !w.Panel.Visible);
-        if (!limitsStartHidden)
-        {
-            wrong.Add("Stock limits should start hidden and unticked");
-        }
-
-        // D730 (Joe: *"this panel should be off by default in the settings"*).
-        bool queueStartsHidden = _windows.Exists(w => w.Panel == _buildQueuePanel && !w.Wanted && !w.Panel.Visible);
-        if (!queueStartsHidden)
-        {
-            wrong.Add("Build queue should start hidden and unticked");
-        }
-
-        // B1 (Joe, 2026-10-04): the Professions window is shown AND unfolded at the founding.
-        if (!_professionsPanel.Visible || !_professionsBody.Visible)
-        {
-            wrong.Add("Professions should start shown and open");
-        }
-
-        // B2 (D486): before the tree is first shown, Settings does not list it.
-        if (!_loop.World.ShownTheTechTree && WindowOf(_treePanel)?.Tick is { Visible: true })
-        {
-            wrong.Add($"{LoreTitle} is listed in Settings before it is shown");
-        }
-
-        return wrong.Count == 0
-            ? $"[widths] windows: ✅ all {_windows.Count} ticks match their windows; Stock limits and Build queue start hidden and unticked; Professions starts open; {LoreTitle} is not in Settings until it is shown"
-            : "[widths] windows: ⛔ " + string.Join("; ", wrong);
     }
 
     /// <summary>The bare tile the probe opened <i>What's here</i> on (B3), or null if it found none.</summary>

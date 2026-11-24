@@ -63,7 +63,7 @@ by an exception to this line.
 | View | *The village* panel's order (D609; its column titles since D616): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
 | View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
-| Windows | each window's Settings tick (*shown*) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
+| Windows | each window's Settings tick (*shown*; its word on the windows' column since D876, `hud.md §9.3`) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
 | Windows | where the player **dragged** it | `windows.<title>.side/x/y` |
 | New game | each row's value from the last valley founded | `new_game.<row id>` |
 

@@ -57,7 +57,10 @@ public partial class Main
     /// A window's title before it was renamed, read once from an older settings file so the window keeps where the player put
     /// it (D815: <i>Lore</i> was <i>Tree</i>); it is written under the new title from then on.
     /// </summary>
-    private static readonly Dictionary<string, string> FormerTitles = new(StringComparer.Ordinal) { [LoreTitle] = "Tree" };
+    private static readonly Dictionary<string, string> FormerTitles = new(StringComparer.Ordinal)
+    {
+        [LoreTitle] = "Tree", [RosterTitle] = "The village", [StoresTitle] = "Stock limits", // D815; D876 (call 8)
+    };
 
     /// <summary>A window with a title: its fold, the side it starts on, and what it is called in the file.</summary>
     private sealed record TitledPanel(string Title, PanelContainer Panel, Button Header, bool Right);
