@@ -185,6 +185,66 @@ public partial class Main
     }
 
     /// <summary>
+    /// ⭐ <c>numerals:</c> (<c>hud.md §12</c>, step 8) — the strip's amounts (the goods, the headcounts, the food figure), the
+    /// <c>more ▾</c> rows, every Stock limits field and Professions' numbers are set in Cardo, the reading face; the date and
+    /// the runway, words with figures in them, stay in the body face.
+    /// </summary>
+    private string TheAmountsAreInLiningFigures()
+    {
+        if (UiLook.ReadingFace is not Font cardo)
+        {
+            return "[widths] numerals: ✅ slate — no reading face, every label keeps its face";
+        }
+
+        var faults = new List<string>();
+        int checkedCount = 0;
+        void Want(Control control, bool cardoWanted, string what)
+        {
+            checkedCount++;
+            bool isCardo = ReferenceEquals(control.GetThemeFont("font"), cardo);
+            if (isCardo != cardoWanted)
+            {
+                faults.Add($"{what} is {(isCardo ? "Cardo" : "not Cardo")}");
+            }
+        }
+
+        foreach ((Goods goods, Label held) in _goodsReadouts)
+        {
+            Want(held, true, $"the {_loop.World.GoodsCatalog.NameOf(goods)} amount");
+        }
+
+        foreach ((Label cell, string name) in new[] { (_populationCell, "villagers"), (_childrenCell, "children"), (_eldersCell, "elders"), (_foodFigure, "the food figure") })
+        {
+            Want(cell, true, name);
+        }
+
+        foreach ((Goods goods, Control[] cells) in _goodRows)
+        {
+            if (cells.Length > 2 && cells[2] is SpinBox limit)
+            {
+                Want(limit.GetLineEdit(), true, $"the {_loop.World.GoodsCatalog.NameOf(goods)} limit");
+            }
+        }
+
+        foreach ((JobKind _, Control[] cells) in _professionRows)
+        {
+            // ⚠️ The number sits inside the stepper's box, not as a cell of its own: this clause scored ZERO against a
+            // professions' number in the body face until it looked inside the cells (D881).
+            IEnumerable<Label> labels = cells.SelectMany(c => c.FindChildren("*", nameof(Label), owned: false).OfType<Label>().Concat(c is Label l ? new[] { l } : System.Array.Empty<Label>()));
+            if (labels.FirstOrDefault(l => int.TryParse(l.Text, out _)) is Label asked)
+            {
+                Want(asked, true, "a profession's number");
+            }
+        }
+
+        Want(_clockLabel, false, "the date");
+        Want(_runwayLabel, false, "the runway");
+        return faults.Count == 0
+            ? $"[widths] numerals: ✅ {checkedCount - 2} amounts in Cardo — the strip's, more ▾'s, every stock limit and the professions' numbers; the date and the runway in the body face"
+            : $"[widths] numerals: ⛔ {string.Join("; ", faults.Distinct())}";
+    }
+
+    /// <summary>
     /// <c>runway:</c> — the strip's runway against the sum done here from the config and the living (an adult or elder eats an
     /// adult's year, a child a child's): at the founding 1,200 × 4 ÷ (4 × 168) = 7 seasons, the spec's own number.
     /// </summary>

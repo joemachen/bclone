@@ -209,12 +209,14 @@ public partial class Main
         name.CustomMinimumSize = new Vector2(SiteNameRoom(name), 0);
 
         Label materials = Body(string.Empty);
+        UiLook.Figures(materials);
         materials.ClipText = true;
         materials.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         materials.CustomMinimumSize = new Vector2(BuildQueueMaterialsWidth, 0);
         materials.MouseFilter = MouseFilterEnum.Pass;
 
         Label work = Body(string.Empty);
+        UiLook.Figures(work);
         work.HorizontalAlignment = HorizontalAlignment.Right;
         work.CustomMinimumSize = new Vector2(BuildQueueWorkWidth, 0);
 

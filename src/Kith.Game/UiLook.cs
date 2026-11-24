@@ -116,6 +116,20 @@ internal static class UiLook
         Theme is { } theme && theme.HasFont(name, Type) ? theme.GetFont(name, Type) : null;
 
     /// <summary>
+    /// ⭐ An amount in lining figures (<c>hud.md §12</c>, D881; call 7): set in the reading face, Cardo, whose 0 is a 0 —
+    /// Grenze Gotisch's old-style 0 reads as <i>o</i>. For amounts on their own (the strip, <c>more ▾</c>, the stock
+    /// limits, the professions' numbers, the build queue's columns, the dev bar); figures inside a sentence stay in the
+    /// body face. On slate the mark names nothing and the label keeps its face.
+    /// </summary>
+    internal static void Figures(Control control)
+    {
+        if (ReadingFace is Font cardo)
+        {
+            control.AddThemeFontOverride("font", cardo);
+        }
+    }
+
+    /// <summary>
     /// A painted control the look names — a card's pin, normal, under the pointer and pinned (<c>hud.md §8.3</c>, A217) — or
     /// null on slate, where the control keeps the glyph it had.
     /// </summary>

@@ -235,6 +235,7 @@ public partial class Main
 
         if (_frameCounter is not null)
         {
+            UiLook.Figures(_frameCounter);
             RemoveChild(_frameCounter);
             _frameCounter.Position = Vector2.Zero;
             body.AddChild(_frameCounter);

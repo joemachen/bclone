@@ -596,6 +596,7 @@ public partial class Main : Control
         GD.Print(TheZerosLeaveTheFront("at the founding"));
         GD.Print(TheFoodFigureIsTheVillages());
         GD.Print(TheRunwayIsTheSum());
+        GD.Print(TheAmountsAreInLiningFigures());
         GD.Print(TheDevBarHoldsTheDebugTools());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
         GD.Print(TheWindowIsFullScreenByDefault());
@@ -4718,6 +4719,7 @@ public partial class Main : Control
     private static Label Amount(float width = AmountWidth)
     {
         Label label = Body(string.Empty);
+        UiLook.Figures(label); // lining figures (hud.md §12, D881)
         label.HorizontalAlignment = HorizontalAlignment.Right;
         label.SizeFlagsHorizontal = SizeFlags.ExpandFill;
 
@@ -5756,6 +5758,7 @@ public partial class Main : Control
         int asked = _loop.World.JobLimits.For(kind) ?? 0;
 
         Label amount = Body($"{asked}");
+        UiLook.Figures(amount);
         amount.CustomMinimumSize = new Vector2(18, 0);
         amount.HorizontalAlignment = HorizontalAlignment.Right;
 
@@ -7396,6 +7399,7 @@ public partial class Main : Control
             CustomMinimumSize = new Vector2(74, 0),
         };
         amount.SetValueNoSignal(starts ?? 0);
+        UiLook.Figures(amount.GetLineEdit());
 
         var clear = new Button { Text = "clear", Flat = true, Disabled = starts is null };
 

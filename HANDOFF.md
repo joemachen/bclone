@@ -11083,6 +11083,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **A per-frame tint wipes any colour set less often** (D880): the library's owed tint runs every refresh and would have
   undone the gold *new* mark each frame; the probe, reading straight after a relight, could not see it. Look for every
   writer of a channel before trusting a mark set in it.
+- **A clause that finds nothing passes** (D881): `numerals:` looked for the professions' number among a row's cells, and the
+  number sits inside the stepper box — so it checked nothing and scored zero. When a check iterates, print or assert how
+  many it checked.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
