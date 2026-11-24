@@ -12,15 +12,17 @@
 
 ### 1.1 How big things get on screen
 The game lays out at **1280 × 800 logical pixels** and stretches to the window (`canvas_items`); the **UI-size dial runs
-55–115 %** (default 75 %, D305). One logical pixel of UI is therefore drawn at:
+75–150 %** (default 100 %; until D875 it read 55–115 at 75 — the same sizes, `hud.md §11`). One logical pixel of UI is
+therefore drawn at:
 
 | Case | Physical px per logical px |
 |---|---|
-| Smallest: a 1280-wide window, dial at 55 % | **0.55** |
-| Joe today: 1920 × 1080, 75 % | **≈ 1.0** |
-| Largest: 3840-wide (4K), dial at 115 % | **3.45** |
+| Smallest: a 1280-wide window, dial at 75 % (version 1's 55) | **0.56** |
+| Joe today: 1920 × 1080, 100 % (version 1's 75) | **≈ 1.0** |
+| Largest: 3840-wide (4K), dial at 150 % (version 1's 115) | **3.38** |
 
-⏭️ *A213 (not yet built): today's 75 % becomes the dial's 100 % and the dial 75–150 % (`hud.md §11`); the physical sizes in this table do not change, only the number the dial shows.*
+✅ *Relabelled at D875 (A213): the dial's 100 draws at 0.75 of the layout; no physical size in this table moved beyond the
+ends' rounding (55 → 56.25 % drawn, 115 → 112.5 %).*
 
 So a 20-logical icon lands between **11 and 69 physical pixels** (A101: raised from 14, which landed at 8–48 and was
 a speck on Joe's screen in every Phase 1 direction). **Every master is painted at 4 × its logical size or more**, and
@@ -51,10 +53,10 @@ every icon must still read at 8 px (§1.3) — the test stays stricter than the 
 |---|---|---|
 | Ink | `#2a2018` | outlines, text |
 | Ink, muted | `#5c4833` | secondary text, faint marks |
-| Rubric | `#9b2d1f` | headings, held, warnings, deaths |
+| Rubric | `#9b2d1f` | headings, warnings, deaths — *held* went to lapis (`hud.md §10`, D874) |
 | Verdigris (ok) | `#2f5a28` | working, met (darkened from A97's `#3b6a33` for 4.5 : 1 over the washes) |
 | Gold leaf | `#c4983e` | the illuminated bar, owed gifts, highlights |
-| Lapis | `#30488c` | the illuminated bar, born |
+| Lapis | `#30488c` | the illuminated bar, born; **held, selected, on** — the pressed swash, the ticked seal, a pinned pin (`hud.md §10`, D874) |
 | Parchment | `#ead3a9` | the sheet (mottled ±10) — as painted and measured (A101; A97's `#ecdeba` before it) |
 | Roll | `#decca0` | the rolled paper |
 | Washes | tea `#aa783c`, ochre `#b48c46`, green `#788c5a`, umber `#966e50` | watercolour, 10–22 % opacity, pooled rims |
@@ -105,13 +107,13 @@ small custom StyleBox to draw it at half (Godot's `StyleBoxTexture` draws textur
 | `controls/pill.png` | any × 16 | 96 × 64, 9-patch 28/0/28/0 | **A ribbon** with an ink edge: *Fed*, *Warm*, *Housed*. Met: verdigris, swallowtail ends; unmet: rubric, frayed square ends — a change of form as well as colour (A102). | met (verdigris), unmet (rubric) |
 | `controls/light.png` | 8 × 8 | 32 × 32 | A small round wash, inked: a card's working light. | working, stopped |
 | `controls/rule-h.png` / `rule-v.png` | any × 2 | 256 × 8, 9-patch 16/0/16/0 | **A pen stroke** that thickens and tapers at its ends. | — |
-| `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. | — |
-| `controls/underline-lapis.png` · `underline-gold.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **The same swash in lapis** (`#30488c`, held and on) **and in gold leaf** (`#c4983e`, new until clicked) — `hud.md §8.3, §10` (A216). Painted by `p2_controls.jsx`, the underline's own stroke and dry brush; not wired until `slice/hud`. | — |
-| `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. | ticked, disabled (45 %) |
+| `controls/underline.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **A rubric swash** under a held button. ⚠️ **Unworn since D874** (`hud.md §10`: held is lapis) — kept for the art lane to delete or keep. | — |
+| `controls/underline-lapis.png` · `underline-gold.png` | any × 3 | 256 × 12, 9-patch 24/0/24/0 | **The same swash in lapis** (`#30488c`, held and on) **and in gold leaf** (`#c4983e`, new until clicked) — `hud.md §8.3, §10` (A216). Painted by `p2_controls.jsx`, the underline's own stroke and dry brush. **The lapis swash is worn under every held button since D874; the gold under every new word since D880** (`hud.md §8.3`). | — |
+| `controls/checkbox-ticked-lapis.png` | 14 × 14 | 56 × 56 | **The ticked seal in lapis wax** (`#30488c`, lit `#8ea6e0`, shaded `#0a1028`), for *on* — `hud.md §10` (A216). The wax painted alone with the red seal's own seed and laid over the game's painted empty socket (`checkbox.png`): the library's pen has changed since A102, so a socket repainted today would not be the one in the game. **Worn on every ticked box since D874**; the red `checkbox-ticked*.png` are unworn. | ticked, disabled (45 %) |
 | `controls/button-wax-normal.png` · `-hover` · `-pressed` · `-focus` · `-disabled` | 9-patch, 250 × 46 drawn | 1064 × 248 (4 ×), margins 150 / 100 / 150 / 100, reaching 8 px past the box | **The primary button as a slab of the seal's wax** (A224, `logo.md §8`) — the seal's recipe on a long pour, the word in a pressed field; hover warms the wax, pressed turns its light over, *focus* is the slab's edge inked heavier alone (drawn over the state), disabled at 45 %. Every red primary: the title's and the new valley's *Found*. | normal, hover, pressed, focus, disabled |
 | `controls/grip.png` | 10 × 14 | 40 × 56 | Two columns of three ink dots (today's `⋮⋮`). | normal, hover |
-| `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above (today's `⌖`). | normal, hover, pinned (rubric head) |
-| `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. Not wired until `slice/hud`. | pinned |
+| `controls/pin.png` | 14 × 14 | 56 × 56 | A pushpin seen from above — **worn on every card since D874** (`UiLook.NamedIcon`; slate keeps `⌖`). | normal, hover; pinned wears `pin-pinned-lapis` (the rubric `pin-pinned.png` is unworn) |
+| `controls/pin-pinned-lapis.png` | 14 × 14 | 56 × 56 | **The pinned pin with a lapis head** (`#30488c`) — pinned is *on*, so lapis (`hud.md §10`, A217). Painted whole by `p2_controls.jsx` with `pin-pinned`'s own seed: the same pin to 1/255 of its outline. **Worn on a pinned card since D874.** | pinned |
 | `controls/close.png` | 14 × 14 | 56 × 56 | A pen cross (today's `✕`). | normal, hover (rubric) |
 | `controls/find.png` | 14 × 14 | 56 × 56 | A ringed eye, or a magnifying lens. | normal, hover |
 | `controls/fold.png` / `unfold.png` | 14 × 14 | 56 × 56 | **An arrow to or from a pen line** (the sheet's edge): folding up / unfolding — no roll (A115). | normal, hover |

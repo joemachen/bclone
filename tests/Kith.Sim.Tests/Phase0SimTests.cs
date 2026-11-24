@@ -460,7 +460,9 @@ public sealed class Phase0SimTests
         Assert.Equal(47, villager.WintersSurvived);
 
         IReadOnlyList<string> log = Phase0Fixtures.LifeLog(sink);
-        Assert.Equal("Flintbrook begins. Spring, Year 1, no food stored.", log[0]);
+        // Re-pinned (D882, `hud.md §14` step 9): the village of one's store holds its forty, so its line says so.
+        Assert.StartsWith("Flintbrook begins with stores of 40 food", log[0], StringComparison.Ordinal); // no cart: a store
+        Assert.EndsWith(". Spring, Year 1.", log[0], StringComparison.Ordinal);
         // ⚠️ THE ENDING, NOT THE LAST LINE — the third guard to want this, and all three for one
         // cause. Flintbrook masters foraging inside their forty-eight years, so the death is followed by
         // a line saying what went with her (`KnowledgeSystem` runs after `MortalitySystem`, by

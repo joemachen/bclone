@@ -36,6 +36,7 @@ internal static class ParchmentLook
     internal static readonly Color RubricInk = new("#7b2318"); // the rubric as words: #9b2d1f 4.55 (A116), #8b281b 4.08 on the weathered paper (A117)
     internal static readonly Color VerdigrisInk = new("#264a21"); // the verdigris as words: #2f5a28 4.85 (A116), #2c5526 4.05 (A117)
     internal static readonly Color Lapis = new("#2a3f7b"); // the lapis as words (the log's buildings): #30488c read 4.06 on the weathered paper (A117)
+    internal static readonly Color LapisFill = new("#30488c"); // the palette's lapis, for a mark rather than a word (hud.md §10)
     internal static readonly Color GoldInk = new("#553e0c"); // #6e5010 4.50 (A116), #61470e 4.09 on the weathered paper (A117)
     internal static readonly Color OchreInk = new("#62370c"); // #7a4510 4.72 (A116), #703f0e 4.10 (A117)
 
@@ -43,7 +44,7 @@ internal static class ParchmentLook
     internal static readonly (string Role, Color Colour)[] Words =
     {
         ("text", Ink), ("text_faint", InkMuted), ("text_soft", InkSoft), ("text_hint", InkMuted), ("text_dim", InkDim),
-        ("text_strong", Ink), ("working", VerdigrisInk), ("stopped", RubricInk), ("owed", GoldInk), ("held", RubricInk),
+        ("text_strong", Ink), ("working", VerdigrisInk), ("stopped", RubricInk), ("owed", GoldInk), ("held", Lapis),
         ("refused", RubricInk), ("saved", VerdigrisInk), ("known", VerdigrisInk), ("stamp", InkDim), ("log_death", RubricInk),
         ("log_life", VerdigrisInk), ("log_discovery", GoldInk), ("log_warning", OchreInk), ("log_building", Lapis),
         ("log_season", InkMuted), ("log_ordinary", Ink),
@@ -75,7 +76,14 @@ internal static class ParchmentLook
         }
 
         theme.SetColor("text_ghost", t, InkDim with { A = 0.7f });
-        theme.SetColor("selected_edge", t, Rubric);
+        // ⭐ Red for warnings, lapis for selected, held and on (hud.md §10, A207): red means something is wrong.
+        theme.SetColor("selected_edge", t, LapisFill);
+
+        // ⭐ New, until clicked (hud.md §8.3, D880): the gold word and the gold-leaf swash (A216's underline-gold).
+        theme.SetColor("new", t, GoldInk);
+        PaintedPatch newSwash = PaintedPatch.Make(Tex("controls/underline-gold.png"), 0.25f, new Vector4(24, 0, 24, 0), new Vector4(6, 4, 6, 4));
+        newSwash.Band = 3f;
+        theme.SetStylebox("new_swash", t, newSwash);
         theme.SetColor("card_edge", t, InkMuted);
         theme.SetColor("tree_edge", t, Ink with { A = 0.35f });
         theme.SetColor("empty", t, Ink with { A = 0.12f });
@@ -224,7 +232,7 @@ internal static class ParchmentLook
         theme.SetStylebox("grabber_area", "HSlider", Groove(Ink with { A = 0.7f }));
         theme.SetStylebox("grabber_area_highlight", "HSlider", Groove(Ink with { A = 0.7f }));
         theme.SetIcon("grabber", "HSlider", InkDisc(Ink));
-        theme.SetIcon("grabber_highlight", "HSlider", InkDisc(RubricInk));
+        theme.SetIcon("grabber_highlight", "HSlider", InkDisc(Lapis));
     }
 
     private static StyleBoxFlat Groove(Color ink)
@@ -279,11 +287,11 @@ internal static class ParchmentLook
         theme.SetStylebox("panel", "PopupMenu", slip);
         theme.SetStylebox("panel", "TooltipPanel", slip);
 
-        // ---- buttons: ink words on the sheet; a faint wash under the pointer; a rubric swash under a held one ----
+        // ---- buttons: ink words on the sheet; a faint wash under the pointer; a lapis swash under a held one (hud.md §10) ----
         var flat = new StyleBoxEmpty { ContentMarginLeft = 6, ContentMarginRight = 6, ContentMarginTop = 4, ContentMarginBottom = 4 };
         var hover = new StyleBoxFlat { BgColor = Ink with { A = 0.07f }, ContentMarginLeft = 6, ContentMarginRight = 6, ContentMarginTop = 4, ContentMarginBottom = 4 };
         hover.SetCornerRadiusAll(3);
-        PaintedPatch held = PaintedPatch.Make(Tex("controls/underline.png"), 0.25f, new Vector4(24, 0, 24, 0), new Vector4(6, 4, 6, 4));
+        PaintedPatch held = PaintedPatch.Make(Tex("controls/underline-lapis.png"), 0.25f, new Vector4(24, 0, 24, 0), new Vector4(6, 4, 6, 4));
         held.Band = 3f;
         foreach (string type in new[] { "Button", "CheckBox", "CheckButton", "OptionButton", "MenuButton" })
         {
@@ -295,22 +303,27 @@ internal static class ParchmentLook
             theme.SetStylebox("focus", type, new StyleBoxEmpty());
             theme.SetColor("font_color", type, Ink);
             theme.SetColor("font_hover_color", type, Ink);
-            theme.SetColor("font_pressed_color", type, RubricInk);
-            theme.SetColor("font_hover_pressed_color", type, RubricInk);
+            theme.SetColor("font_pressed_color", type, Lapis);
+            theme.SetColor("font_hover_pressed_color", type, Lapis);
             theme.SetColor("font_focus_color", type, Ink);
             theme.SetColor("font_disabled_color", type, InkMuted with { A = 0.6f });
             theme.SetColor("icon_normal_color", type, Colors.White);
         }
 
-        // ---- the checkbox: an inked ring; a red wax seal when ticked (A102) ----
+        // ---- the checkbox: an inked ring; a lapis wax seal when ticked (A102; lapis since hud.md §10, A216) ----
         Texture2D Box(string name) => SizedTexture.Of(Tex("controls/" + name + ".png"), 14, 14);
         foreach (string type in new[] { "CheckBox", "CheckButton" })
         {
             theme.SetIcon("unchecked", type, Box("checkbox"));
-            theme.SetIcon("checked", type, Box("checkbox-ticked"));
+            theme.SetIcon("checked", type, Box("checkbox-ticked-lapis"));
             theme.SetIcon("unchecked_disabled", type, Box("checkbox-disabled"));
-            theme.SetIcon("checked_disabled", type, Box("checkbox-ticked-disabled"));
+            theme.SetIcon("checked_disabled", type, Box("checkbox-ticked-lapis-disabled"));
         }
+
+        // ---- a card's pin (hud.md §8.3): the painted pushpin, its head lapis when pinned (A217) — named, so slate keeps ⌖ ----
+        theme.SetIcon("pin", UiLook.Type, Box("pin"));
+        theme.SetIcon("pin_hover", UiLook.Type, Box("pin-hover"));
+        theme.SetIcon("pin_pinned", UiLook.Type, Box("pin-pinned-lapis"));
 
         theme.SetIcon("arrow", "OptionButton", SizedTexture.Of(Tex("controls/dropdown-arrow.png"), 10, 6));
         var field = new StyleBoxFlat { BgColor = new Color("#f3e6c8"), BorderColor = Ink with { A = 0.4f } };

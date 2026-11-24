@@ -427,6 +427,7 @@ public partial class Main
 
         var pin = new Button { Text = "⌖", ToggleMode = true, TooltipText = "Pin: keep this card when you click elsewhere" };
         head.AddChild(pin);
+        WearThePaintedPin(pin);
 
         var close = new Button { Text = "✕", Flat = true, TooltipText = "Close" };
         head.AddChild(close);
@@ -619,6 +620,7 @@ public partial class Main
         {
             card.Pinned = on;
             pin.TooltipText = on ? "Pinned — stays when you click elsewhere" : "Pin: keep this card when you click elsewhere";
+            ShowThePin(pin, hovered: pin.IsHovered());
         };
         close.Pressed += () => CloseCard(card);
         records.Pressed += () =>
@@ -5005,6 +5007,35 @@ public partial class Main
         return faults.Count == 0
             ? $"[widths] cards: ✅ a card of each of the four kinds opened and a full library, the hall and a well posed, every condition said inside the width, every workplace's numbers honest, a site {siteShape}, the smithy's Forges dropdown offering every kind a forge makes and fitting, all {CardWidth:F0} wide, the tallest {tallest:F0}px closed and {widestOpen:F0} wide with every setting open; an unpinned card is replaced, a pinned one stays ({open} open at the end); one panel per structure"
             : $"[widths] cards: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ A card's pin wears the painted pushpin when the look names one (<c>hud.md §8.3</c>, A217): its head lapis when
+    /// pinned, for pinned is <i>on</i> (§10) — the ⌖ glyph, pressed in the theme's ink, stays on slate.
+    /// </summary>
+    private static void WearThePaintedPin(Button pin)
+    {
+        if (UiLook.NamedIcon("pin") is null)
+        {
+            return;
+        }
+
+        pin.Text = string.Empty;
+        pin.Flat = true;
+        ShowThePin(pin, hovered: false);
+        pin.MouseEntered += () => ShowThePin(pin, hovered: true);
+        pin.MouseExited += () => ShowThePin(pin, hovered: false);
+    }
+
+    /// <summary>The painted pin for the state the button is in: pinned, under the pointer, or at rest.</summary>
+    private static void ShowThePin(Button pin, bool hovered)
+    {
+        if (UiLook.NamedIcon("pin") is not { } rest)
+        {
+            return;
+        }
+
+        pin.Icon = pin.ButtonPressed ? UiLook.NamedIcon("pin_pinned") : hovered ? UiLook.NamedIcon("pin_hover") ?? rest : rest;
     }
 }
 

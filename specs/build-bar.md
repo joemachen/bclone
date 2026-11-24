@@ -6,7 +6,11 @@
 > played the bar and asked for its UI size (D310) and one height on every tab (D312).* · Owner: Joe + Claude Code
 > ⏭️ **To be replaced, not yet built (A214, 2026-11-23):** `specs/hud.md §8` turns the tabs and the *Show:* row into
 > category and tool flyouts, hides an empty category (A210) and moves the speeds beside the date. This spec stays true
-> of the game until `slice/hud` builds it.
+> of the game until `slice/hud` builds it. 🔨 **Building (D873–):** since D876 *Centre on village*, *Settings*, *Records* and
+> *Lore* are on the windows' column, and since D877 the speeds sit beside the date on the strip and 20× and the skips on
+> the dev bar (`hud.md §6–§7`). ⛔ **Since D879 this spec is history for the bar's shape:** the BUILD / REMOVAL / HARVEST
+> tabs, the *Show:* row, Cancel and the hotkey line are gone — `hud.md §8` is the bar (categories and tools in one row, each
+> opening a flyout). What still holds here: the catalogue-built buttons (§3), a word under every icon, the house brush.
 > Format per `METHODOLOGY.md §2`. Implements Joe's UI mockup, second half. Resolves
 > `buildings-catalog.md §8.2` (D223's deferral) and closes `content-inventory.md` finding 5's
 > reachability hole.

@@ -106,10 +106,11 @@ public sealed class PlayerSettingsTests : IDisposable
     // ---- §8.4 ---------------------------------------------------------------------------------
 
     [Theory]
-    [InlineData(30, 55)]
-    [InlineData(200, 115)]
+    [InlineData(30, 75)]
+    [InlineData(200, 150)]
     [InlineData(77, 75)]
     [InlineData(78, 80)]
+    [InlineData(148, 150)]
     public void AScaleOffTheDialIsBroughtOntoIt(int written, int used)
     {
         var problems = new List<PlayerSettingsProblem>();
@@ -123,7 +124,107 @@ public sealed class PlayerSettingsTests : IDisposable
     public void AScaleOnTheDialIsReadAsWritten()
     {
         var problems = new List<PlayerSettingsProblem>();
-        Assert.Equal(PlayerSettings.LargestUiScalePercent, LoadText("{ \"ui_scale_percent\": 115 }", problems).UiScalePercent);
+        Assert.Equal(PlayerSettings.LargestUiScalePercent, LoadText("{ \"ui_scale_percent\": 150 }", problems).UiScalePercent);
+        Assert.Empty(problems);
+    }
+
+    // ---- §8.4a: version 2 — what was 75 % is 100 % (hud.md §11, A213; Joe's call 6, A215) ---------
+
+    /// <summary>The dial runs 75–150, default 100, and its 100 draws what 75 drew before (×0.75, one constant).</summary>
+    [Fact]
+    public void TheDialRunsSeventyFiveToOneFiftyAndItsHundredDrawsWhatSeventyFiveDid()
+    {
+        Assert.Equal(2, PlayerSettings.CurrentVersion);
+        Assert.Equal(75, PlayerSettings.SmallestUiScalePercent);
+        Assert.Equal(150, PlayerSettings.LargestUiScalePercent);
+        Assert.Equal(100, PlayerSettings.DefaultUiScalePercent);
+        Assert.Equal(5, PlayerSettings.UiScaleStep);
+        Assert.Equal(75, PlayerSettings.DrawnPercentAtTheDialsHundred);
+    }
+
+    [Theory]
+    [InlineData(75, 100)]
+    [InlineData(55, 75)]
+    [InlineData(115, 150)]
+    [InlineData(80, 105)]
+    [InlineData(90, 120)]
+    [InlineData(100, 135)]
+    public void AVersionOneScaleIsReadAtFourThirdsOnTheNewDial(int written, int read)
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings settings = LoadText($"{{ \"version\": 1, \"ui_scale_percent\": {written} }}", problems);
+
+        Assert.Equal(read, settings.UiScalePercent);
+        Assert.Equal(1, settings.MigratedFrom);
+        PlayerSettingsProblem said = Assert.Single(problems);
+        Assert.Equal(LogLevel.Info, said.Level);
+        Assert.Contains($"{written} %", said.Sentence, StringComparison.Ordinal);
+        Assert.Contains($"{read} %", said.Sentence, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AVersionTwoHundredIsReadAsAHundred()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings settings = LoadText("{ \"version\": 2, \"ui_scale_percent\": 100 }", problems);
+
+        Assert.Equal(100, settings.UiScalePercent);
+        Assert.Null(settings.MigratedFrom);
+        Assert.Empty(problems);
+    }
+
+    /// <summary>
+    /// ⭐ Call 6: a version-1 file's windows forget whether they were shown — once — so the new defaults open (the roster
+    /// closed, the log and Professions open), and keep their folds and places.
+    /// </summary>
+    [Fact]
+    public void AVersionOneFilesWindowsForgetShownAndKeepTheirFoldsAndPlaces()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings settings = LoadText(
+            """
+            { "version": 1, "windows": {
+                "The village": { "shown": true, "open": true, "side": "left", "x": 12, "y": 80 },
+                "Stock limits": { "shown": true },
+                "Professions": { "shown": false, "open": false } } }
+            """,
+            problems);
+
+        Assert.Equal(new WindowPrefs(null, true, new WindowPlace(PlayerSettings.LeftSide, 12, 80)), settings.Windows["The village"]);
+        Assert.Equal(new WindowPrefs(null, null, null), settings.Windows["Stock limits"]);
+        Assert.Equal(new WindowPrefs(null, false, null), settings.Windows["Professions"]);
+        Assert.Equal(1, settings.MigratedFrom);
+        Assert.Contains("windows", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+    }
+
+    /// <summary>Written back it is version 2, and read again nothing moves a second time — the ×4/3 is applied once.</summary>
+    [Fact]
+    public void AVersionOneFileWrittenBackIsVersionTwoAndIsNotMovedAgain()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings once = LoadText("""{ "version": 1, "ui_scale_percent": 75, "windows": { "Village log": { "shown": true, "open": false } } }""", problems);
+        PlayerSettingsFile.Save(FilePath, once);
+        Assert.Contains("\"version\": 2", File.ReadAllText(FilePath), StringComparison.Ordinal);
+
+        problems.Clear();
+        PlayerSettings twice = PlayerSettingsFile.Load(FilePath, problems);
+        Assert.Empty(problems);
+        Assert.Null(twice.MigratedFrom);
+        Assert.Equal(100, twice.UiScalePercent);
+        Assert.Equal(once.ToJson(), twice.ToJson());
+    }
+
+    /// <summary>A version-1 file with nothing to move says nothing, and a file with no version is this build's.</summary>
+    [Fact]
+    public void AVersionOneFileWithNothingToMoveSaysNothingAndNoVersionIsThisBuilds()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        Assert.Equal("off", LoadText("{ \"version\": 1, \"routes\": \"off\" }", problems).Routes);
+        Assert.Empty(problems);
+
+        PlayerSettings unversioned = LoadText("{ \"ui_scale_percent\": 90 }", problems);
+        Assert.Equal(90, unversioned.UiScalePercent);
+        Assert.Null(unversioned.MigratedFrom);
         Assert.Empty(problems);
     }
 

@@ -157,9 +157,16 @@ systems, in its order (D5).
   "village_name": "Ashford",
   "tick": 24000,
   "rng": { "state": "9f3c…", "inc": "0b51…" },
-  "world": { "map": { "terrain": "<base64>", "…": "…" }, "villagers": [ … ], "…": "…" }
+  "world": { "map": { "terrain": "<base64>", "…": "…" }, "villagers": [ … ], "…": "…" },
+  "view": { "seen": [ "building:7", "category:Food", "…" ] }
 }
 ```
+
+- ⭐ **`"view"` is the view's own section (D880, `hud.md §8.3`)** — what the player has looked at: the build bar's
+  *new* marks, as a sorted seen set. Written by the view after `SaveGame.Capture`, so it lies after `"world"` and the head
+  read (§8) never reaches it; handed back untouched as `SaveOpened.View` (the sim never reads it, never hashes it — D335's
+  line); a save without it (every save before D880) opens with none, and the bar counts everything earned as seen. It is
+  not part of `Format` (13): a format-13 save with or without it opens alike (`SaveLoadTests.TheViewsSection…`).
 
 - snake_case JSON with keys written in a fixed order (D3), the way `PlayerSettings` writes. A save is
   something a modder or a bug report can open and read.

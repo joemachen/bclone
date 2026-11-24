@@ -106,6 +106,7 @@ public partial class Main
         }
 
         _loop = opened.Loop;
+        _viewToRestore = opened.View;
         _shareCode = opened.Header!.ShareCode;
         CloseTheTitle();
         _loop.World.Log(LogLevel.Info, "shell", $"Opened {named}, saved by build {opened.Header.Build} at {opened.Header.SavedAt}: {_shareCode}.");
@@ -296,8 +297,15 @@ public partial class Main
     }
 
     /// <summary>The village as a save, stamped with this build and the real time — the view's, never the sim's.</summary>
-    private System.Text.Json.Nodes.JsonObject CaptureTheVillage() =>
-        SaveGame.Capture(_loop, BuildVersion, DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), _shareCode);
+    private System.Text.Json.Nodes.JsonObject CaptureTheVillage()
+    {
+        System.Text.Json.Nodes.JsonObject document =
+            SaveGame.Capture(_loop, BuildVersion, DateTime.Now.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), _shareCode);
+
+        // ⭐ The view's own section (hud.md §8.3, D880): what the player has looked at, beside the village, never hashed.
+        document["view"] = TheViewSection();
+        return document;
+    }
 
     /// <summary>
     /// Step <paramref name="ticks"/>, stopping at the turn of a year to autosave — <b>after the tick that turns
