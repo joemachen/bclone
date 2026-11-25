@@ -107,14 +107,14 @@ What the exiles arrive able to do. **Ten of these are built.**
 | **Farmhouse** | Placed | — | Owns painted field ground; sows in spring, reaps in autumn (D162). **This is §8.1's *zone plus a small steading*, already resolved and shipped.** ✅ |
 | **Hunter's hut** | Placed | — | Meat, hides, tallow. Thins local game; recovers when rested. |
 | **Fishing hut / staithe** | Placed | — | Species by water type — river, lake, coast yield differently. No minigame; the variance is seasonal and spatial. |
-| **Cemetery** | Placed | — | The dead accumulate somewhere visible (D35). |
+| **Cemetery** | Placed | — | The dead accumulate somewhere visible (D35). *(⚠️ D395, Joe's and newer: the first is placed, 4×5 and free; later ones are painted, with a gravedigger each — `cemetery.md`, D891.)* |
 | Residential zone | Zoned | — | Where homes may go. **Global — the village owns it**, so the player picks the neighbourhood and the sim picks the tile (D86). ✅ |
 | Harvest zone | Zoned | — | Which forest may be felled. ✅ |
 | **Work-ground zone** | Zoned | — | Which ground a workplace may work. **Owned by a building rather than by the village** (D86) — the second of the two zone shapes, and the one any new zone has to choose between. ✅ |
 
 **Note on food breadth.** D19's finding is that a binding catchment radius kills outlying households when there is only one raw food source. Hunter and fisher are therefore not content — they are the prerequisite for §2.2's central rule being survivable rather than merely cruel. They belong at T0.
 
-**Note on the cemetery.** It is the cheapest building in the game and possibly the highest-value one. It is placed, it grows without further input, it needs no labour beyond burial, and it is the only object that renders a century of generational time in one glance. It is also the natural home for the epitaph text the life log already produces.
+**Note on the cemetery** *(⚠️ "grows without further input" and "needs no labour beyond burial" are superseded by D395, Joe's: painted, and one gravedigger a cemetery — `cemetery.md §2`, D891).* It is the cheapest building in the game and possibly the highest-value one. It is placed, it grows without further input, it needs no labour beyond burial, and it is the only object that renders a century of generational time in one glance. It is also the natural home for the epitaph text the life log already produces.
 
 ### 4.2 Tier 1 — Settlement
 
