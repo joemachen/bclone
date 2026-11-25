@@ -581,6 +581,7 @@ public partial class Main : Control
         GD.Print(TheSchoolIsSaid());
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
+        GD.Print(ACounterIsStaffedFromItsCard());
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheLettersAreOnTheCards());
         GD.Print(TheContentmentIsOnTheCard());
@@ -611,6 +612,10 @@ public partial class Main : Control
         // is the only pair that can say this; neither number alone can.*
         ProbeASelfScroller("roster", _roster, _roster.GetRoot()?.GetChildCount() ?? 0, "items");
         GD.Print(TheRosterSortsAsAsked());
+        GD.Print(TheProfessionsSortAsAsked());
+        GD.Print(TheColumnMoves());
+        GD.Print(KinsLineIsWashed());
+        GD.Print(TheBuildingsAreListed());
         PoseTheRosterOpen(false);
         GD.Print(TheBuildQueueReadsTheQueue());
         GD.Print(TheHillsAreShadedAndSaid());
@@ -671,6 +676,7 @@ public partial class Main : Control
         GD.Print(NoTwoFloatersMeet());
         GD.Print(WhatIsNewIsGoldUntilClicked());
         GD.Print(TheRedBrushIsOnTheBar());
+        GD.Print(_map.TheSquareBrushTurns());
         GD.Print(_map.ABrushShowsWhatItPaints());
         GD.Print(TheAnnounceIsAHintNotALogLine());
         GD.Print(ShiftRSquaresTheGhost());
@@ -1196,7 +1202,31 @@ public partial class Main : Control
         }
 
         DismissTheMoment();
+
+        // ⭐ His screenshot's moment (play note 7, D894): the house's paragraph wears the house, and a paragraph with no mark
+        // keeps its column and shows nothing at all in it — never a glyph's empty ground.
+        var housed = new Moment
+        {
+            Title = "Posed nomads, houses",
+            Body = string.Join(Moment.ParagraphBreak, first, "learned to build in stone", "learned to build tight", "no mark"),
+            Marks = new[] { MomentMark.Nomads, MomentMark.Cottage, MomentMark.Manor },
+        };
+        world.Moments.Add(housed);
+        ShowAnyMoment(world);
+        rows = _momentParagraphs.GetChildren().ToArray();
+        string cottage = world.BuildingsCatalog.NameOf(BuildingKind.Cottage);
+        string manor = world.BuildingsCatalog.NameOf(BuildingKind.Manor);
+        Node? unmarked = rows.Length == 4 && rows[3] is HBoxContainer { } last && last.GetChildCount() == 2 ? last.GetChild(0) : null;
+        if (rows.Length != 4 || !Row(1).StartsWith(cottage + ":", StringComparison.Ordinal) || !Row(2).StartsWith(manor + ":", StringComparison.Ordinal)
+            || unmarked is not Control blank || blank.GetType() != typeof(Control) || blank.CustomMinimumSize.X != UiIcons.MomentSide)
+        {
+            faults.Add($"a moment of houses shows [{string.Join(" | ", Enumerable.Range(0, rows.Length).Select(Row))}], its unmarked paragraph led by {unmarked?.GetType().Name ?? "nothing"}");
+        }
+
+        DismissTheMoment();
         world.Moments.Remove(plain);
+        world.Moments.Remove(housed);
+        _celebrated.Remove(housed.LogLine);
         world.Moments.Remove(marked);
         _celebrated.Remove(plain.LogLine);
         _celebrated.Remove(marked.LogLine);
@@ -1205,7 +1235,7 @@ public partial class Main : Control
         SetSpeed(speedWas);
 
         return faults.Count == 0
-            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a plain moment one label; the text column {markedWidth:F0}px either way"
+            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a house's wears the house and an unmarked one nothing; a plain moment one label; the text column {markedWidth:F0}px either way"
             : $"[widths] moment: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -2943,11 +2973,31 @@ public partial class Main : Control
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", MomentMarkGap);
             MomentMark mark = i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None;
-            row.AddChild(UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide));
+            row.AddChild(MarkFor(mark));
             text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
             row.AddChild(text);
             _momentParagraphs.AddChild(row);
         }
+    }
+
+    /// <summary>
+    /// A paragraph's mark — a house's is the building's own painted icon (Joe's play note 7, D894: <i>"what image is supposed to
+    /// be on that empty spot"</i>); a paragraph with none keeps the column and draws nothing in it.
+    /// </summary>
+    private Control MarkFor(MomentMark mark)
+    {
+        BuildingKind? house = mark switch
+        {
+            MomentMark.Cottage => BuildingKind.Cottage,
+            MomentMark.Manor => BuildingKind.Manor,
+            _ => null,
+        };
+
+        return house is BuildingKind kind
+            ? UiIcons.Or("buildings", _loop.World.BuildingsCatalog.NameOf(kind), () => new BuildingGlyph(kind, true), UiIcons.MomentSide)
+            : mark is MomentMark.None
+                ? new Control { CustomMinimumSize = new Vector2(UiIcons.MomentSide, UiIcons.MomentSide), MouseFilter = MouseFilterEnum.Ignore }
+                : UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide);
     }
 
     /// <summary>The moment panel's text column, as wide as its one label was before D577.</summary>
@@ -3445,6 +3495,7 @@ public partial class Main : Control
         // when the quota is computed is a behaviour change, not housekeeping.
 
         RefreshRoster(world);
+        RefreshTheBuildings(world);
         RefreshBuildQueue(world);
         RefreshInspector(world);
         AppendNewLogLines();
@@ -4131,6 +4182,87 @@ public partial class Main : Control
             : $"[widths] log trim: ⛔ {string.Join("; ", faults)}";
     }
 
+    /// <summary>
+    /// ⭐ <c>kin line:</c> (Joe's play note 9, D898) — a line saying a posed relative has come washes gold, the everyday lines about
+    /// them and the line of a nomad born the same tick do not; the wash stands on that line's own paragraph, through a filter's
+    /// redraw; it is full, then half, then gone in six seconds; the text is unchanged by it; and a redraw lights nothing again.
+    /// </summary>
+    private string KinsLineIsWashed()
+    {
+        var faults = new List<string>();
+        SimWorld world = _loop.World;
+        Villager kin = world.Villagers[0];
+        Villager other = world.Villagers[1];
+        int letterWas = kin.CameByLetterOf;
+        AppendNewLogLines();
+        _logWash.Pass(60.0);
+        try
+        {
+            kin.CameByLetterOf = world.Households[0].Id;
+            string line = $"{kin.FullName} has come up the valley to live with the Posed household, at the probe's letter.";
+            void Say(ulong tick, string words, LogCategory category) => _sink.Log(tick, LogLevel.Info, "life", words, category);
+
+            // A villager's own tick of arrival cannot be posed, so the line is written at it. Beside it: another's line on the
+            // same tick, an everyday line of theirs, and their name at the head of a later year's line.
+            Say(kin.ArrivedAtTick, $"{other.FullName} is born, posed by the probe.", LogCategory.Life);
+            Say(kin.ArrivedAtTick, line, LogCategory.Life);
+            Say(kin.ArrivedAtTick, $"{kin.FullName} is posed at an everyday thing.", LogCategory.Ordinary);
+            Say(kin.ArrivedAtTick + 1UL, $"{kin.FullName} has a child, posed by the probe.", LogCategory.Life);
+            AppendNewLogLines();
+            string text = _villageLog.GetParsedText();
+            int at = text.LastIndexOf(line, StringComparison.Ordinal);
+            int paragraph = at < 0 ? -2 : _villageLog.GetCharacterParagraph(at);
+            IReadOnlyList<(int Entry, int Paragraph, float Strength)> washed = _logWash.Washed;
+            if (washed.Count != 1 || washed[0].Paragraph != paragraph || washed[0].Strength < 0.99f)
+            {
+                faults.Add($"the line is paragraph {paragraph}, washed [{string.Join(", ", washed)}]");
+            }
+
+            // Behind the text, inside the log, over the line and no other.
+            Rect2 rect = _logWash.RectOf(paragraph);
+            if (!_logWash.ShowBehindParent || _logWash.GetParent() != _villageLog || _logWash.MouseFilter != MouseFilterEnum.Ignore || rect.Size.Y <= 1f)
+            {
+                faults.Add($"it is drawn {(_logWash.ShowBehindParent ? "behind" : "over")} the text, {rect.Size.Y:F0} tall");
+            }
+
+            // A filter's click writes the log again: the wash follows the line, and no old line lights.
+            RedrawTheLog();
+            at = _villageLog.GetParsedText().LastIndexOf(line, StringComparison.Ordinal);
+            washed = _logWash.Washed;
+            if (at < 0 || washed.Count != 1 || washed[0].Paragraph != _villageLog.GetCharacterParagraph(at))
+            {
+                faults.Add($"redrawn, the line is paragraph {(at < 0 ? -2 : _villageLog.GetCharacterParagraph(at))}, washed [{string.Join(", ", washed)}]");
+            }
+
+            // Two seconds full, four more to nothing.
+            _logWash.Pass(LogWash.Holds);
+            float held = _logWash.Washed.Count == 1 ? _logWash.Washed[0].Strength : -1f;
+            _logWash.Pass(2.0);
+            float half = _logWash.Washed.Count == 1 ? _logWash.Washed[0].Strength : -1f;
+            _logWash.Pass(1.9);
+            int nearlyOver = _logWash.Washed.Count;
+            _logWash.Pass(0.2);
+            if (held < 0.99f || Mathf.Abs(half - 0.5f) > 0.01f || nearlyOver != 1 || _logWash.Washed.Count != 0 || _logWash.IsProcessing())
+            {
+                faults.Add($"after 2 s {held:F2}, 4 s {half:F2}, 5.9 s {nearlyOver} washed, 6.1 s {_logWash.Washed.Count}, still counting {_logWash.IsProcessing()}");
+            }
+
+            RedrawTheLog();
+            if (_logWash.Washed.Count != 0)
+            {
+                faults.Add("a redraw lit an old line");
+            }
+        }
+        finally
+        {
+            kin.CameByLetterOf = letterWas;
+        }
+
+        return faults.Count == 0
+            ? "[widths] kin line: ✅ a relative's line is washed gold, behind its own text, and no other; through a filter's redraw; full, half, and gone in six seconds"
+            : $"[widths] kin line: ⛔ {string.Join("; ", faults)}";
+    }
+
     /// <summary>Append only entries not yet drawn; rebuilding would reset scroll.</summary>
     private void AppendNewLogLines()
     {
@@ -4138,13 +4270,25 @@ public partial class Main : Control
 
         for (int i = _renderedLogEntries; i < entries.Count; i++)
         {
-            if (Shown(entries[i]))
+            if (!Shown(entries[i]))
             {
-                _villageLog.AppendText(LogMarkup(entries[i]));
+                continue;
+            }
+
+            // ⭐ Kin come at a letter: their line is washed gold and fades (Joe's play note 9, D898). Asked only of a line that is
+            // news — a redraw (a filter's click) writes old lines again and must not light them.
+            if (i >= _logSeenThrough && SaysKinHaveCome(_loop.World, entries[i]))
+            {
+                _logWash.Begin(i, AppendEntry(entries[i]));
+            }
+            else
+            {
+                _logWash.MovedTo(i, AppendEntry(entries[i]));
             }
         }
 
         _renderedLogEntries = entries.Count;
+        _logSeenThrough = entries.Count;
 
         // ⛔⛔ COUNTED IN PARAGRAPHS — ONE AN ENTRY — NEVER IN WRAPPED LINES (D807, Joe's crash, 2026-11-20). This asked
         // `GetLineCount()`, which counts the lines each entry WRAPS to, against keeping `MaxLogLines` ENTRIES: once the
@@ -4157,15 +4301,55 @@ public partial class Main : Control
         {
             _logTrims++;
             _villageLog.Clear();
+            _logWash.Cleared();
             _villageLog.AppendText("(earlier entries trimmed)\n");
             for (int i = entries.Count - MaxLogLines; i < entries.Count; i++)
             {
                 if (i >= 0 && Shown(entries[i]))
                 {
-                    _villageLog.AppendText(LogMarkup(entries[i]));
+                    _logWash.MovedTo(i, AppendEntry(entries[i]));
                 }
             }
         }
+    }
+
+    /// <summary>One entry written at the log's foot; the paragraph it is — the last one, empty until now.</summary>
+    private int AppendEntry(LogEntry entry)
+    {
+        int paragraph = _villageLog.GetParagraphCount() - 1;
+        _villageLog.AppendText(LogMarkup(entry));
+        return paragraph;
+    }
+
+    /// <summary>The gold behind a line of the log (D898), a child of it.</summary>
+    private LogWash _logWash = null!;
+
+    /// <summary>The entries the log has been given once: past these, an entry is news.</summary>
+    private int _logSeenThrough;
+
+    /// <summary>
+    /// Whether this is the line that says a relative has come up the valley at a letter — somebody who came by letter, on this
+    /// tick, named at its head (<c>SimWorld.Library.cs</c>'s sentence opens with the name): found by who came, not by the words.
+    /// </summary>
+    private static bool SaysKinHaveCome(SimWorld world, LogEntry entry)
+    {
+        if (entry.Category != LogCategory.Life)
+        {
+            return false;
+        }
+
+        // Newest first: kin come at the list's end, and an entry is asked once.
+        for (int v = world.Villagers.Count - 1; v >= 0; v--)
+        {
+            Villager villager = world.Villagers[v];
+            if (villager.CameByLetterOf != 0 && villager.ArrivedAtTick == entry.Tick
+                && entry.Message.StartsWith(villager.FullName + " ", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Whether this entry belongs in the village log as the player has set it.</summary>
@@ -4377,6 +4561,7 @@ public partial class Main : Control
         // default stacking order, so "immediately below The village" is a build-order fact rather
         // than a coordinate — which is what keeps it true when a panel above them changes height.
         BuildRosterPanel();
+        BuildTheBuildingsPanel();
         BuildProfessionsPanel();
         BuildStockLimitsPanel();
         BuildTheBuildQueuePanel();
@@ -4984,6 +5169,8 @@ public partial class Main : Control
         _villageLog.AddThemeFontSizeOverride("bold_italics_font_size", LogSize);
         _villageLog.AddThemeFontSizeOverride("mono_font_size", LogSize);
         body.AddChild(_villageLog);
+        _logWash = new LogWash(_villageLog);
+        _villageLog.AddChild(_logWash);
 
         // ⭐⭐ ONE SWITCH PER CATEGORY (Joe, 2026-08-27: *"a filter for each category… optimize
         // noise to signal ratio"*). **Under the log rather than above it**, because the log is
@@ -5077,6 +5264,7 @@ public partial class Main : Control
     private void RedrawTheLog()
     {
         _villageLog.Clear();
+        _logWash.Cleared();
         _renderedLogEntries = 0;
         AppendNewLogLines();
     }
@@ -5571,12 +5759,7 @@ public partial class Main : Control
         table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
-        Label typeHead = Muted("TYPE");
-        Label assignedHead = Muted("ASSIGNED / MAX");
-        UiLook.Header(typeHead); // column heads are headers (A121, Joe: "Yes, headers")
-        UiLook.Header(assignedHead);
-        table.AddChild(typeHead);
-        table.AddChild(assignedHead);
+        AddTheProfessionHeads(table); // ⭐ each a click away from being the sort (Joe's play note 6, D896)
 
         foreach (JobKind kind in JobLimits.Kinds)
         {
@@ -5611,10 +5794,12 @@ public partial class Main : Control
             return;
         }
 
+        bool newlyKnown = false;
         for (int i = 0; i < _professionRows.Count; i++)
         {
             (JobKind kind, Control[] cells) = _professionRows[i];
             bool known = TradeKnown(kind);
+            newlyKnown |= known != cells[0].Visible;
             foreach (Control cell in cells)
             {
                 cell.Visible = known;
@@ -5623,6 +5808,12 @@ public partial class Main : Control
 
         // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
         FitTheProfessionsScroll();
+
+        // ⭐ And a trade that appears takes its place in the order clicked (D896) — only then, never as a number moves.
+        if (newlyKnown)
+        {
+            PutTheProfessionsInOrder();
+        }
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
@@ -6116,6 +6307,9 @@ public partial class Main : Control
         // *What's here* starts where it started (B3): beside its tile, from the next one.
         _whatsHereWasDragged = false;
 
+        // And the windows' column in its corner (D897).
+        _columnWasDragged = false;
+
         PlaceTheDevBar(leftY);
 
         // The passing banner is centred at the top and 460 wide, which now runs under the
@@ -6374,6 +6568,7 @@ public partial class Main : Control
             // opened — which would make the setting work exactly once.
             _settingsWasDragged |= panel == _settingsPanel;
             _whatsHereWasDragged |= panel == _whatsHerePanel;
+            _columnWasDragged |= panel == _windowsColumn;
 
             MovePanel(panel, by);
             grip.AcceptEvent();
@@ -6444,6 +6639,12 @@ public partial class Main : Control
 
         float wide = panel.Size.X * _uiScale;
         float tall = panel.Size.Y * _uiScale;
+
+        // ⛔ All of the windows' column (D897): its words are the way back to every window.
+        if (panel == _windowsColumn)
+        {
+            return WhollyOnScreen(corner, new Vector2(wide, tall), Size);
+        }
 
         return new Vector2(
             Mathf.Clamp(corner.X, Handle - wide, Size.X - Handle),
@@ -7235,7 +7436,10 @@ public partial class Main : Control
         }
     }
 
-    /// <summary>The last sentence <see cref="SayInTheLog"/> said, so a repeat is not said again.</summary>
+    /// <summary>A refusal or a warning, said once while it repeats — what the map's own sentences come through.</summary>
+    private void SayInTheLog(string message) => SayInTheLog(message, everyTime: false);
+
+    /// <summary>The last sentence <see cref="SayInTheLog(string, bool)"/> said, so a repeat is not said again.</summary>
     private string _lastSaidInTheLog = string.Empty;
 
     /// <summary>
@@ -7264,9 +7468,14 @@ public partial class Main : Control
     /// sentence twice running is said once.
     /// </para>
     /// </remarks>
-    private void SayInTheLog(string message)
+    /// <param name="message">The sentence.</param>
+    /// <param name="everyTime">
+    /// ⭐ Said even when it repeats the last one (Joe's play note 8, D894): a save is an act, and each one answers the hand that
+    /// made it — a second F5 in a season said nothing and looked as if it had not saved.
+    /// </param>
+    private void SayInTheLog(string message, bool everyTime)
     {
-        if (message.Length == 0 || message == _lastSaidInTheLog)
+        if (message.Length == 0 || (!everyTime && message == _lastSaidInTheLog))
         {
             return;
         }

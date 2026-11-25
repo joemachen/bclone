@@ -158,12 +158,13 @@ systems, in its order (D5).
   "tick": 24000,
   "rng": { "state": "9f3c…", "inc": "0b51…" },
   "world": { "map": { "terrain": "<base64>", "…": "…" }, "villagers": [ … ], "…": "…" },
-  "view": { "seen": [ "building:7", "category:Food", "…" ] }
+  "view": { "seen": [ "building:7", "…" ], "shown": [ "building:30", "…" ] }
 }
 ```
 
 - ⭐ **`"view"` is the view's own section (D880, `hud.md §8.3`)** — what the player has looked at: the build bar's
-  *new* marks, as a sorted seen set. Written by the view after `SaveGame.Capture`, so it lies after `"world"` and the head
+  *new* marks: the buildings picked (`seen`) and those whose category has been opened since they were learned (`shown`, D894),
+  sorted. D880's `category:` keys are skipped on reading; a section with no `shown` counts the houses already learned as seen. Written by the view after `SaveGame.Capture`, so it lies after `"world"` and the head
   read (§8) never reaches it; handed back untouched as `SaveOpened.View` (the sim never reads it, never hashes it — D335's
   line); a save without it (every save before D880) opens with none, and the bar counts everything earned as seen. It is
   not part of `Format` (13): a format-13 save with or without it opens alike (`SaveLoadTests.TheViewsSection…`).
@@ -370,8 +371,13 @@ missed all but two. The field guard is the one this feature rests on, as §9.4 s
 - **F7** goes back to it through the pause screen's load (`LoadFromThePause`): **the village as it stands is autosaved
   first**, so an F7 pressed by mistake costs nothing the autosaves do not keep. With no quicksave: *"There is no
   quicksave of this village yet — F5 makes one."*, and nothing loads.
+- ⭐ **Every save says its line, with the season and the year** (Joe's play note 8, D894: *"sometimes hitting f5 doesnt register a
+  save in the village log"*) — *"Saved as quicksave, replacing the earlier save of that name. Spring, Year 34."* The save always
+  worked; the log drops a sentence that repeats the last one, which is kept for the brush's and the ghost's and never applied to a
+  save or its failure again.
 - Both keys are ignored while the pause screen or a stopping moment is up (the keyboard is theirs then).
-- Probe line `quicksave:` — F5 writes one that reads back (into a scratch folder), F7 with none says so. ⚠️ F7 with one
+- Probe line `quicksave:` — F5 writes one that reads back (into a scratch folder), F7 with none says so; two more F5s say it twice, a
+  repeated refusal once (D894). ⚠️ F7 with one
   reloads the scene, which no probe survives: that half is Joe's to play.
 
 ## 15. A save from before a good was added opens (D827, 2026-11-21)

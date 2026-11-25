@@ -11,7 +11,7 @@
 > difference, Joe's call). ✅ Joe approved it, the bar's size
 > included (D884, *"approved"*). ✅ Merged into `main` and pushed
 > at his word (D885, `592c754`). ✅ **Call 1 reversed by Joe's play (D887, merged into `main` at his word, D888):** a trade has a
-> Professions row from the day its building can be built (§9.2); at rest on Day 1 that is about 4 points more of the screen. The build
+> Professions row from the day its building can be built (§9.2); at rest on Day 1 that is about 4 points more of the screen. 🔨 **Joe's second batch of play notes (D893–D900), merged (D902), unplayed:** a category new with its building (§8.3), the column moveable (§9.3), the log's kin line (§9.4), Professions sorted (§9.5), a Buildings window (§9.6). The build
 > is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
@@ -86,7 +86,7 @@ founding. `bars:` poses every cell at `+12,345`. `windows:` wants Professions sh
 | **The valley** | top right, as today | the minimap | open by default |
 | **Village log** | right, under the minimap, as today (its 190 px list, its seven filters) | the stories | open by default |
 | **Professions** | top left, under the strip | able adults and labourers, then a row for each trade whose building can be built (§9.2, D887; *a trade with a workplace* until then) | open by default |
-| **The windows' column** | bottom-left corner, one word a line | Centre · People · Professions · Stores · Build queue · Lore · Log · Valley · Settings (Records once the hall stands) | always |
+| **The windows' column** | bottom-left corner, one word a line | Centre · People · Professions · Buildings · Stores · Build queue · Lore · Log · Valley · Settings (Records once the hall stands), under a grip (§9.3, D897) | always |
 | **The tool bar** | bottom centre | the categories with anything earned, then Paint land, Move, Remove ▴, Harvest ▴ | always |
 | **A flyout** | above the tool bar, over its button | one category's buildings, or Remove's / Harvest's tools | while open |
 | **Tool options** | beside the tool bar | Brush: square · round, and *Esc* to put the tool down | while a tool is in hand |
@@ -188,6 +188,14 @@ When a category or a building becomes earned, it is marked **new**: its word in 
 word) with a **gold-leaf swash** under it (`#c4983e`). A category clears when its flyout is opened, a building when it is
 picked. *(Call 5.)*
 
+⭐ **A category is new while a building inside it is new and not yet seen in its flyout** (Joe's play note 2, D894: *"new items main
+categories should also highlight … until clicked"*; he answered the reading *"rest as you said"*). Until D894 it asked whether the
+category had *ever* been opened, so the quarry lit and Resources, opened on the first day, did not. **The cottage and the manor
+light Homes** the same way, and their *Build homes as* choice until it is chosen. The seal he asked for beside it is the art lane's
+to paint (HANDOFF ⏸️ 🎨); the gold swash stands until then. ⚠️ **A building learned counts as known by the sim's gate, not only by the
+bar's flags** — the seen set is taken while the bar is built, before the first refresh sets them, and a village opened from a save
+without the section lit everything it had learned (found D894; his Millbrook's autosave holds it).
+
 - **Not the owed medallion.** The medallion on a building's icon (A106; D103/D252) means *a free one is waiting* and keeps
   its meaning; *new* is a different fact.
 - **Remembered per village, in the save, never hashed** — what the player has looked at is not a fact about the village
@@ -238,7 +246,13 @@ folded to its title by default.
 ### 9.3 The windows' column (A215)
 
 The bottom-left corner, one `sheet` of words (Metamorphous), **one a line**: **Centre, People, Professions, Stores,
-Build queue, Lore, Log, Valley, Settings**, plus *Records* once the hall stands. About 137 × 262 logical px.
+Build queue, Lore, Log, Valley, Settings**, plus *Records* once the hall stands. About 137 × 262 logical px. *(Buildings after
+Professions since D900, and a grip above them all since D897.)*
+
+⭐ **It moves** (Joe's play note 4, D897: *"the bottom left window menu should be moveable"*): the windows' grip at its head, dropped
+anywhere; its place is remembered in the settings like a window's (`windows["Windows menu"]`, no fold and no *shown*) and *Reset
+window positions* puts it back in its corner. **All of it stays on screen** — a window's rule keeps a strip of a title, and this is
+the way back to every window. Moved, it no longer keeps the flyouts clear of its corner. `hud overlap:` asks the corner's place.
 
 ⚠️ **Why a column, not a row** (Joe, A215, after the first mocks put the row under the tool bar's left end): side by side
 the row (643 logical px) and the bar need 1,351 logical px on Day 1 and 1,528 with every category learned — wider than a
@@ -253,9 +267,28 @@ Stores for "Stock limits".)*
 
 ### 9.4 The log
 
-Unchanged: right column, under the minimap, its list 190 logical px, its seven filters. Their ticked seals go lapis with
+⭐ **The line that says a relative has come is washed gold, behind its words, and fades over six seconds** — two full, four fading —
+(Joe's play note 9, D898), real seconds whatever the village's speed, through a filter's click; the text and the scroll are
+untouched. Found by who came (`CameByLetterOf`, on that tick, named at the line's head), never by the words. Otherwise unchanged: right column, under the minimap, its list 190 logical px, its seven filters. Their ticked seals go lapis with
 §10; their words keep their categories' colours (*Deaths* stays rubric). *(Call 2 asks only whether it should sit
 elsewhere.)*
+
+### 9.5 Professions sorted by a column (Joe's play note 6, D896)
+
+*"the professions window should allow sorting by column the same way that the people window does"*: **Type** A→Z, **Assigned** (the
+number asked for) and **Max** (the seats) most first, ties by name; the heading clicked wears the ▾ and the choice is remembered
+(`professions_sort`). Until one is clicked the rows stand in the data's own order. ⛔ **Sorted on a click, on a load and when a trade
+appears, never on a press of − or +** (his *"e"*): the rows hold the buttons, and a row that moved with its number would slide out
+from under the hand.
+
+### 9.6 Buildings (Joe's play note 1, D900)
+
+*"Add a new panel: list of all buildings in game"*; asked which, *"A"* — **every building standing**, never a catalogue (D460). Name,
+Kind (with its icon) and Condition (worst first), sorted by the heading clicked as *People* is (`buildings_sort`), a number in a
+name read as a number. **A row clicked goes there** and opens its card (the trading post its window), and again on a second click.
+Shut on a new village. One building, one row: a market and a stall are the store's row, a barn and a post the workplace's, as a
+click on the map opens them; a site has none. Read while it is shown, once a day and when a building is raised, pulled down or
+renamed; rebuilt only when a row differs.
 
 ## 10. Red, lapis and gold
 

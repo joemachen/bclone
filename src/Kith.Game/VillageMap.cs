@@ -595,6 +595,9 @@ public partial class VillageMap : Control
 
     private Vector2 _centreTile;
 
+    /// <summary>The tile the view is centred on — <b>for the probe</b> (D900).</summary>
+    internal Vector2 CentredOn => _centreTile;
+
     /// <summary>Never zero, so the very first frame — before layout has given the
     /// panel a size — cannot divide by it.</summary>
     private float _pixelsPerTile = 16f;
@@ -848,6 +851,21 @@ public partial class VillageMap : Control
     /// <summary>Whether the brush is a square or a round (D327). Square is what has always shipped.</summary>
     private BrushShape _brushShape = BrushShape.Square;
 
+    /// <summary>
+    /// ⭐ How far the square brush is turned (Joe's play note 10, D899) — like its size and its shape, a setting that outlives
+    /// what is in hand. A round brush has nothing to turn, and keeps it for when the brush is square again.
+    /// </summary>
+    private Angle _brushTurn = Angle.Zero;
+
+    /// <summary>How far the square brush is turned — <b>for the probe</b>.</summary>
+    internal Angle BrushTurn => _brushTurn;
+
+    /// <summary>Whether what is in the hand turns: a square brush.</summary>
+    private bool HoldsABrushThatTurns => _brush != 0 && _brushShape == BrushShape.Square;
+
+    /// <summary>⭐ The quarter-tiles under the brush at this point — what the stroke paints and what the outline is drawn round.</summary>
+    private List<SubTile> UnderTheBrush(SubTile centre) => BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape, _brushTurn);
+
     /// <summary>What shape the brush is set to, so the bar can say so.</summary>
     public BrushShape BrushShapeInHand => _brushShape;
 
@@ -876,7 +894,9 @@ public partial class VillageMap : Control
         // when the arithmetic sat in `Kith.Sim` instead.
         float across = BrushStroke.AcrossInSubTiles(_brushRadius) / (float)SubTile.PerTile;
 
-        return $"{across:0.##} tiles {(_brushShape == BrushShape.Round ? "round" : "square")}";
+        int degrees = _brushShape == BrushShape.Square ? Angle.FromRaw((ushort)(_brushTurn.Raw % 16384)).ToDegrees() : 0;
+        string turned = degrees > 0 ? $", turned {degrees}°" : string.Empty;
+        return $"{across:0.##} tiles {(_brushShape == BrushShape.Round ? "round" : "square")}{turned}";
     }
 
     /// <summary>
@@ -1230,7 +1250,9 @@ public partial class VillageMap : Control
     /// </remarks>
     private void TurnTheGhostBy(float pixels, bool fine)
     {
-        if (_building is null || HoldsABridge)
+        // ⭐ Or a square brush (Joe's play note 10, D899), the same way: a degree a pixel, a tenth of it with shift.
+        bool brush = HoldsABrushThatTurns;
+        if (!brush && (_building is null || HoldsABridge))
         {
             return;
         }
@@ -1251,8 +1273,16 @@ public partial class VillageMap : Control
             return;
         }
 
-        _ghostFacing += Angle.FromRaw(unchecked((ushort)steps));
-        _ghostTurned = true;
+        if (brush)
+        {
+            _brushTurn += Angle.FromRaw(unchecked((ushort)steps));
+        }
+        else
+        {
+            _ghostFacing += Angle.FromRaw(unchecked((ushort)steps));
+            _ghostTurned = true;
+        }
+
         QueueRedraw();
     }
 
@@ -1260,6 +1290,15 @@ public partial class VillageMap : Control
 
     public void TurnTheGhost(bool toTheQuarter = false)
     {
+        // ⭐ A square brush turns as a building does (D899): R a sixty-fourth, shift+R to the next quarter — which is square.
+        if (HoldsABrushThatTurns)
+        {
+            _brushTurn = toTheQuarter ? ToTheNextQuarter(_brushTurn) : _brushTurn + Angle.FromTurnFraction(1, 64);
+            Announce();
+            QueueRedraw();
+            return;
+        }
+
         if (_building is null)
         {
             return;
@@ -1289,9 +1328,7 @@ public partial class VillageMap : Control
 
         if (toTheQuarter)
         {
-            const int Quarter = 65536 / 4;
-            int raw = _ghostFacing.Raw;
-            _ghostFacing = Angle.FromRaw(unchecked((ushort)(((raw / Quarter) + 1) * Quarter)));
+            _ghostFacing = ToTheNextQuarter(_ghostFacing);
         }
         else
         {
@@ -1300,6 +1337,13 @@ public partial class VillageMap : Control
 
         _ghostTurned = true;
         QueueRedraw();
+    }
+
+    /// <summary>The next quarter turn on from this one (D401): one press back to square, never a quarter added to a lean.</summary>
+    private static Angle ToTheNextQuarter(Angle from)
+    {
+        const int Quarter = 65536 / 4;
+        return Angle.FromRaw(unchecked((ushort)(((from.Raw / Quarter) + 1) * Quarter)));
     }
 
     /// <summary>Whether the building in hand is a bridge — pressed on one bank and dragged to the other (D549).</summary>
@@ -1426,7 +1470,13 @@ public partial class VillageMap : Control
         // press and that guard throws every release away.
         if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Middle } wheelClick)
         {
-            _turningTheGhost = wheelClick.Pressed && _building is not null;
+            bool wasTurningTheBrush = _turningTheGhost && HoldsABrushThatTurns;
+            _turningTheGhost = wheelClick.Pressed && (_building is not null || HoldsABrushThatTurns);
+            if (wasTurningTheBrush && !_turningTheGhost)
+            {
+                Announce(); // the sentence names the turn — once, at the release, never per motion
+            }
+
             return;
         }
 
@@ -1719,7 +1769,7 @@ public partial class VillageMap : Control
         // ⭐ THE STROKE IS SUB-TILES; THE VERDICTS ARE STILL TILES (D336). Whether ground may be
         // painted is a question about terrain, and terrain is tiled — *a quarter of a tile is not
         // under water on its own.* Only where the player chose to paint got finer.
-        foreach (SubTile at in BrushStroke.SubTilesUnder(centre, _brushRadius, _brushShape))
+        foreach (SubTile at in UnderTheBrush(centre))
         {
             GridPos tile = at.Tile;
 
@@ -2241,8 +2291,11 @@ public partial class VillageMap : Control
     /// </para>
     /// </remarks>
     private string TheBrushKeys(bool erasing) => erasing
-        ? $" — {TheBrushInWords()}, alt+wheel resizes. Esc to stop."
-        : $" — {TheBrushInWords()}, alt+wheel resizes, right-drag takes back. Esc to stop.";
+        ? $" — {TheBrushInWords()}, alt+wheel resizes{TheTurnKey()}. Esc to stop."
+        : $" — {TheBrushInWords()}, alt+wheel resizes{TheTurnKey()}, right-drag takes back. Esc to stop.";
+
+    /// <summary>How the brush in hand turns, or nothing for a round one (D899).</summary>
+    private string TheTurnKey() => _brushShape == BrushShape.Square ? ", middle-drag or R turns it" : string.Empty;
 
     /// <summary>What the harvest brush is set to take, in the words the player chose it by.</summary>
     private string WhatTheHarvestBrushTakes() => _harvestMode switch
@@ -3402,8 +3455,6 @@ public partial class VillageMap : Control
         }
 
         int direction = TheStrokeInProgress();
-        var under = new HashSet<Vector2I>();
-        var refused = new Dictionary<GridPos, bool>();
 
         // ⭐ THE FILL IS THE STROKE'S SHAPE, AND SO IS THE REFUSED PART OF IT (D345, D346). It
         // used to be one rectangle per quarter-tile, each coloured by what the sim said about its
@@ -3416,29 +3467,7 @@ public partial class VillageMap : Control
         // other half OUTSIDE the ring, as a staircase, in red. Joe: *"it should not show areas
         // outside of the ring."* The verdict is still asked of the tile (D336: terrain is tiled);
         // only the cells the brush actually covers are painted with it.
-        var refusedCells = new HashSet<Vector2I>();
-
-        foreach (SubTile at in BrushStroke.SubTilesUnder(_hoveredSub, _brushRadius, _brushShape))
-        {
-            if (!_world.Map.Contains(at.Tile))
-            {
-                continue;
-            }
-
-            var cell = new Vector2I(at.X, at.Y);
-            under.Add(cell);
-
-            if (!refused.TryGetValue(at.Tile, out bool no))
-            {
-                no = ColourForTheBrushOn(at.Tile, direction) == GhostRefused;
-                refused[at.Tile] = no;
-            }
-
-            if (no)
-            {
-                refusedCells.Add(cell);
-            }
-        }
+        (HashSet<Vector2I> under, HashSet<Vector2I> refusedCells) = TheBrushfulUnderTheCursor(direction);
 
         List<Vector2[]> outline = ZoneOutline.Trace(under, SubTile.PerTile);
         Vector2[] fill = ZoneOutline.Fill(outline);
@@ -3481,6 +3510,37 @@ public partial class VillageMap : Control
         }
     }
 
+    /// <summary>The quarter-tiles under the brush that are on the map, and those of them the sim would refuse.</summary>
+    private (HashSet<Vector2I> Under, HashSet<Vector2I> Refused) TheBrushfulUnderTheCursor(int direction)
+    {
+        var under = new HashSet<Vector2I>();
+        var refusedCells = new HashSet<Vector2I>();
+        var refused = new Dictionary<GridPos, bool>();
+        foreach (SubTile at in UnderTheBrush(_hoveredSub))
+        {
+            if (!_world!.Map.Contains(at.Tile))
+            {
+                continue;
+            }
+
+            var cell = new Vector2I(at.X, at.Y);
+            under.Add(cell);
+
+            if (!refused.TryGetValue(at.Tile, out bool no))
+            {
+                no = ColourForTheBrushOn(at.Tile, direction) == GhostRefused;
+                refused[at.Tile] = no;
+            }
+
+            if (no)
+            {
+                refusedCells.Add(cell);
+            }
+        }
+
+        return (under, refusedCells);
+    }
+
     /// <summary>The colour of the brush's own border — what the stroke as a whole would do.</summary>
     /// <remarks>
     /// ⚠️ <b>The border is about the GESTURE, the fill is about each TILE.</b> They are allowed to
@@ -3489,6 +3549,150 @@ public partial class VillageMap : Control
     /// </remarks>
     private Color BrushEdgeFor(int direction) =>
         direction < 0 ? GhostWarned : GhostFine;
+
+    /// <summary>
+    /// ⭐ <c>brush turn:</c> (Joe's play note 10, D899) — the middle button dragged with the square brush in hand turns it a degree a
+    /// pixel, a tenth with shift; R a sixty-fourth, shift+R square; the paint is the turned shape to the quarter-tile; a round brush
+    /// does not turn; a building in hand still turns itself and not the brush; the sentence says the turn, and only when there is one.
+    /// </summary>
+    public string TheSquareBrushTurns()
+    {
+        SimWorld world = _world!;
+        var faults = new List<string>();
+        (int radiusWas, BrushShape shapeWas, Angle turnWas, SubTile hoveredWas) = (_brushRadius, _brushShape, _brushTurn, _hoveredSub);
+        (Angle facingWas, bool ghostTurnedWas) = (_ghostFacing, _ghostTurned);
+        GridPos tile = world.StoreBuildings[0].Tile;
+        SubTile centre = SubTile.Of(tile, 2, 2);
+        void Middle(bool pressed) => _GuiInput(new InputEventMouseButton { ButtonIndex = MouseButton.Middle, Pressed = pressed });
+        void Drag(float by, bool shift) => _GuiInput(new InputEventMouseMotion { Relative = new Vector2(by, 0f), ShiftPressed = shift });
+        try
+        {
+            _brushShape = BrushShape.Square;
+            _brushRadius = 10;
+            _brushTurn = Angle.Zero;
+            BeginPainting(1);
+            string straight = TheBrushInWords();
+            Middle(true);
+            Drag(30f, shift: false);
+            int dragged = _brushTurn.ToDegrees();
+            Drag(50f, shift: true);
+            int fine = _brushTurn.ToDegrees();
+            Middle(false);
+            Drag(40f, shift: false);
+            if (dragged is not (29 or 30) || fine is not (34 or 35) || _brushTurn.ToDegrees() != fine)
+            {
+                faults.Add($"dragged 30 px it stands at {dragged}°, 50 more with shift {fine}°, and after the release {_brushTurn.ToDegrees()}°");
+            }
+
+            string leaning = TheBrushInWords();
+            if (straight.Contains("turned", StringComparison.Ordinal) || !leaning.EndsWith($"turned {fine}°", StringComparison.Ordinal))
+            {
+                faults.Add($"its words are \"{straight}\" and turned \"{leaning}\"");
+            }
+
+            TurnTheGhost(toTheQuarter: true);
+            int squared = _brushTurn.Raw;
+            TurnTheGhost();
+            if (squared != 16384 || _brushTurn.Raw != 16384 + 1024)
+            {
+                faults.Add($"shift+R leaves {squared} and R {_brushTurn.Raw} (want 16384, then 17408)");
+            }
+
+            // ⭐ The paint is the turned shape: an eighth of a turn, the corner of the straight square left out and the new corner in.
+            _brushTurn = Angle.FromTurnFraction(1, 8);
+            var offsets = UnderTheBrush(centre).Select(s => (X: s.X - centre.X, Y: s.Y - centre.Y)).ToHashSet();
+            if (!offsets.Contains((14, 0)) || !offsets.Contains((0, -14)) || offsets.Contains((10, 10)) || offsets.Contains((15, 0)))
+            {
+                faults.Add($"turned an eighth, (14,0) {offsets.Contains((14, 0))}, (0,-14) {offsets.Contains((0, -14))}, (10,10) {offsets.Contains((10, 10))}, (15,0) {offsets.Contains((15, 0))}");
+            }
+
+            // And the two hands of it read one answer: the preview's cells are the stroke's, on the map.
+            _hoveredSub = centre;
+            (HashSet<Vector2I> under, _) = TheBrushfulUnderTheCursor(1);
+            if (!under.SetEquals(UnderTheBrush(centre).Where(s => world.Map.Contains(s.Tile)).Select(s => new Vector2I(s.X, s.Y))) || under.Count < 300)
+            {
+                faults.Add($"the outline is drawn round {under.Count} quarter-tiles, not the stroke's {UnderTheBrush(centre).Count}");
+            }
+
+            // A stroke, red so nothing else answers: every tree-tile quarter it marks is under the turned brush.
+            faults.AddRange(TheTurnedStrokeMarksItsShape());
+
+            BeginPainting(1);
+            _brushShape = BrushShape.Round;
+            Angle roundWas = _brushTurn;
+            Middle(true);
+            Drag(60f, shift: false);
+            Middle(false);
+            TurnTheGhost();
+            if (_brushTurn != roundWas || TheBrushInWords().Contains("turned", StringComparison.Ordinal)
+                || TheBrushKeys(erasing: false).Contains("turns it", StringComparison.Ordinal))
+            {
+                faults.Add($"a round brush turned from {roundWas} to {_brushTurn}, or says it turns");
+            }
+
+            _brushShape = BrushShape.Square;
+            BeginBuilding(BuildingKind.Granary);
+            Angle ghost = _ghostFacing;
+            Middle(true);
+            Drag(60f, shift: false);
+            Middle(false);
+            if (_brushTurn != roundWas || _ghostFacing == ghost)
+            {
+                faults.Add($"a building in hand: the brush went {roundWas} → {_brushTurn}, the building {ghost} → {_ghostFacing}");
+            }
+        }
+        finally
+        {
+            PutTheToolDown();
+            (_brushRadius, _brushShape, _brushTurn, _hoveredSub) = (radiusWas, shapeWas, turnWas, hoveredWas);
+            (_ghostFacing, _ghostTurned) = (facingWas, ghostTurnedWas);
+            _turningTheGhost = false;
+            BrushChanged?.Invoke();
+        }
+
+        return faults.Count == 0
+            ? "[widths] brush turn: ✅ the square brush turns a degree a pixel under the middle button, a tenth with shift, a sixty-fourth with R and square with shift+R; the paint and the outline are the turned shape; a round brush and a held building are as they were"
+            : $"[widths] brush turn: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>A real red stroke with the turned brush over a wood: the quarter-tiles it marks are all under it, and it marks some the straight square would miss.</summary>
+    private List<string> TheTurnedStrokeMarksItsShape()
+    {
+        SimWorld world = _world!;
+        var faults = new List<string>();
+        for (int i = 0; i < world.Map.Tiles.Count; i++)
+        {
+            // A tree far enough from the pose's middle that only the turned corner covers it: 4 tiles right begins 14 quarters off: the turned corner, past the straight 10.
+            GridPos tree = world.Zones.PositionOf(i);
+            var middle = new GridPos(tree.X - 4, tree.Y);
+            if (world.Map.Tiles[i] != Terrain.Forest || !world.Map.Contains(middle) || !world.CanPaintDestroy(tree).Allowed || world.Zones.AnyDestroyOn(tree))
+            {
+                continue;
+            }
+
+            SubTile centre = SubTile.Of(middle, 2, 2);
+            int before = world.Zones.DestroyTiles;
+            BeginDestroying(1);
+            _brushTurn = Angle.FromTurnFraction(1, 8);
+            PaintAround(centre, 1);
+            bool turnedMarksIt = world.Zones.AnyDestroyOn(tree);
+            PaintAround(centre, -1);
+            _brushTurn = Angle.Zero;
+            PaintAround(centre, 1);
+            bool straightMarksIt = world.Zones.AnyDestroyOn(tree);
+            PaintAround(centre, -1);
+            _brushTurn = Angle.FromTurnFraction(1, 8);
+            if (!turnedMarksIt || straightMarksIt || world.Zones.DestroyTiles != before)
+            {
+                faults.Add($"over the tree at {tree}, 14 quarters from the brush's middle: turned an eighth it marks it {turnedMarksIt}, straight {straightMarksIt}; {world.Zones.DestroyTiles - before} left marked");
+            }
+
+            return faults;
+        }
+
+        faults.Add("no tree the stroke could be posed on");
+        return faults;
+    }
 
     /// <summary>Which way the stroke under the cursor would go, right now (D327).</summary>
     /// <remarks>

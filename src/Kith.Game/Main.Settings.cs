@@ -62,8 +62,11 @@ public partial class Main
         [LoreTitle] = "Tree", [RosterTitle] = "The village", [StoresTitle] = "Stock limits", // D815; D876 (call 8)
     };
 
-    /// <summary>A window with a title: its fold, the side it starts on, and what it is called in the file.</summary>
-    private sealed record TitledPanel(string Title, PanelContainer Panel, Button Header, bool Right);
+    /// <summary>
+    /// A window with a title: its fold, the side it starts on, and what it is called in the file. No header, no fold: the
+    /// windows' column, which keeps only its place (D897).
+    /// </summary>
+    private sealed record TitledPanel(string Title, PanelContainer Panel, Button? Header, bool Right);
 
     /// <summary>The id the Paths overlay is remembered by, beside the map's ticks.</summary>
     private const string PathsToggle = "paths";
@@ -244,6 +247,15 @@ public partial class Main
                 : 0);
             ShowTheRosterOrder();
 
+            int sorted = settings.ProfessionsSort is string column ? IndexOf(PlayerSettings.ProfessionsSorts, column) : -1;
+            _professionsOrder = sorted >= 0 ? (ProfessionsOrder)sorted : null;
+            ShowTheProfessionsOrder();
+            PutTheProfessionsInOrder();
+
+            _buildingsOrder = (BuildingsOrder)(settings.BuildingsSort is string listed ? Math.Max(0, IndexOf(PlayerSettings.BuildingsSorts, listed)) : 0);
+            ShowTheBuildingsOrder();
+            ShowTheBuildings(_loop.World, rebuild: true);
+
             _map.ShowWear(settings.Toggles.TryGetValue(PathsToggle, out bool paths) && paths);
             RefreshWearButton();
 
@@ -278,7 +290,7 @@ public partial class Main
                     }
                 }
 
-                if (prefs.Open is bool open)
+                if (prefs.Open is bool open && titled.Header is not null)
                 {
                     titled.Header.ButtonPressed = open;
                 }
@@ -313,6 +325,7 @@ public partial class Main
     {
         _settingsWasDragged |= _playerPlaces.ContainsKey(_settingsPanel);
         _whatsHereWasDragged |= _playerPlaces.ContainsKey(_whatsHerePanel);
+        _columnWasDragged |= _playerPlaces.ContainsKey(_windowsColumn);
     }
 
     /// <summary>Put each remembered window where the player left it, on the first frame it is shown with a size.</summary>
@@ -410,7 +423,7 @@ public partial class Main
 
             windows[titled.Title] = new WindowPrefs(
                 WindowOf(titled.Panel)?.Wanted,
-                titled.Header.ButtonPressed,
+                titled.Header?.ButtonPressed,
                 _playerPlaces.TryGetValue(titled.Panel, out WindowPlace? place) ? place : null);
         }
 
@@ -419,6 +432,8 @@ public partial class Main
             UiScalePercent = _uiScalePercent,
             Routes = PlayerSettings.RoutesLevels[(int)_detail],
             RosterSort = PlayerSettings.RosterSorts[(int)_rosterOrder],
+            BuildingsSort = PlayerSettings.BuildingsSorts[(int)_buildingsOrder],
+            ProfessionsSort = _professionsOrder is ProfessionsOrder order ? PlayerSettings.ProfessionsSorts[(int)order] : null,
             Toggles = toggles,
             Windows = windows,
         };
@@ -642,7 +657,7 @@ public partial class Main
             bool? shown = WindowOf(titled.Panel) is ShellWindow window
                 ? (GatedByTheVillage(titled.Panel) ? window.Wanted : !window.Wanted)
                 : null;
-            windows[titled.Title] = new WindowPrefs(shown, false, null);
+            windows[titled.Title] = new WindowPrefs(shown, titled.Header is null ? null : false, null);
         }
 
         PlayerSettings posed = founding with
@@ -650,6 +665,8 @@ public partial class Main
             UiScalePercent = 100,
             Routes = PlayerSettings.RoutesLevels[^1],
             RosterSort = PlayerSettings.RosterSorts[^1],
+            ProfessionsSort = PlayerSettings.ProfessionsSorts[^1],
+            BuildingsSort = PlayerSettings.BuildingsSorts[^1],
             Toggles = toggles,
             Windows = windows,
         };
@@ -705,7 +722,7 @@ public partial class Main
         // ---- a renamed window keeps what its old title remembered (D815: Lore was Tree), and is written under the new ----
         var former = new Dictionary<string, WindowPrefs>(founding.Windows, StringComparer.Ordinal);
         former.Remove(LoreTitle);
-        bool openWas = _titled.First(t => t.Title == LoreTitle).Header.ButtonPressed;
+        bool openWas = _titled.First(t => t.Title == LoreTitle).Header!.ButtonPressed;
         former["Tree"] = new WindowPrefs(null, !openWas, null);
 
         // ⚠️ As the file was READ, not only applied: a capture starts from the file it read (`_settings`), and a file that
@@ -713,7 +730,7 @@ public partial class Main
         PlayerSettings readWas = _settings;
         _settings = founding with { Windows = former };
         ApplySettings(_settings);
-        if (_titled.First(t => t.Title == LoreTitle).Header.ButtonPressed == openWas)
+        if (_titled.First(t => t.Title == LoreTitle).Header!.ButtonPressed == openWas)
         {
             faults.Add($"{LoreTitle} did not take the fold its old title, Tree, remembered");
         }
