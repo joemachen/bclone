@@ -1,3 +1,4 @@
+using Kith.Sim.Core;
 using Kith.Sim.World;
 using Xunit;
 using Xunit.Abstractions;
@@ -72,6 +73,110 @@ public sealed class BrushShapeTests
 
         Assert.Equal(new[] { Somewhere }, tiles);
     }
+
+    // ---------------------------------------------------------------
+    //  The square, turned (Joe's play note 10, D899)
+    // ---------------------------------------------------------------
+
+    private static readonly SubTile SubSomewhere = new(163, 127);
+
+    /// <summary>A quarter turn is the square it was, sub-tile for sub-tile and in the same order — so is no turn.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void AQuarterTurnIsTheSquareItWas(int quarters)
+    {
+        for (int radius = BrushStroke.MinSubRadius; radius <= BrushStroke.MaxSubRadius; radius++)
+        {
+            Assert.Equal(
+                BrushStroke.SubTilesUnder(SubSomewhere, radius, BrushShape.Square),
+                BrushStroke.SubTilesUnder(SubSomewhere, radius, BrushShape.Square, Angle.FromTurnFraction(quarters, 4)));
+        }
+    }
+
+    /// <summary>
+    /// ⭐ Turned an eighth it is a diamond by its corners, not by its area: at radius 10 the half-width is 10½, so a corner
+    /// stands 10½ × √2 = 14.8 out — fourteen across is in, fifteen is out, and the straight square's own corner is out. The
+    /// row through the middle is 29 wide and the last row one. Written out by hand, never from the rule.
+    /// </summary>
+    [Fact]
+    public void AnEighthOfATurnReachesItsCorners()
+    {
+        HashSet<(int X, int Y)> under = Offsets(10, Angle.FromTurnFraction(1, 8));
+        Assert.Contains((14, 0), under);
+        Assert.Contains((-14, 0), under);
+        Assert.Contains((0, 14), under);
+        Assert.Contains((0, -14), under);
+        Assert.DoesNotContain((15, 0), under);
+        Assert.DoesNotContain((10, 10), under);
+        Assert.Contains((7, 7), under);
+        Assert.DoesNotContain((8, 7), under);
+        Assert.Equal(29, under.Count(o => o.Y == 0));
+        Assert.Equal(1, under.Count(o => o.Y == 14));
+        Assert.Equal(421, under.Count);
+    }
+
+    /// <summary>
+    /// A turn that is neither way round mirrored is told from its mirror: at 30° the brush's right-hand corner is below its
+    /// middle on one turn and above it on the other, so a sign lost in the rotation is red here and nowhere else above.
+    /// </summary>
+    [Fact]
+    public void ATurnAndItsMirrorAreDifferentSquares()
+    {
+        HashSet<(int X, int Y)> one = Offsets(10, Angle.FromDegrees(30));
+        HashSet<(int X, int Y)> other = Offsets(10, Angle.FromDegrees(-30));
+        Assert.NotEqual(one.Order(), other.Order());
+        Assert.Equal(one.Order(), other.Select(o => (o.X, -o.Y)).Order());
+
+        // The corner that was at (10½, 10½) stands at 10½(cos 30 − sin 30) = 3.8 across and 10½(sin 30 + cos 30) = 14.3 down.
+        Assert.Contains((4, 14), one);
+        Assert.DoesNotContain((-4, 14), one);
+    }
+
+    /// <summary>
+    /// Every turn and every size: as big as the straight square to within its edges, the same from both sides of its middle,
+    /// no sub-tile twice, row-major, no hole in a row — and the smallest is the one quarter-tile under the cursor, however turned.
+    /// </summary>
+    [Fact]
+    public void EveryTurnIsAWholeSquareOfTheSameSize()
+    {
+        for (int raw = 0; raw < 65536; raw += 977)
+        {
+            Angle turn = Angle.FromRaw((ushort)raw);
+            Assert.Equal(new[] { SubSomewhere }, BrushStroke.SubTilesUnder(SubSomewhere, 0, BrushShape.Square, turn));
+            foreach (int radius in new[] { 2, 5, 10, 26 })
+            {
+                List<SubTile> under = BrushStroke.SubTilesUnder(SubSomewhere, radius, BrushShape.Square, turn);
+                int across = (radius * 2) + 1;
+
+                // An edge crosses about as many quarter-tiles as it is long, and each is in or out: four edges' worth of doubt, halved.
+                Assert.InRange(under.Count, (across * across) - (2 * across), (across * across) + (2 * across));
+                Assert.Equal(under.Count, under.Distinct().Count());
+                Assert.Equal(under.OrderBy(s => s.Y).ThenBy(s => s.X), under);
+                var offsets = under.Select(s => (X: s.X - SubSomewhere.X, Y: s.Y - SubSomewhere.Y)).ToHashSet();
+                Assert.All(offsets, o => Assert.Contains((-o.X, -o.Y), offsets));
+                foreach (IGrouping<int, (int X, int Y)> row in offsets.GroupBy(o => o.Y))
+                {
+                    Assert.Equal(row.Max(o => o.X) - row.Min(o => o.X) + 1, row.Count());
+                }
+            }
+        }
+    }
+
+    /// <summary>A round brush has nothing to turn.</summary>
+    [Fact]
+    public void ARoundBrushDoesNotTurn()
+    {
+        Assert.Equal(
+            BrushStroke.SubTilesUnder(SubSomewhere, 10, BrushShape.Round),
+            BrushStroke.SubTilesUnder(SubSomewhere, 10, BrushShape.Round, Angle.FromDegrees(30)));
+    }
+
+    private static HashSet<(int X, int Y)> Offsets(int radius, Angle turn) =>
+        BrushStroke.SubTilesUnder(SubSomewhere, radius, BrushShape.Square, turn)
+            .Select(s => (s.X - SubSomewhere.X, s.Y - SubSomewhere.Y)).ToHashSet();
 
     // ---------------------------------------------------------------
     //  The round

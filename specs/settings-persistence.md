@@ -13,6 +13,7 @@ his play is what saw a real launch write the file and a drag remembered; the pro
 75 drew (×0.75, `PlayerSettings.DrawnPercentAtTheDialsHundred`); a version-1 file's size is read at ×4/3 and its windows'
 *shown* forgotten once, then it is written back as version 2 (§6).
 ✅ **`roster_sort` added (D609; played and merged, D615):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
+✅ **`professions_sort` (D896), `buildings_sort` (D900) and the windows' column's place (D897) added** on `slice/play-notes-2`.
 Owner: Joe + Claude Code.
 
 ---
@@ -61,10 +62,13 @@ by an exception to this line.
 | View | UI size (75–150 %, steps of 5; default 100 — what version 1's 75 drew, D875) | `ui_scale_percent` |
 | View | Routes: `off` / `selected` / `all` | `routes` |
 | View | *The village* panel's order (D609; its column titles since D616): `name` (first name; the default) / `age` (oldest first) / `trade` (children last) | `roster_sort` |
+| View | Professions' order (D896): `type` (A→Z) / `assigned` / `max` (most first); absent until a heading is clicked — the data's own order | `professions_sort` |
+| View | *Buildings*' order (D900): `name` (the default) / `kind` / `condition` (worst first) | `buildings_sort` |
 | View | the *Paths* overlay and every *On the map* tick (grid, snap, the two markers, the three shaded grounds, animals, berries) | `toggles.<id>` |
 | View | *Alerts*: go back to my speed after an alert (D578; default **off** — every alert leaves the village at 1×) | `toggles.alert_speed_back` |
 | Windows | each window's Settings tick (*shown*; its word on the windows' column since D876, `hud.md §9.3`) and whether it is rolled up (*open*) | `windows.<title>.shown/open` |
 | Windows | where the player **dragged** it | `windows.<title>.side/x/y` |
+| Windows | where the player dragged the windows' column (D897) — its place alone | `windows["Windows menu"].side/x/y` |
 | New game | each row's value from the last valley founded | `new_game.<row id>` |
 
 > ⚠️ **A persisted *"shade ground"* tick can hide a brush's own work, so a brush in hand overrides it (D559).** Joe, after
@@ -133,6 +137,7 @@ by an exception to this line.
 | ⭐ A `"version": 1` file (every file written before D875) | Its `ui_scale_percent` is read at ×4/3, rounded and brought onto the dial (75 → 100, 55 → 75, 115 → 150); **every window's `shown` is forgotten once** (call 6: a saved shown beats a default, and every version-1 file held the roster shown), folds and places kept; one INFO line says both; **and the file is written back as version 2 at once**, so neither happens twice. No `version` at all is read as this build's (the game has always written one — a file without is a hand edit). |
 | `routes` not one of the three | Default; a warning. |
 | `roster_sort` not one of the three | Default (`name`); a warning. |
+| `professions_sort` or `buildings_sort` not one of its three | Default (none; `name`); a warning. |
 | A value of the wrong type (`"grid": "yes"`) | That key is default; a warning. The rest of the file still counts. |
 | Unknown keys; a newer `version` | Ignored, with one warning naming them; what is known is read. |
 | A window or toggle id the game does not have | Ignored silently — it is an older build's, or a renamed window's (§4). |

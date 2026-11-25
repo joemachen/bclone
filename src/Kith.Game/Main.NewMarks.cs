@@ -321,7 +321,7 @@ public partial class Main
             bool oldNews = !Gold(homes) && !Gold(cottages);
             _seen.Remove(SeenKey(BuildingKind.Cottage));
             RefreshTheStrip();
-            Seen(SeenKey(BuildingKind.Cottage));
+            cottages.EmitSignal(BaseButton.SignalName.Pressed); // chosen — refused by the sim here, and seen all the same
             bool chosen = !Gold(homes) && !Gold(cottages);
             if (!cottageLights || !oldNews || !chosen)
             {

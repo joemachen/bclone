@@ -45,7 +45,7 @@ public partial class Main
     /// <summary>The keys that have no button, for Settings' <i>Keys</i> (§8.4) — the old hotkey line's, one a line.</summary>
     private static readonly string[] KeysWithNoButton =
     {
-        "W A S D — pan the map", "wheel — zoom", "R — turn what you are placing · shift+R squares it", "Tab — routes",
+        "W A S D — pan the map", "wheel — zoom", "R — turn what is in hand · shift+R squares it", "Tab — routes",
         "Home — centre on the village", "C — fold every window", "H — hide every window", "B — the brush's shape",
         "Esc — close, put down, pause", "F5 — quicksave · F7 — load it",
     };
@@ -326,7 +326,7 @@ public partial class Main
         float centre = over is null ? width / 2f : bar.Position.X + ((over.GetGlobalRect().GetCenter().X - _toolBarPanel.GetGlobalRect().Position.X));
         // ⭐ Kept clear of the windows' column at the bottom-left (hud overlap:, D879): a flyout over Works clamped to the
         // window's edge ran up into the column at 1,280 wide.
-        float left = _windowsColumn is { Visible: true } column ? Edge + (column.GetCombinedMinimumSize().X * _uiScale) + Edge : Edge;
+        float left = _windowsColumn is { Visible: true } column && !_columnWasDragged ? Edge + (column.GetCombinedMinimumSize().X * _uiScale) + Edge : Edge;
         float x = Mathf.Clamp(centre - (drawn.X / 2f), left, Mathf.Max(left, width - Edge - drawn.X));
         return new Rect2(x, bar.Position.Y - drawn.Y, drawn);
     }

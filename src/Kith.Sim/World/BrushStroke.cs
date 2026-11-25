@@ -1,3 +1,5 @@
+using Kith.Sim.Core;
+
 namespace Kith.Sim.World;
 
 /// <summary>What shape the brush lays down (D327).</summary>
@@ -107,18 +109,49 @@ public static class BrushStroke
     /// this takes what it measures in, and <c>Across</c> converts once, where the words are made.
     /// </para>
     /// </remarks>
-    public static List<SubTile> SubTilesUnder(SubTile centre, int radius, BrushShape shape)
+    public static List<SubTile> SubTilesUnder(SubTile centre, int radius, BrushShape shape) =>
+        SubTilesUnder(centre, radius, shape, Angle.Zero);
+
+    /// <summary>
+    /// The sub-tiles under the brush, the square turned by <paramref name="turn"/> (Joe's play note 10, D899: <i>"players should be
+    /// able to rotate the paint brush"</i>). A round brush has nothing to turn, and a quarter turn is the square it was.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A quarter-tile is under the turned square when its centre is: its offset turned back by the same angle lies within the
+    /// square's half-width, <c>reach + ½</c>, on both axes. ⭐ <b>Integers throughout</b> — the sine and cosine are
+    /// <see cref="Angle"/>'s own table in raw bits, and both sides are doubled so the half needs no fraction. The offset is at most
+    /// forty and the sine at most 2³², so a product is under 2³⁹: nothing here can overflow.
+    /// </para>
+    /// <para>
+    /// ⚠️ <b>The same promises as the unturned one:</b> row-major, lowest first; no sub-tile twice; a fresh list; no map. A turned
+    /// square is as big as a straight one, to the quarter-tiles its edges cross.
+    /// </para>
+    /// </remarks>
+    public static List<SubTile> SubTilesUnder(SubTile centre, int radius, BrushShape shape, Angle turn)
     {
         int reach = ClampSub(radius);
+        bool turned = shape == BrushShape.Square && turn.Raw != 0;
         var under = new List<SubTile>();
 
         long limit = (long)reach * (reach + 1);
+        long sin = turn.Sin().RawBits;
+        long cos = turn.Cos().RawBits;
+        long half = ((2L * reach) + 1L) * Fixed.One.RawBits;
 
-        for (int dy = -reach; dy <= reach; dy++)
+        // A turned square's corner stands √2 as far off as its side; half as far again is past it, and the test decides.
+        int far = turned ? reach + ((reach + 1) / 2) + 1 : reach;
+
+        for (int dy = -far; dy <= far; dy++)
         {
-            for (int dx = -reach; dx <= reach; dx++)
+            for (int dx = -far; dx <= far; dx++)
             {
                 if (shape == BrushShape.Round && (((long)dx * dx) + ((long)dy * dy)) > limit)
+                {
+                    continue;
+                }
+
+                if (turned && (Math.Abs(2L * ((dx * cos) + (dy * sin))) > half || Math.Abs(2L * ((dy * cos) - (dx * sin))) > half))
                 {
                     continue;
                 }

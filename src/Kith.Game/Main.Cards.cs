@@ -4570,6 +4570,16 @@ public partial class Main
                     faults.Add($"the {what}'s card reads [{string.Join(" | ", rows)}]");
                 }
 
+                // The cart stands on the same tile and is no market: no row, with a workplace right there to be mistaken for its own.
+                OpenCard(new CardSubject(CardKind.Store, cart.Id));
+                if (_selectedCard!.WorkersRow.Visible)
+                {
+                    faults.Add($"the cart's card has a staffing row beside the {what}'s");
+                }
+
+                OpenCard(new CardSubject(CardKind.Store, counter.Id));
+                card = _selectedCard!;
+
                 // The row is the card's own width, as the school's.
                 ForceUpdateTransform();
                 if (card.Panel.Size.X > CardWidth + 1f)
@@ -4603,13 +4613,6 @@ public partial class Main
             }
         }
 
-        OpenCard(new CardSubject(CardKind.Store, cart.Id));
-        if (_selectedCard!.WorkersRow.Visible)
-        {
-            faults.Add("the cart's card has a staffing row");
-        }
-
-        CloseCard(_selectedCard!);
         return faults.Count == 0
             ? "[widths] counter staffing: ✅ a market's card reads Marketers 0 / 2 and a stall's 0 / 1, − and + move it, + stops at the seats and − at nobody; the cart's has no row; a workplace's own card is as it was"
             : $"[widths] counter staffing: ⛔ {string.Join("; ", faults)}";

@@ -1,3 +1,4 @@
+using Kith.Sim.Config;
 using Godot;
 
 namespace Kith.Game;
@@ -8,11 +9,22 @@ namespace Kith.Game;
 /// Records once the hall stands. Each word shows or hides its window and is held in lapis while it is shown (§10). It
 /// replaced Settings' window ticks (D306) and took Centre, Settings, Records and Lore off the control bar: the column is the
 /// one thing always on screen now, so a window switched off is always one click back (D103).
+/// ⭐ AND IT MOVES (Joe's play note 4, D897: <i>"the bottom left window menu should be moveable"</i>): the windows' grip at its head,
+/// dropped anywhere, its place remembered like a window's and put back in its corner by <i>Reset window positions</i>. ⛔ The whole
+/// of it stays on screen, not a strip of it: it is the way back to everything else.
 /// </remarks>
 public partial class Main
 {
     /// <summary>The column itself: an unskinned-title sheet, not a window — never foldable, never in its own list.</summary>
     private PanelContainer _windowsColumn = null!;
+
+    /// <summary>What the column is called in the settings file — its place is all it remembers (D897).</summary>
+    private const string ColumnTitle = "Windows menu";
+
+    private Button _columnGrip = null!;
+
+    /// <summary>The player has moved the column, so its corner no longer places it (Settings' rule, D504).</summary>
+    private bool _columnWasDragged;
 
     /// <summary>Settings' word, held while Settings is open.</summary>
     private Button? _settingsWord;
@@ -25,6 +37,22 @@ public partial class Main
         VBoxContainer body = Floating(Edge, Edge, 0, 0, Corner.BottomLeft);
         _windowsColumn = _panels[^1];
         body.AddThemeConstantOverride("separation", 0);
+
+        // ⭐ The windows' own grip (Joe's play note 4, D897), on a line of its own so every word keeps its place.
+        _columnGrip = new Button
+        {
+            Text = "⠿",
+            Flat = true,
+            Alignment = HorizontalAlignment.Left,
+            TooltipText = "Drag to move this menu",
+            MouseDefaultCursorShape = CursorShape.Move,
+            SizeFlagsHorizontal = SizeFlags.ShrinkBegin,
+        };
+        _columnGrip.AddThemeFontSizeOverride("font_size", 12);
+        UiLook.Tint(_columnGrip, UiLook.Ghost);
+        MakeDraggable(_columnGrip, _windowsColumn);
+        body.AddChild(_columnGrip);
+        _titled.Add(new TitledPanel(ColumnTitle, _windowsColumn, null, false));
 
         Button Word(string word, string tooltip, bool toggles)
         {
@@ -55,6 +83,7 @@ public partial class Main
         Word("Centre", "Centre on the village — Home", toggles: false).Pressed += () => _map.CentreOnTheVillage();
         WindowWord("People", _rosterPanel, "The village's people, by name, age and trade");
         WindowWord("Professions", _professionsPanel, "How many of each trade you ask for, and who works it");
+        WindowWord(BuildingsTitle, _buildingsPanel, "Every building standing, by name, kind and condition — click one to go there");
         WindowWord("Stores", _stockLimitsPanel, "How much of each good to keep before the work stops");
         WindowWord("Build queue", _buildQueuePanel, "What is waiting to be built, in the order the builders take it");
 
@@ -109,8 +138,117 @@ public partial class Main
             return;
         }
 
+        if (_columnWasDragged)
+        {
+            // Where the player put it, and back on screen if the game has been made smaller or the column taller.
+            MovePanel(_windowsColumn, Vector2.Zero);
+            return;
+        }
+
+        _windowsColumn.OffsetLeft = Edge;
+        _windowsColumn.OffsetRight = Edge;
         _windowsColumn.OffsetTop = -Edge;
         _windowsColumn.OffsetBottom = -Edge;
+    }
+
+    /// <summary>The column's corner, kept so the whole of it is inside a window this size — its top left when it is bigger than that.</summary>
+    private static Vector2 WhollyOnScreen(Vector2 corner, Vector2 drawn, Vector2 window) => new(
+        Mathf.Clamp(corner.X, 0f, Mathf.Max(0f, window.X - drawn.X)),
+        Mathf.Clamp(corner.Y, 0f, Mathf.Max(0f, window.Y - drawn.Y)));
+
+    /// <summary>
+    /// ⭐ <c>column moves:</c> (Joe's play note 4, D897) — the grip drags it (press, motion and release reach the panel), it stands
+    /// where it is put through the frames after, its place is captured and drawn again from the settings, it cannot leave the
+    /// screen in either direction (nor on a window too small for it), and a reset puts it back in its corner.
+    /// </summary>
+    private string TheColumnMoves()
+    {
+        var faults = new List<string>();
+        static WindowPlace? Remembered(PlayerSettings settings) =>
+            settings.Windows.TryGetValue(ColumnTitle, out WindowPrefs? prefs) ? prefs.Place : null;
+        PlayerSettings was = CaptureSettings();
+        bool liveWas = _settingsLive;
+        _settingsLive = false;
+        try
+        {
+            ResetWindowPositions();
+            FitColumns();
+            ForceUpdateTransform();
+            Vector2 corner = DrawnTopLeft(_windowsColumn);
+            Vector2 drawn = _windowsColumn.Size * _uiScale;
+            if (Mathf.Abs(corner.X - Edge) > 1f || Mathf.Abs(corner.Y + drawn.Y - (Size.Y - Edge)) > 1f)
+            {
+                faults.Add($"it starts at {corner}, {drawn} tall, not in the bottom-left corner of {Size}");
+            }
+
+            // The grip's own gesture: a press, a motion and a release make it the player's and remember it.
+            _columnGrip.EmitSignal(Control.SignalName.GuiInput, new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true });
+            _columnGrip.EmitSignal(Control.SignalName.GuiInput, new InputEventMouseMotion());
+            _columnGrip.EmitSignal(Control.SignalName.GuiInput, new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false });
+            if (!_columnWasDragged || !_playerPlaces.ContainsKey(_windowsColumn))
+            {
+                faults.Add($"the grip's drag: the player's {_columnWasDragged}, remembered {_playerPlaces.ContainsKey(_windowsColumn)}");
+            }
+
+            MovePanel(_windowsColumn, new Vector2(400f, -200f));
+            ThePlayerPlaced(_windowsColumn);
+            Vector2 put = DrawnTopLeft(_windowsColumn);
+            FitColumns();
+            FitColumns();
+            if (put.DistanceTo(corner + new Vector2(400f, -200f)) > 1f || DrawnTopLeft(_windowsColumn).DistanceTo(put) > 1f)
+            {
+                faults.Add($"moved by (400, -200) from {corner} it stands at {put}, and at {DrawnTopLeft(_windowsColumn)} two frames on");
+            }
+
+            PlayerSettings kept = CaptureSettings();
+            if (Remembered(kept) is not WindowPlace { Side: PlayerSettings.LeftSide } place || Math.Abs(place.X - put.X) > 1f || Math.Abs(place.Y - put.Y) > 1f)
+            {
+                faults.Add($"put at {put} it is remembered as {Remembered(kept)?.ToString() ?? "nothing"}");
+            }
+
+            ResetWindowPositions();
+            FitColumns();
+            if (DrawnTopLeft(_windowsColumn).DistanceTo(corner) > 1f || Remembered(CaptureSettings()) is not null)
+            {
+                faults.Add($"reset, it stands at {DrawnTopLeft(_windowsColumn)}, not {corner}, or is still remembered");
+            }
+
+            ApplySettings(kept);
+            FitColumns();
+            if (DrawnTopLeft(_windowsColumn).DistanceTo(put) > 1f)
+            {
+                faults.Add($"from the settings it is drawn at {DrawnTopLeft(_windowsColumn)}, not {put}");
+            }
+
+            foreach (Vector2 shove in new[] { new Vector2(9999f, 9999f), new Vector2(-9999f, -9999f) })
+            {
+                MovePanel(_windowsColumn, shove);
+                Vector2 at = DrawnTopLeft(_windowsColumn);
+                if (at.X < -0.5f || at.Y < -0.5f || at.X + drawn.X > Size.X + 0.5f || at.Y + drawn.Y > Size.Y + 0.5f)
+                {
+                    faults.Add($"shoved by {shove} it stands at {at}, {drawn} in {Size}");
+                }
+            }
+
+            // Written out: off the right and bottom of 1,280 × 800; off the top left; and a window it does not fit keeps its head.
+            if (WhollyOnScreen(new Vector2(1250f, 700f), new Vector2(100f, 250f), new Vector2(1280f, 800f)) != new Vector2(1180f, 550f)
+                || WhollyOnScreen(new Vector2(-40f, -5f), new Vector2(100f, 250f), new Vector2(1280f, 800f)) != Vector2.Zero
+                || WhollyOnScreen(new Vector2(60f, 90f), new Vector2(100f, 250f), new Vector2(320f, 200f)) != new Vector2(60f, 0f))
+            {
+                faults.Add("the whole-on-screen rule is wrong at one of its three posed corners");
+            }
+        }
+        finally
+        {
+            ResetWindowPositions();
+            ApplySettings(was);
+            FitColumns();
+            _settingsLive = liveWas;
+        }
+
+        return faults.Count == 0
+            ? "[widths] column moves: ✅ from its corner by its grip to where it is put, through the frames, a save of the settings and back; all of it stays on screen; a reset puts it back"
+            : $"[widths] column moves: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -144,7 +282,7 @@ public partial class Main
 
     /// <summary>
     /// ⭐ <c>windows:</c> (<c>hud.md §9.1, §9.3</c>, step 3) — a new village opens the valley, the log and Professions (shown
-    /// and unfolded, B1) and keeps People, Stores and Build queue shut; every titled window but What's here has its word on
+    /// and unfolded, B1) and keeps People, Buildings, Stores and Build queue shut; every titled window but What's here has its word on
     /// the column, in the spec's order, each word's hold reading its window; a word shows its window and hides it again; Lore's
     /// word is hidden until the tree is shown; and Settings holds no window ticks.
     /// </summary>
@@ -156,7 +294,7 @@ public partial class Main
         foreach ((PanelContainer panel, string name, bool open) in new[]
         {
             (_minimapPanel, "the valley", true), (_villageLogPanel, "the log", true),
-            (_professionsPanel, "Professions", true), (_rosterPanel, RosterTitle, false), (_stockLimitsPanel, StoresTitle, false),
+            (_professionsPanel, "Professions", true), (_rosterPanel, RosterTitle, false), (_buildingsPanel, BuildingsTitle, false), (_stockLimitsPanel, StoresTitle, false),
             (_buildQueuePanel, "Build queue", false),
         })
         {
@@ -172,7 +310,7 @@ public partial class Main
             wrong.Add("Professions should start unfolded");
         }
 
-        string[] order = { "Centre", "People", "Professions", "Stores", "Build queue", LoreTitle, "Log", "Valley", "Settings", "Records" };
+        string[] order = { "Centre", "People", "Professions", BuildingsTitle, "Stores", "Build queue", LoreTitle, "Log", "Valley", "Settings", "Records" };
         string[] words = _columnWords.Select(w => w.Word).ToArray();
         if (!words.SequenceEqual(order))
         {
@@ -247,7 +385,7 @@ public partial class Main
         }
 
         return wrong.Count == 0
-            ? $"[widths] windows: ✅ the valley, the log and Professions open, {RosterTitle}, {StoresTitle} and Build queue shut; "
+            ? $"[widths] windows: ✅ the valley, the log and Professions open, {RosterTitle}, {BuildingsTitle}, {StoresTitle} and Build queue shut; "
               + $"{worded} windows worded on the column ({string.Join(" · ", order)}), each held as its window is; People shows "
               + $"and hides its window; the log's ✕ lets its word go; {LoreTitle} is not on it until shown; Settings ticks no window"
             : "[widths] windows: ⛔ " + string.Join("; ", wrong);

@@ -29,6 +29,8 @@ public sealed class PlayerSettingsTests : IDisposable
         UiScalePercent = 95,
         Routes = "all",
         RosterSort = "age",
+        ProfessionsSort = "max",
+        BuildingsSort = "condition",
         Toggles = new Dictionary<string, bool> { ["grid"] = true, ["snap"] = true, ["animals"] = false, ["paths"] = true },
         Windows = new Dictionary<string, WindowPrefs>
         {
@@ -67,6 +69,8 @@ public sealed class PlayerSettingsTests : IDisposable
         Assert.Equal(95, read.UiScalePercent);
         Assert.Equal("all", read.Routes);
         Assert.Equal("age", read.RosterSort);
+        Assert.Equal("max", read.ProfessionsSort);
+        Assert.Equal("condition", read.BuildingsSort);
         Assert.False(read.Toggles["animals"]);
         Assert.Equal(new WindowPlace(PlayerSettings.RightSide, 12, 300), read.Windows["What's here"].Place);
         Assert.Null(read.Windows["What's here"].Open);
@@ -261,6 +265,45 @@ public sealed class PlayerSettingsTests : IDisposable
     {
         var problems = new List<PlayerSettingsProblem>();
         Assert.Equal(sort, LoadText($"{{ \"roster_sort\": \"{sort}\" }}", problems).RosterSort);
+        Assert.Empty(problems);
+    }
+
+    /// <summary>Professions' order (Joe's play note 6, D896): a word with no heading is none, said once.</summary>
+    [Fact]
+    public void AProfessionsSortThatIsNotAHeadingIsTheDefault()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings read = LoadText("{ \"professions_sort\": \"height\", \"routes\": \"off\" }", problems);
+
+        Assert.Null(read.ProfessionsSort);
+        Assert.Equal("off", read.Routes);
+        Assert.Contains("professions_sort", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+    }
+
+    /// <summary>The Buildings list's order (Joe's play note 1, D900): a word with no heading is the default, said once; each heading's is read.</summary>
+    [Fact]
+    public void ABuildingsSortThatIsNotAHeadingIsTheDefault()
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        PlayerSettings read = LoadText("{ \"buildings_sort\": \"height\", \"routes\": \"off\" }", problems);
+
+        Assert.Null(read.BuildingsSort);
+        Assert.Equal("off", read.Routes);
+        Assert.Contains("buildings_sort", Assert.Single(problems).Sentence, StringComparison.Ordinal);
+        foreach (string sort in new[] { "name", "kind", "condition" })
+        {
+            Assert.Equal(sort, LoadText($"{{ \"buildings_sort\": \"{sort}\" }}", new List<PlayerSettingsProblem>()).BuildingsSort);
+        }
+    }
+
+    [Theory]
+    [InlineData("type")]
+    [InlineData("assigned")]
+    [InlineData("max")]
+    public void EveryProfessionsSortIsReadAsWritten(string sort)
+    {
+        var problems = new List<PlayerSettingsProblem>();
+        Assert.Equal(sort, LoadText($"{{ \"professions_sort\": \"{sort}\" }}", problems).ProfessionsSort);
         Assert.Empty(problems);
     }
 
