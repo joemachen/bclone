@@ -91,7 +91,7 @@ public partial class VillageMap
     /// at it, they face us and work.
     /// </summary>
     internal static FigureKey PersonKeyOf(int id, LifeStage stage, JobKind? trade, VillagerState state, Vector2 heading,
-        Goods? good, bool coat, bool cart, int dye = 0)
+        Goods? good, bool coat, bool cart, int dye = 0, bool paper = false)
     {
         bool working = AtWork(state);
         bool moving = heading.LengthSquared() > 1e-6f;
@@ -119,8 +119,15 @@ public partial class VillageMap
             : talking && pose == FigurePose.Front ? FigureHold.Talk
             : FigureHold.None;
         bool toolOut = (hold == FigureHold.Tool) || (stage == LifeStage.Elder && hold == FigureHold.None);
-        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold, Dye: dye);
+        return new FigureKey(id, stage, trade, pose, flip, hold, moving, toolOut, good, coat, cart, cold, Dye: dye, Paper: paper);
     }
+
+    /// <summary>
+    /// ⭐ Pure: whether the figure has the library's paper in hand (A246, <c>library-paper-art.md</c>) — from the library's door
+    /// to their own, where the letter is written. Not while inside taking it: the paper is theirs in the sim as they reach the
+    /// door, and they must not be seen walking in with it.
+    /// </summary>
+    internal static bool ShowsPaper(bool carryingPaper, VillagerState state) => carryingPaper && state != VillagerState.AtTheLibrary;
 
     private FigureKey PersonKeyOf(Villager villager, SimWorld world, Vector2 heading)
     {
@@ -139,7 +146,7 @@ public partial class VillageMap
 
         bool cart = villager.PushingACart && !world.TheWorksCartSleepsWith(villager);
         return PersonKeyOf(villager.Id, villager.LifeStage, trade, villager.State, heading, most, villager.CoatDays > 0, cart,
-            CloakDyeOf(villager.HouseholdId));
+            CloakDyeOf(villager.HouseholdId), ShowsPaper(villager.CarryingPaper, villager.State));
     }
 
     /// <summary>An adult's height on screen at this zoom.</summary>
@@ -318,13 +325,6 @@ public partial class VillageMap
                 DrawThePail(feet - new Vector2(0f, tall * 0.42f), tall * 0.16f, full);
             }
 
-            // ⭐ Paper from the library in hand (`library-borrowing.md §5.1`, D868) — the pail's kind of stand-in, held on the
-            // other side, until the art lane draws one (§8): from the library to their own door, where the letter is written.
-            if (villager.Alive && villager.CarryingPaper)
-            {
-                DrawThePaper(feet - new Vector2(0f, tall * 0.48f), tall * 0.16f);
-            }
-
             Vector2 overHead = feet - new Vector2(0f, tall);
             float r = Mathf.Max(3f, tall * 0.12f);
             if (!villager.Alive)
@@ -360,34 +360,6 @@ public partial class VillageMap
         foreach (int id in _walked.Keys.Where(id => !stillAlive.Contains(id)).ToList())
         {
             _walked.Remove(id);
-        }
-    }
-
-    /// <summary>The paper's sheet — brighter than the ground's parchment, so it reads in hand at the closest zoom.</summary>
-    internal static readonly Color LetterPaper = new("#f7f0de");
-
-    /// <summary>
-    /// A sheet or two of paper at a person's side (D868), tilted a little, two lines of ink on it — the stand-in for the art
-    /// lane's paper in hand (`library-borrowing.md §8`). Drawn on the side away from the pail.
-    /// </summary>
-    private void DrawThePaper(Vector2 centre, float radius)
-    {
-        float w = Mathf.Max(3f, radius * 0.9f);
-        float h = w * 1.3f;
-        float tilt = w * 0.18f;
-        Vector2 at = centre + new Vector2(-(radius + (w * 0.6f)), radius * 0.3f);
-        Vector2 topLeft = at + new Vector2(-w * 0.5f, (-h * 0.5f) + tilt);
-        Vector2 topRight = at + new Vector2(w * 0.5f, -h * 0.5f);
-        Vector2 bottomRight = at + new Vector2(w * 0.5f, (h * 0.5f) - tilt);
-        Vector2 bottomLeft = at + new Vector2(-w * 0.5f, h * 0.5f);
-        DrawColoredPolygon(new[] { topLeft, topRight, bottomRight, bottomLeft }, LetterPaper);
-        DrawPolyline(new[] { topLeft, topRight, bottomRight, bottomLeft, topLeft }, Ink, 1.2f);
-        for (int line = 1; line <= 2; line++)
-        {
-            float down = line / 3f;
-            Vector2 from = topLeft.Lerp(bottomLeft, down) + new Vector2(w * 0.18f, 0f);
-            Vector2 to = topRight.Lerp(bottomRight, down) - new Vector2(w * 0.18f, 0f);
-            DrawLine(from, to, new Color(Ink, 0.7f), 1f);
         }
     }
 

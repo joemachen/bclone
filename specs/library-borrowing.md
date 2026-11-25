@@ -384,7 +384,8 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
    switch, the walk-in. The
    probe gains a `library:` line (the card's sentence posed).
    *As built (D868):* **paper in hand** is a small tilted sheet with two lines of ink, drawn at the walker's side opposite the
-   pail (`VillageMap.DrawThePaper`, the pail's kind of stand-in — `PersonPainter` is left to the art lane). **The cards** read
+   pail (`VillageMap.DrawThePaper`, the pail's kind of stand-in — `PersonPainter` is left to the art lane; *gone since A246, the
+   figure carries its own, `library-paper-art.md`*). **The cards** read
    the sim's sentences on one new line, `Card.Letters`: the library's `SayTheLibrary` (amber when nobody can borrow, not when
    letters are off — that is a choice), the household's `SayTheHouseholdsLetters` (*"Writing to kin in the lowlands — 5 letters
    so far."* / *"A letter came back from kin in the lowlands — they will come when there is a bed in the house."*, amber /
@@ -402,6 +403,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 ## 8. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request
 
 - **Paper in hand** — a villager walking home from the library carrying a letter or a few sheets (the cask's precedent, W3).
+  ✅ Built on `art` (A246): `library-paper-art.md` — two blank sheets in the hand; the taker steps inside the library. ⏸️ Joe's eyes.
 - **The library**, if its drawing is a stand-in still — a building people now walk to; nothing new is required of it.
 - No new building, good or trade.
 

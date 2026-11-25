@@ -28,7 +28,8 @@ public partial class VillageMap
     /// </summary>
     internal static bool Indoors(VillagerState state, bool housed, bool inADooredBuilding) => state switch
     {
-        VillagerState.AtSchool or VillagerState.Teaching => true,
+        // School and teaching, and the library, for as long as taking paper takes (A246): the walk home starts at its door.
+        VillagerState.AtSchool or VillagerState.Teaching or VillagerState.AtTheLibrary => true,
 
         // ⭐ An evening at the tavern, and its keeper at work (W3, `tavern.md §9`): inside, the lit window the art lane draws.
         VillagerState.AtTheTavern or VillagerState.KeepingTheTavern => true,
@@ -166,6 +167,8 @@ public partial class VillageMap
             Want(!Indoors(VillagerState.SeekingShelter, false, inADooredBuilding: false), "walking to a fire is indoors");
             Want(Indoors(VillagerState.Forging, false, true) && Indoors(VillagerState.WorkingABatch, false, true), "the smith or a batch trade at work inside is not indoors (call 3)");
             Want(!Indoors(VillagerState.Forging, false, false), "a smith not inside is indoors");
+            Want(Indoors(VillagerState.AtTheLibrary, false, false) && !Indoors(VillagerState.WalkingToTheLibrary, false, true), "taking paper is out on the library's roof, or walking there is indoors (A246)");
+            Want(!ShownAsAPerson(VillagerState.AtTheLibrary, true) && ShownAsAPerson(VillagerState.AtTheLibrary, true, arrived: false), "someone in the library is drawn, or is not seen walking up to it (A246)");
             Want(!Indoors(VillagerState.Fishing, false, true), "a fisher at the hut is indoors (piece (b)'s place)");
             Want(Indoors(VillagerState.HaulingToStore, false, true) && Indoors(VillagerState.FetchingFromStore, false, true)
                 && Indoors(VillagerState.FetchingMaterials, false, true) && Indoors(VillagerState.StockingTheMarket, false, true),
@@ -277,7 +280,7 @@ public partial class VillageMap
             Want(sails.Lines is { } sailLines && RelaidForTheZoom(sails, sailLines, 13f).Turns, "a zoom stops the sails turning");
 
             return faults.Count == 0
-                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0; the sails gather way and come to rest, held while paused, a run of their own under the body turned about the hub, nothing turns on a cottage (A145); the smoke darker than A139's, four paintings, a ragged edge, grain in the wash (A145)"
+                ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); taking paper inside the library, seen walking up to it (A246); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0; the sails gather way and come to rest, held while paused, a run of their own under the body turned about the hub, nothing turns on a cottage (A145); the smoke darker than A139's, four paintings, a ragged edge, grain in the wash (A145)"
                 : $"[widths] indoors and smoke: ⛔ {string.Join("; ", faults)}";
         }
         catch (Exception e)
