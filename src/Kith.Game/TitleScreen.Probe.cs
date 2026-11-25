@@ -16,8 +16,8 @@ public sealed partial class TitleScreen
         + "hidden and New village the red primary with the keyboard; over a save Continue the primary and New village plain; "
         + "↓ walks every item shown and wraps; every word at 4.5 : 1 or more; it fits 1280 × 720; Settings lists the player's "
         + "ticks as last left, a tick goes to the file, Back returns; Kith's seal centred above the name, its wax clear of it "
-        + "and inside the sheet, hidden where the paper cannot hold it; the primary a slab of the seal's wax in its six states, "
-        + "its focus the slab's edge inked heavier and clear of the word" + WhatTheLiftHeld;
+        + "and inside the sheet, hidden where the paper cannot hold it; the primary red words larger than the rest and no box, the keyboard's "
+        + "painted stroke under each word and as long as it, thick under the primary; Found filled red with a pen line inside" + WhatTheLiftHeld;
 
     /// <summary>The settings this title reads and writes (the probe poses a second title with them).</summary>
     internal SimConfig Config => _config;
@@ -77,7 +77,8 @@ public sealed partial class TitleScreen
         faults.AddRange(TheVillagesPicture());
         faults.AddRange(TheLiftHolds());
         faults.AddRange(TheSealAbove());
-        faults.AddRange(TheWaxButton());
+        faults.AddRange(TheRedWord(this));
+        faults.AddRange(TheFoundButton());
         return faults;
     }
 
@@ -280,84 +281,72 @@ public sealed partial class TitleScreen
     }
 
     /// <summary>
-    /// The primary as wax (A224, `logo.md §8`): every state a painted patch of its own file at the master size with mipmaps,
-    /// reaching past the box; focus the edge alone — clear where the word sits, so it never covers it.
+    /// The primary as red words (A242, `logo.md §9`): larger than every other item, red at rest and no box behind it; and the
+    /// keyboard's stroke a painted one under every item, as long as its word and inside the item, thickest under the primary.
     /// </summary>
-    private IEnumerable<string> TheWaxButton()
+    private static IEnumerable<string> TheRedWord(TitleScreen title)
     {
-        foreach ((string state, string file) in new[]
+        Button primary = title.PrimaryItem;
+        if (!primary.GetThemeColor("font_color").IsEqualApprox(ParchmentLook.RubricInk) || primary.GetThemeStylebox("normal") is not StyleBoxFlat { DrawCenter: false })
         {
-            ("normal", "normal"), ("hover", "hover"), ("pressed", "pressed"), ("hover_pressed", "pressed"), ("disabled", "disabled"), ("focus", "focus"),
-        })
+            yield return $"{primary.Text} rests in {primary.GetThemeColor("font_color").ToHtml(false)} on {primary.GetThemeStylebox("normal")} (want red words, no box)";
+        }
+
+        foreach (Button item in title.ShownItems.Append(title.SettingsBack))
         {
-            string want = ParchmentLook.WaxButton.GetFile() + file + ".png";
-            if (PrimaryItem.GetThemeStylebox(state) is not PaintedPatch { Texture: { } wax } patch || wax.ResourcePath.GetFile() != want)
+            bool first = item == primary;
+            int size = item.GetThemeFontSize("font_size");
+            if (!first && (size >= primary.GetThemeFontSize("font_size") || item.GetThemeColor("font_color").IsEqualApprox(ParchmentLook.RubricInk)))
             {
-                yield return $"the primary's {state} is not {want}";
+                yield return $"{item.Text} is written as large or as red as the primary";
+            }
+
+            if (item.GetThemeStylebox("focus") is not PaintedPatch { Texture: { } swash } stroke || swash.ResourcePath.GetFile() != "underline.png")
+            {
+                yield return $"the keyboard's mark on {item.Text} is not the painted stroke";
                 continue;
             }
 
-            if (wax.GetWidth() != 1064 || wax.GetHeight() != 248 || wax.GetImage() is not { } image || !image.HasMipmaps())
+            // The settings page's Back is laid out only when the page is shown.
+            if (!item.IsVisibleInTree())
             {
-                yield return $"{want} is {wax.GetWidth()} × {wax.GetHeight()} (want 1064 × 248, with mipmaps)";
                 continue;
             }
 
-            if (patch.Outset != new Vector4(ParchmentLook.WaxOutset, ParchmentLook.WaxOutset, ParchmentLook.WaxOutset, ParchmentLook.WaxOutset))
+            float word = item.GetThemeFont("font").GetStringSize(item.Text, HorizontalAlignment.Left, -1, size).X;
+            float length = item.Size.X + stroke.Outset.X + stroke.Outset.Z;
+            if (Mathf.Abs(length - word - StrokePastTheWord) > 1f || length > item.Size.X || stroke.Band != (first ? 9f : 5f))
             {
-                yield return $"the primary's {state} wax reaches {patch.Outset} past its box (want {ParchmentLook.WaxOutset} each side)";
-            }
-
-            if (file == "focus")
-            {
-                Image ring = image.IsCompressed() ? (Image)image.Duplicate() : image;
-                if (ring.IsCompressed())
-                {
-                    ring.Decompress();
-                }
-
-                float most = 0f;
-                for (int y = 85; y < 165; y += 4)
-                {
-                    for (int x = 150; x < 914; x += 8)
-                    {
-                        most = Mathf.Max(most, ring.GetPixel(x, y).A);
-                    }
-                }
-
-                if (most > 0.02f)
-                {
-                    yield return $"the focus painting covers the word (alpha {most:F2} where it sits)";
-                }
+                yield return $"the stroke under {item.Text} is {length:0} × {stroke.Band:0} (want {word + StrokePastTheWord:0} × {(first ? 9 : 5)})";
             }
         }
     }
 
     /// <summary>
-    /// Pure of the screen: the wax behind the primary's word — the colour at the lightest tenth of the painted field where the
-    /// word sits (master px 150–914 across, 85–165 down), so a word that reads there reads on all of it but its glints.
+    /// The new valley's <i>Found</i> (A242): the look's red box with a pen line inside it in every state, its words at 4.5 : 1 or
+    /// more on the fill, and the keyboard on it a line alone.
     /// </summary>
-    internal static Color WaxGround(string file)
+    private IEnumerable<string> TheFoundButton()
     {
-        Image image = GD.Load<Texture2D>("res://textures/ui/" + ParchmentLook.WaxButton + file + ".png").GetImage();
-        if (image.IsCompressed())
+        foreach ((string state, string colour) in new[] { ("normal", "font_color"), ("hover", "font_hover_color"), ("pressed", "font_pressed_color") })
         {
-            image = (Image)image.Duplicate();
-            image.Decompress();
-        }
-
-        var field = new List<(float Lum, Color Colour)>();
-        for (int y = 85; y < 165; y += 2)
-        {
-            for (int x = 150; x < 914; x += 2)
+            if (GetThemeStylebox(state, UiLook.PrimaryButton) is not PenFrame { Box: { } box, Line.A: > 0.5f })
             {
-                Color c = image.GetPixel(x, y);
-                field.Add(((0.2126f * c.R) + (0.7152f * c.G) + (0.0722f * c.B), c));
+                yield return $"Found's {state} is not the red box with the pen line";
+                continue;
+            }
+
+            double ratio = Ratio(GetThemeColor(colour, UiLook.PrimaryButton), box.BgColor);
+            if (ratio < 4.5)
+            {
+                yield return $"Found's words read at {ratio:F2} : 1 {state}";
             }
         }
 
-        field.Sort((a, b) => a.Lum.CompareTo(b.Lum));
-        return field[(int)(field.Count * 0.9f)].Colour with { A = 1f };
+        if (GetThemeStylebox("focus", UiLook.PrimaryButton) is not PenFrame { Box: null })
+        {
+            yield return "the keyboard on Found is not a line alone";
+        }
     }
 
     /// <summary>The checks on a title posed over a save, already in the tree.</summary>
@@ -372,6 +361,7 @@ public sealed partial class TitleScreen
         }
 
         faults.AddRange(TheArrowsWalk(posed));
+        faults.AddRange(TheRedWord(posed));
 
         // Its Settings shows the player's value, which the probe set away from the default before posing it.
         (string Key, CheckBox Box) grid = posed.SettingsTicks.FirstOrDefault(t => t.Key == "grid");
@@ -410,11 +400,8 @@ public sealed partial class TitleScreen
         }
     }
 
-    /// <summary>
-    /// Every word shown at 4.5 : 1 or more against what is behind it: the parchment and its darkest mottle (the <c>ui contrast:</c>
-    /// line's paper), or the rubric under the primary's words.
-    /// </summary>
-    private static IEnumerable<string> TheWordsRead(TitleScreen title)
+    /// <summary>The contrast between two colours, as WCAG counts it.</summary>
+    private static double Ratio(Color a, Color b)
     {
         static double Lum(Color c)
         {
@@ -422,8 +409,15 @@ public sealed partial class TitleScreen
             return (0.2126 * Linear(c.R)) + (0.7152 * Linear(c.G)) + (0.0722 * Linear(c.B));
         }
 
-        static double Ratio(Color a, Color b) => (Math.Max(Lum(a), Lum(b)) + 0.05) / (Math.Min(Lum(a), Lum(b)) + 0.05);
+        return (Math.Max(Lum(a), Lum(b)) + 0.05) / (Math.Min(Lum(a), Lum(b)) + 0.05);
+    }
 
+    /// <summary>
+    /// Every word shown at 4.5 : 1 or more against what is behind it: the parchment and its darkest mottle (the <c>ui contrast:</c>
+    /// line's paper).
+    /// </summary>
+    private static IEnumerable<string> TheWordsRead(TitleScreen title)
+    {
         Color sheet = ParchmentLook.Parchment;
         Color mottle = new(sheet.R - (10f / 255f), sheet.G - (10f / 255f), sheet.B - (10f / 255f));
         var words = new List<(string What, Color Ink, Color Ground)>
@@ -433,17 +427,6 @@ public sealed partial class TitleScreen
         };
         foreach (Button item in title.ShownItems)
         {
-            if (item == title.PrimaryItem)
-            {
-                // On the wax (A224): the lightest tenth of the painted field where the word sits, in every state it is read in.
-                foreach ((string file, string colour) in new[] { ("normal", "font_color"), ("hover", "font_hover_color"), ("pressed", "font_pressed_color") })
-                {
-                    words.Add(($"{item.Text} on the {file} wax", item.GetThemeColor(colour), WaxGround(file)));
-                }
-
-                continue;
-            }
-
             foreach (string state in new[] { "font_color", "font_hover_color", "font_focus_color" })
             {
                 words.Add(($"{item.Text} ({state})", item.GetThemeColor(state), mottle));

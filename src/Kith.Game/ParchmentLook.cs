@@ -52,15 +52,6 @@ internal static class ParchmentLook
 
     private static Texture2D Tex(string path) => GD.Load<Texture2D>(Ui + path);
 
-    /// <summary>The primary button's wax, one file a state (A224): <c>controls/button-wax-normal.png</c> and the rest, 1064 × 248.</summary>
-    internal const string WaxButton = "controls/button-wax-";
-
-    /// <summary>The wax's fixed ends, master px (left, top, right, bottom): the lumps, drips, glint and the field's round ends.</summary>
-    internal static readonly Vector4 WaxMargins = new(150, 100, 150, 100);
-
-    /// <summary>Logical px the wax reaches past the button's box on every side (the painting's 32 master px of lumps and drips).</summary>
-    internal const float WaxOutset = 8f;
-
     /// <summary>The theme.</summary>
     internal static Theme Build()
     {
@@ -151,7 +142,8 @@ internal static class ParchmentLook
     private static void Title(Theme theme, Font header)
     {
         // ⭐ The title's items (A180, `title-screen-art.md §2`): the heading face at 22, ink; under the pointer a faint rubric
-        // wash and rubric words; with the keyboard on it a rubric underline and rubric words; pressed, the theme's swash.
+        // wash and rubric words; with the keyboard on it a painted rubric stroke under the word (A242 — A180's was a straight
+        // 2 px line across the box) and rubric words; pressed, the theme's swash.
         theme.SetTypeVariation(UiLook.TitleItem, "Button");
         theme.SetFont("font", UiLook.TitleItem, header);
         theme.SetFontSize("font_size", UiLook.TitleItem, 22);
@@ -169,7 +161,7 @@ internal static class ParchmentLook
         theme.SetStylebox("normal", UiLook.TitleItem, Box(Colors.Transparent, Colors.Transparent, 0));
         theme.SetStylebox("disabled", UiLook.TitleItem, Box(Colors.Transparent, Colors.Transparent, 0));
         theme.SetStylebox("hover", UiLook.TitleItem, Box(Rubric with { A = 0.10f }, Colors.Transparent, 0));
-        theme.SetStylebox("focus", UiLook.TitleItem, Box(Colors.Transparent, Rubric, 2));
+        theme.SetStylebox("focus", UiLook.TitleItem, TitleStroke(5f));
         foreach (string colour in new[] { "font_hover_color", "font_focus_color", "font_hover_pressed_color", "font_pressed_color" })
         {
             theme.SetColor(colour, UiLook.TitleItem, RubricInk);
@@ -177,12 +169,33 @@ internal static class ParchmentLook
 
         theme.SetColor("font_color", UiLook.TitleItem, Ink);
 
-        // The primary: the new valley's one wax button, in the heading face; with the keyboard on it, its wax inked heavier
-        // (A224 — the ink box round it, A180's, sat square round a lumpy slab).
-        theme.SetTypeVariation(UiLook.TitlePrimary, UiLook.PrimaryButton);
-        theme.SetFont("font", UiLook.TitlePrimary, header);
-        theme.SetFontSize("font_size", UiLook.TitlePrimary, 22);
+        // ⭐ The primary (A242, `logo.md §9`; Joe, of the wax: "i kind of hate the button after sitting with it for a while",
+        // then "A, red words"): an item written larger and always in red, as a scribe marks the line that matters; the stroke
+        // under it thicker. The seal above stays the page's only wax.
+        theme.SetTypeVariation(UiLook.TitlePrimary, UiLook.TitleItem);
+        theme.SetFontSize("font_size", UiLook.TitlePrimary, 28);
+        theme.SetColor("font_color", UiLook.TitlePrimary, RubricInk);
+        theme.SetStylebox("focus", UiLook.TitlePrimary, TitleStroke(9f));
     }
+
+    /// <summary>
+    /// The title's focus: the painted swash in a band this tall, every band's top 9 px above the item's foot, so a thin one is
+    /// no lower under its word than the thick — the title fits it to each word (<c>TitleScreen.StrokeUnder</c>).
+    /// </summary>
+    private static PaintedPatch TitleStroke(float band)
+    {
+        // Whole, no fixed ends, so the scale only picks the filter: at 4 it reads no mipmaps (PaintedPatch, A119) and stays sharp —
+        // at 0.25 the GPU took a half-size copy for the length and the stroke went soft (A242's first capture).
+        PaintedPatch stroke = PaintedPatch.Make(Tex("controls/underline.png"), 4f, Vector4.Zero, new Vector4(12, 6, 12, 6));
+        stroke.Band = band;
+        stroke.Outset = new Vector4(0, 9f - band, 0, band - 9f);
+        return stroke;
+    }
+
+    private static PenFrame Framed(StyleBoxFlat? box, Color line, int width) => new()
+    {
+        Box = box, Line = line, LineWidth = width, ContentMarginLeft = 18, ContentMarginRight = 18, ContentMarginTop = 9, ContentMarginBottom = 9,
+    };
 
     private static void NewValley(Theme theme)
     {
@@ -197,25 +210,23 @@ internal static class ParchmentLook
         theme.SetFont("reading_font", t, GD.Load<FontFile>("res://fonts/Cardo/Cardo-Regular.ttf"));
         theme.SetFont("blackletter", t, theme.DefaultFont);
 
-        // ⭐ The one primary button: a slab of the seal's wax (A224, `logo.md §8`; Joe: "can we make the button look 'wax-y'
-        // too?", then "Yes, build it") — painted by the seal's recipe at 4 × (`D:\Projects\brushes\logo\wax_button.jsx`),
-        // lit upper left, the word in a pressed field; pressed turns the light over, as a seal pressed in; hover warms the
-        // wax; disabled is it at 45 %. Focus is the slab's own edge inked heavier, drawn over whichever state it is in. Paper
-        // words, larger than the panel's 16: the wax behind them reads 8.9 : 1 typical, 6.3 its lightest tenth (A224's
-        // capture; the probe measures the painting). Every lump, drip and the field's round ends sit in the fixed ends
-        // (150 master px), so a wider button — the new valley's Found — stretches plain wax; it reaches 8 px past its box.
-        // The word keeps 22 px from the ends and 9 above and below: the field's round ends curve in 15 px, and a 40 px
-        // button (Found, at 6) squeezed the field until the word's tails crossed its rim (A224's capture).
+        // ⭐ The one primary button, the new valley's Found (A242, `logo.md §9`; Joe: "Yes, build both"): filled rubric with a
+        // thin pen line inside its edge; paper words (6.4 : 1 on the rubric, 8.5 held). Focus is the pen line at full strength,
+        // drawn over the state. (The wax, A224, is gone: it copied the seal and was the loudest thing on the page.)
         theme.SetTypeVariation(UiLook.PrimaryButton, "Button");
-        foreach ((string state, string file) in new[]
+        foreach ((string state, Color fill, float edge, float line) in new[]
         {
-            ("normal", "normal"), ("hover", "hover"), ("pressed", "pressed"), ("hover_pressed", "pressed"), ("disabled", "disabled"), ("focus", "focus"),
+            ("normal", Rubric, 1f, 0.55f), ("hover", Rubric.Lightened(0.08f), 1f, 0.55f), ("pressed", RubricInk, 1f, 0.55f),
+            ("hover_pressed", RubricInk, 1f, 0.55f), ("disabled", Rubric with { A = 0.45f }, 0.45f, 0.25f),
         })
         {
-            PaintedPatch wax = PaintedPatch.Make(Tex(WaxButton + file + ".png"), 0.25f, WaxMargins, new Vector4(22, 9, 22, 9));
-            wax.Outset = new Vector4(WaxOutset, WaxOutset, WaxOutset, WaxOutset);
-            theme.SetStylebox(state, UiLook.PrimaryButton, wax);
+            var box = new StyleBoxFlat { BgColor = fill, BorderColor = RubricInk with { A = edge } };
+            box.SetBorderWidthAll(2);
+            box.SetCornerRadiusAll(2);
+            theme.SetStylebox(state, UiLook.PrimaryButton, Framed(box, PaperWords with { A = line }, 1));
         }
+
+        theme.SetStylebox("focus", UiLook.PrimaryButton, Framed(null, PaperWords, 2));
 
         foreach (string colour in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color" })
         {

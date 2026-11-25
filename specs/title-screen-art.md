@@ -200,8 +200,8 @@ the composite (part 3).
 
 The logo (`textures/ui/screens/seal-k.png`, A220–A222) over the panel's paper above *Kith*, a child of the name outside
 the column's layout so nothing in the menu moves; hidden where the paper cannot hold it. `specs/logo.md §7` has the
-numbers and the probe's checks. **A224:** the primary (Continue / New village) is now a slab of the seal's wax, its focus
-the slab's edge inked heavier in place of A180's ink box (`logo.md §8`).
+numbers and the probe's checks. **A242:** the primary (Continue / New village) is red words, larger, with
+no box, and the keyboard's mark is a painted stroke as long as the word it is under (`logo.md §9`; A224's wax is gone).
 
 ## 5. Order of work
 
@@ -248,9 +248,9 @@ changes with the real season.
 - **`TitleScreen.cs`**: the panel as §2 says, two pages in one sheet (the menu, Settings); `NewestThatOpens` decides
   *Continue*; the arrow keys linked to wrap (`LinkTheItems`); the width on every resize, never per frame (`PlaceThePanel`).
   `TitleScreen.Probe.cs`: what the probe asks of it. **`LoadMenu`'s button focusable** — the pause screen's too.
-- **`ParchmentLook.cs` / `UiLook.cs`**: two roles, `TitleItem` (the heading face at 22, a rubric wash under the pointer, a rubric
-  underline and rubric words with the keyboard) and `TitlePrimary` (the new valley's red button in the heading face, an ink
-  ring when it has the keyboard). On slate the items fall back to plain buttons.
+- **`ParchmentLook.cs` / `UiLook.cs`**: two roles, `TitleItem` (the heading face at 22, a rubric wash under the pointer, a painted
+  rubric stroke and rubric words with the keyboard) and `TitlePrimary` (an item at 28, always in red — A242; until then the new
+  valley's red button, and A224's wax). On slate the items fall back to plain buttons.
 - **`Main.cs`**: the title gets its settings doors and applies full screen; `ProbeTheTitle` asks the title's checks of itself and
   of a title posed over a save (its grid tick set away from the default first); the fifteen Settings ticks made from the table;
   the `full screen:` line's table guard. **`Main.Settings.cs`**: `PlayerTicks`, `Tick`, `TickValue`, the title's two writers;

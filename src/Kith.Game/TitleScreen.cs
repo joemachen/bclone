@@ -406,6 +406,7 @@ public sealed partial class TitleScreen : Control
             item.ThemeTypeVariation = item == PrimaryItem ? UiLook.TitlePrimary : UiLook.TitleItem;
             item.CustomMinimumSize = new Vector2(250, 46);
             item.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+            StrokeUnder(item);
             column.AddChild(item);
         }
 
@@ -489,6 +490,7 @@ public sealed partial class TitleScreen : Control
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
         };
         SettingsBack.Pressed += ShowTheMenu;
+        StrokeUnder(SettingsBack);
         page.AddChild(SettingsBack);
         return page;
     }
@@ -561,6 +563,36 @@ public sealed partial class TitleScreen : Control
 
     /// <summary>Pure: does the seal's wax, with its clear paper, fit above a name whose top is this far down the column?</summary>
     internal static bool SealFits(float nameTop) => nameTop + SealFoot - SealBox + SealWaxTop >= SealGap;
+
+    /// <summary>Logical px the keyboard's stroke runs past the word, both ends together (A242, `logo.md §9`).</summary>
+    internal const float StrokePastTheWord = 18f;
+
+    /// <summary>
+    /// The keyboard's stroke as long as the word it is under, not the 250 px item (A242): the look's, its own copy, drawn in from
+    /// each side. On slate there is none, and the item keeps its box.
+    /// </summary>
+    private static void StrokeUnder(Button item)
+    {
+        item.Ready += () =>
+        {
+            if (item.GetThemeStylebox("focus") is not PaintedPatch look)
+            {
+                return;
+            }
+
+            var stroke = (PaintedPatch)look.Duplicate();
+            void Fit()
+            {
+                float word = item.GetThemeFont("font").GetStringSize(item.Text, HorizontalAlignment.Left, -1, item.GetThemeFontSize("font_size")).X;
+                float past = (item.Size.X - word - StrokePastTheWord) / 2f;
+                stroke.Outset = stroke.Outset with { X = -past, Z = -past };
+            }
+
+            item.AddThemeStyleboxOverride("focus", stroke);
+            item.Resized += Fit;
+            Fit();
+        };
+    }
 
     /// <summary>The panel's width: the share of the window, never narrower than what it holds. On every resize, never per frame.</summary>
     private void PlaceThePanel()
