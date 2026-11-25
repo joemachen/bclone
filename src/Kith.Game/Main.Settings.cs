@@ -71,6 +71,9 @@ public partial class Main
     /// <summary>The id the Paths overlay is remembered by, beside the map's ticks.</summary>
     private const string PathsToggle = "paths";
 
+    /// <summary>The night view's tick (A249) — the strip's sun and moon and the key n press it.</summary>
+    private const string NightToggle = "night";
+
     /// <summary>The alerts' tick (D578): whether the village goes back to the player's speed after an alert.</summary>
     private const string AlertSpeedToggle = "alert_speed_back";
 
@@ -88,6 +91,7 @@ public partial class Main
         new("snap", "snap buildings to the grid", false, "On the map"),
         new("grid", "draw the tile grid", false, "On the map"),
         new("watercolour", "paint the valley in watercolour", true, "On the map"),
+        new(NightToggle, "show the valley by night", false, "On the map"),
         new("before_after", "before/after slider over the watercolour", false, "On the map"),
         new("trees", "draw the trees", true, "On the map"),
         new("moving_water", "moving water", true, "On the map"),

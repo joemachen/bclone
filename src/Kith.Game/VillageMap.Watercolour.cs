@@ -1216,6 +1216,7 @@ public partial class VillageMap
         float split = _beforeAfter && valley.Size.X > 0f ? ((_splitShare * Size.X) - valley.Position.X) / valley.Size.X : -1f;
         material.SetShaderParameter("split_u", split);
         HandTheFieldsTheValley(valley, config, split);
+        HandTheNightOver(material);
     }
 
     /// <summary>

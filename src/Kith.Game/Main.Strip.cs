@@ -41,7 +41,7 @@ public partial class Main
     private HBoxContainer BuildTheNameAndTime()
     {
         var group = new HBoxContainer();
-        group.AddThemeConstantOverride("separation", 6);
+        group.AddThemeConstantOverride("separation", 4);
 
         _seasonIcon = UiIcons.Slot(UiIcons.Side);
         _seasonIcon.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
@@ -57,6 +57,10 @@ public partial class Main
 
         // ⭐ PAUSE READS "PAUSED" AND IS HELD WHILE IT IS, SO THE PAUSED LABEL WENT; the chosen speed is held beside it — what
         // play resumes at. 20× is the dev bar's (A212). Keys 1–4 as before; the key is the tooltip's end (hud.md §8.4).
+        // ⭐ Close together since the sky joined them (A252): its 25 px are theirs, so a busy village's strip at 16:10 is two lines still.
+        var speeds = new HBoxContainer();
+        speeds.AddThemeConstantOverride("separation", 1);
+        group.AddChild(speeds);
         foreach ((string text, double multiplier, string key) in new[]
         {
             ("Pause", 0.0, "space"), ("1×", 1.0, "1"), ("2×", 2.0, "2"), ("4×", 4.0, "3"), ("10×", 10.0, "4"),
@@ -64,9 +68,11 @@ public partial class Main
         {
             var button = new Button { Text = text, ToggleMode = true, Flat = true, TooltipText = $"{(multiplier == 0.0 ? "Pause" : $"{text} speed")} — {key}" };
             button.Pressed += () => SetSpeed(multiplier == 0.0 && _driver.IsPaused ? _resumeSpeed : multiplier);
-            group.AddChild(button);
+            speeds.AddChild(button);
             _speedButtons.Add((button, multiplier));
         }
+
+        speeds.AddChild(BuildTheSky());
 
         // STOPPED only, now (D364): a village halted by a fault says so here, in the warnings' red.
         _speedLabel = Body(string.Empty);
@@ -74,6 +80,99 @@ public partial class Main
         UiLook.Tint(_speedLabel, UiLook.Stopped);
         group.AddChild(_speedLabel);
         return group;
+    }
+
+    // ---------------------------------------------------------------
+    //  The sun and moon (A249, night-view.md §6)
+    // ---------------------------------------------------------------
+
+    private CheckBox _nightTick = null!;
+    private Button _skyButton = null!;
+    private TextureRect _skyIcon = null!;
+
+    /// <summary>The sun and moon's side on the strip, logical px (call 4's mock, 24).</summary>
+    internal const float SkySide = 24f;
+
+    /// <summary>
+    /// ⭐ The sky you are in — a sun by day, a moon by night — after the speeds (call 5; Joe: <i>"a button toggle on the main screen"</i>).
+    /// A click is the other; the tooltip says which, and its key.
+    /// </summary>
+    private Button BuildTheSky()
+    {
+        _skyButton = new Button { Flat = true, CustomMinimumSize = new Vector2(SkySide, SkySide), SizeFlagsVertical = Control.SizeFlags.ShrinkCenter };
+        _skyIcon = UiIcons.Slot(SkySide);
+        _skyIcon.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _skyButton.AddChild(_skyIcon);
+        _skyButton.Pressed += ToggleTheNight;
+        ShowTheSky(night: false);
+        return _skyButton;
+    }
+
+    /// <summary>The button and the key n: press the tick, which is the one answer (it is saved, and it moves the map).</summary>
+    private void ToggleTheNight() => _nightTick.ButtonPressed = !_nightTick.ButtonPressed;
+
+    /// <summary>The tick was pressed or cleared — by the button, the key, Settings, or the player's file.</summary>
+    private void NightChanged(bool on)
+    {
+        _map.ShowNight(on);
+        ShowTheSky(on);
+    }
+
+    private void ShowTheSky(bool night)
+    {
+        UiIcons.Show(_skyIcon, "time", night ? "night" : "day");
+        _skyButton.TooltipText = night ? "Day — n" : "Night — n";
+
+        // No picture, the word: a button is never blank.
+        _skyButton.Text = _skyIcon.Visible ? string.Empty : night ? "Night" : "Day";
+    }
+
+    /// <summary>
+    /// ⭐ <c>night:</c> (A249, <c>night-view.md §7</c>) — day at a founding and off in the table; the strip's button, the key n and the
+    /// Settings tick are one switch; the button shows the sky it is and says the other; then the map's own line
+    /// (<see cref="VillageMap.TheNightHolds"/>). How it looks is Joe's eyes.
+    /// </summary>
+    private string TheNightHolds()
+    {
+        var faults = new List<string>();
+        void Is(string when, bool night)
+        {
+            string picture = _skyIcon.Texture?.ResourcePath ?? "none";
+            string want = UiIcons.PathOf("time", night ? "night" : "day");
+            if (_map.NightShown != night || _nightTick.ButtonPressed != night || picture != want || _skyButton.TooltipText != (night ? "Day — n" : "Night — n"))
+            {
+                faults.Add($"{when}: the map's night {_map.NightShown}, the tick {_nightTick.ButtonPressed}, the picture {picture}, \"{_skyButton.TooltipText}\" (want night {night})");
+            }
+        }
+
+        if (TickRow(NightToggle).Default)
+        {
+            faults.Add("the table starts a player at night");
+        }
+
+        Is("at the founding", night: false);
+        _skyButton.EmitSignal(BaseButton.SignalName.Pressed);
+        Is("the button pressed", night: true);
+        bool saved = CaptureSettings().Toggles.TryGetValue(NightToggle, out bool kept) && kept;
+        _UnhandledKeyInput(new InputEventKey { Keycode = Key.N, Pressed = true });
+        Is("n pressed", night: false);
+        _nightTick.ButtonPressed = true;
+        Is("the tick pressed", night: true);
+        _nightTick.ButtonPressed = false;
+        Is("the tick cleared", night: false);
+        if (!saved)
+        {
+            faults.Add("the night is not in the player's settings");
+        }
+
+        if (_skyButton.GetIndex() <= _speedButtons[4].Button.GetIndex() || _skyButton.GetParent() != _speedButtons[4].Button.GetParent() || _skyButton.FocusMode != FocusModeEnum.None)
+        {
+            faults.Add("the sky is not after the speeds, or takes the keyboard");
+        }
+
+        return (faults.Count == 0
+            ? "[widths] night: ✅ day at a founding and in the table; the strip's button after the speeds, the key n and the Settings tick one switch; it shows the sky it is, says the other, and is saved"
+            : $"[widths] night: ⛔ {string.Join("; ", faults)}") + "\n" + _map.TheNightHolds();
     }
 
     /// <summary>Hold Pause while paused (reading <i>Paused</i>) and the speed play resumes at — the state, not the last click.</summary>

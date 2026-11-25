@@ -1,12 +1,11 @@
 # The night view, with lit houses (A249)
 
-> **Status: 🔨 THE SEVEN CALLS ANSWERED (A251, 2026-11-25, Joe: *"All as recommended"*, §8). BUILT: the three shaders' uniforms, at daylight's
-> defaults, and the two pictures (§7's art rows) — nothing in the game uses them yet. NOT BUILT: the rest of §7, which waits for
-> `slice/play-notes-2` to merge.** Art lane
+> **Status: ✅ BUILT (A252, 2026-11-25) on `art`, UNPLAYED — Joe looks before it merges.** His seven calls (A251, *"All as recommended"*, §8);
+> `slice/play-notes-2` merged first (D902) and `main` came into `art`. What was built and how it was checked: §9. One file his OK did not
+> name is left alone and asked about (§9: the newcomer's chevron).** Art lane
 > (CLAUDE.md *Two tracks*), branch `art`. A view toggle only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes, nothing is
 > hashed. Mocks drawn by the game itself, a scratch copy run on copies of Joe's saves: `D:\Projects\brushes\night-view\`
-> (`night_1_seasons.jpg` … `night_5_villages.jpg`). ⚠️ `slice/play-notes-2` (open) changes `VillageMap.cs`, `Main.cs` and
-> `Main.Settings.cs`: no code until it merges (§7).
+> (`night_1_seasons.jpg` … `night_5_villages.jpg`); the build's own pictures in `night-view\build\`.
 
 ## 1. What was asked
 
@@ -103,11 +102,12 @@ own rule for *inside* (`VillageMap.Indoors`), the family's own people (`night-vi
 |---|---|---|
 | `shaders/valley_terrain`, `valley_fields`, `snowfall` `.gdshader` | ✅ built (A251): `night_tint` (and `night_grey`), defaults daylight; a day picture moves no further than two runs of the old shaders differ | art |
 | `textures/ui/icons/time/day.png`, `night.png` + `.import` | ✅ built (A251): the woodcut pair, 160 px masters, mipmaps on as the season icons' are; not yet worn by anything | art |
-| `VillageMap.Night.cs`, `VillageMap.NightProbe.cs` (new) | the toggle, the fade, the lift, who is home, the light, the probe's lines | ⛔ call 6 |
-| `VillageMap.Tavern.cs`, `.Roofs.cs`, `.Smoke.cs`, `.People.cs`, `.Watercolour.cs`, `.Snowfall.cs`, `.TavernProbe.cs` | the light's pieces and draw; people lifted; the uniforms handed over | ⛔ call 6 |
-| `VillageMap.cs` | the map's tint; marks by role, day and night | ⛔ call 6, **after play-notes-2** |
-| `Main.Strip.cs` | the button | ⛔ call 6 |
-| `Main.cs`, `Main.Settings.cs` | the key and the tick | ⛔ call 6, **after play-notes-2** |
+| `VillageMap.Night.cs`, `VillageMap.NightProbe.cs` (new) | ✅ A252: the toggle, the fade, the lift, the marks' night colours, who is home, the lamps and the pools, the probe's lines | call 6 ✅ |
+| `VillageMap.Tavern.cs`, `.Roofs.cs`, `.Smoke.cs`, `.People.cs`, `.Watercolour.cs`, `.TavernProbe.cs` | ✅ A252: the lamplight's draw by day and night; the lamps laid beside the roof; who is home noted with the fires; people lifted; the uniforms handed over. `.Snowfall.cs` needed nothing (the flakes' uniform is handed with the ground's) | call 6 ✅ |
+| `VillageMap.cs` | ✅ A252: the clock; each mark answered at its draw; the washes lifted | call 6 ✅ |
+| `Main.Strip.cs` | ✅ A252: the button, and the speeds closer together (§9) | call 6 ✅ |
+| `Main.cs`, `Main.Settings.cs` | ✅ A252: the key, the tick, the probe's lines | call 6 ✅ |
+| `VillageMap.WalkIn.cs` | ⏸️ the newcomer's chevron, `ArrivalMark` `#4e3f1b`, dark on the dark valley — its night partner `#efd9a0` waits for his OK (not in call 6's list) | ⏸️ |
 
 `PlayerSettings.cs` is **not** needed. No file under `src/Kith.Sim`, `data` or `tests`, so the suite's diff stays empty. Probe lines at the build:
 the tint and every mark's pair and contrast, nobody-home and who-is-home cases, the lamps' count a tier, the slow lamp, default day, remembered,
@@ -126,3 +126,27 @@ Each as its ⭐ / *recommended* below: B; 1; night only; A; after the speeds, ke
 6. **His OK** for the systems-lane files in §7, once `slice/play-notes-2` has merged.
 7. **The title's picture at each save:** always day (recommended — it is one of four seasons' looks, and a dark title hides the village), or as
    the player was looking.
+
+## 9. As built (A252, 2026-11-25)
+
+- **The switch.** One tick, *show the valley by night*, in Settings' *On the map*, off by default; the strip's sun or moon after the speeds and
+  the key `n` press it, so there is one answer and it is saved with the rest (`toggles.night`). The picture is the sky you are in; its tooltip
+  says the other (*Night — n*, *Day — n*). ⚠️ **The speeds sit closer** (the group's gap 6 → 4, between the speed buttons 6 → 1): the button's
+  24 px took a busy village's strip at 1,280 wide to three lines, and `bars:` refused it. Now two, as before; one at 1,422 at the founding.
+- **The fade.** A second, in real seconds, paused or not. A village that opens with the night on is night from its first frame.
+- **The tint and the marks** as §4. A mark is answered at its draw by its daytime colour (`AtNight`), so a cached outline is never traced
+  again; what is not a mark (ink, fences, walls, the palisade's stakes) goes dark with the valley. The seam a mine in hand would claim has
+  its own pale partner `#e0b98c`. Routes, the paths' overlay and a gathering ring come wholly back; the land's washes 35 %.
+- **The lamps.** Laid beside the roof in its cache (`LampsOf`), not in `RoofDrawing`, so what a building is drawn with by day is the list it
+  was: a cabin 3 (the door, a front window, a side), a cottage 5, a manor 7, the forge and the oven 1 at the door, none in a ruin. By night each
+  lit building has a pool at each window, one before the door and a faint one round them all, drawn under its roof; the slits over it; the
+  tavern's daytime fans fade out as the night comes. A home is lit while one of its family is inside it (noted once a tick with the fires);
+  its lamp comes and goes over four seconds of the people's clock; a lamp first drawn is as it is.
+- **Not built:** the falling snow by night was not seen (no save of his is mid-snowfall); its tint is the flakes' uniform, untested by eye.
+- **Frame cost**, his Hollowmere at 2560 × 1440, the same view by day and night three times over and close up twice: the GPU 4.3–4.5 ms both
+  ways, the CPU's render 1.3 ms both ways, the frame's process within its own noise. No measurable cost.
+- **The probe:** `night:` (the switch, the picture, the key, saved, where it stands) and `night view:` (by day every mark to the bit; the
+  fade; each mark seen as its partner and the least 3.2 off a night ground by the shaders' own sum — #ff8a94 on snow; 3.4 as rendered in A250;
+  ink and fences left dark; people at 0.89; the three shaders told the night and day again; the lamps a kind; out of the runs; who lights a
+  home; the slow lamp; the pool), and `homes lit:` (posed on the founding: a house with one of its family resting in it lit, walking dark, no
+  house none). Red-checked: 16 mutants, 14 caught for 15 reds; two zeros written down, both breaks that cannot land — M4 (the outer night check in `AtNight` removed: the inner one gives the same colour by day) and M14 (the sky button given the keyboard: `RefuseKeyboardFocus` on the strip takes it back after); M16 scored zero first (people's lift unguarded at the draw), so the draw and the probe now share `PersonTint` and it scores 1.

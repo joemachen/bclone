@@ -293,7 +293,7 @@ public partial class VillageMap
                     LifeStage.Elder => ElderColour,
                     _ => AdultColour,
                 };
-                DrawCircle(point, VillagerRadius, new Color(dot, dot.A * shown));
+                DrawCircle(point, VillagerRadius, AtNight(new Color(dot, dot.A * shown)));
                 continue;
             }
 
@@ -310,8 +310,9 @@ public partial class VillageMap
             // The shadow on the ground at their feet, scaled to them and not moved with them (A130).
             PaintedFigure sf = shadow.Figure;
             float ss = f.FeetY / sf.FeetY * scale;
-            var faded = new Color(1f, 1f, 1f, shown);
-            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false, modulate: faded);
+            // ⭐ By night (A249) a person comes most of the way back to daylight, so they are found.
+            Color faded = PersonTint(shown);
+            DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false, modulate: new Color(1f, 1f, 1f, shown));
 
             // The person, lifted, leaned and squashed about their feet as the motion says.
             DrawSetTransform(feet + (new Vector2(motion.Dx, motion.Dy) * tall), Mathf.DegToRad(motion.Turn), new Vector2(1f, motion.Squash));
@@ -390,7 +391,7 @@ public partial class VillageMap
             ring[k] = feet + new Vector2(rx * Mathf.Cos(t), ry * Mathf.Sin(t));
         }
 
-        DrawPolyline(ring, SelectedRing, 2f, antialiased: true);
+        DrawPolyline(ring, AtNight(SelectedRing), 2f, antialiased: true);
     }
 
     /// <summary>How far from a person's point a click still takes them: their body, not the dot's radius.</summary>
