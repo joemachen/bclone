@@ -7,7 +7,7 @@
 > shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
 > newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
 > UNPLAYED.** 🔨 **The HUD merged (D885): the picture is taken at every save and way out, and *Continue* lifts the paint into
-> the live map (A236); ✅ PLAYED by Joe: *"looks super cool"*, with three changes, built (A237). ✅ MERGED INTO `main` AND PUSHED at his word, *"merge art and push"* (A238); 🔨 the loading words on a pause-screen *Load…* and F7 too (A239), on `art`, UNPLAYED;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
+> the live map (A236); ✅ PLAYED by Joe: *"looks super cool"*, with three changes, built (A237). ✅ MERGED INTO `main` AND PUSHED at his word, *"merge art and push"* (A238); 🔨 the loading words on a pause-screen *Load…* and F7 too (A239), merged and pushed (A240);** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
