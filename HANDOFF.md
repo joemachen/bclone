@@ -11101,9 +11101,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   number sits inside the stepper box — so it checked nothing and scored zero. When a check iterates, print or assert how
   many it checked.
 
+## ⛔ THE TRAPS THE CEMETERY'S MEASUREMENT (D891) PAID FOR — A DIE-OFF IS A HARNESS'S DEATH RATE, AND A POSE NEVER MADE READS AS A FINDING
+
+- **The dead in Joe's saves and the dead of the same saves stepped on are two populations.** All 30 already dead died old (55–77); twenty
+  unattended years on the same 18 villages gave 179 of 272 by hunger and cold. A grave count off the second says 4×5 fills in a few years; off the
+  first, in about fifty. Read the history before the stepping (D447's rule), and say which a number came from.
+- **An "unreachable" that was a pose never made:** 862 of the valleys' 3,297 dead read unreachable, and all of them lay in the 13 valleys with no
+  home at Year 3, where no plot was posed at all. Split a −1 by its cause before writing it down.
+- **A quoted heredoc of C# or prose past about a hundred lines does not parse in this shell** (twice this session): use the Write tool for the file.
+
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **W4, THE CEMETERY AND THE GRAVEDIGGER (D395's shape, D797's two causes; started 2026-11-24, Joe to the coordinating session: *"proceed with both in new sessions"*).** **🔨 being built on `slice/w4-cemetery`** (D890) — spec first: measured, `specs/cemetery.md`, his calls; nothing in `src/` until he answers.
+- ⏸️ **W4, THE CEMETERY AND THE GRAVEDIGGER (D395's shape, D797's two causes; started 2026-11-24, Joe to the coordinating session: *"proceed with both in new sessions"*).** **🔨 being built on `slice/w4-cemetery`** (D890) — spec first. 📏 **Measured and 📝 specced (D891, `specs/cemetery.md`); ⏸️ SEVEN CALLS HIS (§10), nothing built:** (1) who minds an unburied death — the family until buried (recommended) or everybody; (2) twenty graves in 4×5, one a tile; (3) the gravedigger keeps the job and helps as a laborer between burials; (4) the dead lie where they fell under a cloth, the family comes to the grave, no number moved; (5) the first can be painted bigger, a later gate 10 logs and 5 stone; (6) everybody already dead in his saves is buried too; (7) a cemetery set to no gravedigger counts as none.
 
 - ✅ **HUD NOTES FROM JOE'S PLAY (2026-11-24, *"start the slice"*) — MERGED INTO `main` AT HIS WORD (D888, *"Yes, merge"*); PUSHED AT HIS WORD (D889, *"Push main"*); `slice/hud-notes` DELETED.** *(Read "🔨 being built on `slice/hud-notes`" (D886) until D888.)* Note 1: a trade has a Professions row as soon as its building can be built, hidden only while the building is locked — reverses `hud.md` call 1. ✅ **Note 1 built (D887)**; his look by the log was a new village's first day, no building placed. A later HUD note of his takes its own slice.
 
