@@ -431,6 +431,15 @@ float valley_hachures(vec2 corner) {
     return seen * pressed * (1.0 - smoothstep(edge - 0.5, edge + 0.5, away));
 }
 
+// ⭐ The night view (A249, `specs/night-view.md §4`): the whole layer multiplied by one colour, its own colour first taken part way to grey.
+// The defaults are daylight and change no pixel; the map hands the night's over.
+uniform vec3 night_tint = vec3(1.0);
+uniform float night_grey = 0.0;
+
+vec3 night_of(vec3 c) {
+    return mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), night_grey) * night_tint;
+}
+
 void fragment() {
     vec2 uv = (local_px - valley_origin_px) / valley_size_px;
     // Tiles from the valley's centre — where the mix's own UV is 0.5 (terrain_weights).
@@ -443,9 +452,9 @@ void fragment() {
     vec2 ty = dFdy(tile);
 
     if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {
-        COLOR = vec4(beyond_srgb, 1.0);
+        COLOR = vec4(night_of(beyond_srgb), 1.0);
     } else if (uv.x < split_u) {
-        COLOR = vec4(texture(valley_colour, uv).rgb, 1.0);
+        COLOR = vec4(night_of(texture(valley_colour, uv).rgb), 1.0);
     } else {
         // The grass masks: hex-tiled with the height blend, as approved (D632), or the plain repeat.
         vec4 m;
@@ -781,6 +790,6 @@ void fragment() {
             + 0.2 * valley_grain_octave(tile, s * (37.0 / 1.3), 63u);
         colour *= 1.0 - grain_amount * n;
 
-        COLOR = vec4(colour, 1.0);
+        COLOR = vec4(night_of(colour), 1.0);
     }
 }

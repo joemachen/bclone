@@ -157,6 +157,10 @@ vec4 over(vec4 src, vec4 acc) {
     return src + acc * (1.0 - src.a);
 }
 
+// ⭐ The night view (A249, `specs/night-view.md §4`): the whole layer multiplied by one colour.
+// The defaults are daylight and change no pixel; the map hands the night's over.
+uniform vec3 night_tint = vec3(1.0);
+
 void fragment() {
     float seen = smoothstep(flake_fade_px * (2.0 / 3.0), flake_fade_px, px_per_tile);
     if (seen <= 0.0 || falling <= 0.0) {
@@ -262,6 +266,6 @@ void fragment() {
         }
 
         vec4 all_ = over(flakes, shadows) * seen;
-        COLOR = all_.a > 1e-4 ? vec4(all_.rgb / all_.a, all_.a) : vec4(0.0);
+        COLOR = all_.a > 1e-4 ? vec4(all_.rgb / all_.a * night_tint, all_.a) : vec4(0.0);
     }
 }

@@ -1,6 +1,8 @@
 # The night view, with lit houses (A249)
 
-> **Status: ✍️ MEASURED, SPECCED AND MOCKED (A250, 2026-11-24); ⏸️ SEVEN CALLS JOE'S (§8); NOTHING BUILT.** Art lane
+> **Status: 🔨 THE SEVEN CALLS ANSWERED (A251, 2026-11-25, Joe: *"All as recommended"*, §8). BUILT: the three shaders' uniforms, at daylight's
+> defaults, and the two pictures (§7's art rows) — nothing in the game uses them yet. NOT BUILT: the rest of §7, which waits for
+> `slice/play-notes-2` to merge.** Art lane
 > (CLAUDE.md *Two tracks*), branch `art`. A view toggle only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes, nothing is
 > hashed. Mocks drawn by the game itself, a scratch copy run on copies of Joe's saves: `D:\Projects\brushes\night-view\`
 > (`night_1_seasons.jpg` … `night_5_villages.jpg`). ⚠️ `slice/play-notes-2` (open) changes `VillageMap.cs`, `Main.cs` and
@@ -95,12 +97,12 @@ own rule for *inside* (`VillageMap.Indoors`), the family's own people (`night-vi
 - **Key:** ⭐ `n` (free today). Also a tick in Settings, *On the map*, where the watercolour's is.
 - **Remembered** per player in `settings.json`'s `toggles` as `night`, default off. That list takes any name, so **no sim file changes**.
 
-## 7. Files, when he answers
+## 7. Files
 
 | File | Change | Lane |
 |---|---|---|
-| `shaders/valley_terrain`, `valley_fields`, `snowfall` `.gdshader` | `night_tint` (and `night_grey`) | art |
-| `textures/ui/icons/time/day.png`, `night.png` + `.import` | the picked pair, 160 px masters | art |
+| `shaders/valley_terrain`, `valley_fields`, `snowfall` `.gdshader` | ✅ built (A251): `night_tint` (and `night_grey`), defaults daylight; a day picture moves no further than two runs of the old shaders differ | art |
+| `textures/ui/icons/time/day.png`, `night.png` + `.import` | ✅ built (A251): the woodcut pair, 160 px masters, mipmaps on as the season icons' are; not yet worn by anything | art |
 | `VillageMap.Night.cs`, `VillageMap.NightProbe.cs` (new) | the toggle, the fade, the lift, who is home, the light, the probe's lines | ⛔ call 6 |
 | `VillageMap.Tavern.cs`, `.Roofs.cs`, `.Smoke.cs`, `.People.cs`, `.Watercolour.cs`, `.Snowfall.cs`, `.TavernProbe.cs` | the light's pieces and draw; people lifted; the uniforms handed over | ⛔ call 6 |
 | `VillageMap.cs` | the map's tint; marks by role, day and night | ⛔ call 6, **after play-notes-2** |
@@ -112,7 +114,9 @@ the tint and every mark's pair and contrast, nobody-home and who-is-home cases, 
 the key and the button's picture, the strip still one line at 1,422 at the founding (`bars:`), and the title's picture still day.
 Frame cost is measured then, on his saves, day against night.
 
-## 8. Calls
+## 8. Calls — answered: Joe, 2026-11-25, *"All as recommended"* (A251)
+
+Each as its ⭐ / *recommended* below: B; 1; night only; A; after the speeds, key `n`; **his OK for §7's files once `slice/play-notes-2` has merged**; always day.
 
 1. **How dark:** B deep night (recommended) or A moonlit.
 2. **The light:** 1 soft painted light (recommended) or 2 the tavern's fans.
