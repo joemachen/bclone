@@ -27,7 +27,7 @@ Of the coordinator's four points he said *"i agree with everything you raised"*:
    (a first launch) the title shows today's four seasons.
 4. **Framed on the village's heart, in the season that save was in.**
 
-**Kept as it is:** the parchment panel, *Kith*, the seal above it, the wax primary (A180, A223, A224). Only the picture behind
+**Kept as it is:** the parchment panel, *Kith*, the seal above it, the wax primary (A180, A223, A224 — red words since A242). Only the picture behind
 them changes.
 
 ## 2. What the title shows

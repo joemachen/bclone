@@ -397,7 +397,7 @@ wins.**
 - **The sliders are skinned** in the theme (today they are Godot's grey): a thin ink groove, darker where it is set,
   and an ink disc to hold. (The in-game bar's painted `bar-track` was tried first and read as nothing on the sheet at
   1280.) ⚠️ This reaches the only other sliders, the grass lab's.
-- **Found a new village is the one primary button:** filled rubric, paper-coloured words, larger (20 px against the
+- **Found a new village is the one primary button** (A242: a thin pen line inside its edge, `logo.md §9`): filled rubric, paper-coloured words, larger (20 px against the
   panel's 16). **Back** and **Defaults** are the theme's quiet ink buttons.
 - **The share code** stays the panel's normal size and is cut with an ellipsis where it runs out — never shrunk;
   its tooltip and *Copy* carry all of it.

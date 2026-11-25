@@ -103,7 +103,7 @@ internal static class UiLook
     /// <summary>The title screen's items (A180): the heading face, the rubric under the pointer and the keyboard.</summary>
     internal const string TitleItem = "TitleItem";
 
-    /// <summary>The title screen's one primary item (A180): <see cref="PrimaryButton"/> in the heading face, ringed in ink when focused.</summary>
+    /// <summary>The title screen's one primary item (A180; A242: <see cref="TitleItem"/> larger and always in red).</summary>
     internal const string TitlePrimary = "TitlePrimary";
 
     /// <summary>The face words are read in on the new-valley screen (A147, Joe's Cardo); null on slate.</summary>

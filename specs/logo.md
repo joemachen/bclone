@@ -1,7 +1,7 @@
 # Kith's seal — the logo and the app icon
 
 **Status (A222, 2026-11-23): ✅ in the game on `art` — Joe took all three calls as recommended (*"Yes, as recommended"*);
-✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). **A224: the red primary button in wax** (§8, *"Yes, build it"*). ✅ Seen and approved (A225, *"Looks right"*); ✅ merged into `main` at his word (A226, `ed8fb89`), pushed (A227).** Claimed A220, painted A221.
+✅ the icon seen in his title bar. **A223: the seal on the title too** (§7, Joe: *"A, above the name"*). **A224: the red primary button in wax** (§8, *"Yes, build it"*). ✅ Seen and approved (A225, *"Looks right"*); ✅ merged into `main` at his word (A226, `ed8fb89`), pushed (A227).** ⛔ **A242: the wax button is gone** (§9, *"i kind of hate the button after sitting with it for a while"*, then *"A, red words"*, *"Yes, build both"*) — on `art`, ⏸️ his eyes. The seal and the icon stand. Claimed A220, painted A221.
 
 Joe, via the coordinator: *"for art, i want to create a logo for the game"*; after the review, *"Yes, as recommended"* —
 **a K pressed into the game's own painted seal**, not a new one.
@@ -97,7 +97,7 @@ the lane's table; his pick was the OK, as it was put to him — the art lane bui
   wax line, and nothing else**; restored by reverse `sed`.
 - Captures (the game's own, 1280 × 800 at 1.8 × on his second screen): `D:\Projects\brushes\logo\title_capture\`.
 
-## 8. The primary button in wax (A224) — Joe: *"can we make the button look 'wax-y' too? or at least mock it"*, then *"Yes, build it"*
+## 8. ⛔ Superseded by §9 (A242) — the primary button in wax (A224) — Joe: *"can we make the button look 'wax-y' too? or at least mock it"*, then *"Yes, build it"*
 
 He asked first whether Continue was the seal's colour: nearly — the button was the flat rubric `#9b2d1f`, the wax is poured
 `#9a2418` and painted lit and shaded, so it reads darker (about `#72231a` on his screen). Mocked by the game itself (a
@@ -124,3 +124,30 @@ throwaway theme change, put back), then built:
   normal, hover and pressed wax (`WaxGround`, measured off the painting, not a constant). **Red-checked: focus given the
   whole slab — 1 ❌ (its file); ink words on the wax — 1 ❌ (1.70 : 1).** Each restored by reverse `sed`.
 - Captures: `D:\Projects\brushes\logo\button\capture4\` (the title over his save, focused and not; the new valley).
+
+## 9. The wax comes off: Continue in red words, Found in flat red (A241–A242)
+
+Joe: *"i kind of hate the button after sitting with it for a while"*; four mocked in the real title by a run-time theme change
+(`D:\Projects\brushes\logo\button2\button_options.jpg`), he took *"A, red words"*; its states and *Found* mocked (`button_states.jpg`), then *"Yes, build both"*.
+Why the wax failed: it copied the seal directly above it, nobody pours wax into a bar, and it was the loudest thing on a page
+of pen lettering. The seal is the page's only wax.
+
+- **Continue** (New village with no save), `TitlePrimary`: a `TitleItem` at 28 px (the rest 22), `RubricInk` at rest, no box.
+  Under the pointer the items' faint rubric wash; pressed, the theme's swash.
+- **The keyboard's mark is a painted stroke** (`controls/underline.png`) under every title item and the settings page's *Back*,
+  as long as the word and 18 px, 9 px tall under the primary and 5 under the rest — in place of A180's straight 2 px line. The
+  look draws it across the box; `TitleScreen.StrokeUnder` gives each item its own copy, drawn in to its word. ⚠️ Made at
+  scale 4: it has no fixed ends, so the scale only picks the filter, and at 0.25 the GPU read a half-size mipmap for its
+  length and it went soft (the first capture).
+- **Found** (the new valley's one button), `PrimaryButton`: filled rubric, a 2 px edge, a 1 px paper line 4 px inside it at 55 %
+  (`PenFrame`, a `StyleBoxFlat` and a second line); hover lightened 8 %, pressed `RubricInk`, disabled 45 %; with the keyboard
+  the line alone at full strength, 2 px, over whichever state. Content 18 / 9: **the new valley's column 383 → 375 px** (371
+  before the wax).
+- **Out:** `controls/button-wax-*.png` (5), `WaxButton`, `WaxMargins`, `WaxOutset`, `WaxGround`, `TheWaxButton`. The painting
+  scripts and PSDs stay in `D:\Projects\brushes\logo\`.
+- **Probe** (`title:` line): the primary red at rest, no box, larger and redder than every other item; each stroke the painted
+  one, its word's length and band; Found's three live states the red box with the line, its words 4.5 : 1 or more on the fill,
+  its focus a line alone. **Red-checked, 7 mutants, 7 caught:** the primary at 22, the stroke unfitted, Found's words in ink
+  (2.12 : 1), Found's focus filled; the primary in ink, Found's hover line at 20 %, a thick stroke under every item. Restored by
+  reverse `sed`, compared byte for byte.
+- Captures: `button_built.jpg`. ⚠️ The pointer's wash is posed there (the hover box shown as the resting one).
