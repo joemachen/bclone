@@ -403,6 +403,9 @@ public partial class VillageMap
     private void DrawTheArrivalMark(Vector2 centre, float radius, float progress) =>
         DrawTheChevron(centre, radius, ArrivalMarkLeft(progress));
 
+    /// <summary>The chevron's colour, <paramref name="left"/> of it showing — its pale partner by night (A253, Joe: <i>"Yes, add it"</i>).</summary>
+    internal Color ChevronColour(float left) => AtNight(new Color(ArrivalMark, ArrivalMark.A * left));
+
     /// <summary>The chevron itself, <paramref name="left"/> of it showing — a nomad's walking in, a leaver's walking out (5b).</summary>
     private void DrawTheChevron(Vector2 centre, float radius, float left)
     {
@@ -413,7 +416,7 @@ public partial class VillageMap
 
         float size = Mathf.Max(3f, radius * 0.9f);
         Vector2 apex = centre + new Vector2(0f, -(radius + size + 2f + ArrivalMarkBob(_walkClock)));
-        var mark = new Color(ArrivalMark, ArrivalMark.A * left);
+        Color mark = ChevronColour(left);
 
         // A chevron pointing down at the head: two strokes meeting at the apex (screen y runs down, so the arms rise).
         DrawLine(apex + new Vector2(-size, -size * 0.8f), apex, mark, 2f);

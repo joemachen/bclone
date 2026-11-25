@@ -41,7 +41,12 @@ public partial class VillageMap
     /// the draw, so a toggle traces nothing again. ⛔ Only what the player must read is here: a fence, a wall, an ink outline
     /// is part of the valley and goes dark with it.
     /// </summary>
-    internal static readonly IReadOnlyDictionary<Color, Color> MarksAtNight = new Dictionary<Color, Color>
+    /// <remarks>
+    /// ⚠️ Made on first use, never as a static field's initializer: its keys are other partial files' fields, and C# sets no order
+    /// between static initializers in different files — the chevron's (`VillageMap.WalkIn.cs`) was still unset when this was made,
+    /// and its key went in as transparent black (A253; the other marks had the luck of the files' order).
+    /// </remarks>
+    internal static IReadOnlyDictionary<Color, Color> MarksAtNight => _marksAtNight ??= new Dictionary<Color, Color>
     {
         [GhostFine] = new("#8fe0a4"),
         [GhostWarned] = new("#f2cf6a"),
@@ -59,8 +64,11 @@ public partial class VillageMap
         [ChildColour] = new("#9fd8f0"),
         [ElderColour] = new("#f0c98a"),
         [MealMark] = new("#f2cf6a"),
+        [ArrivalMark] = new("#efd9a0"),
         [ValleyEdge] = new("#a8967a"),
     };
+
+    private static IReadOnlyDictionary<Color, Color>? _marksAtNight;
 
     /// <summary>The seam a mine in hand would claim, by night: its stakes are the valley's dark timber once they stand.</summary>
     private static readonly Color GhostClaimAtNight = new("#e0b98c");

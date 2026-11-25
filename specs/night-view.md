@@ -1,8 +1,8 @@
 # The night view, with lit houses (A249)
 
 > **Status: ✅ BUILT (A252, 2026-11-25) on `art`, UNPLAYED — Joe looks before it merges.** His seven calls (A251, *"All as recommended"*, §8);
-> `slice/play-notes-2` merged first (D902) and `main` came into `art`. What was built and how it was checked: §9. One file his OK did not
-> name is left alone and asked about (§9: the newcomer's chevron).** Art lane
+> `slice/play-notes-2` merged first (D902) and `main` came into `art`. What was built and how it was checked: §9. The newcomer's chevron
+> joined at his word (A253, *"Yes, add it"*).** Art lane
 > (CLAUDE.md *Two tracks*), branch `art`. A view toggle only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes, nothing is
 > hashed. Mocks drawn by the game itself, a scratch copy run on copies of Joe's saves: `D:\Projects\brushes\night-view\`
 > (`night_1_seasons.jpg` … `night_5_villages.jpg`); the build's own pictures in `night-view\build\`.
@@ -107,7 +107,7 @@ own rule for *inside* (`VillageMap.Indoors`), the family's own people (`night-vi
 | `VillageMap.cs` | ✅ A252: the clock; each mark answered at its draw; the washes lifted | call 6 ✅ |
 | `Main.Strip.cs` | ✅ A252: the button, and the speeds closer together (§9) | call 6 ✅ |
 | `Main.cs`, `Main.Settings.cs` | ✅ A252: the key, the tick, the probe's lines | call 6 ✅ |
-| `VillageMap.WalkIn.cs` | ⏸️ the newcomer's chevron, `ArrivalMark` `#4e3f1b`, dark on the dark valley — its night partner `#efd9a0` waits for his OK (not in call 6's list) | ⏸️ |
+| `VillageMap.WalkIn.cs` | ✅ A253 (Joe: *"Yes, add it"*): the newcomer's chevron, `ArrivalMark` `#4e3f1b`, takes its night partner `#efd9a0` (`ChevronColour`) | his OK ✅ |
 
 `PlayerSettings.cs` is **not** needed. No file under `src/Kith.Sim`, `data` or `tests`, so the suite's diff stays empty. Probe lines at the build:
 the tint and every mark's pair and contrast, nobody-home and who-is-home cases, the lamps' count a tier, the slow lamp, default day, remembered,
@@ -150,3 +150,8 @@ Each as its ⭐ / *recommended* below: B; 1; night only; A; after the speeds, ke
   ink and fences left dark; people at 0.89; the three shaders told the night and day again; the lamps a kind; out of the runs; who lights a
   home; the slow lamp; the pool), and `homes lit:` (posed on the founding: a house with one of its family resting in it lit, walking dark, no
   house none). Red-checked: 16 mutants, 14 caught for 15 reds; two zeros written down, both breaks that cannot land — M4 (the outer night check in `AtNight` removed: the inner one gives the same colour by day) and M14 (the sky button given the keyboard: `RefuseKeyboardFocus` on the strip takes it back after); M16 scored zero first (people's lift unguarded at the draw), so the draw and the probe now share `PersonTint` and it scores 1.
+- **A253, the chevron** (Joe: *"Yes, add it"*): the newcomer's chevron is the eighteenth mark, `#efd9a0` by night, drawn through
+  `ChevronColour` so the probe reads what the draw does. ⚠️ **Adding it found a trap:** the marks' table was a static field whose keys are
+  other partial files' fields, and C# sets no order between static initializers across files — the chevron's colour was still unset when the
+  table was made (its key went in as transparent black, `night view:` threw). The table is now made on first use. Red-checked: 2 mutants, 2 reds
+  (the chevron drawn by day at night; the table a static field again).

@@ -93,9 +93,9 @@ public partial class VillageMap
                 }
             }
 
-            if (leastContrast < NightContrast || MarksAtNight.Count != 17)
+            if (leastContrast < NightContrast || MarksAtNight.Count != 18)
             {
-                faults.Add($"{MarksAtNight.Count} marks have a night colour (want 17) and the least stands off by {leastContrast:F1}, {least} (want {NightContrast:F1})");
+                faults.Add($"{MarksAtNight.Count} marks have a night colour (want 18) and the least stands off by {leastContrast:F1}, {least} (want {NightContrast:F1})");
             }
 
             // What is the valley's goes dark with it: ink, a fence, a wall, a palisade's stakes.
@@ -105,6 +105,13 @@ public partial class VillageMap
                 {
                     faults.Add($"the valley's own {own.ToHtml(false)} is drawn as a mark by night");
                 }
+            }
+
+            // The newcomer's chevron is drawn as its mark (A253): seen by night as its partner, half shown at half.
+            Color chevron = spare.ChevronColour(0.5f);
+            if (!Near(new Color(chevron.R * DeepNight.R, chevron.G * DeepNight.G, chevron.B * DeepNight.B, chevron.A), MarksAtNight[ArrivalMark] with { A = 0.5f }))
+            {
+                faults.Add($"the newcomer's chevron is drawn {chevron.ToHtml()} by night");
             }
 
             Color person = spare.PersonTint(1f);
