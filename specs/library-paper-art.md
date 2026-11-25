@@ -1,7 +1,7 @@
 # The paper in the library walker's hand (A245)
 
-> **Status: 🔨 BUILT ON `art` (A246, 2026-11-24), his four calls *"All as recommended"*; ⏸️ HIS EYES, then the merge at his
-> word.** *(Read "specced and mocked, nothing built" until A246.)* Art lane (CLAUDE.md *Two
+> **Status: ✅ BUILT (A246, 2026-11-24), his four calls *"All as recommended"*; APPROVED AND MERGED INTO `main` AT HIS WORD
+> (A247, *"Looks right, merge art"*).** *(Read "specced and mocked, nothing built" until A246.)* Art lane (CLAUDE.md *Two
 > tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\library-borrowing\paper\paper_mock.jpg` — the game itself, run from a scratch copy on copies of Joe's
 > Elderwood, so every figure on it is what the game would draw.

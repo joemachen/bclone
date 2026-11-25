@@ -403,7 +403,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
 ## 8. For the art lane (D774) — to HANDOFF's 🅿️ ART section, as a request
 
 - **Paper in hand** — a villager walking home from the library carrying a letter or a few sheets (the cask's precedent, W3).
-  ✅ Built on `art` (A246): `library-paper-art.md` — two blank sheets in the hand; the taker steps inside the library. ⏸️ Joe's eyes.
+  ✅ Built, approved and merged (A246–A247): `library-paper-art.md` — two blank sheets in the hand; the taker steps inside the library.
 - **The library**, if its drawing is a stand-in still — a building people now walk to; nothing new is required of it.
 - No new building, good or trade.
 
