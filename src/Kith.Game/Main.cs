@@ -581,6 +581,7 @@ public partial class Main : Control
         GD.Print(TheSchoolIsSaid());
         GD.Print(TheCardSaysTheCart());
         GD.Print(TheHouseTiersReadApart());
+        GD.Print(ACounterIsStaffedFromItsCard());
         GD.Print(TheWaterIsOnTheCards());
         GD.Print(TheLettersAreOnTheCards());
         GD.Print(TheContentmentIsOnTheCard());
@@ -1196,7 +1197,31 @@ public partial class Main : Control
         }
 
         DismissTheMoment();
+
+        // ⭐ His screenshot's moment (play note 7, D894): the house's paragraph wears the house, and a paragraph with no mark
+        // keeps its column and shows nothing at all in it — never a glyph's empty ground.
+        var housed = new Moment
+        {
+            Title = "Posed nomads, houses",
+            Body = string.Join(Moment.ParagraphBreak, first, "learned to build in stone", "learned to build tight", "no mark"),
+            Marks = new[] { MomentMark.Nomads, MomentMark.Cottage, MomentMark.Manor },
+        };
+        world.Moments.Add(housed);
+        ShowAnyMoment(world);
+        rows = _momentParagraphs.GetChildren().ToArray();
+        string cottage = world.BuildingsCatalog.NameOf(BuildingKind.Cottage);
+        string manor = world.BuildingsCatalog.NameOf(BuildingKind.Manor);
+        Node? unmarked = rows.Length == 4 && rows[3] is HBoxContainer { } last && last.GetChildCount() == 2 ? last.GetChild(0) : null;
+        if (rows.Length != 4 || !Row(1).StartsWith(cottage + ":", StringComparison.Ordinal) || !Row(2).StartsWith(manor + ":", StringComparison.Ordinal)
+            || unmarked is not Control blank || blank.GetType() != typeof(Control) || blank.CustomMinimumSize.X != UiIcons.MomentSide)
+        {
+            faults.Add($"a moment of houses shows [{string.Join(" | ", Enumerable.Range(0, rows.Length).Select(Row))}], its unmarked paragraph led by {unmarked?.GetType().Name ?? "nothing"}");
+        }
+
+        DismissTheMoment();
         world.Moments.Remove(plain);
+        world.Moments.Remove(housed);
+        _celebrated.Remove(housed.LogLine);
         world.Moments.Remove(marked);
         _celebrated.Remove(plain.LogLine);
         _celebrated.Remove(marked.LogLine);
@@ -1205,7 +1230,7 @@ public partial class Main : Control
         SetSpeed(speedWas);
 
         return faults.Count == 0
-            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a plain moment one label; the text column {markedWidth:F0}px either way"
+            ? $"[widths] moment: ✅ two paragraphs, each led by its own mark (nomads, bridge); a house's wears the house and an unmarked one nothing; a plain moment one label; the text column {markedWidth:F0}px either way"
             : $"[widths] moment: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -2943,11 +2968,31 @@ public partial class Main : Control
             var row = new HBoxContainer();
             row.AddThemeConstantOverride("separation", MomentMarkGap);
             MomentMark mark = i < moment.Marks.Count ? moment.Marks[i] : MomentMark.None;
-            row.AddChild(UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide));
+            row.AddChild(MarkFor(mark));
             text.CustomMinimumSize = new Vector2(MomentTextWidth - MomentGlyph.Side - MomentMarkGap, 0f);
             row.AddChild(text);
             _momentParagraphs.AddChild(row);
         }
+    }
+
+    /// <summary>
+    /// A paragraph's mark — a house's is the building's own painted icon (Joe's play note 7, D894: <i>"what image is supposed to
+    /// be on that empty spot"</i>); a paragraph with none keeps the column and draws nothing in it.
+    /// </summary>
+    private Control MarkFor(MomentMark mark)
+    {
+        BuildingKind? house = mark switch
+        {
+            MomentMark.Cottage => BuildingKind.Cottage,
+            MomentMark.Manor => BuildingKind.Manor,
+            _ => null,
+        };
+
+        return house is BuildingKind kind
+            ? UiIcons.Or("buildings", _loop.World.BuildingsCatalog.NameOf(kind), () => new BuildingGlyph(kind, true), UiIcons.MomentSide)
+            : mark is MomentMark.None
+                ? new Control { CustomMinimumSize = new Vector2(UiIcons.MomentSide, UiIcons.MomentSide), MouseFilter = MouseFilterEnum.Ignore }
+                : UiIcons.Or("moments", mark.ToString(), () => new MomentGlyph(mark), UiIcons.MomentSide);
     }
 
     /// <summary>The moment panel's text column, as wide as its one label was before D577.</summary>
@@ -7235,7 +7280,10 @@ public partial class Main : Control
         }
     }
 
-    /// <summary>The last sentence <see cref="SayInTheLog"/> said, so a repeat is not said again.</summary>
+    /// <summary>A refusal or a warning, said once while it repeats — what the map's own sentences come through.</summary>
+    private void SayInTheLog(string message) => SayInTheLog(message, everyTime: false);
+
+    /// <summary>The last sentence <see cref="SayInTheLog(string, bool)"/> said, so a repeat is not said again.</summary>
     private string _lastSaidInTheLog = string.Empty;
 
     /// <summary>
@@ -7264,9 +7312,14 @@ public partial class Main : Control
     /// sentence twice running is said once.
     /// </para>
     /// </remarks>
-    private void SayInTheLog(string message)
+    /// <param name="message">The sentence.</param>
+    /// <param name="everyTime">
+    /// ⭐ Said even when it repeats the last one (Joe's play note 8, D894): a save is an act, and each one answers the hand that
+    /// made it — a second F5 in a season said nothing and looked as if it had not saved.
+    /// </param>
+    private void SayInTheLog(string message, bool everyTime)
     {
-        if (message.Length == 0 || message == _lastSaidInTheLog)
+        if (message.Length == 0 || (!everyTime && message == _lastSaidInTheLog))
         {
             return;
         }

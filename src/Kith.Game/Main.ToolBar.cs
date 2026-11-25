@@ -121,9 +121,10 @@ public partial class Main
             }
         }
 
-        foreach ((BuildingKind _, Button homes) in _homesAs)
+        foreach ((BuildingKind house, Button homes) in _homesAs)
         {
             homes.Pressed += CloseTheFlyout;
+            homes.Pressed += () => Seen(SeenKey(house)); // a house chosen is seen (D894)
         }
 
         _removeButton = StripButton("Remove ▴", UiIcons.Or("tools", nameof(ToolMark.Demolish), () => new ToolGlyph(ToolMark.Demolish)),
@@ -198,10 +199,8 @@ public partial class Main
         _flyoutOpen = !same;
         _tab = tab;
         _filter = tab == BuildTab.Build ? category : null;
-        if (_flyoutOpen && category is BuildCategory opened)
-        {
-            _seen.Add(SeenKey(opened)); // ⭐ a category's gold goes when its flyout opens (D880); the refresh below repaints
-        }
+
+        // ⭐ A category's gold goes when its flyout opens (D880): the refresh's relight marks what the flyout shows (D894).
         RefreshTheStrip();
     }
 
@@ -490,6 +489,7 @@ public partial class Main
         private readonly bool[] _was;
         private readonly bool _otherWas;
         private readonly string[] _seenWas;
+        private readonly string[] _shownWas;
 
         public PosedEarned(Main main)
         {
@@ -498,6 +498,7 @@ public partial class Main
             // ⚠️ The seen set too (D880): opening every flyout here marks every category seen, and the `new:` line after
             // read Knowledge as already looked at — the pose has to put back everything it touches (D876's trap).
             _seenWas = main._seen.ToArray();
+            _shownWas = main._shown.ToArray();
             _was = new[] { main._literacy, main._foundersGone, main._quarryKnown, main._mineKnown, main._smithyKnown, main._millKnown,
                 main._bakeryKnown, main._tailorKnown, main._workshopKnown, main._schoolKnown, main._breweryKnown, main._tavernKnown,
                 main._marketStallKnown, main._bridgeKnown, main._stoneBridgeKnown, main._hallTradeKnown };
@@ -519,6 +520,8 @@ public partial class Main
             Set(_main, _was);
             _main._seen.Clear();
             _main._seen.UnionWith(_seenWas);
+            _main._shown.Clear();
+            _main._shown.UnionWith(_shownWas);
             _main._flyoutOpen = false;
             _main.RefreshTheStrip();
             _main._categoryButtons.Find(c => c.Category == BuildCategory.Other).Button.Visible = _otherWas;

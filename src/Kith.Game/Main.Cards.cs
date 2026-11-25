@@ -98,6 +98,12 @@ public partial class Main
         public required HBoxContainer WorkersRow { get; init; }
         public required Label Workers { get; init; }
         public required Label WorkersLabel { get; init; }
+
+        /// <summary>The row's +: a market's and a stall's stops at its seats (D895).</summary>
+        public required Button More { get; init; }
+
+        /// <summary>The row's −.</summary>
+        public required Button Fewer { get; init; }
         public required Label[] Values { get; init; }
         public required Label[] Keys { get; init; }
         public required HBoxContainer Numbers { get; init; }
@@ -599,6 +605,8 @@ public partial class Main
             WorkersRow = workersRow,
             Workers = count,
             WorkersLabel = workersLabel,
+            More = more,
+            Fewer = fewer,
             Values = values,
             Keys = keys,
             Numbers = numbers,
@@ -704,16 +712,54 @@ public partial class Main
     /// </remarks>
     private void ChangeStaffingOf(Card card, int delta)
     {
-        if (card.Subject.Kind != CardKind.Workplace
-            || _loop.World.FindWorkplace(card.Subject.Id) is not { IsSite: false } workplace)
+        if (StaffedFrom(card) is not { IsSite: false } workplace)
         {
             return;
         }
 
         int wanted = Mathf.Max(0, (workplace.StaffingOverride ?? workplace.Places) + delta);
+
+        // ⭐ A counter's row stops at its seats (D895; Joe's "d", and a stall has one, D860). A workplace's own card is not
+        // bounded and never was (`Workplace.Places`): this does not change it.
+        if (card.Subject.Kind == CardKind.Store && delta > 0 && wanted > workplace.Capacity)
+        {
+            return;
+        }
+
         _loop.World.SetStaffing(workplace, wanted);
         RefreshCards(_loop.World);
         RefreshInspector(_loop.World);
+    }
+
+    /// <summary>
+    /// Whose hands the card's − n / n + row sets: the workplace the card is of — or, for a market's card and a stall's, which are
+    /// store cards, the marketers' workplace standing on the same tile (Joe's play note 12, D895).
+    /// </summary>
+    private Workplace? StaffedFrom(Card card) => card.Subject.Kind switch
+    {
+        CardKind.Workplace => _loop.World.FindWorkplace(card.Subject.Id),
+        CardKind.Store when StoreOf(card) is StoreBuilding store => StaffedBy(_loop.World, store),
+        _ => null,
+    };
+
+    /// <summary>The marketers' workplace a market or a stall is — one building, two lists (the doors spec's trap) — or null.</summary>
+    private static Workplace? StaffedBy(SimWorld world, StoreBuilding store) => store.Kind == StoreKind.Market
+        ? world.Workplaces.Find(w => !w.IsSite && w.Kind == JobKind.Marketer && w.Tile == store.Tile)
+        : null;
+
+    /// <summary>The row as the school's card has it: the trade's plural, who works it of its seats, − and +.</summary>
+    private static void ShowTheWorkersRow(SimWorld world, Card card, Workplace place, bool boundedBySeats)
+    {
+        card.WorkersRow.Visible = true;
+
+        // The catalogue's plural (D597 — the barn's card read "Herdsmans"); a counter's row says the Professions word instead,
+        // *Marketers*, because the catalogue's is *traders* (D188, D591) and the panel beside this card says Marketer.
+        card.WorkersLabel.Text = boundedBySeats ? ProfessionName(world, place.Kind) + "s" : Titled(world.JobsCatalog.PluralOf(place.Kind));
+        card.Workers.Text = $"{place.WorkerIds.Count} / {place.Places}";
+        bool full = boundedBySeats && place.Places >= place.Capacity;
+        card.More.Disabled = full;
+        card.More.TooltipText = full ? $"It has {place.Capacity} {(place.Capacity == 1 ? "seat" : "seats")}" : string.Empty;
+        card.Fewer.Disabled = boundedBySeats && place.Places == 0;
     }
 
     /// <summary>One good's row on a market's card, as the sim says it (D612).</summary>
@@ -1537,7 +1583,13 @@ public partial class Main
             Status(card, working: true, $"{used} of {store.Store.Capacity} used.");
         }
 
+        // ⭐ A market's marketers and a stall's keeper, as the school's teachers (Joe's play note 12, D895).
         card.WorkersRow.Visible = false;
+        if (StaffedBy(world, store) is Workplace staffed)
+        {
+            ShowTheWorkersRow(world, card, staffed, boundedBySeats: true);
+        }
+
         card.PeopleScroll.Visible = false;
 
         // ⭐ EVERY GOOD IT CAN HOLD, ON ITS OWN LINE (D393) — in place of the three biggest heaps.
@@ -1609,10 +1661,7 @@ public partial class Main
                     ? world.SwollenBufferNote(place)
                     : $"Working — {place.WorkerIds.Count} of {place.Places} at it."));
 
-            card.WorkersRow.Visible = true;
-            // The catalogue's plural (D597 — the barn's card read "Herdsmans").
-            card.WorkersLabel.Text = Titled(world.JobsCatalog.PluralOf(place.Kind));
-            card.Workers.Text = $"{place.WorkerIds.Count} / {place.Places}";
+            ShowTheWorkersRow(world, card, place, boundedBySeats: false);
 
             // ⭐ WHAT IT HOLDS, GOOD BY GOOD (D422, Joe's D421 note: the lodge read *"18 of 2,700 hel…"*,
             // meat and hides summed and the caption cut off). The site card's shape — amounts over
@@ -4461,6 +4510,109 @@ public partial class Main
             ? $"[widths] contentment: ✅ a person's NEEDS reads Content, Content with \"{one}\", Unsettled in amber with \"{two}\", a year on \"{thinking}\"; a child has no pill; "
                 + $"an unsettled couple's household says \"{waiting}\", a settled one does not"
             : $"[widths] contentment: ⛔ {string.Join("; ", faults)}";
+    }
+
+    /// <summary>
+    /// ⭐ <c>counter staffing:</c> (Joe's play note 12, D895) — a market's card carries the school's row, − and + change what it
+    /// asks for, + stops at its seats and − at nobody; a stall's reads of one; a granary's card has no such row; and the hut's
+    /// own card keeps the same row it had, unbounded.
+    /// </summary>
+    private string ACounterIsStaffedFromItsCard()
+    {
+        SimWorld world = _loop.World;
+        var faults = new List<string>();
+        StoreBuilding cart = world.StoreBuildings[0];
+        foreach ((string what, int seats) in new[] { ("market", 2), ("stall", 1) })
+        {
+            var counter = new StoreBuilding
+            {
+                Catalog = world.GoodsCatalog,
+                Id = 990_001,
+                Kind = StoreKind.Market,
+                Name = "Posed " + what,
+                Position = cart.Position,
+                Store = new Stockpile(world.GoodsCatalog.Count),
+            };
+            var keeping = new Workplace
+            {
+                Store = new Stockpile(world.GoodsCatalog.Count),
+                Id = 990_002,
+                Kind = JobKind.Marketer,
+                Name = "Posed " + what,
+                Position = cart.Position,
+                Capacity = seats,
+            };
+            world.StoreBuildings.Add(counter);
+            world.Workplaces.Add(keeping);
+            try
+            {
+                OpenCard(new CardSubject(CardKind.Store, counter.Id));
+                Card card = _selectedCard!;
+                string Row() => $"{card.WorkersRow.Visible} {card.WorkersLabel.Text} {card.Workers.Text} +{(card.More.Disabled ? "off" : "on")} -{(card.Fewer.Disabled ? "off" : "on")}";
+                var rows = new List<string> { Row() };
+                card.More.EmitSignal(BaseButton.SignalName.Pressed); // past the seats: nothing
+                rows.Add(Row());
+                for (int i = 0; i <= seats; i++)
+                {
+                    card.Fewer.EmitSignal(BaseButton.SignalName.Pressed);
+                }
+
+                rows.Add(Row());
+                card.More.EmitSignal(BaseButton.SignalName.Pressed);
+                rows.Add(Row());
+
+                // Written out, never computed from the rule (D419): full, full still, nobody, one.
+                string[] wanted = what == "market"
+                    ? new[] { "True Marketers 0 / 2 +off -on", "True Marketers 0 / 2 +off -on", "True Marketers 0 / 0 +on -off", "True Marketers 0 / 1 +on -on" }
+                    : new[] { "True Marketers 0 / 1 +off -on", "True Marketers 0 / 1 +off -on", "True Marketers 0 / 0 +on -off", "True Marketers 0 / 1 +off -on" };
+                if (!rows.SequenceEqual(wanted))
+                {
+                    faults.Add($"the {what}'s card reads [{string.Join(" | ", rows)}]");
+                }
+
+                // The row is the card's own width, as the school's.
+                ForceUpdateTransform();
+                if (card.Panel.Size.X > CardWidth + 1f)
+                {
+                    faults.Add($"the {what}'s card is {card.Panel.Size.X:F0} wide");
+                }
+
+                // The same building's own card, if it were one: unbounded, as every workplace's is.
+                card.Subject = new CardSubject(CardKind.Workplace, keeping.Id);
+                keeping.StaffingOverride = seats;
+                ChangeStaffingOf(card, +1);
+                if (keeping.StaffingOverride != seats + 1)
+                {
+                    faults.Add($"a workplace's own card stops at its seats ({keeping.StaffingOverride})");
+                }
+            }
+            finally
+            {
+                while (_cards.Count > 0)
+                {
+                    CloseCard(_cards[0]);
+                }
+
+                foreach (int id in keeping.WorkerIds.ToArray())
+                {
+                    faults.Add($"villager {id} was seated at the posed {what}");
+                }
+
+                world.StoreBuildings.Remove(counter);
+                world.Workplaces.Remove(keeping);
+            }
+        }
+
+        OpenCard(new CardSubject(CardKind.Store, cart.Id));
+        if (_selectedCard!.WorkersRow.Visible)
+        {
+            faults.Add("the cart's card has a staffing row");
+        }
+
+        CloseCard(_selectedCard!);
+        return faults.Count == 0
+            ? "[widths] counter staffing: ✅ a market's card reads Marketers 0 / 2 and a stall's 0 / 1, − and + move it, + stops at the seats and − at nobody; the cart's has no row; a workplace's own card is as it was"
+            : $"[widths] counter staffing: ⛔ {string.Join("; ", faults)}";
     }
 
     private string TheCardsHoldTheirShape()

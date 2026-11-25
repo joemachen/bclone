@@ -255,7 +255,7 @@ public sealed partial class SimWorld
         bool learnedToBridge = Settle(band);
 
         // A band can carry the village past a house's number too (`house-tiers.md §4.4`, D721) — said here, one popup (D576).
-        string? learnedHouses = WhatTheBandTaughtOfHouses();
+        (string Said, MomentMark Mark)? learnedHouses = WhatTheBandTaughtOfHouses();
         NextKnockYear = NextKnockYearAfter(Clock.Year, BandsEverKnocked);
 
         // ⭐ TWO SHORT PARAGRAPHS, NOT A WALL (Joe, D577, from a screenshot: *"too verbose … 1-2 sentences only"*): who
@@ -270,9 +270,12 @@ public sealed partial class SimWorld
             marks.Add(MomentMark.Bridge);
         }
 
-        if (learnedHouses is not null)
+        // ⭐ A mark for every paragraph (Joe's play note 7, D894: "what image is supposed to be on that empty spot"): the house
+        // was the one paragraph with none, and the view drew an empty square for it.
+        if (learnedHouses is (string ofHouses, MomentMark house))
         {
-            body += Moment.ParagraphBreak + learnedHouses;
+            body += Moment.ParagraphBreak + ofHouses;
+            marks.Add(house);
         }
 
         RaiseMoment($"Nomads have settled {where}", body, stops: true, LogCategory.Discovery, marks);

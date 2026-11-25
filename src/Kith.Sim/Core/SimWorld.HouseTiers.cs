@@ -117,12 +117,12 @@ public sealed partial class SimWorld
         (bool cottage, bool manor) = LatchTheFamilyTree();
         if (cottage)
         {
-            LearnedByDoing("The village learned to build in stone", WhatTheFamilyTreeTaught(BuildingKind.Cottage, child));
+            LearnedByDoing("The village learned to build in stone", WhatTheFamilyTreeTaught(BuildingKind.Cottage, child), MomentMark.Cottage);
         }
 
         if (manor)
         {
-            LearnedByDoing("The village learned to build a manor", WhatTheFamilyTreeTaught(BuildingKind.Manor, child));
+            LearnedByDoing("The village learned to build a manor", WhatTheFamilyTreeTaught(BuildingKind.Manor, child), MomentMark.Manor);
         }
     }
 
@@ -133,7 +133,7 @@ public sealed partial class SimWorld
     /// ⚠️ Not <c>LearnedByDoing</c>: the arrival is the village's size, not anybody's hands, so it does not introduce the
     /// tech-tree map — the bridge's rule for the same moment (D576).
     /// </remarks>
-    internal string? WhatTheBandTaughtOfHouses()
+    internal (string Said, MomentMark Mark)? WhatTheBandTaughtOfHouses()
     {
         (bool cottage, bool manor) = LatchTheFamilyTree();
         if (!cottage && !manor)
@@ -147,7 +147,8 @@ public sealed partial class SimWorld
             said += (said.Length > 0 ? " " : string.Empty) + WhatTheFamilyTreeTaught(BuildingKind.Manor, child: null);
         }
 
-        return said;
+        // Both at once is one paragraph; it wears the house it opens with.
+        return (said, cottage ? MomentMark.Cottage : MomentMark.Manor);
     }
 
     private string WhatTheFamilyTreeTaught(BuildingKind house, Villager? child)
