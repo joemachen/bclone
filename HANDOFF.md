@@ -11088,13 +11088,22 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **A per-frame tint wipes any colour set less often** (D880): the library's owed tint runs every refresh and would have
   undone the gold *new* mark each frame; the probe, reading straight after a relight, could not see it. Look for every
   writer of a channel before trusting a mark set in it.
+- **A probe line that repeats the code's rule agrees with its bug, and a left-over pose can make the bug look right**
+  (D887, D419's again). `trades:` asked *a workplace of this kind* just as the panel did, and the only workplace in the
+  probe's world was a granary site an earlier line had left behind — `Kind = Builder`, as every site is — so it read
+  *(builder)* and D878 wrote that a founding's builder has a seat. Ask the sim's own gate, and when a pose-free line names
+  something at the founding, read the world at the probe's first line before writing it down. ⚠️ The granary site is still
+  left behind (between `panels:` and `spoilers:`); no line depends on it now.
+- **"Not over the ceiling" is true of a scroll that never grew** (D887): ask for the height it should stand at, not a bound.
+- **A windowed capture takes Joe's clicks** (D887): one opened *What's here* mid-shot and added 1.7 % to the measure. Look at
+  the picture before writing its number down.
 - **A clause that finds nothing passes** (D881): `numerals:` looked for the professions' number among a row's cells, and the
   number sits inside the stepper box — so it checked nothing and scored zero. When a check iterates, print or assert how
   many it checked.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **HUD NOTES FROM JOE'S PLAY (2026-11-24, *"start the slice"*).** 🔨 being built on `slice/hud-notes` (D886). Note 1: a trade has a Professions row as soon as its building can be built, hidden only while the building is locked — reverses `hud.md` call 1. Any later HUD note of his goes on this slice as its own commit.
+- ⏸️ **HUD NOTES FROM JOE'S PLAY (2026-11-24, *"start the slice"*).** 🔨 being built on `slice/hud-notes` (D886). Note 1: a trade has a Professions row as soon as its building can be built, hidden only while the building is locked — reverses `hud.md` call 1. ✅ **Note 1 built (D887), unplayed; ⏸️ his look (`.\run.bat`, a new game: eight rows in Professions on Day 1), then the merge at his word.** Any later HUD note of his goes on this slice as its own commit.
 
 - ⏸️ 🎨 **THE TITLE'S BACKGROUND AS THE NEWEST SAVE'S VILLAGE, AGED LIKE A PAINTING (A228) — ✅ DONE AND MERGED (A238); ✍️ SPECCED AND MOCKED (A229, `specs/title-snapshot.md`); round 1's oil and parchment turned down (*"the parchment looks like a quilt"*), round 2's manuscript and deeper watercolour turned down too (A230, *"no, i hate them both"*); ROUND 3 MOCKED (A231, §5b): (e) full-bleed watercolour, the map to every edge and painted more intensely, at two strengths (⭐ the first); *Continue* lifting the paint into the live map on the same frame, specced (A232, §6a, call 5, after the HUD's merge); ✅ **HE CHOSE (e) AND THE LIFT (A233)**, and the look is BUILT as two shaders and three baked textures (A233), proved through the real title; ✅ *"Yes to all three"* (calls 2–4): the title WIRED and `TitleSnapshot` BUILT AND MEASURED (A234), unplayed; ✅ call 6 *"Yes, every save"*, the year's turn too (A235). 🔨 **The save-time hook and the lift BUILT (A236), played: *"looks super cool"*; his three changes BUILT (A237): the view stays the snapshot's, the transition twice as long, *"Painting the village…"* while it loads. ✅ **MERGED INTO `main` AND PUSHED at his word, *"merge art and push"* (A238, `cb7e8d6`).** He has not said what he thought of A237's three. 🔨 The words on a pause-screen *Load…* and F7 too (A239, *"yes do"*), MERGED AND PUSHED at his word (A240, `54357ab`).** All calls answered; as they were asked (§9): which village (⭐ the newest with a home), one picture a village folder (⭐), his OK for the files and the save-time hook after `slice/hud` (⭐ the art lane, after the HUD's merge). Sheets: `D:\Projects\brushes\title-snapshot\title_snapshot_*.jpg`. Nothing in `src/` yet.** (Joe, 2026-11-23, to the coordinator: *"this should be art's next piece once the seal is done, with both looks mocked"*). The four-seasons picture behind the title (A189–A191) gives way to a snapshot of the newest save's village with a craquelure surface; the parchment panel and the seal stay. Brief: `D:\Projects\brushes\title-snapshot\brief.md`. **Not to be started from the seal's session:** the coordinator starts a fresh session for it once the seal is merged at Joe's word, and that session claims it with the next free A. ▶️ **The seal merged (A226)** — it can be started.
 

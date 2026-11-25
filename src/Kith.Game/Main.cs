@@ -692,6 +692,7 @@ public partial class Main : Control
         ForceUpdateTransform();
         ProbePanelWidths("twelve years in, with heaps posed");
         GD.Print(TheZerosLeaveTheFront("twelve years in"));
+        GD.Print(OnlyTheKnownTradesHaveRows("twelve years in"));
 
         // ⚠️ After the log probe, which is what runs the valley twelve years — asked before it the
         // line reads "0 worn tiles" and proves nothing (D358).
@@ -1554,7 +1555,7 @@ public partial class Main : Control
             + (wants > given ? "  ⚠️ TOO WIDE" : string.Empty));
 
         PrintWidths(_professionsPanel, "prof", 0);
-        GD.Print(OnlyTheKnownTradesHaveRows());
+        GD.Print(OnlyTheKnownTradesHaveRows("at the founding"));
         GD.Print(TheProfessionsTableScrollsPastItsCeiling());
     }
 
@@ -1575,7 +1576,6 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (true, true, true, true, true, true, true, true);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
-        _everyTradePosed = true;
         RefreshTheStrip();
 
         float table = _professionsTable.GetCombinedMinimumSize().Y;
@@ -1585,9 +1585,10 @@ public partial class Main : Control
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
-        _everyTradePosed = false;
         RefreshTheStrip();
-        float founding = _professionsScroll.Visible ? _professionsScroll.GetCombinedMinimumSize().Y : 0f;
+        float founding = _professionsScroll.GetCombinedMinimumSize().Y;
+        float foundingRows = _professionsTable.GetCombinedMinimumSize().Y;
+        int foundingCount = _professionRows.Count(r => r.Cells[0].Visible);
 
         var faults = new List<string>();
         if (table <= ProfessionsHeight)
@@ -1595,72 +1596,86 @@ public partial class Main : Control
             faults.Add($"every trade learned, the table is only {table:F0}px — the pose does not reach the ceiling ({ProfessionsHeight:F0})");
         }
 
-        if (shown > ProfessionsHeight + 0.5f)
+        // Equal, not only under: a scroll never refitted stands at the founding's height and is under the ceiling too.
+        if (Mathf.Abs(shown - Mathf.Min(table, ProfessionsHeight)) > 0.5f)
         {
-            faults.Add($"every trade learned, the table stands {shown:F0}px against a ceiling of {ProfessionsHeight:F0}");
+            faults.Add($"every trade learned, the table wants {table:F0}px and stands {shown:F0} against a ceiling of {ProfessionsHeight:F0}");
         }
 
-        // A new village has no trade with a seat (hud.md §9.2): the table is gone and its line stands in its place.
-        if (founding > shown + 0.5f || (founding <= 0f && _noTradeYet is not { Visible: true }))
+        // A new village's rows (hud.md §9.2, D887), as tall as they are and under the ceiling.
+        if (foundingCount == 0 || Mathf.Abs(founding - Mathf.Min(foundingRows, ProfessionsHeight)) > 0.5f)
         {
-            faults.Add($"at the founding it stands {founding:F0}px, not its rows' height under the ceiling, nor gone with its line shown");
+            faults.Add($"at the founding its {foundingCount} rows want {foundingRows:F0}px and it stands {founding:F0}");
         }
 
         return faults.Count == 0
             ? $"[widths] professions height: ✅ every trade learned ({rows} rows), the table wants {table:F0}px and stands "
-                + $"{shown:F0}, scrolling past its ceiling of {ProfessionsHeight:F0}; at the founding it stands {founding:F0}"
+                + $"{shown:F0}, scrolling past its ceiling of {ProfessionsHeight:F0}; at the founding {foundingCount} rows stand {founding:F0}"
             : $"[widths] professions height: ⛔ {string.Join("; ", faults)}";
     }
 
     /// <summary>
-    /// ⭐ A trade the village has not learned has no row, and gains one when it learns — <b>a probe
-    /// line</b> (D460).
+    /// ⭐ A trade has a row as soon as its building can be built, and none while it is locked — <b>a probe line</b>
+    /// (D460, hud.md §9.2, D887), asked at the founding and again twelve years in.
     /// </summary>
     /// <remarks>
-    /// At the founding nothing gated is known, so the hidden rows must be exactly the trades whose
-    /// building the bar does not offer. Then the quarry's flag is posed known and the strip refreshed
-    /// — the path every real unlock takes — and the Quarrier's row must come back; put back after.
+    /// ⛔ <b>Asked of the sim's gate (<c>SimWorld.IsUnlocked</c>), never of <see cref="TradeKnown"/> or the bar's latches</b>: from
+    /// D878 to D887 this line repeated the panel's own rule and agreed with the bug. And the founding's three rows are asked
+    /// by name — the builder's and the forager's there with no hut of either standing, the quarrier's not.
+    /// Then the quarry's flag is posed and the strip refreshed, the path every real unlock takes; put back after.
     /// </remarks>
-    private string OnlyTheKnownTradesHaveRows()
+    private string OnlyTheKnownTradesHaveRows(string when)
     {
         SimWorld world = _loop.World;
         var shown = new List<string>();
-        var wrong = new List<string>();
+        var faults = new List<string>();
         foreach ((JobKind kind, Control[] cells) in _professionRows)
         {
-            // ⭐ The rule, asked of the sim here (hud.md §9.2): learned, and a workplace of it standing or being built.
-            bool want = EarnedYet(world.JobsCatalog.WorksAt(kind)) && world.Workplaces.Exists(w => w.Kind == kind);
-            if (cells[0].Visible)
-            {
-                shown.Add(world.JobsCatalog.NameOf(kind));
-            }
-
+            string trade = world.JobsCatalog.NameOf(kind);
+            bool want = world.JobsCatalog.WorksAt(kind) is not BuildingKind building || world.IsUnlocked(building);
             if (System.Array.Exists(cells, c => c.Visible != want))
             {
-                wrong.Add(world.JobsCatalog.NameOf(kind));
+                faults.Add($"{trade}'s building is {(want ? "open" : "locked")} and its row is {(cells[0].Visible ? "shown" : "hidden")}");
+            }
+
+            if (cells[0].Visible)
+            {
+                shown.Add(trade);
             }
         }
 
-        bool lineRight = _noTradeYet is { } line && line.Visible == (shown.Count == 0) && _professionsScroll is { } scroll && scroll.Visible == (shown.Count > 0);
-        if (_professionRows.Count != JobLimits.Kinds.Count || wrong.Count > 0 || !lineRight)
+        if (_professionRows.Count != JobLimits.Kinds.Count)
         {
-            return $"[widths] trades: ⛔ {_professionRows.Count} rows of {JobLimits.Kinds.Count}; shown: {string.Join(", ", shown)}; "
-                + $"disagreeing with the rule: {string.Join(", ", wrong)}; the no-trade line and the table {(lineRight ? "right" : "wrong")} "
-                + "— a row only for a learned trade with a workplace standing or being built, else the one line";
+            faults.Add($"{_professionRows.Count} rows for {JobLimits.Kinds.Count} trades");
         }
 
-        // Posed: every learned trade shown (the height probe's pose), the line gone — and back.
-        _everyTradePosed = true;
-        ShowTheKnownTrades();
-        int posed = _professionRows.Count(r => r.Cells[0].Visible);
-        bool lineGone = _noTradeYet is { Visible: false };
-        _everyTradePosed = false;
-        ShowTheKnownTrades();
+        Control[] Row(JobKind kind) => _professionRows.Find(r => r.Kind == kind).Cells;
+        if (world.Tick == 0)
+        {
+            foreach (JobKind open in new[] { JobKind.Builder, JobKind.Forager })
+            {
+                if (world.Workplaces.Exists(w => w.Kind == open && !w.IsSite) || !Row(open)[0].Visible)
+                {
+                    faults.Add($"{world.JobsCatalog.NameOf(open)} has no row before its building is placed, or the pose has one standing");
+                }
+            }
 
-        return posed > 0 && lineGone
-            ? $"[widths] trades: ✅ rows for the trades with a seat ({(shown.Count == 0 ? "none at the founding, and the line in their place" : string.Join(", ", shown))}), "
-                + $"every row agrees with the rule; with every learned trade posed {posed} rows and the line gone"
-            : $"[widths] trades: ⛔ every learned trade posed showed {posed} rows, the line {(lineGone ? "gone" : "still shown")}";
+            bool quarryWas = _quarryKnown;
+            bool hiddenFirst = !Row(JobKind.Quarrier)[0].Visible;
+            _quarryKnown = true;
+            RefreshTheStrip();
+            bool cameIn = System.Array.TrueForAll(Row(JobKind.Quarrier), c => c.Visible);
+            _quarryKnown = quarryWas;
+            RefreshTheStrip();
+            if (!hiddenFirst || !cameIn)
+            {
+                faults.Add($"the quarrier's row: {(hiddenFirst ? "hidden" : "shown")} before the quarry is learned, {(cameIn ? "shown" : "hidden")} after");
+            }
+        }
+
+        return faults.Count == 0
+            ? $"[widths] trades: ✅ {when}: {shown.Count} rows of {_professionRows.Count} trades, one for each whose building the sim would let be marked ({string.Join(", ", shown)})"
+            : $"[widths] trades: ⛔ {when}: {string.Join("; ", faults)}";
     }
 
     /// <summary>
@@ -3410,7 +3425,6 @@ public partial class Main : Control
         }
 
         // And what the 1 is one OF, which is the whole of Joe's question.
-        ShowTheTradesWithASeat(world);
         _ableAdultsReadout.Text = $"Able adults: {world.AbleAdults}";
         _laborerReadout.Text = $"Laborers: {world.Laborers}";
 
@@ -5470,11 +5484,6 @@ public partial class Main : Control
         counts.AddChild(_laborerReadout);
         body.AddChild(counts);
 
-        // ⭐ ON A NEW VILLAGE, NO TRADE ROWS AND ONE LINE (hud.md §9.2, call 1): a zero row only means something once there is
-        // a seat to fill.
-        _noTradeYet = Wrapped(Muted("A trade shows here once its building is raised or being built."));
-        body.AddChild(_noTradeYet);
-
         // ⭐ A CEILING AND A SCROLL BAR (Joe, 2026-11-22, playing W3: "The professions tab needs a height limit and a scroll
         // bar") — the brewer and the tavern keeper took the table past the bottom of his screen. As tall as its rows up to
         // `ProfessionsHeight`, then it scrolls: the build queue's shape (D730). Re-measured where a row appears
@@ -5581,7 +5590,8 @@ public partial class Main : Control
     /// <summary>
     /// ⭐ A trade the village has not learned has no row (D460, Joe: *"The professions that are
     /// 'unlocked' shouldn't show in the professions menu until they are unlocked — don't want to
-    /// spoil the surprise."*).
+    /// spoil the surprise."*) — and every other trade has one from Day 1, before its building is placed (hud.md §9.2, D887,
+    /// Joe: *"a trade appears as soon as its building is available"*).
     /// </summary>
     /// <remarks>
     /// ⛔ <b>Asked of the bar's own question, never of a list of trades.</b> A row shows when its
@@ -5601,67 +5611,18 @@ public partial class Main : Control
             return;
         }
 
-        int shown = 0;
         for (int i = 0; i < _professionRows.Count; i++)
         {
             (JobKind kind, Control[] cells) = _professionRows[i];
-            bool known = TradeKnown(kind) && (HasASeat(kind) || _everyTradePosed);
-            shown += known ? 1 : 0;
+            bool known = TradeKnown(kind);
             foreach (Control cell in cells)
             {
                 cell.Visible = known;
             }
         }
 
-        // No row: the table goes, and the line says why (hud.md §9.2).
-        if (_professionsScroll is not null)
-        {
-            _professionsScroll.Visible = shown > 0;
-        }
-
-        if (_noTradeYet is not null)
-        {
-            _noTradeYet.Visible = shown == 0;
-        }
-
         // A row shown or hidden changes the table's height: the scroll follows it (Joe's ceiling, 2026-11-22).
         FitTheProfessionsScroll();
-    }
-
-    /// <summary>The line Professions shows with no trade row yet.</summary>
-    private Label? _noTradeYet;
-
-    /// <summary>The probe's pose: every learned trade's row shown, seat or none — the height probe's ceiling needs them all.</summary>
-    private bool _everyTradePosed;
-
-    /// <summary>
-    /// ⭐ Whether a trade has a seat — a workplace of it standing or being built (hud.md §9.2, call 1): a site is a
-    /// <c>Workplace</c> too (<c>IsSite</c>), and nobody works a trade without its workplace. ⛔ Not per frame: the set is
-    /// rebuilt when the workplaces' count or <c>BuildingGeneration</c> moves (<see cref="ShowTheTradesWithASeat"/>).
-    /// </summary>
-    private bool HasASeat(JobKind kind) => (int)kind < _seated.Length && _seated[(int)kind];
-
-    private bool[] _seated = System.Array.Empty<bool>();
-
-    private (SimWorld? World, int Workplaces, int Generation) _seatedFor;
-
-    /// <summary>From <c>Refresh</c>: the rows follow the workplaces when, and only when, they change.</summary>
-    private void ShowTheTradesWithASeat(SimWorld world)
-    {
-        var key = (world, world.Workplaces.Count, world.BuildingGeneration);
-        if (key == _seatedFor)
-        {
-            return;
-        }
-
-        _seatedFor = key;
-        _seated = new bool[System.Enum.GetValues<JobKind>().Length];
-        for (int i = 0; i < world.Workplaces.Count; i++)
-        {
-            _seated[(int)world.Workplaces[i].Kind] = true;
-        }
-
-        ShowTheKnownTrades();
     }
 
     /// <summary>Whether a trade is offered anywhere — the panel's row, the villager card's dropdown (D460, D502).</summary>
