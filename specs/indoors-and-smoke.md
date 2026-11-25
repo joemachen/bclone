@@ -41,7 +41,7 @@ there**, and the player reading smoke as "this house is warm" is the point (legi
    last stretch of the glide is bent to the door's step. Leaving, they come **out of the door** and walk on.
 2. **In, they fade.** Reaching the door in an indoors state, the figure fades over **0.3 s** in the doorway; coming out it
    fades in there. No pop.
-3. **Indoors states** — today's three, plus **someone warming by a fire** (*SeekingShelter*, once arrived): they are in by
+3. **Indoors states** — today's three (and the library's paper-takers, A246, `library-paper-art.md §6`), plus **someone warming by a fire** (*SeekingShelter*, once arrived): they are in by
    the hearth, and the house's smoke says the fire is lit. The trades that work under a roof are **call 3**.
 4. **At a store, the market, the well:** a person dropping goods off or drawing water stands **at the door** (the well's
    rim — no door, D624's list), facing it, not on the roof.

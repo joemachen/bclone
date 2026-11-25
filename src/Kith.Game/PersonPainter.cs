@@ -52,9 +52,10 @@ internal enum FigureHold
 /// that swings, 1 is the tool raised and 2 the stroke.
 /// </param>
 /// <param name="Dye">The cloak's dye, the household's (A143, <see cref="PersonPainter.CloakDyes"/>).</param>
+/// <param name="Paper">Bringing paper home from the library (A246): a few blank sheets in the hand.</param>
 internal readonly record struct FigureKey(
     int Id, LifeStage Stage, JobKind? Trade, FigurePose Pose, bool Flip, FigureHold Hold, bool Walking, bool ToolOut,
-    Goods? Good, bool Coat, bool Cart, bool Cold, int Beat = 0, int Dye = 0);
+    Goods? Good, bool Coat, bool Cart, bool Cold, int Beat = 0, int Dye = 0, bool Paper = false);
 
 /// <summary>A painted person: straight RGBA bytes, and where on them the feet stand.</summary>
 internal sealed record PaintedFigure(int Width, int Height, byte[] Rgba, float FeetX, float FeetY);
@@ -136,6 +137,9 @@ internal static class PersonPainter
     private static readonly Rgb Oak = Rgb.Hex("#8a6440");
     private static readonly Rgb OakEnd = Rgb.Hex("#b08a5e");
     private static readonly Rgb Hoop = Rgb.Hex("#4b4e54");
+
+    // ⭐ Paper from the library (A246, `library-paper-art.md §4`): a little brighter than the linen, which the wash takes down.
+    private static readonly Rgb Sheet = Rgb.Hex("#faf4e4");
 
     private static readonly Rgb[] Pigments = Hexes("#c4432c", "#33529e", "#3f8458", "#c87a86", "#c99a3c", "#e6dcc4", "#8e2e3c", "#5f7aa8");
     private static readonly Rgb[] Skins = Hexes("#f2d6b8", "#ecc9a6", "#dcb28c", "#c69468", "#a06e48", "#7c5236");
@@ -263,7 +267,7 @@ internal static class PersonPainter
         internal Length Length;
         internal Rgb? Apron, Hood;
         internal float K = 1f, HeadK = 1f, Stoop, Sway;
-        internal bool CoatOn, CartOn, Cold, Elder, Cloth;
+        internal bool CoatOn, CartOn, Cold, Elder, Cloth, Paper;
 
         /// <summary>The cloak's colour — the household's dye (A143).</summary>
         internal Rgb Cloak;
@@ -327,6 +331,7 @@ internal static class PersonPainter
             Cloak = CloakOf(f.Dye);
             CartOn = f.Cart;
             Cold = f.Cold;
+            Paper = f.Paper && f.Hold != FigureHold.Front; // both arms full: nothing in the hand
             Good = f.Good;
         }
     }
@@ -877,7 +882,8 @@ internal static class PersonPainter
             }
 
             // the free arm swings forward on a stride (beat 0) and hangs on the passing step (beat 1)
-            float swing = walking && beat == 0 ? 0.09f : 0f;
+            // — held still with paper in it (A246).
+            float swing = w.Paper ? PaperSide : walking && beat == 0 ? 0.09f : 0f;
             c.Limb((0f, top + 0.03f), (swing, -0.45f), aw, sl);
             c.Ell(swing, -0.45f, 0.032f, 0.032f, w.Skin);
             return (swing, -0.45f);
@@ -920,9 +926,10 @@ internal static class PersonPainter
             }
         }
 
-        // Walking toward or away, the hand opposite the stepping foot comes up a little (A130, after play).
-        float rightUp = walking && hold == FigureHold.None && beat == 0 ? 0.045f : 0f;
-        float leftUp = walking && hold == FigureHold.None && beat == 1 ? 0.045f : 0f;
+        // Walking toward or away, the hand opposite the stepping foot comes up a little (A130, after play) — not the hand
+        // with the paper in it (A246): the left of the picture from the front, so the right from behind.
+        float rightUp = walking && hold == FigureHold.None && beat == 0 && !(w.Paper && pose == FigurePose.Back) ? 0.045f : 0f;
+        float leftUp = walking && hold == FigureHold.None && beat == 1 && !(w.Paper && pose == FigurePose.Front) ? 0.045f : 0f;
         (float, float) right = hold == FigureHold.Tool ? workHand : (0.185f - (rightUp * 0.4f), -0.45f - rightUp);
         (float, float) left = (-0.185f + (leftUp * 0.4f), -0.45f - leftUp);
         c.Limb((-sx, top + 0.03f), left, aw, sl);
@@ -1202,6 +1209,57 @@ internal static class PersonPainter
         }
     }
 
+    /// <summary>How far forward the hand with the paper is held, seen from the side.</summary>
+    private const float PaperSide = 0.05f;
+
+    /// <summary>
+    /// ⭐ Paper from the library (A246, <c>library-paper-art.md §4</c>; Joe's pick of three): two blank sheets, a little fanned,
+    /// in the hand at their side — drawn last, so a cloak never covers it; the same hand from behind, and clear of an elder's
+    /// stick. Hugging in against the cold they are clutched to the chest under the arm.
+    /// </summary>
+    private static void PaperInHand(Canvas c, Who w, FigurePose pose, FigureHold hold)
+    {
+        if (!w.Paper)
+        {
+            return;
+        }
+
+        if (hold == FigureHold.Hug)
+        {
+            if (pose == FigurePose.Back)
+            {
+                return; // held in front: hidden by the body walking away
+            }
+
+            SheetOf(c, pose == FigurePose.Side ? 0.10f : -0.02f, -0.64f, 0.15f, 0.19f, -10f, Sheet);
+            if (pose == FigurePose.Side)
+            {
+                c.Ell(0.10f, -0.56f, 0.032f, 0.032f, w.Skin);
+                return;
+            }
+
+            c.Limb((-0.15f, -0.57f), (0.06f, -0.60f), 0.058f, w.Sleeve);
+            c.Ell(0.07f, -0.60f, 0.03f, 0.03f, w.Skin);
+            return;
+        }
+
+        bool side = pose == FigurePose.Side;
+        float m = pose == FigurePose.Back ? -1f : 1f;
+        (float x, float y) = side ? (PaperSide, -0.45f) : (-0.185f * m, -0.45f);
+        float o = side ? 0.025f : -0.035f * m;
+        SheetOf(c, x + o - (0.02f * m), y + 0.055f, 0.155f, 0.20f, 16f * m, Sheet.Shade(0.86f));
+        SheetOf(c, x + o + (0.01f * m), y + 0.06f, 0.155f, 0.20f, -8f * m, Sheet);
+        c.Ell(x + (side ? -0.01f : 0.02f * m), y - 0.015f, 0.034f, 0.034f, w.Skin);
+    }
+
+    /// <summary>One sheet of paper about its middle, turned some degrees clockwise on screen.</summary>
+    private static void SheetOf(Canvas c, float cx, float cy, float wide, float tall, float degrees, Rgb col)
+    {
+        float a = degrees * MathF.PI / 180f, co = MathF.Cos(a), si = MathF.Sin(a);
+        (float, float) At(float x, float y) => (cx + (x * co) - (y * si), cy + (x * si) + (y * co));
+        c.Poly(new[] { At(-wide / 2f, -tall / 2f), At(wide / 2f, -tall / 2f), At(wide / 2f, tall / 2f), At(-wide / 2f, tall / 2f) }, col);
+    }
+
     private static void Cart(Canvas c, Who w, FigurePose pose)
     {
         if (!w.CartOn)
@@ -1363,6 +1421,7 @@ internal static class PersonPainter
             LoadFront(c, w, pose, top);
         }
 
+        PaperInHand(c, w, pose, f.Hold);
         if (pose == FigurePose.Side)
         {
             Cart(c, w, pose);

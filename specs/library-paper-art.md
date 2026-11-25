@@ -1,6 +1,7 @@
 # The paper in the library walker's hand (A245)
 
-> **Status: ✍️ SPECCED AND MOCKED (A245, 2026-11-24); ⏸️ FOUR CALLS JOE'S (§7); NOTHING BUILT.** Art lane (CLAUDE.md *Two
+> **Status: 🔨 BUILT ON `art` (A246, 2026-11-24), his four calls *"All as recommended"*; ⏸️ HIS EYES, then the merge at his
+> word.** *(Read "specced and mocked, nothing built" until A246.)* Art lane (CLAUDE.md *Two
 > tracks*), branch `art`. View only: nothing in `src/Kith.Sim`, `data/` or `tests/` changes. Mock:
 > `D:\Projects\brushes\library-borrowing\paper\paper_mock.jpg` — the game itself, run from a scratch copy on copies of Joe's
 > Elderwood, so every figure on it is what the game would draw.
@@ -11,7 +12,7 @@ Joe, via the coordinator, 2026-11-24: *"proceed with both in new sessions"*. The
 HANDOFF's ⏸️ *ART LANE — THE LIBRARY'S BORROWING (D868)*: **paper in hand** — a villager walking home from the library carrying
 a letter or a few sheets (the cask's precedent, A203–A204); take the stand-in out when the figure carries its own.
 
-## 2. What the map draws today
+## 2. What the map drew until A246
 
 `VillageMap.DrawThePaper` (D868) lays a tilted sheet with two lines of ink on the map beside the walker — always at the left of
 the picture, whichever way they walk, not in a hand, on top of everything. It does not move with the step, and its ink is wrong:
@@ -52,7 +53,7 @@ takes a fill down ~15, art trap 88), inked like everything else, the same hand f
 Common to all three: the hand with the paper does not swing with the step (the other does); hugging in against the cold, the
 sheets are clutched to the chest under the arm.
 
-## 5. Code (after the calls)
+## 5. Code (✅ as built, A246)
 
 | File | Change | Lane |
 |---|---|---|
@@ -61,6 +62,10 @@ sheets are clutched to the chest under the arm.
 | `VillageMap.PeopleProbe.cs` | the probe line hooked on (one line, art trap 73) | ⛔ call 2 |
 | `VillageMap.PaperProbe.cs` (new) | the probe line (§8) | art |
 | `VillageMap.Indoors.cs`, its probe | only if call 3 is yes (§6) | ⛔ call 3 |
+
+**One thing the build added:** the sim hands the paper over as the walker reaches the library's tile, while the picture is still
+gliding up to the door, so the key asks `ShowsPaper(carryingPaper, state)` — paper, and not `AtTheLibrary`. Nobody walks *in* with
+it. With both arms full (never seen, §3) none is drawn.
 
 A figure is painted once per `FigureKey` and kept, as now: the paper adds one more picture per pose for whoever carries it, let go
 when unseen. No new texture, so no import. The dots (watercolour off) draw no paper today and still will not.
@@ -71,7 +76,10 @@ when unseen. No new texture, so no import. The dots (watercolour off) draw no pa
 is drawn **standing on the doorstep, over the roof**, for the whole sit — where the school's, the tavern's and every store's
 callers step in. A fifth of the paper's time on the map is this. One state added to `Indoors` would put them inside.
 
-## 7. Joe's calls (⏸️, each recommended)
+✅ **Built (A246):** `Indoors` takes `AtTheLibrary` as it takes the school; rendered on the same copy of his Elderwood, the taker is
+no longer on the roof (`paper_built.jpg`).
+
+## 7. Joe's calls — ✅ *"All as recommended"* (A246)
 
 1. **The look: A, B or C.** ⭐ *B — a few sheets in the hand.*
 2. **His OK for three files outside the lane's table** — `PersonPainter.cs`, `VillageMap.People.cs`, `VillageMap.PeopleProbe.cs`,
@@ -84,7 +92,10 @@ callers step in. A fifth of the paper's time on the map is this. One state added
 
 A new line, `paper in hand:`, on `painted villagers:` (art trap 73): paper pixels in the hand on an adult, a cloaked adult and an
 elder, front, back and both sides, both beats; none on the same figure without paper; the elder's stick still there; clutched
-when cold; the walker's key carries `Paper` exactly when `CarryingPaper`; the stand-in gone.
+when cold; the walker's key carries `Paper` exactly when `CarryingPaper` outside the library; the stand-in gone. ✅ Built, with the
+arm held still from step to step; `indoors and smoke:` asks the library. **Red-checked: 17 mutants, 17 caught** — 14 at first; the
+three that swung the arm off the paper scored zero against a count of paper pixels (the sheet does not move with the arm), so the
+guard compares the arm's own pixels now.
 
 ## 9. Not in this piece
 
