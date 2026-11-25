@@ -11150,7 +11150,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   blank sheets in the hand); his OK for `PersonPainter.cs`, `VillageMap.People.cs`, `VillageMap.PeopleProbe.cs`; stepping inside
   the library to take paper (drawn over its roof for the sit today, §6); blank sheets.** ✅ *"All as recommended"*; 🔨 **BUILT ON
   `art` (A246): the stand-in is out, `VillageMap.Indoors.cs` takes the library. No image, so nothing to import.** ✅ **Seen,
-  approved and merged into `main` at his word (A247, *"Looks right, merge art"*); not pushed.**
+  approved and merged into `main` at his word (A247, *"Looks right, merge art"*); pushed at his word (A248, *"Push main"*).**
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** 🔨 **The two buildings
   on the map: being built on `art`** (A199, 2026-11-23, Joe via the coordinator: *"art: tavern and brewery real buildings"*;
