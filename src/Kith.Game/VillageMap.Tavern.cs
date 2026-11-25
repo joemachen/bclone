@@ -287,20 +287,22 @@ public partial class VillageMap
 
     // ------------------------------------------------------------------ drawn each frame: the light and the steam
 
-    /// <summary>The tavern's lamplight at its level, coming and going over a second as the smoke does (call 3).</summary>
-    private void DrawTheLamplight(RoofCache held, bool lit, float alpha)
+    /// <summary>
+    /// A building's lamplight at its level (call 3): <paramref name="fans"/> of the fans of light falling from the walls — the tavern's by
+    /// day, none by night, when the light is the soft pools' (A249, <see cref="DrawTheGlow"/>) — and <paramref name="slits"/> of the lit windows.
+    /// </summary>
+    private void DrawTheLamplight(RoofCache held, float fans, float slits, float alpha)
     {
-        held.Light = SmokeOn(held.Light, lit, _peopleFrameSeconds);
-        if (held.Light <= 0f || held.Lamps.Length == 0)
+        float a = held.Light * alpha;
+        if (a <= 0f)
         {
             return;
         }
 
-        float a = held.Light * alpha;
         float width = Mathf.Max(2f, 0.055f * _pixelsPerTile);
         foreach (RoofPiece lamp in held.Lamps)
         {
-            if (lamp.Kind == RoofPieceKind.Fill && lamp.Points.Length == 4)
+            if (lamp.Kind == RoofPieceKind.Fill && lamp.Points.Length == 4 && fans > 0f)
             {
                 var points = new Vector2[4];
                 for (int i = 0; i < 4; i++)
@@ -308,13 +310,13 @@ public partial class VillageMap
                     points[i] = ToScreen(lamp.Points[i]);
                 }
 
-                Color wall = LampLight with { A = LampAtTheWall * a };
-                Color far = LampLight with { A = 0f };
+                Color wall = Lifted(LampLight, 1f) with { A = LampAtTheWall * a * fans };
+                Color far = Lifted(LampLight, 1f) with { A = 0f };
                 DrawPolygon(points, new[] { wall, wall, far, far });
             }
-            else if (lamp.Kind == RoofPieceKind.Line && lamp.Points.Length == 2)
+            else if (lamp.Kind == RoofPieceKind.Line && lamp.Points.Length == 2 && slits > 0f)
             {
-                DrawLine(ToScreen(lamp.Points[0]), ToScreen(lamp.Points[1]), LampWindow with { A = a }, width);
+                DrawLine(ToScreen(lamp.Points[0]), ToScreen(lamp.Points[1]), Lifted(LampWindow, 1f) with { A = a * slits }, width);
             }
         }
     }

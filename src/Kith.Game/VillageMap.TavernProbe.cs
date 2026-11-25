@@ -144,11 +144,11 @@ public partial class VillageMap
                 }
             }
 
-            // The brewery and every other kind have no lamplight; only a brewery has a copper to steam.
+            // The brewery and the library have no lamplight (who has any is `night:`'s, A249); only a brewery has a copper to steam.
             if (open.Any(IsLamplight) || Draw(RoofOf(BuildingKind.Library), 1.6f, 1.6f, 0, idle).Any(IsLamplight)
                 || CopperOf(open) is null || CopperOf(Draw(RoofOf(JobKind.Baker), 1.6f, 0.8f, 0, brewing)) is not null)
             {
-                faults.Add("lamplight drawn on a building that is not the tavern, or the copper not found on the brewery alone");
+                faults.Add("lamplight drawn on the brewery or the library, or the copper not found on the brewery alone");
             }
 
             // ⭐ Laid into the cache, the light is kept apart from the roof's runs (drawn each frame at its level), and the copper's middle kept.
@@ -211,7 +211,7 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? "[widths] tavern and brewery: ✅ the brewery shingle and the tavern thatch, each its yard and chimney; the copper, tun and racked casks always, the copper open with the wort, paddle and barley only while brewing, shut under its lid otherwise; the tavern's sign, trestle and benches always, its ale one cask a level from its own store, none at none; every thing on its ground at four turns; the sign by the door wherever it is, the table beside it, the casks the other side; five fans of lamplight out from the eave and five lit slits, kept out of the roof's runs, on the tavern alone; a drinker lights it, the keeper does not; the brewer's batch steams, pale; the tavern's stove; their trades' colours; the light and steam over a second, held while paused (A199)"
+                ? "[widths] tavern and brewery: ✅ the brewery shingle and the tavern thatch, each its yard and chimney; the copper, tun and racked casks always, the copper open with the wort, paddle and barley only while brewing, shut under its lid otherwise; the tavern's sign, trestle and benches always, its ale one cask a level from its own store, none at none; every thing on its ground at four turns; the sign by the door wherever it is, the table beside it, the casks the other side; five fans of lamplight out from the eave and five lit slits, kept out of the roof's runs; a drinker lights it, the keeper does not; the brewer's batch steams, pale; the tavern's stove; their trades' colours; the light and steam over a second, held while paused (A199)"
                 : $"[widths] tavern and brewery: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)

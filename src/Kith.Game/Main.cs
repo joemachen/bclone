@@ -599,6 +599,8 @@ public partial class Main : Control
         GD.Print(TheRunwayIsTheSum());
         GD.Print(TheAmountsAreInLiningFigures());
         GD.Print(TheDevBarHoldsTheDebugTools());
+        GD.Print(TheNightHolds());
+        GD.Print(_map.TheHomesAreLit());
         GD.Print(TheLaborersAreCountedWhereJoeReadsThem());
         GD.Print(TheWindowIsFullScreenByDefault());
         GD.Print(F5SavesAndF7SaysWhenThereIsNothing());
@@ -2164,6 +2166,9 @@ public partial class Main : Control
             // wants: "get out of the way, I am watching" and "I need more room to work".
             case Key.H: ToggleFurniture(); break;
             case Key.C: ToggleAllPanels(); break;
+
+            // N is night, and day again (A249) — the strip's sun and moon.
+            case Key.N: ToggleTheNight(); break;
         }
     }
 
@@ -7193,6 +7198,14 @@ public partial class Main : Control
         _map.ShowWatercolour(watercolour.ButtonPressed);
         body.AddChild(watercolour);
         _viewToggles.Add(("watercolour", "the valley in watercolour", watercolour, () => _map.WatercolourShown));
+
+        // ⭐ THE NIGHT VIEW (A249, `night-view.md`; Joe: "a button toggle on the main screen … basically lights on/lights off"). One
+        // tick: the strip's sun and moon and the key n press this, so there is one answer. Off by default.
+        _nightTick = Tick(NightToggle);
+        _nightTick.AddThemeFontSizeOverride("font_size", 12);
+        _nightTick.Toggled += NightChanged;
+        body.AddChild(_nightTick);
+        _viewToggles.Add((NightToggle, "the night", _nightTick, () => _map.NightShown));
 
         var beforeAfter = Tick("before_after");
         beforeAfter.AddThemeFontSizeOverride("font_size", 12);

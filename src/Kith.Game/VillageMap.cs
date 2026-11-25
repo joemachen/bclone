@@ -736,6 +736,9 @@ public partial class VillageMap : Control
         // The river's clock (A45): real seconds while the village runs and the water may move.
         TickTheFlowClock(delta);
 
+        // The night's fade (A249): real seconds, paused or not — the player's own switch.
+        TickTheNight(delta);
+
         // A preview takes no keys (A150): WASD typed into the new-valley screen's boxes must not pan it.
         if (IsAPreview)
         {
@@ -3476,7 +3479,7 @@ public partial class VillageMap : Control
             fill[p] = ToScreen(InTileSpace(fill[p], SubTile.PerTile));
         }
 
-        DrawTriangles(fill, BrushEdgeFor(direction) with { A = 0.26f });
+        DrawTriangles(fill, AtNight(BrushEdgeFor(direction)) with { A = 0.26f });
 
         if (refusedCells.Count > 0)
         {
@@ -3486,7 +3489,7 @@ public partial class VillageMap : Control
                 no[p] = ToScreen(InTileSpace(no[p], SubTile.PerTile));
             }
 
-            DrawTriangles(no, GhostRefused with { A = 0.35f });
+            DrawTriangles(no, AtNight(GhostRefused) with { A = 0.35f });
         }
 
         // ⭐⭐ AND ONE OUTLINE ROUND THE LOT (D332, Joe: *"why isnt the paint brush a smooth
@@ -3506,7 +3509,7 @@ public partial class VillageMap : Control
                 onScreen[p] = ToScreen(InTileSpace(loop[p], SubTile.PerTile));
             }
 
-            DrawPolyline(onScreen, BrushEdgeFor(direction), thickness, antialiased: true);
+            DrawPolyline(onScreen, AtNight(BrushEdgeFor(direction)), thickness, antialiased: true);
         }
     }
 
@@ -3800,12 +3803,12 @@ public partial class VillageMap : Control
             return;
         }
 
-        Color colour = _verdict switch
+        Color colour = AtNight(_verdict switch
         {
             { Allowed: false } => GhostRefused,
             { HasWarning: true } => GhostWarned,
             _ => GhostFine,
-        };
+        });
 
         // ⭐⭐ THE GHOST SHOWS THE GROUND, WHICH IS THE WHOLE POINT OF A PREVIEW (gridless 2b, D320).
         // It drew a fixed 0.9-tile square for every building, which was honest while every building
@@ -3819,12 +3822,12 @@ public partial class VillageMap : Control
         // the hand makes; before the press, a mark on the tile it would begin from.
         if (HoldsABridge)
         {
-            Color bridgeColour = _verdict switch
+            Color bridgeColour = AtNight(_verdict switch
             {
                 { Allowed: false } => GhostRefused,
                 { HasWarning: true } => GhostWarned,
                 _ => GhostFine,
-            };
+            });
 
             if (_bridgeFrom is Point from)
             {
@@ -3847,7 +3850,7 @@ public partial class VillageMap : Control
                 onScreen[p] = ToScreen(InTileSpace(line[p], SubTile.PerTile));
             }
 
-            DrawPolyline(onScreen, PalisadeEdge with { A = 0.45f }, Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
+            DrawPolyline(onScreen, AtNight(PalisadeEdge with { A = 0.45f }, GhostClaimAtNight), Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
         }
 
         Footprint shape = world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing);
@@ -3942,7 +3945,7 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            DrawArc(ToScreen(home), radius, 0f, Mathf.Tau, 24, GhostFine, 2f);
+            DrawArc(ToScreen(home), radius, 0f, Mathf.Tau, 24, AtNight(GhostFine), 2f);
         }
     }
 
@@ -4026,7 +4029,7 @@ public partial class VillageMap : Control
 
             for (int i = 0; i < 4; i++)
             {
-                DrawLine(quad[i], quad[(i + 1) % 4], SelectedRing, 2f);
+                DrawLine(quad[i], quad[(i + 1) % 4], AtNight(SelectedRing), 2f);
             }
 
             return;
@@ -4037,7 +4040,7 @@ public partial class VillageMap : Control
 
         DrawRect(
             new Rect2(centre - (new Vector2(side, side) / 2f), new Vector2(side, side)),
-            SelectedRing,
+            AtNight(SelectedRing),
             filled: false,
             width: 2f);
     }
@@ -4301,7 +4304,7 @@ public partial class VillageMap : Control
                     0f,
                     Mathf.Tau,
                     24,
-                    FullStoreColour,
+                    AtNight(FullStoreColour),
                     width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
             }
         }
@@ -4755,7 +4758,7 @@ public partial class VillageMap : Control
         DrawResidentialLand();
         _zonesNow += Since(started);
 
-        DrawRect(valley, ValleyEdge, filled: false, width: 2f);
+        DrawRect(valley, AtNight(ValleyEdge), filled: false, width: 2f);
 
         // ⭐⭐ THE GRID LINES ARE THE LITERAL GRAPH PAPER, AND THEY HAD NO SWITCH (D332). Joe,
         // playing the free-placement build: *"if the game is gridless, then why is everything still
@@ -5490,11 +5493,11 @@ public partial class VillageMap : Control
             if (edge == ResidentialEdge)
             {
                 // Dashed: on parchment the housing and clearing edges darken to nearly one brown (D637).
-                DrawDashedPolyline(onScreen, edge, width, Mathf.Max(4f, _pixelsPerTile * 0.25f));
+                DrawDashedPolyline(onScreen, AtNight(edge), width, Mathf.Max(4f, _pixelsPerTile * 0.25f));
             }
             else
             {
-                DrawPolyline(onScreen, edge, width, antialiased: true);
+                DrawPolyline(onScreen, AtNight(edge), width, antialiased: true);
             }
         }
 
@@ -5669,7 +5672,7 @@ public partial class VillageMap : Control
                 onScreen[p] = ToScreen(triangles[p]);
             }
 
-            DrawTriangles(onScreen, colour);
+            DrawTriangles(onScreen, Lifted(colour, WashLift));
             _zoneTrianglesLastFrame += triangles.Length / 3;
         }
 
@@ -6404,7 +6407,7 @@ public partial class VillageMap : Control
                 }
 
                 float share = Mathf.Clamp(wear / (float)packedAt, 0.08f, 1f);
-                DrawRect(TileRect(tile), WearWash with { A = WearWash.A * share });
+                DrawRect(TileRect(tile), Lifted(WearWash with { A = WearWash.A * share }, 1f));
             }
         }
     }
@@ -7631,7 +7634,7 @@ public partial class VillageMap : Control
             DrawLine(
                 ToScreen(world.HomePlaceOf(villager)),
                 ToScreen(workplace.Position),
-                colour with { A = selected ? 0.75f : 0.3f },
+                Lifted(colour with { A = selected ? 0.75f : 0.3f }, 1f),
                 selected ? 2f : 1f);
         }
     }
@@ -7760,7 +7763,7 @@ public partial class VillageMap : Control
         {
             for (int i = 0; i < 4; i++)
             {
-                DrawDashedLine(outline[i], outline[(i + 1) % 4], edge, 2f, Mathf.Max(3f, _pixelsPerTile * 0.15f));
+                DrawDashedLine(outline[i], outline[(i + 1) % 4], AtNight(edge), 2f, Mathf.Max(3f, _pixelsPerTile * 0.15f));
             }
         }
     }
@@ -7809,7 +7812,7 @@ public partial class VillageMap : Control
                 float radius = workplace.GatheringRadius * _pixelsPerTile;
                 if (radius <= Mathf.Max(Size.X, Size.Y) * 2f)
                 {
-                    DrawArc(centre, radius, 0f, Mathf.Tau, 64, colour with { A = 0.22f }, 1f);
+                    DrawArc(centre, radius, 0f, Mathf.Tau, 64, Lifted(colour with { A = 0.22f }, 1f), 1f);
                 }
             }
 
@@ -7844,11 +7847,11 @@ public partial class VillageMap : Control
                 Vector2[] outline = FootprintQuad(centre, wide, deep, facing);
                 for (int edge = 0; edge < 4; edge++)
                 {
-                    DrawLine(outline[edge], outline[(edge + 1) % 4], edgeOfWork, 2f);
+                    DrawLine(outline[edge], outline[(edge + 1) % 4], AtNight(edgeOfWork), 2f);
                 }
 
                 // ⭐ A site takes the door of what it raises (`doors.md §4.1`), drawn in the site's own edge (§12.2).
-                DrawDoor(centre, wide, deep, facing, world.DoorOf(workplace), edgeOfWork);
+                DrawDoor(centre, wide, deep, facing, world.DoorOf(workplace), AtNight(edgeOfWork));
                 continue;
             }
 
@@ -7894,7 +7897,7 @@ public partial class VillageMap : Control
                     0f,
                     Mathf.Tau,
                     24,
-                    IdleWorkplaceColour,
+                    AtNight(IdleWorkplaceColour),
                     width: Mathf.Max(2f, _pixelsPerTile * 0.12f));
             }
         }
@@ -7907,7 +7910,7 @@ public partial class VillageMap : Control
             DrawColoredPolygon(outline, HarvestColour with { A = 0.18f });
             for (int edge = 0; edge < 4; edge++)
             {
-                DrawLine(outline[edge], outline[(edge + 1) % 4], HarvestEdge, 2f);
+                DrawLine(outline[edge], outline[(edge + 1) % 4], AtNight(HarvestEdge), 2f);
             }
         }
     }
@@ -8425,7 +8428,7 @@ public partial class VillageMap : Control
                 Vector2[] outline = FootprintQuad(centre, wide * rising, deep * rising, facing);
                 for (int edge = 0; edge < 4; edge++)
                 {
-                    DrawLine(outline[edge], outline[(edge + 1) % 4], SiteEdge, 2f);
+                    DrawLine(outline[edge], outline[(edge + 1) % 4], AtNight(SiteEdge), 2f);
                 }
             }
 
@@ -9491,11 +9494,11 @@ public partial class VillageMap : Control
                 DrawTheCartBehind(villager, centre, radius);
             }
 
-            DrawCircle(centre, radius, colour);
+            DrawCircle(centre, radius, AtNight(colour));
 
             if (villager.Id == _selectedVillagerId)
             {
-                DrawArc(centre, radius + 4f, 0f, Mathf.Tau, 24, SelectedRing, 2f);
+                DrawArc(centre, radius + 4f, 0f, Mathf.Tau, 24, AtNight(SelectedRing), 2f);
             }
 
             // ⭐ A nomad walking in carries the chevron (D573, Joe's note 4) until they are in.
@@ -9537,7 +9540,7 @@ public partial class VillageMap : Control
                     LifeStage.Elder => ElderColour,
                     _ => AdultColour,
                 };
-                DrawCircle(centre, VillagerRadius, new Color(colour, colour.A * shown));
+                DrawCircle(centre, VillagerRadius, AtNight(new Color(colour, colour.A * shown)));
                 DrawTheChevron(centre, VillagerRadius, shown);
             }
         }
@@ -9604,7 +9607,7 @@ public partial class VillageMap : Control
     {
         float size = Mathf.Max(3f, radius * 0.9f);
         Vector2 at = centre + new Vector2(0f, -(radius + size + 2f));
-        var bowl = new Color(MealMark, MealMark.A * left);
+        Color bowl = AtNight(new Color(MealMark, MealMark.A * left));
 
         // The bowl: the lower half of a circle (screen y runs down, so 0 → π sweeps below the rim), and its rim.
         DrawArc(at, size, 0f, Mathf.Pi, 10, bowl, 2f);

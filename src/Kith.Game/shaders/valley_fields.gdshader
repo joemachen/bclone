@@ -47,6 +47,15 @@ void vertex() {
     local_px = VERTEX;
 }
 
+// ⭐ The night view (A249, `specs/night-view.md §4`): the whole layer multiplied by one colour, its own colour first taken part way to grey.
+// The defaults are daylight and change no pixel; the map hands the night's over.
+uniform vec3 night_tint = vec3(1.0);
+uniform float night_grey = 0.0;
+
+vec3 night_of(vec3 c) {
+    return mix(c, vec3(dot(c, vec3(0.299, 0.587, 0.114))), night_grey) * night_tint;
+}
+
 void fragment() {
     // Godot hands the fragment the texture's colour already times the draw's (canvas_item COLOR).
     vec4 c = COLOR;
@@ -71,5 +80,6 @@ void fragment() {
         }
     }
 
+    c.rgb = night_of(c.rgb);
     COLOR = c;
 }
