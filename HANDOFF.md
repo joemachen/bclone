@@ -11133,7 +11133,10 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ 🎨 **ART LANE — THE LIBRARY'S BORROWING (D868; `library-borrowing.md §8`, the art lane's list, D774).** Asked, not drawn here: **paper in hand** — a villager walking home from the library with a letter or a few sheets (the cask's precedent). Until then `VillageMap.DrawThePaper` draws a stand-in sheet at the walker's side, opposite the pail, while `Villager.CarryingPaper`; take it out when the figure carries its own. The library's own drawing, if still a stand-in, is now a building people walk to; nothing new is asked of it. No new building, good or trade.
   🔨 **The paper in hand: being built on `art`** (A245, 2026-11-24, Joe via the coordinator: *"proceed with both in new sessions"*;
-  spec and mocks first, his look before any code).
+  spec and mocks first, his look before any code). ✍️ **Specced and mocked (A245): `specs/library-paper-art.md`,
+  `D:\Projects\brushes\library-borrowing\paper\paper_mock.jpg`. ⏸️ Four calls his (§7), each recommended: the look (B, a few
+  blank sheets in the hand); his OK for `PersonPainter.cs`, `VillageMap.People.cs`, `VillageMap.PeopleProbe.cs`; stepping inside
+  the library to take paper (drawn over its roof for the sit today, §6); blank sheets.** Nothing built.
 
 - ⏸️ 🎨 **ART LANE — W3'S TAVERN AND BREWERY (D836; `tavern.md §9`, the art lane's list, D774).** 🔨 **The two buildings
   on the map: being built on `art`** (A199, 2026-11-23, Joe via the coordinator: *"art: tavern and brewery real buildings"*;
