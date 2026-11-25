@@ -10,7 +10,7 @@
 > 2560 × 1440 screen with the debug dev bar, ≈ 17.6 % without (D883; §16 item 2 asks 16 — the tool bar's 20 px icons are the
 > difference, Joe's call). ✅ Joe approved it, the bar's size
 > included (D884, *"approved"*). ✅ Merged into `main` and pushed
-> at his word (D885, `592c754`). 🔨 **Call 1 reversed by Joe's play (D887, on `slice/hud-notes`, built, unplayed):** a trade has a
+> at his word (D885, `592c754`). ✅ **Call 1 reversed by Joe's play (D887, merged into `main` at his word, D888):** a trade has a
 > Professions row from the day its building can be built (§9.2); at rest on Day 1 that is about 4 points more of the screen. The build
 > is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
