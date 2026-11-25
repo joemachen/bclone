@@ -79,6 +79,12 @@ public sealed record PlayerSettings
     /// <summary>How <i>The village</i> panel orders its people (D609), in its buttons' order — the first is the default.</summary>
     public static IReadOnlyList<string> RosterSorts { get; } = new[] { "name", "age", "trade" };
 
+    /// <summary>How <i>Buildings</i> orders its rows (Joe's play note 1, D900), in its headings' order — the first is the default.</summary>
+    public static IReadOnlyList<string> BuildingsSorts { get; } = new[] { "name", "kind", "condition" };
+
+    /// <summary>How Professions orders its trades (Joe's play note 6, D896), in its headings' order; none is the data's own order.</summary>
+    public static IReadOnlyList<string> ProfessionsSorts { get; } = new[] { "type", "assigned", "max" };
+
     /// <summary>The UI size, a whole percent on the dial's steps.</summary>
     public int? UiScalePercent { get; init; }
 
@@ -93,6 +99,12 @@ public sealed record PlayerSettings
 
     /// <summary>One of <see cref="RosterSorts"/>.</summary>
     public string? RosterSort { get; init; }
+
+    /// <summary>One of <see cref="ProfessionsSorts"/>, or null until a heading is clicked.</summary>
+    public string? ProfessionsSort { get; init; }
+
+    /// <summary>One of <see cref="BuildingsSorts"/>.</summary>
+    public string? BuildingsSort { get; init; }
 
     /// <summary>The view's on/off switches by id — the Paths overlay and every <i>On the map</i> tick.</summary>
     public IReadOnlyDictionary<string, bool> Toggles { get; init; } = new Dictionary<string, bool>(StringComparer.Ordinal);
@@ -124,6 +136,16 @@ public sealed record PlayerSettings
         if (RosterSort is not null)
         {
             doc["roster_sort"] = RosterSort;
+        }
+
+        if (BuildingsSort is not null)
+        {
+            doc["buildings_sort"] = BuildingsSort;
+        }
+
+        if (ProfessionsSort is not null)
+        {
+            doc["professions_sort"] = ProfessionsSort;
         }
 
         if (Toggles.Count > 0)
@@ -317,7 +339,7 @@ public static class PlayerSettingsFile
 
     private static readonly HashSet<string> KnownKeys = new(StringComparer.Ordinal)
     {
-        "version", "ui_scale_percent", "routes", "roster_sort", "toggles", "windows", "new_game",
+        "version", "ui_scale_percent", "routes", "roster_sort", "professions_sort", "buildings_sort", "toggles", "windows", "new_game",
     };
 
     private static readonly HashSet<string> KnownWindowKeys = new(StringComparer.Ordinal)
@@ -394,6 +416,32 @@ public static class PlayerSettingsFile
             }
         }
 
+        string? buildingsSort = null;
+        if (doc["buildings_sort"] is JsonNode buildingsNode)
+        {
+            if (TryString(buildingsNode, out string read) && PlayerSettings.BuildingsSorts.Contains(read, StringComparer.Ordinal))
+            {
+                buildingsSort = read;
+            }
+            else
+            {
+                Warn($"buildings_sort should be one of {string.Join(", ", PlayerSettings.BuildingsSorts)}, not {buildingsNode.ToJsonString()}; using the default.");
+            }
+        }
+
+        string? professionsSort = null;
+        if (doc["professions_sort"] is JsonNode professionsNode)
+        {
+            if (TryString(professionsNode, out string read) && PlayerSettings.ProfessionsSorts.Contains(read, StringComparer.Ordinal))
+            {
+                professionsSort = read;
+            }
+            else
+            {
+                Warn($"professions_sort should be one of {string.Join(", ", PlayerSettings.ProfessionsSorts)}, not {professionsNode.ToJsonString()}; using the default.");
+            }
+        }
+
         var toggles = new Dictionary<string, bool>(StringComparer.Ordinal);
         foreach ((string id, JsonNode? value) in ObjectAt(doc, "toggles", Warn))
         {
@@ -465,6 +513,8 @@ public static class PlayerSettingsFile
             UiScalePercent = scale,
             Routes = routes,
             RosterSort = rosterSort,
+            ProfessionsSort = professionsSort,
+            BuildingsSort = buildingsSort,
             Toggles = toggles,
             Windows = windows,
             NewGameRows = rows,

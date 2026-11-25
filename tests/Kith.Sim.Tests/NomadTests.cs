@@ -403,6 +403,45 @@ public sealed class NomadTests
         Assert.Single(settled.Paragraphs);
     }
 
+    /// <summary>
+    /// ⭐ Every paragraph of the nomads' moment has a mark (Joe's play note 7, D894): a house the band's coming teaches wears
+    /// its own, last, and a band that teaches the bridge and a house wears all three. Counted against the paragraphs, so a
+    /// fourth paragraph added without a mark is red here.
+    /// </summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AHouseTheBandTaughtWearsItsOwnMark(bool bridgeToo)
+    {
+        (SimLoop first, _) = Founded(Village);
+        first.Step((int)KnockTick(first.World));
+        SimConfig config = Village with
+        {
+            BridgeUnlockPopulation = bridgeToo ? first.World.MostEverAlive + 1 : 0,
+            CottageUnlockGeneration = 1,
+            CottageUnlockPopulation = first.World.MostEverAlive + 1,
+        };
+
+        (SimLoop posed, _) = Founded(config);
+        posed.Step((int)KnockTick(posed.World));
+        Assert.False(posed.World.CottageLearned, "the cottage is known before anybody arrived — the pose is wrong");
+        posed.StepOnce();
+        Assert.True(posed.World.CottageLearned);
+        Moment settled = Assert.Single(posed.World.Moments, m => m.Title.StartsWith("Nomads have settled", StringComparison.Ordinal));
+        Assert.Equal(
+            bridgeToo
+                ? new[] { MomentMark.Nomads, MomentMark.Bridge, MomentMark.Cottage }
+                : new[] { MomentMark.Nomads, MomentMark.Cottage },
+            settled.Marks);
+        Assert.Equal(settled.Paragraphs.Count, settled.Marks.Count);
+        Assert.Contains("stone cottages", settled.Paragraphs[^1], StringComparison.Ordinal);
+
+        // And a pending one comes back from a save with its marks — a new mark is not refused as unknown.
+        JsonObject document = SaveGame.Capture(posed, "test", "2026-11-24 12:00", "test");
+        SimLoop loaded = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), posed.World.Config, new InMemoryLogSink());
+        Assert.Equal(settled.Marks, Assert.Single(loaded.World.Moments, m => m.Title == settled.Title).Marks);
+    }
+
     [Fact]
     public void AMomentsMarksSurviveASave()
     {

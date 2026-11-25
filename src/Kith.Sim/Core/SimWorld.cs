@@ -4152,7 +4152,7 @@ public sealed partial class SimWorld : IObstacles
     /// the tech-tree map (D440). The library and the town hall raise their own moments and never
     /// come through here, so they never introduce it (Joe).
     /// </summary>
-    private void LearnedByDoing(string title, string body)
+    private void LearnedByDoing(string title, string body, MomentMark mark = MomentMark.None)
     {
         if (!ShownTheTechTree)
         {
@@ -4162,7 +4162,7 @@ public sealed partial class SimWorld : IObstacles
                 + "else it may, and what each will take.";
         }
 
-        RaiseMoment(title, body);
+        RaiseMoment(title, body, marks: mark == MomentMark.None ? null : new[] { mark });
     }
 
     /// <summary>Whether the player may mark this building — see <see cref="WhyNotYet"/>.</summary>

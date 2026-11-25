@@ -334,7 +334,8 @@ The second, only when their coming taught it, marked *bridge*: *"On the long roa
 across running water. The village can build wooden bridges now, and the far bank is within reach."* ✅ **Played and
 approved** (Joe, 2026-10-14: *"2 paragraph nomads/bridge — approved"*). The food-a-head
 sentence went with the wall (the bar carries it). `Moment.Marks` (one `MomentMark` a paragraph, saved, optional on
-read), paragraphs split by `Moment.ParagraphBreak`, the log given `Moment.LogLine` — one line, so a log entry stays a
+read; *cottage* and *manor* added by D894, so every paragraph has one — Joe, at the house's: *"what image is supposed to be on that
+empty spot"*; the view wears the building's own icon there, and draws nothing for a paragraph with none), paragraphs split by `Moment.ParagraphBreak`, the log given `Moment.LogLine` — one line, so a log entry stays a
 line and the view still finds a moment's own line to set in the celebrated weight. The view draws the marks
 (`MomentGlyph`) and gives each paragraph its own block, the text column 420px as before.
 ⭐ **As built (D565): the two adults are paired on settling**, as the founding pairs its founders — unpaired, they would

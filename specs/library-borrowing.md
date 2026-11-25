@@ -395,7 +395,7 @@ almanac, *"one book at a time or both"* is moot: the only book is paper.
    valley: [Letters to kin: ON]"*, the full-store marker's shape. **The walk-in** now walks each arrival to where they stand
    (`VillageMap.WhereTheyWalkTo`): kin to their household's door, a band to the camp as before. ⚠️ **Kin walk in without
    holding the village at 1×** — one relative is a household's news, said in the log; a band is the village's and stops it
-   (D572). Joe's word changes that. ✅ **Changed by Joe, D870: *"a relative's arrival should drop the game to 1× like the nomads"*** — a relative's walk-in now holds the village at 1× as a band's does (no popup — he asked for the 1×; the log line says who came).
+   (D572). Joe's word changes that. ✅ **Changed by Joe, D870: *"a relative's arrival should drop the game to 1× like the nomads"*** — a relative's walk-in now holds the village at 1× as a band's does (no popup — he asked for the 1×; the log line says who came). ✅ **And the line is washed gold for six seconds (his play note 9, D898; `hud.md §9.4`).**
 4. ✅ **Measured again on his saves with the real code** (D869, §4.9; D855's shape): relatives, nomads, starved, people.
 5. 🎮 **Joe plays it** (D870: *"everything else worked as expected"*; the switch fixed, kin at 1×) — his Millbrook or Hollowmere (a library, homes near and far): watch a walk with paper, read the log
    line, a relative arrive; then the merge at his word.

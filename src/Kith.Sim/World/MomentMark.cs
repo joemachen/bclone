@@ -17,4 +17,10 @@ public enum MomentMark
 
     /// <summary>A bridge learned.</summary>
     Bridge = 2,
+
+    /// <summary>The stone cottage learned (Joe's play note 7, D894) — the view wears its building's own icon.</summary>
+    Cottage = 3,
+
+    /// <summary>The insulated manor learned (D894).</summary>
+    Manor = 4,
 }

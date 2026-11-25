@@ -282,6 +282,8 @@ walked to.
   in the placement line and ringed on the map (D201) — is the stall's too. ⭐ **This is where *"serves the homes nearer it than
   the market"* went**: a workplace card has no subtitle line, the ring says it where the decision is made, and once it stands
   each home card says where that household shops (D744).
+- ⭐ **The card carries the school's staffing row** (Joe's play note 12, D895) — *Marketers − n / n +*, the market's and the stall's
+  alike; + stops at the seats (a stall has one, D860), − at nobody. Professions' number still bounds how many of them there are.
 - **The card** is the market's (its limits, its cart line, its keeper); with its seat empty, the sim's own *nobody posted*
   sentence says why.
 - **The professions panel's marketer row** counts the market's marketers against the typed number and says the stalls' apart:

@@ -256,6 +256,27 @@ public partial class Main
         {
             _saveFolder = scratch;
             _UnhandledKeyInput(new InputEventKey { Keycode = Key.F5, Pressed = true });
+
+            // ⭐ Every F5 says its line (Joe's play note 8, D894) — the second and the third say the same sentence, and both
+            // are in the log; a brush's repeat is still said once.
+            int TimesSaid(string line) => _villageLog.GetParsedText().Split(line).Length - 1;
+            string again = $"Saved as {QuickSaveName}, replacing the earlier save of that name. {_loop.World.Clock.SeasonAndYear()}.";
+            int before = TimesSaid(again);
+            _UnhandledKeyInput(new InputEventKey { Keycode = Key.F5, Pressed = true });
+            _UnhandledKeyInput(new InputEventKey { Keycode = Key.F5, Pressed = true });
+            if (TimesSaid(again) - before != 2)
+            {
+                faults.Add($"two more F5s said \"{again}\" {TimesSaid(again) - before} times, not twice");
+            }
+
+            const string Stroke = "A posed refusal, the probe's.";
+            SayInTheLog(Stroke);
+            SayInTheLog(Stroke);
+            if (TimesSaid(Stroke) != 1)
+            {
+                faults.Add($"a stroke's repeated refusal was said {TimesSaid(Stroke)} times, not once");
+            }
+
             if (!System.IO.File.Exists(quick))
             {
                 faults.Add("F5 wrote no quicksave");
@@ -280,7 +301,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] quicksave: ✅ F5 writes the village's quicksave and it reads back; F7 with none says so and loads nothing"
+            ? "[widths] quicksave: ✅ F5 writes the village's quicksave and it reads back, and every F5 says its line; F7 with none says so and loads nothing"
             : $"[widths] quicksave: ⛔ {string.Join("; ", faults)}";
     }
 
@@ -378,7 +399,7 @@ public partial class Main
         {
             SimClock last = SimClock.FromTick(_loop.World.Tick - (_loop.World.Tick % (ulong)_loop.World.Config.TicksPerYear), _loop.World.Config);
             string refused = $"The village stopped on an error, so it can't be saved. The last autosave is from Year {last.Year}.";
-            SayInTheLog(refused);
+            SayInTheLog(refused, everyTime: true);
             return (refused, false);
         }
 
@@ -400,8 +421,8 @@ public partial class Main
             SaveFile.Write(path, CaptureTheVillage());
             _loop.World.Log(LogLevel.Info, "shell", $"Saved as {stem} — {path}.");
             PictureTheVillage(leaving: false);
-            string said = replacing ? $"Saved as {stem}, replacing the earlier save of that name." : $"Saved as {stem}.";
-            SayInTheLog(said);
+            string said = $"Saved as {stem}{(replacing ? ", replacing the earlier save of that name" : string.Empty)}. {_loop.World.Clock.SeasonAndYear()}.";
+            SayInTheLog(said, everyTime: true);
             return (said, true);
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
@@ -413,7 +434,7 @@ public partial class Main
     private string CouldNotSave(Exception ex)
     {
         string sentence = $"The village could not be saved ({ex.Message}). The last save still stands.";
-        SayInTheLog(sentence);
+        SayInTheLog(sentence, everyTime: true);
         _audit.Log(_loop.World.Tick, LogLevel.Error, "shell", $"{sentence} {ex}");
         GD.PushError($"[Kith] {sentence}");
         return sentence;

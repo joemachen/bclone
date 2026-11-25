@@ -49,8 +49,17 @@ square or a round.** B2 makes what you painted legible from across the map.
 | **alt+wheel, while a brush is held** | resizes the brush |
 | **wheel** | zooms, always |
 | **`B`, or the shape button** | square ⇄ round |
+| **middle-drag, a square brush held** | ⭐ turns it, a degree a pixel, a tenth with shift (Joe's play note 10, D899) — as it turns a held building |
+| **`R` · `shift`+`R`, a square brush held** | turns it a sixty-fourth · to the next quarter, which is square |
 | **`Esc`** | puts down whatever is in hand — every tool, not just the brush |
 | **right click, no brush held** | still cancels, as it always has |
+
+⭐ **The turned square (D899).** `BrushStroke.SubTilesUnder(centre, radius, shape, turn)`: a quarter-tile is under the brush when its
+offset, turned back by the same angle, lies within the half-width on both axes — integers, off `Angle`'s own sine table, so the
+sim's float ban and determinism hold. The stroke and the outline both ask `VillageMap.UnderTheBrush`, so the outline is still the
+paint (D352). The turn is the view's, like the size and the shape: it outlives what is in the hand, is not saved, and says itself
+(*"5.25 tiles square, turned 34°"*). **A round brush has nothing to turn**; a held building turns itself and not the brush. It is made
+of quarter-tiles, so the smallest brushes show little of it. Old saves hold painted quarter-tiles and no brush: nothing to migrate.
 
 ⭐ **The rule a player can be told in one sentence: left paints, right takes back.** It does not
 depend on which button was last pressed. With an erase brush already in hand both buttons erase,

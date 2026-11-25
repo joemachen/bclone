@@ -468,6 +468,17 @@ public sealed class HouseTierTests
             Assert.True(gen == 1 || manorHeldWithoutTheCottage > 0, "the pose needs the manor's own factors met before the cottage");
             Assert.True(world.IsUnlocked(BuildingKind.Cottage) && world.IsUnlocked(BuildingKind.Manor));
             Assert.Contains(world.Moments, m => m.Body.Contains("build in stone", StringComparison.Ordinal));
+
+            // ⭐ Each house's own popup wears its house, as the same paragraph does in the nomads' (Joe's play note 7, D894).
+            foreach ((string title, MomentMark mark) in new[]
+            {
+                ("The village learned to build in stone", MomentMark.Cottage), ("The village learned to build a manor", MomentMark.Manor),
+            })
+            {
+                Assert.All(world.Moments.Where(m => m.Title == title), m => Assert.Equal(new[] { mark }, m.Marks));
+            }
+
+            Assert.Contains(world.Moments, m => m.Marks.Count == 1 && m.Marks[0] == MomentMark.Manor);
         }
     }
 
