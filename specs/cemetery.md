@@ -1,7 +1,7 @@
 # Spec: The cemetery and the gravedigger (W4)
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891, 2026-11-24) — ⏸️ SEVEN CALLS JOE'S (§10); NOTHING BUILT.** Claimed on
-> `slice/w4-cemetery` (D890), cut from `main` (`941082a`). The instrument is `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4),
+> `slice/w4-cemetery` (D890), cut from `main` (`941082a`); the docs merged into `main` and the branch deleted (D892), re-cut when he answers. The instrument is `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4),
 > run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395); its place in contentment is his (D797).
