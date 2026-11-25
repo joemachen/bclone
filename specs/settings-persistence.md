@@ -13,7 +13,7 @@ his play is what saw a real launch write the file and a drag remembered; the pro
 75 drew (×0.75, `PlayerSettings.DrawnPercentAtTheDialsHundred`); a version-1 file's size is read at ×4/3 and its windows'
 *shown* forgotten once, then it is written back as version 2 (§6).
 ✅ **`roster_sort` added (D609; played and merged, D615):** *The village* panel's order — `name` / `age` / `trade` — remembered like Routes.
-✅ **`professions_sort` (D896), `buildings_sort` (D900) and the windows' column's place (D897) added** on `slice/play-notes-2`.
+✅ **`professions_sort` (D896), `buildings_sort` (D900) and the windows' column's place (D897) added**, merged (D902).
 Owner: Joe + Claude Code.
 
 ---

@@ -11,7 +11,7 @@
 > difference, Joe's call). ✅ Joe approved it, the bar's size
 > included (D884, *"approved"*). ✅ Merged into `main` and pushed
 > at his word (D885, `592c754`). ✅ **Call 1 reversed by Joe's play (D887, merged into `main` at his word, D888):** a trade has a
-> Professions row from the day its building can be built (§9.2); at rest on Day 1 that is about 4 points more of the screen. 🔨 **Joe's second batch of play notes on `slice/play-notes-2` (D893–D900, built, unplayed):** a category new with its building (§8.3), the column moveable (§9.3), the log's kin line (§9.4), Professions sorted (§9.5), a Buildings window (§9.6). The build
+> Professions row from the day its building can be built (§9.2); at rest on Day 1 that is about 4 points more of the screen. 🔨 **Joe's second batch of play notes (D893–D900), merged (D902), unplayed:** a category new with its building (§8.3), the column moveable (§9.3), the log's kin line (§9.4), Professions sorted (§9.5), a Buildings window (§9.6). The build
 > is its own **systems slice** (`slice/library-borrowing`, which it waited on, merged as D871): every bar, window and panel below is drawn in
 > `Main.cs` and its partials, which are the systems lane's (HANDOFF's art table; D842). The art lane's share is two
 > repainted controls (§8.3) and the mocks. Owner: Joe + Claude Code. Format per `METHODOLOGY.md §2`.
