@@ -183,6 +183,11 @@ public partial class Main
     /// </remarks>
     private void LoadFromThePause(string chosen)
     {
+        if (_paintingWords is not null)
+        {
+            return; // one is already opening
+        }
+
         try
         {
             System.IO.File.Copy(chosen, CopyAside, overwrite: true);
@@ -195,11 +200,15 @@ public partial class Main
             return;
         }
 
-        Autosave("before loading another", leaving: true);
-        LeaveOncePictured(() =>
+        // ⭐ "Painting the village…" first (A239), on screen before the load freezes it.
+        SayItIsPainting(() =>
         {
-            _saveToOpen = (CopyAside, chosen);
-            GetTree().ReloadCurrentScene();
+            Autosave("before loading another", leaving: true);
+            LeaveOncePictured(() =>
+            {
+                _saveToOpen = (CopyAside, chosen);
+                GetTree().ReloadCurrentScene();
+            });
         });
     }
 

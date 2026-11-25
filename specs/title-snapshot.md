@@ -7,7 +7,7 @@
 > shaders and three baked textures (A233, §5b).** ✅ **Calls 2–4: *"Yes to all three"* (A234).** 🔨 **`TitleScreen` shows the
 > newest village's picture painted, or the four seasons painted, and `TitleSnapshot` takes the picture (A234), on `art`,
 > UNPLAYED.** 🔨 **The HUD merged (D885): the picture is taken at every save and way out, and *Continue* lifts the paint into
-> the live map (A236); ✅ PLAYED by Joe: *"looks super cool"*, with three changes, built (A237). ✅ MERGED INTO `main` AND PUSHED at his word, *"merge art and push"* (A238);** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
+> the live map (A236); ✅ PLAYED by Joe: *"looks super cool"*, with three changes, built (A237). ✅ MERGED INTO `main` AND PUSHED at his word, *"merge art and push"* (A238); 🔨 the loading words on a pause-screen *Load…* and F7 too (A239), on `art`, UNPLAYED;** ✅ **call 6 (§9): *"Yes, every save"* (A235).** Art lane (CLAUDE.md *Two tracks*),
 > claimed A228. Joe's brief: `D:\Projects\brushes\title-snapshot\brief.md`. Mocks drawn by the game itself from a copy of his
 > newest lived-in save: `D:\Projects\brushes\title-snapshot\` (`title_snapshot_looks.jpg`, `title_snapshot_detail.jpg`,
 > `title_snapshot_founding.jpg`). Follows `title-screen-art.md` (A178–A191) and `logo.md` (A220–A227). View only: nothing in the
@@ -280,7 +280,9 @@ written. So the live map can open on exactly the frame the title shows, and the 
   - ✅ **The view stays the snapshot's** (A237, Joe: *"dont zoom into the village. leave the view as is in the snapshot"*): the
     camera's ease to the play framing is gone. *Home* or *Centre* frames the village, as ever.
   - ✅ **"Painting the village…"** (A237, Joe: *"maybe 'painting village' or something"*) on a slip of the HUD's parchment, low in the
-    middle, up before the save opens and gone as the paint starts to lift.
+    middle, up before the save opens and gone as the paint starts to lift. **And on a pause-screen *Load…* and F7** (A239, Joe: *"yes
+    do"*): over the village being left, the village stopped, drawn before anything is saved or reloaded (`SayItIsPainting`), since
+    Godot holds that frame until the new village's first (3.0 s on Thornfield). A second pick is not a second load.
   - **The picture is of the save** when the opened save is its folder's newest and the picture was written after it
     (`PictureIsOf`) — so *Load…* on that save matches too. Otherwise the paint lifts and the picture fades to the usual framing.
   - **A key or a click hurries it** once the paint is coming off; none reaches the village under it. A camera the player moves
@@ -328,7 +330,8 @@ and Joe can play it).
   And the lift, on `title:`: `PictureIsOf` over a scratch folder, the frame at three windows, the camera's way, and whole lifts
   stepped by hand (refused, over its own picture, over another, hurried, moved). **Red-check: 23 mutants, 22 red** (19 at
   first; three checks tightened). **The zero, written down:** the lift not waiting for every figure, which a headless map
-  cannot pose. **A237:** the words, the view kept and the new lengths, 14 mutants, 14 red. ⚠️ **Not guarded, driven by hand in a window instead:** the picture itself, *Quit to title*, F7, the ✕ (0.15 s to close
+  cannot pose. **A237:** the words, the view kept and the new lengths, 14 mutants, 14 red. **A239:** `loading words:`, 6 mutants, 5 red and one that
+  reloads the scene under the probe, which then never says `done.`; F7 and *Load…* themselves driven in a window. ⚠️ **Not guarded, driven by hand in a window instead:** the picture itself, *Quit to title*, F7, the ✕ (0.15 s to close
   with its picture), the ✕ minimised (closes at once, the last picture stands).
 - Red-checked, the reds counted (D326). The four checks as `CLAUDE.md` says; **the suite by D846's rule** — this piece changes no
   sim, data or test file, so it is skipped and the record says so.
