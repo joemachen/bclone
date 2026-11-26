@@ -90,6 +90,7 @@ public partial class Main
         new("idle_markers", "mark buildings that cannot work", true, "On the map"),
         new("snap", "snap buildings to the grid", false, "On the map"),
         new("grid", "draw the tile grid", false, "On the map"),
+        new("topography", "show the land's height", false, "On the map"),
         new("watercolour", "paint the valley in watercolour", true, "On the map"),
         new(NightToggle, "show the valley by night", false, "On the map"),
         new("before_after", "before/after slider over the watercolour", false, "On the map"),

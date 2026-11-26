@@ -99,6 +99,17 @@ uniform bool river_on = false;
 uniform bool hills_on = false;
 uniform sampler2D heights_map : hint_default_black, filter_linear, repeat_disable;
 uniform float hill_full_tilt_levels = 16.0;
+// ⭐ The land's height drawn as a map (A265–A267, `specs/topography.md`; Joe's play note 3, his A on the mocks): a thin
+// contour every `topo_step` levels, every `topo_index`th heavier; where they would crowd into a smear (a steep bank, zoomed
+// out) the plain lines fade and short strokes down the slope tell it instead, on the ground the sim calls steep. Off by
+// default — its own tick in Settings. ⛔ Not the everyday look: contours as the valley's look were refused (D740).
+uniform bool topo_on = false;
+uniform float topo_step = 10.0;
+uniform int topo_index = 5;
+uniform vec3 topo_ink = vec3(0.45, 0.29, 0.16);
+uniform float topo_width_px = 1.3;
+uniform float topo_strength = 0.75;
+uniform float topo_hatch = 1.0;
 // ⭐ The green ground (A68, `specs/green-ground.md`, Joe's C on a mock): the grass's own ground a green wash by height
 // instead of the parchment, its hue turned by the land's shape and the light, the brush and the tuft marks laid along
 // the contours, hachures down the steep banks. Placeholders, as every value here: the look is in valley_watercolour.tres.
@@ -782,6 +793,33 @@ void fragment() {
 
         if (ink_strength > 0.0) {
             colour = mix(colour, ink_srgb, ink_strength * valley_ink_stroke(tile, from_water));
+        }
+
+        // ⭐ The land's height (A267, `topography.md §3`): over the land only, on the ground as the grid is — under the woods,
+        // the buildings and the people.
+        if (topo_on && hills_on) {
+            float land_here = 1.0 - smoothstep(0.35, 0.65, weights.a);
+            float tiles_per_px = max(length(vec2(tx.x, ty.x)), 1e-5);
+            float levels_per_px = max(length(hill_slope), 1e-4) * tiles_per_px;
+            float f = hill.r / topo_step;
+            float d_px = abs(fract(f + 0.5) - 0.5) * topo_step / levels_per_px;
+            bool index_line = int(floor(f + 0.5)) % topo_index == 0;
+            float w = index_line ? topo_width_px * 1.8 : topo_width_px;
+            float line = 1.0 - smoothstep(w * 0.5, w * 0.5 + 1.0, d_px);
+            float spacing_px = topo_step / levels_per_px;
+            line *= index_line ? smoothstep(2.0, 4.0, spacing_px) : smoothstep(4.0, 9.0, spacing_px);
+            colour = mix(colour, topo_ink, line * topo_strength * land_here * (index_line ? 1.0 : 0.8));
+            // Steep ground (nothing is built there, D814): short strokes down the slope.
+            if (topo_hatch > 0.0 && hill.g > 0.05 && length(hill_slope) > 1e-3) {
+                vec2 down_dir = hill_slope / length(hill_slope);
+                vec2 along = vec2(-down_dir.y, down_dir.x);
+                float across = dot(tile, along) * 3.5;
+                float down = dot(tile, down_dir) * 2.2;
+                float stripe = 1.0 - smoothstep(0.06, 0.06 + 7.5 * tiles_per_px, abs(fract(across) - 0.5));
+                float dash = step(0.25, fract(down + 0.37 * floor(across)));
+                float steep = smoothstep(0.25, 0.75, hill.g);
+                colour = mix(colour, topo_ink, stripe * dash * steep * topo_hatch * 0.85 * land_here);
+            }
         }
 
         // The paper's grain on the ground (A23, call 3), over the snow (§2), world-anchored at A9's scale.

@@ -1168,6 +1168,9 @@ public partial class VillageMap
         material.SetShaderParameter("ground_iron", GD.Load<Texture2D>(GrassLab.IronTilePath));
         material.SetShaderParameter("ground_water", GD.Load<Texture2D>(GrassLab.WaterTilePath));
 
+        // The land's height (A267): as the tick left it, so a layer built after the tick was pressed draws it.
+        material.SetShaderParameter("topo_on", _topography);
+
         _watercolourMaterial = material;
         _valley = new ValleyTexture(withWeights: true);
 
@@ -2102,7 +2105,7 @@ public partial class VillageMap
         "path_halo_strength", "path_mottle", "path_rim", "path_ruts", "path_wobble_tiles", "path_pen_strength",
         "path_pen_worn_share", "path_pen_width_share", "path_pen_fade_px", "path_snow_clear", "path_trail", "path_trail_feet",
         "path_map_from", "path_fade", "path_fade_patch",
-        "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief",
+        "snow_year", "snow_dust", "snow_drift", "snow_drift_gain", "snow_land", "snow_relief", "topo_on",
     };
 
     /// <summary>
