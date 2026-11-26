@@ -171,7 +171,7 @@ public partial class Main
         const string controls = "res://textures/ui/controls/";
         foreach ((string file, int w, int h) in new[]
         {
-            ("underline-lapis", 256, 12), ("underline-gold", 256, 12), ("checkbox-ticked-lapis", 56, 56),
+            ("underline-lapis", 256, 12), ("gold-seal", 64, 64), ("checkbox-ticked-lapis", 56, 56),
             ("checkbox-ticked-lapis-disabled", 56, 56), ("pin-pinned-lapis", 56, 56),
         })
         {

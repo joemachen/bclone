@@ -1,6 +1,6 @@
 # The gold seal for new items (A255)
 
-> **Status: ✍️ PAINTED AND MOCKED (A256, 2026-11-25); ⏸️ FIVE CALLS JOE'S (§6); NOTHING WIRED.** Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ BUILT (A257, 2026-11-25) on `art`, UNPLAYED — Joe looks before it merges.** His five calls (§6): *"All as recommended"*. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. The *when* is built and stays as it is (D880, D894); this is the seal's picture and where it sits. Pictures:
 > `D:\Projects\brushes\gold-seal\` (`seal_1_designs.jpg`, `seal_2_bar.jpg`, `seal_3_options.jpg`).
 
@@ -53,10 +53,29 @@ and without the swash, beside the word instead of on the icon, at 60 % of the ic
 
 No file under `src/Kith.Sim`, `data` or `tests`: the seen set and the rule are as they are.
 
-## 6. Calls
+## 6. Calls — answered: Joe, 2026-11-25, *"All as recommended"* (A257)
+
+B on ribbons; on the icon's upper right; the swash goes and the gold word stays; three quarters of the icon; his OK for §5's files.
 
 1. **Which seal:** ⭐ B on ribbons (recommended — the only one that reads as a seal, not a coin, at 15 px); A; C.
 2. **Where:** ⭐ on the icon's upper right (recommended); or after the word.
 3. **The swash:** ⭐ goes — the seal takes its place, the gold word stays (recommended; D894 kept it *"until the art lane's seal"*); or both.
 4. **Size:** ⭐ three quarters of the icon's side (recommended); or 60 %.
 5. **His OK** for the systems-lane files in §5.
+
+## 7. As built (A257)
+
+- `textures/ui/controls/gold-seal.png` — seal B, 64 px, mipmaps on. `underline-gold.png` deleted: nothing wears it now.
+- `ParchmentLook`: the theme's `new_seal` icon in place of `new_swash`; `UiLook.NewSeal` in place of `NewSwash`.
+- `Main.NewMarks.WearNew`: the gold word, and a `TextureRect` named `NewSeal` laid on the button, anchored to its top middle where the button
+  lays its icon — its left edge 0.45 of the seal short of the icon's right edge, its top 0.3 of the seal above the icon's, three quarters of
+  the icon's side (`SealShare`) — so it holds through a resize. Laid once when the button turns new, lifted when it clears; a relight that
+  finds it there lays no second one. A glyph with no painted icon takes it at 14 px.
+- Seen in the game, not mocked: a copy of his Millbrook with three buildings taken out of its seen set (the brewery, the hunter's lodge,
+  the library), the dial at 100 % and 150 % (`gold-seal\real100`, `real150`): Food and Knowledge gold with the seal, the Hunter's lodge and the
+  Brewery gold with it in Food's flyout; Food plain once opened.
+- ⚠️ **A false alarm worth keeping:** the first real shots showed the seal with the word in plain ink. The scratch script's own `undress()`
+  stripped every gold font before each shot. `main` showed the same until the script was fixed; the game keeps the gold.
+- The probe: `new:` asks the seal with the gold (and no swash) everywhere it asked the gold, the seal gone wherever it asked plain, and
+  its place and size on Knowledge and the Library; `ui colours:` loads `gold-seal.png` at 64 × 64 with mipmaps in the swash's place.
+  Red-checked: 6 mutants, 6 reds (no seal laid; the seal left on a cleared button; on the upper left; the icon's size; none in the look; the swash kept).

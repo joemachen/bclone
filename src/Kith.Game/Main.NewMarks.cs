@@ -8,8 +8,9 @@ namespace Kith.Game;
 
 /// <remarks>
 /// ⭐ NEW, UNTIL CLICKED (<c>hud.md §8.3</c>, D880; Joe, A210: <i>"highlight newly unlocked categories and buildings until
-/// they are clicked on"</i>; call 5): a category or a building that becomes earned is marked — its word in gold ink with a
-/// gold-leaf swash under it (A216's <c>underline-gold</c>). A category clears when its flyout opens, a building when it is
+/// they are clicked on"</i>; call 5): a category or a building that becomes earned is marked — its word in gold ink and ⭐ <b>the
+/// gold seal on its icon's upper right</b> (A257, <c>gold-seal.md</c>; Joe's play note 2: <i>"add a gold seal to the main category until
+/// clicked and add the same gold seal to the new building until clicked"</i>; the swash D880 wore went with it). A category clears when its flyout opens, a building when it is
 /// picked. ⭐ <b>A category is new while a building inside it is</b> (Joe's play note 2, D894: <i>"new items main categories should
 /// also highlight"</i>) — new, and not seen in its flyout since: it asked whether the category had <i>ever</i> been opened, so
 /// the quarry lit and Resources, opened on the first day, did not. The cottage and the manor light Homes the same way.
@@ -176,17 +177,19 @@ public partial class Main
         }
     }
 
-    /// <summary>The word in gold, the gold swash under it — or neither.</summary>
+    /// <summary>The seal's side, a share of the icon's (call 4: three quarters).</summary>
+    internal const float SealShare = 0.75f;
+
+    /// <summary>The word in gold and the seal on its icon — or neither.</summary>
     private static void WearNew(Button button, bool isNew)
     {
         if (isNew)
         {
             button.AddThemeColorOverride("font_color", UiLook.New);
             button.AddThemeColorOverride("font_hover_color", UiLook.New);
-            if (UiLook.NewSwash is StyleBox swash)
+            if (SealOn(button) is null && UiLook.NewSeal is Texture2D picture)
             {
-                button.AddThemeStyleboxOverride("normal", swash);
-                button.AddThemeStyleboxOverride("hover", swash);
+                button.AddChild(Seal(button, picture));
             }
 
             button.SetMeta(NewMeta, true);
@@ -196,15 +199,52 @@ public partial class Main
         if (button.HasMeta(NewMeta))
         {
             button.RemoveThemeColorOverride("font_hover_color");
-            button.RemoveThemeStyleboxOverride("normal");
-            button.RemoveThemeStyleboxOverride("hover");
             if (button.GetThemeColor("font_color").IsEqualApprox(UiLook.New))
             {
                 button.RemoveThemeColorOverride("font_color");
             }
 
+            if (SealOn(button) is TextureRect seal)
+            {
+                button.RemoveChild(seal);
+                seal.QueueFree();
+            }
+
             button.RemoveMeta(NewMeta);
         }
+    }
+
+    /// <summary>The seal a button wears, or null.</summary>
+    private static TextureRect? SealOn(Button button) => button.GetNodeOrNull<TextureRect>(SealName);
+
+    private const string SealName = "NewSeal";
+
+    /// <summary>
+    /// ⭐ The gold seal (A257): over the icon's upper right (call 2) — the owed coin is its lower right (A106) — three quarters of the
+    /// icon's side, a little proud of it. Anchored to the button's top middle, where the button lays its icon, so it holds through a
+    /// resize. A glyph with no painted icon takes the seal at its own 14 px.
+    /// </summary>
+    private static TextureRect Seal(Button button, Texture2D picture)
+    {
+        int iconSide = button.Icon is null ? 14 : button.GetThemeConstant("icon_max_width");
+        float side = iconSide * SealShare;
+        float top = button.GetThemeStylebox("normal").GetMargin(Side.Top);
+        var seal = new TextureRect
+        {
+            Name = SealName,
+            Texture = picture,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            TextureFilter = TextureFilterEnum.LinearWithMipmaps,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            AnchorLeft = 0.5f,
+            AnchorRight = 0.5f,
+        };
+        seal.OffsetLeft = (iconSide / 2f) - (side * 0.45f);
+        seal.OffsetRight = seal.OffsetLeft + side;
+        seal.OffsetTop = top - (side * 0.3f);
+        seal.OffsetBottom = seal.OffsetTop + side;
+        return seal;
     }
 
     private const string NewMeta = "kith_new";
@@ -219,7 +259,7 @@ public partial class Main
 
     /// <summary>
     /// ⭐ <c>new:</c> (<c>hud.md §8.3</c>, step 7) — nothing is new at the founding; a library posed learned lights Knowledge and
-    /// the Library gold with the gold swash; opening Knowledge clears it and leaves the Library gold; picking the Library clears
+    /// the Library gold with the gold seal (A257) on its icon's upper right; opening Knowledge clears it and leaves the Library gold; picking the Library clears
     /// it; the seen set goes out in the save's view section and comes back the same; and a save without one sees everything.
     /// ⭐ And a category opened long ago lights again for what is learned in it since (D894).
     /// </summary>
@@ -228,10 +268,12 @@ public partial class Main
         var faults = new List<string>();
         Button knowledge = _categoryButtons.Find(c => c.Category == BuildCategory.Knowledge).Button;
         Button? library = _libraryButton;
+        // New: the gold word and the seal; plain: neither — a seal left behind on a cleared button is a fault too.
         bool Gold(Button? b) => b is not null && b.GetThemeColor("font_color").IsEqualApprox(UiLook.New)
-            && (UiLook.NewSwash is null || ReferenceEquals(b.GetThemeStylebox("normal"), UiLook.NewSwash));
+            && SealOn(b) is { } s && ReferenceEquals(s.Texture, UiLook.NewSeal) && UiLook.NewSeal is not null && !b.HasThemeStyleboxOverride("normal");
+        bool Plain(Button? b) => b is not null && !b.GetThemeColor("font_color").IsEqualApprox(UiLook.New) && SealOn(b) is null;
 
-        int newAtTheFounding = _categoryButtons.Count(c => Gold(c.Button)) + _strip.Count(e => Gold(e.Button));
+        int newAtTheFounding = _categoryButtons.Count(c => !Plain(c.Button)) + _strip.Count(e => !Plain(e.Button));
         if (newAtTheFounding > 0)
         {
             faults.Add($"{newAtTheFounding} marked new at the founding");
@@ -250,11 +292,29 @@ public partial class Main
                 faults.Add($"a library learned: Knowledge gold {Gold(knowledge)}, the Library gold {Gold(library)}");
             }
 
+            // The seal on the icon's upper right, three quarters of it, a little proud of it: right of the button's middle, its foot
+            // above the label's top; its side the share of the icon's.
+            foreach (Button b in new[] { knowledge, library! })
+            {
+                if (SealOn(b) is not TextureRect seal)
+                {
+                    continue;
+                }
+
+                int iconSide = b.Icon is null ? 14 : b.GetThemeConstant("icon_max_width");
+                float top = b.GetThemeStylebox("normal").GetMargin(Side.Top);
+                if (!Mathf.IsEqualApprox(seal.OffsetRight - seal.OffsetLeft, iconSide * SealShare) || seal.AnchorLeft != 0.5f
+                    || !(seal.OffsetLeft > 0f && seal.OffsetLeft < iconSide / 2f) || !(seal.OffsetTop < top && seal.OffsetBottom < top + iconSide))
+                {
+                    faults.Add($"{b.Text}'s seal stands at {seal.OffsetLeft:F1},{seal.OffsetTop:F1} to {seal.OffsetRight:F1},{seal.OffsetBottom:F1} from its top middle (icon {iconSide}, top {top:F1}): not the icon's upper right at three quarters");
+                }
+            }
+
             JsonObject before = TheViewSection();
             ToggleTheFlyout(BuildTab.Build, BuildCategory.Knowledge);
-            bool knowledgeCleared = !Gold(knowledge) && Gold(library);
+            bool knowledgeCleared = Plain(knowledge) && Gold(library);
             library?.EmitSignal(BaseButton.SignalName.Pressed);
-            bool libraryCleared = !Gold(library);
+            bool libraryCleared = Plain(library);
             _map.PutTheToolDown();
             CloseTheFlyout();
             if (!knowledgeCleared || !libraryCleared)
@@ -272,11 +332,11 @@ public partial class Main
             }
 
             StartTheSeen(JsonNode.Parse(after.ToJsonString()) as JsonObject);
-            bool kept = TheViewSection().ToJsonString() == after.ToJsonString() && !Gold(knowledge) && !Gold(library);
+            bool kept = TheViewSection().ToJsonString() == after.ToJsonString() && Plain(knowledge) && Plain(library);
             StartTheSeen(JsonNode.Parse(before.ToJsonString()) as JsonObject);
             bool keptNew = Gold(knowledge) && Gold(library);
             StartTheSeen(null);
-            bool olderSeesAll = !Gold(knowledge) && !Gold(library);
+            bool olderSeesAll = Plain(knowledge) && Plain(library);
             if (!kept || !keptNew || !olderSeesAll)
             {
                 faults.Add($"through the save: seen kept {kept}, new kept {keptNew}; a save without the section sees everything {olderSeesAll}");
@@ -292,17 +352,17 @@ public partial class Main
             bool quarryLights = Gold(resources) && Gold(_quarryButton);
             ToggleTheFlyout(BuildTab.Build, BuildCategory.Resources);
             CloseTheFlyout();
-            bool openingClears = !Gold(resources) && Gold(_quarryButton);
+            bool openingClears = Plain(resources) && Gold(_quarryButton);
             JsonObject opened = TheViewSection();
             StartTheSeen(JsonNode.Parse(opened.ToJsonString()) as JsonObject);
-            bool openedKept = !Gold(resources) && Gold(_quarryButton);
+            bool openedKept = Plain(resources) && Gold(_quarryButton);
             _mineKnown = true;
             RefreshTheStrip();
             bool mineLightsAgain = Gold(resources) && Gold(_mineButton) && Gold(_quarryButton);
             _quarryButton?.EmitSignal(BaseButton.SignalName.Pressed);
             _mineButton?.EmitSignal(BaseButton.SignalName.Pressed);
             _map.PutTheToolDown();
-            bool picked = !Gold(resources) && !Gold(_mineButton) && !Gold(_quarryButton);
+            bool picked = Plain(resources) && Plain(_mineButton) && Plain(_quarryButton);
             if (!quarryLights || !openingClears || !openedKept || !mineLightsAgain || !picked)
             {
                 faults.Add($"the quarry learned lights it and Resources {quarryLights}; opening Resources clears it and keeps the quarry {openingClears}, through a save {openedKept}; "
@@ -318,11 +378,11 @@ public partial class Main
             RefreshTheStrip();
             bool cottageLights = Gold(homes) && Gold(cottages);
             StartTheSeen(JsonNode.Parse(beforeTheCottage.ToJsonString()) as JsonObject);
-            bool oldNews = !Gold(homes) && !Gold(cottages);
+            bool oldNews = Plain(homes) && Plain(cottages);
             _seen.Remove(SeenKey(BuildingKind.Cottage));
             RefreshTheStrip();
             cottages.EmitSignal(BaseButton.SignalName.Pressed); // chosen — refused by the sim here, and seen all the same
-            bool chosen = !Gold(homes) && !Gold(cottages);
+            bool chosen = Plain(homes) && Plain(cottages);
             if (!cottageLights || !oldNews || !chosen)
             {
                 faults.Add($"the cottage learned lights Homes and Cottages {cottageLights}; an older section calls it old news {oldNews}; chosen, neither is gold {chosen}");
@@ -348,7 +408,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] new: ✅ nothing new at the founding; a library learned lights Knowledge and the Library in gold with the gold swash; "
+            ? "[widths] new: ✅ nothing new at the founding; a library learned lights Knowledge and the Library in gold with the gold seal on the icon's upper right, three quarters of it, and no swash; "
               + "opening Knowledge clears it, picking the Library clears it; the seen set through the save's view section comes back as it went, "
               + "and a save without one sees everything earned; the quarry lights Resources though it was opened before, opening it clears it "
               + "(through a save too), the mine lights it again; the cottage lights Homes, and a D880 section calls it old news; what a village "

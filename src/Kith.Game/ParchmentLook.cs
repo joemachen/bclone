@@ -70,11 +70,10 @@ internal static class ParchmentLook
         // ⭐ Red for warnings, lapis for selected, held and on (hud.md §10, A207): red means something is wrong.
         theme.SetColor("selected_edge", t, LapisFill);
 
-        // ⭐ New, until clicked (hud.md §8.3, D880): the gold word and the gold-leaf swash (A216's underline-gold).
+        // ⭐ New, until clicked (hud.md §8.3, D880): the gold word, and the gold seal on its icon (A257, `gold-seal.md`; Joe's play note 2,
+        // "All as recommended") — which took the gold-leaf swash's place (D894 kept the swash "until the art lane's seal").
         theme.SetColor("new", t, GoldInk);
-        PaintedPatch newSwash = PaintedPatch.Make(Tex("controls/underline-gold.png"), 0.25f, new Vector4(24, 0, 24, 0), new Vector4(6, 4, 6, 4));
-        newSwash.Band = 3f;
-        theme.SetStylebox("new_swash", t, newSwash);
+        theme.SetIcon("new_seal", t, Tex("controls/gold-seal.png"));
         theme.SetColor("card_edge", t, InkMuted);
         theme.SetColor("tree_edge", t, Ink with { A = 0.35f });
         theme.SetColor("empty", t, Ink with { A = 0.12f });
