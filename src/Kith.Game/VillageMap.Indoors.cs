@@ -87,9 +87,16 @@ public partial class VillageMap
     /// </summary>
     private Vector2 AtTheDoor(Vector2 viewTile, VillagerState state)
     {
-        if (!PaintsPeople || state == VillagerState.Fishing || _world is not SimWorld world)
+        if (!PaintsPeople || _world is not SimWorld world)
         {
             return viewTile;
+        }
+
+        // ⭐ Fishing, on the dock's end (A277, `fishing-animation.md §2`): the sim keeps them at the hut; the view stands them
+        // where the water is, so a cast can be seen. A hut with no water by it (no dock drawn) keeps them where they are.
+        if (state == VillagerState.Fishing)
+        {
+            return FishingSpotOf(world, viewTile) is (Vector2 spot, _) ? spot - new Vector2(0f, PersonTiles * PersonPointUp) : viewTile;
         }
 
         var tile = new GridPos(Mathf.RoundToInt(viewTile.X), Mathf.RoundToInt(viewTile.Y));

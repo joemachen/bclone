@@ -238,6 +238,10 @@ public partial class VillageMap
         return side;
     }
 
+    /// <summary>The fishing hut's dock (§3.3), in its own frame: its middle this far out toward the water and this far aside,
+    /// this long. The fisher stands on it while fishing (A277, <c>VillageMap.Fishing.cs</c>).</summary>
+    internal const float DockOut = 0.95f, DockAside = 0.22f, DockLength = 0.9f;
+
     private static Vector2 SideOut(int side) => side switch { 0 => new Vector2(0, -1), 1 => new Vector2(1, 0), 2 => new Vector2(0, 1), _ => new Vector2(-1, 0) };
 
     /// <summary>
@@ -1455,7 +1459,7 @@ public partial class VillageMap
                     Vector2 way = SideOut(s.Water);
                     Vector2 side = new(-way.Y, way.X);
                     float turn = way.Angle();
-                    Dock(k, (way * 0.95f) + (side * 0.22f), turn, 0.9f);
+                    Dock(k, (way * DockOut) + (side * DockAside), turn, DockLength);
                     Boat(k, (way * 1.05f) - (side * 0.12f), turn + 0.08f);
                 }
 

@@ -1,6 +1,6 @@
 # Fishing you can watch: the cast, the wait, the catch (A275)
 
-> **Status: ✍️ MOCKED (A276, 2026-11-26) on `art`, ⏸️ JOE'S PICK — nothing built.** Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ BUILT (A277, 2026-11-26) on `art`, UNPLAYED — Joe: *"B, as recommended"*. Mocked A276.** Art lane (CLAUDE.md *Two tracks*),
 > branch `art`; the art queue's piece 3, *Animations* (Joe: *"proceed with the art arm as outlined"*). View only: nothing in
 > `Kith.Sim`, `data/` or `tests/` changes. Mocks: `D:\Projects\brushes\animations\` (`fish_A_dock.gif`, `fish_B_shuffled.gif`,
 > `fish_C_boat.gif`, `fish_contact.jpg`).
@@ -41,7 +41,9 @@ On the real dock (Oakhaven's fishing hut, the game's closest zoom; left 3×, rig
   It reads as fishing from further off, but it puts the fisher a couple of tiles from where the sim says they are, and the
   moored boat has to vanish while they are out.
 
-## 4. Calls — Joe's
+## 4. Calls — answered: Joe, 2026-11-26, *"B, as recommended"* (A277)
+
+B, the dock with the casts shuffled; the float bobbing with today's dip; (c) next, the quarrier first.
 
 1. **Which:** ⭐ B, the dock with the casts shuffled; A, one cast every time; C, from the boat (or the boat as one more version in B's shuffle).
 2. **The wait:** ⭐ the float bobbing and today's dip, as mocked; or the dip alone.
@@ -58,3 +60,28 @@ On the real dock (Oakhaven's fishing hut, the game's closest zoom; left 3×, rig
 
 The probe gains a `fishing:` line: a posed fisher at the cast's start, mid-wait and at the catch draws those beats, at the dock's
 end, and the shuffle is the same on a second ask.
+
+## 6. As built (A277)
+
+- **On the dock** (`VillageMap.Indoors.cs`, `AtTheDoor`): a fisher in the `Fishing` state is drawn at
+  `DockStandLocal(water)` — the yard's own dock (`DockOut`, `DockAside`, `DockLength`, now named in `VillageMap.Yards.cs`), 0.15
+  tiles in from its end — turned by the hut's facing. Clicking them and their walk onto the dock follow from that, as a door's
+  step does. A hut with no water by it (no dock drawn) keeps them where they were. The huts are found by a table from each fishing
+  hut's position, laid again only when the workplaces change (their count, the newest id) or, once a tick, when a fisher stands
+  on no known hut (a hut moved).
+- **The cast** (`VillageMap.Fishing.cs`): pure `CastAt` — the throw's first 1.4 s (back, forward, then waiting), the catch's last
+  2 s (the float under, struck or bent, hauled), the wait between (the dip at the start of every 2.4 s). Its length is the sim's
+  (`WorkTicksFor`: a tool and mastery shorten it), and how far in is the countdown read back, so the catch lands when the
+  sim's does. ⭐ **Quick:** a cast under 5 real seconds (2× and up, or a fast fisher) waits and dips only, the catch a splash.
+  `VersionOf` — half small fish, a quarter big, a quarter the net — by the person and the tick the cast began, so a reload shows
+  the same cast. The float lands 0.8–1.3 tiles out, nearer if the water ends first.
+- **The painter** (`PersonPainter.cs`): eight rod beats (`RodBack` … `RodHaul`, `NetThrow`), `fish.py`'s numbers; from
+  `RodBack` on, the rod's own hanging line is left to the map; `NetThrow` lays the rod by. `RodTip(beat)` says where the tip is,
+  so the map's line starts there. The map keeps every beat of a fisher's look while one is drawn.
+- ⚠️ **An elder fishing holds the rod.** Since A93 an elder carries the stick at every trade; Oakhaven's only fisher is an elder,
+  and with the stick nothing could be cast. Fishing only; every other trade keeps the stick.
+- **The map** draws the rings, the splash and the net under the fisher, the line, the float and the fish over them, all through
+  `AtNight`.
+- **Probe `fishing:`** (`VillageMap.FishingProbe.cs`, printed with the people's lines): red-checked, 8 mutants, 7 red (the throw's back and forward swapped; a big fish not bending the rod; quick casts off; every cast small; the shuffle blind to the cast's start; standing past the dock's end; an elder fishing with the stick). The 8th, the net keeping the rod in hand, scored 0: the line does not look for the rod in the net's pose — kept, and the zero written down.
+- Filmed on a copy of his Oakhaven (`D:\Projects\brushes\animations\built\`): the rod cast, the fish hauled in, the net
+  thrown and hauled, the fisher walking off when the hut is full.
