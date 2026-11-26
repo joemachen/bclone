@@ -6251,6 +6251,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             villager.State = VillagerState.KeepingTheCemetery;
             villager.ActionTicksRemaining = world.Config.TicksPerDay;
+            cemetery.TendedDaysThisSeason++; // a day of keeping it: the season's turn reads these (step 6, call 9)
             return;
         }
 
@@ -8165,16 +8166,11 @@ public sealed partial class BehaviorSystem : ISimSystem
                 GoHome(world, villager);
                 return;
 
-            // The cemetery kept a day: asked again — somebody may be waiting now; otherwise home, as the tavern keeper goes.
+            // ⭐ The cemetery kept a day: the day asked again from the top (W4 step 6, D911) — hunger, cold and rest first, as for anyone;
+            // otherwise another day there, not the walk home. Joe: the groundskeeper "tends the cemetery all year" (D905); the tavern
+            // keeper's day-then-home spent a far cemetery's season on the road (3–4 days kept of 30, measured), and it wore regardless.
             case VillagerState.KeepingTheCemetery:
-                if (WorkplaceOf(world, villager) is { Kind: JobKind.Groundskeeper, IsSite: false } kept
-                    && world.NextToBury(kept) is not null)
-                {
-                    KeepTheCemetery(world, villager, kept);
-                    return;
-                }
-
-                villager.State = VillagerState.TravelingHome;
+                Decide(world, villager);
                 return;
 
             // The keeper's day kept: asked again — the ale may want fetching; otherwise home, as the teacher goes.

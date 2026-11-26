@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910).** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911).** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -168,10 +168,15 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
   turned cemetery's rows turn with it. One a tile; the count is the row's `graves`, which the validator holds to width × height.
 - **A cemetery with anybody in it** cannot be pulled down or moved. An empty one is pulled down like anything else.
 - **It wears, as one building** (call 9, D906 — Joe: *"Yes, as you put it"*): on a timber building's clock, `wears_in_years` 8 / 12 / 20 on each
-  row — **worn** 8 years untended, **overgrown** at 12 (the condition's *failing*), **wild** at 20 (its *ruin*). Drawn so, and the card says the state and
+  row — **worn** 8 years untended, **overgrown** at 12 (the condition's *failing*), **wild** at 20 (its *ruin*). ⚠️ *Years of mild weather*: a
+  winter wears half again (`winter_wear_extra_percent` 50), so in the calendar **worn in its 8th year, overgrown in its 11th, wild in its
+  18th** (D911, tested). Drawn so, and the card says the state and
   how far, as a building's does: *Overgrown · 63 % — nobody has kept it for 13 years.*
 - **Its groundskeeper restores it, with no logs**: at the season's turn (`TendWhatStands`), a cemetery whose groundskeeper tended it on
-  `cemetery_tended_days_a_season` days (10) that season is stamped `RepairedAtTick` — sound again. **No repair site is raised for it**: it is not the
+  `cemetery_tended_days_a_season` days (10) that season is stamped `RepairedAtTick` — sound again. ⭐ **As built (D911): a groundskeeper keeps it
+  all year** — after a day there the day is asked again from the top (hunger, cold, rest first, as anyone's), not the walk home: the tavern
+  keeper's day-then-home spent a far cemetery's season on the road (3–4 days kept of 30, measured on a cemetery ten tiles out) and it wore
+  regardless; kept all year, 15–24 days a season, 6–8 in winter. **No repair site is raised for it**: it is not the
   builders' work. A tended cemetery never shows wear; it shows only where nobody keeps it.
 - **It is never closed, and no grave is ever lost**: wild still holds its dead, takes new ones when it has a keeper, and counts as a place (§7).
   Neglect upsets nobody — D797's *no place* stays the only cost.
@@ -303,7 +308,7 @@ Never both for the same person.
    to bury is a year of tending; two cemeteries; determinism.*
 5. **The family at the grave, and the two causes** — ✅ **built (D910)**; measured on the real code (§4.4) and six goldens re-pinned, each by ablation — measured again with the real code (§4.4's arms, on his saves) before the goldens are re-pinned. *Tests:
    each row of §7; the queue raises nothing; the dead from before raise nothing; both sides of the anti-vacuity.*
-6. **Wear** (call 9, D906) — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
+6. **Wear** (call 9, D906) — ✅ **built (D911)** — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
    overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*
 7. **The view** — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
 8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.**

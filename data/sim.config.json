@@ -1101,6 +1101,9 @@
   // The family at the grave (cemetery.md 6.3, call 4): each adult once, within this many days of
   // the burial. It changes no number.
   "grave_visit_days": 30,
+  // A cemetery wears as a timber building does (Joe's call 9, "Yes, as you put it"); this many
+  // days of a groundskeeper keeping it in a season make it sound again -- no logs, no builders.
+  "cemetery_tended_days_a_season": 10,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,

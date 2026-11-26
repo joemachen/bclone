@@ -484,4 +484,37 @@ public sealed partial class SimWorld
 
         _recentBurials.RemoveRange(0, old);
     }
+
+    // ---------------------------------------------------------------
+    //  Step 6 (`cemetery.md §5.2`, D911): it wears, and its groundskeeper keeps it (Joe's call 9)
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// A cemetery at the season's turn: kept <c>cemetery_tended_days_a_season</c> days, it is sound again; otherwise what it has
+    /// become is said, in a cemetery's words. Never closed, never a repair site. The count is cleared for the next season.
+    /// </summary>
+    private void KeepACemeteryAtTheTurn(Workplace cemetery, Condition before, Condition now)
+    {
+        bool kept = cemetery.TendedDaysThisSeason >= Config.CemeteryTendedDaysASeason;
+        cemetery.TendedDaysThisSeason = 0;
+        if (kept)
+        {
+            cemetery.RepairedAtTick = Tick;
+            return;
+        }
+
+        if (before >= now)
+        {
+            return;
+        }
+
+        string line = now switch
+        {
+            Condition.Worn => $"{Capitalised(cemetery.Name)} is growing untidy — nobody has kept it lately.",
+            Condition.Failing => $"{Capitalised(cemetery.Name)} is overgrown.",
+            _ => $"{Capitalised(cemetery.Name)} has gone wild. Its dead are still there, under the grass.",
+        };
+
+        Narrate($"{line} {Clock.SeasonAndYear()}.", LogCategory.Building);
+    }
 }

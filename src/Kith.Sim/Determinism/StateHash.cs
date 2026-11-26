@@ -583,6 +583,12 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.HayCutThisYear);
             }
 
+            // A cemetery's tending this season (W4 step 6) — it decides the next repair stamp. Sparse, under its own tag.
+            if (workplace.TendedDaysThisSeason != 0)
+            {
+                hash = MixUInt32(MixByte(hash, 0x7A), (uint)workplace.TendedDaysThisSeason);
+            }
+
             // When it was raised and last mended (D552): condition is derived from these two.
             hash = MixUInt64(hash, workplace.RaisedAtTick);
             hash = MixUInt64(hash, workplace.RepairedAtTick);

@@ -993,4 +993,94 @@ public sealed class CemeteryTests
         Assert.True(Holds(partner, ContentmentCause.DeadInTheOpen), "the partner, in another household, does not mind");
         Assert.False(Holds(partnersHousemate, ContentmentCause.DeadInTheOpen)); // the partner's household is not the dead's
     }
+
+    // ---------------------------------------------------------------
+    //  Step 6 (§9, D911): it wears, and its groundskeeper keeps it (call 9)
+    // ---------------------------------------------------------------
+
+    private static ulong Years(SimWorld world, int years) => (ulong)years * (ulong)world.Config.TicksPerYear;
+
+    /// <summary>
+    /// A timber building's clock (call 9): 8, 12 and 20 years <i>of mild weather</i> — and a winter wears half again
+    /// (<c>winter_wear_extra_percent</c> 50), so untended it is worn in its 8th calendar year, overgrown in its 11th and wild in its 18th.
+    /// </summary>
+    [Fact]
+    public void AnUntendedCemeteryWearsOnATimberBuildingsClock()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        ulong raised = cemetery.RaisedAtTick;
+        (int Year, Condition Is)[] clock =
+        {
+            (7, Condition.Sound), (8, Condition.Worn), (10, Condition.Worn), (11, Condition.Failing),
+            (17, Condition.Failing), (18, Condition.Ruin),
+        };
+        foreach ((int year, Condition expected) in clock)
+        {
+            world.Tick = raised + Years(world, year);
+            Assert.True(expected == world.ConditionOf(cemetery), $"year {year}: {world.ConditionOf(cemetery)}, not {expected}");
+        }
+    }
+
+    [Fact]
+    public void AWildCemeteryIsNeverClosedNorMendedByTheBuilders()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        world.Tick = cemetery.RaisedAtTick + Years(world, 21);
+        world.TendWhatStands();
+        Assert.Equal(Condition.Ruin, world.ConditionOf(cemetery));
+        Assert.False(cemetery.Closed, "a wild cemetery was closed");
+        Assert.DoesNotContain(world.Workplaces, w => w.Construction is { Repairing: true } && w.Tile == cemetery.Tile); // no logs owed
+        Assert.True(world.TheDeadHaveAPlace().APlace, "a wild cemetery stopped counting as a place");
+    }
+
+    [Fact]
+    public void ASeasonsTendingMakesItSoundAgainAndALittleDoesNot()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        world.Tick = cemetery.RaisedAtTick + Years(world, 9);
+        Assert.Equal(Condition.Worn, world.ConditionOf(cemetery));
+
+        cemetery.TendedDaysThisSeason = world.Config.CemeteryTendedDaysASeason - 1;
+        world.TendWhatStands();
+        Assert.Equal(Condition.Worn, world.ConditionOf(cemetery));
+        Assert.Equal(0, cemetery.TendedDaysThisSeason); // the count is the season's, cleared at its turn
+
+        cemetery.TendedDaysThisSeason = world.Config.CemeteryTendedDaysASeason;
+        world.TendWhatStands();
+        Assert.Equal(Condition.Sound, world.ConditionOf(cemetery));
+        Assert.Equal(world.Tick, cemetery.RepairedAtTick);
+    }
+
+    [Fact]
+    public void AKeptCemeteryStaysSoundForYears()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        Keep(world, cemetery);
+        loop.Step(9 * world.Config.TicksPerYear);
+        Assert.Equal(Condition.Sound, world.ConditionOf(cemetery));
+        Assert.True(cemetery.RepairedAtTick > cemetery.RaisedAtTick, "nobody's tending ever counted");
+    }
+
+    [Fact]
+    public void TheTendingIsSavedAndInTheFingerprint()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        ulong before = StateHash.Compute(world);
+        cemetery.TendedDaysThisSeason = 3;
+        ulong three = StateHash.Compute(world);
+        Assert.NotEqual(before, three);
+        cemetery.TendedDaysThisSeason = 4;
+        Assert.NotEqual(three, StateHash.Compute(world));
+        Assert.Equal(4, RoundTrip(loop).World.FindWorkplace(cemetery.Id)!.TendedDaysThisSeason);
+    }
 }
