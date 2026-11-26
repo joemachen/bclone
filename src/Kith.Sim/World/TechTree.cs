@@ -73,6 +73,12 @@ public enum TechCondition
     /// own feet, so it introduces the map.
     /// </summary>
     LongWalk,
+
+    /// <summary>
+    /// ⭐ A death (W4, `cemetery.md §5.1`, D395) — known once anybody of the village has died (<see cref="SimWorld.DeathsEver"/>,
+    /// derived). Not learned by doing: its moment is the first death's, and it never introduces the map.
+    /// </summary>
+    SomebodyDied,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -259,6 +265,13 @@ public static class TechTree
             Id = "market-stall", Name = "The market stall", Unlocks = BuildingKind.MarketStall, Condition = TechCondition.LongWalk,
             Says = "When enough households walk far to shop, the far houses ask for a stall of their own.",
         },
+        new TechNodeRow
+        {
+            // ⭐ W4 (`cemetery.md §5.1`, D395, D906) — learned at the village's first death; the three sizes come with it. One
+            // sentence: the tree's card is 160 tall (`tech tree:`).
+            Id = "cemetery", Name = "The cemetery", Unlocks = BuildingKind.CemeterySmall, Condition = TechCondition.SomebodyDied,
+            Says = "Learned at the village's first death: somewhere its dead can lie, and somebody to keep it.",
+        },
     };
 
     /// <summary>A node's state, and its progress against what it takes (`tech-tree-map.md §3.2–§3.3`).</summary>
@@ -327,6 +340,8 @@ public static class TechTree
                 return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
             case TechCondition.ForageGathered:
                 return (world.FoodEverProducedOf(Goods.Produce), world.Config.BarleyUnlockForage);
+            case TechCondition.SomebodyDied:
+                return (Math.Min(world.DeathsEver, 1), 1);
             case TechCondition.LongWalk:
                 return (Math.Min(world.HouseholdsThatWalkedFar, world.Config.MarketStallHouseholds), world.Config.MarketStallHouseholds);
             case TechCondition.VillageSize:

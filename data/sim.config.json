@@ -1084,6 +1084,17 @@
   "tavern_stone": 12,
   "tavern_work_ticks": 40,
   "tavern_capacity": 1,
+  // The cemeteries (W4, `cemetery.md §5.2`; Joe, D906: "all as recommended", the small free the first time). A grave's
+  // stone costs nothing; these are the fence and the gate.
+  "cemetery_small_logs": 10,
+  "cemetery_small_stone": 5,
+  "cemetery_small_work_ticks": 20,
+  "cemetery_medium_logs": 20,
+  "cemetery_medium_stone": 10,
+  "cemetery_medium_work_ticks": 40,
+  "cemetery_large_logs": 30,
+  "cemetery_large_stone": 20,
+  "cemetery_large_work_ticks": 60,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,

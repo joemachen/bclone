@@ -24,7 +24,7 @@ public sealed partial class SimWorld
 
     /// <summary>The ids of the dead waiting for a grave, by the tick they died and then id. Derived: never saved, never hashed.</summary>
     /// <remarks>
-    /// CLAUDE.md's rule — kept where the state changes (<see cref="JoinTheUnburied"/> from <c>MortalitySystem.Kill</c>,
+    /// CLAUDE.md's rule — kept where the state changes (<see cref="ADeath"/> from <c>MortalitySystem.Kill</c>,
     /// <see cref="LayToRest"/> at a burial), rebuilt once on load (<see cref="RebuildTheUnburied"/>), never scanned per tick.
     /// </remarks>
     private readonly List<int> _unburied = new();
@@ -36,20 +36,73 @@ public sealed partial class SimWorld
     public bool AwaitsBurial(Villager villager) =>
         !villager.Alive && villager.DiedAtTick is ulong at && at >= BurialsFromTick && villager.BuriedAtTick is null;
 
-    /// <summary>A death, from <c>MortalitySystem.Kill</c>: onto the end of the list.</summary>
+    /// <summary>
+    /// How many of the village have ever died — a leaver is not one. Derived: kept in <see cref="ADeath"/>, rebuilt on load,
+    /// never saved or hashed. <b>Above nought, the cemetery is learned</b> (`cemetery.md §5.1`; D395, Joe's: the first death).
+    /// </summary>
+    public int DeathsEver { get; private set; }
+
+    /// <summary>
+    /// The small cemetery is the first death's gift (Joe, D906: <i>"first free"</i>): its materials fall away, the work stands,
+    /// once. Saved, and hashed sparsely, because it changes what a building costs — the smithy's reason.
+    /// </summary>
+    public bool AFreeCemeteryIsOwed { get; internal set; }
+
+    internal const string NobodyHasDiedYet = "Nobody has died here yet — the village has no need of a cemetery.";
+
+    /// <summary>
+    /// A death, from <c>MortalitySystem.Kill</c>: counted; the first raises the cemetery's one moment and owes the gift; and
+    /// they join the end of the waiting list.
+    /// </summary>
     /// <remarks>
-    /// The end is its place, by the tick and then the id, with nothing to sort: a death is always on the tick being stepped,
-    /// and within a tick the mortality system walks <see cref="Villagers"/> in id order (D907 — a sorted insert scored zero
-    /// against every guard, because it never moved anyone). <c>CemeteryTests.TheListEqualsAScanOverDecadesOfDeathsAndASaveMidway</c>
+    /// <para>
+    /// ⚠️ No <i>said it</i> flag for the moment (D313's shape): the count goes 0 → 1 once in a village's life and never again,
+    /// and an older save with dead in it loads with the count above nought, so it never says it (call 10, D906).
+    /// </para>
+    /// <para>
+    /// The end of the list is its place, by the tick and then the id, with nothing to sort: a death is always on the tick being
+    /// stepped, and within a tick the mortality system walks <see cref="Villagers"/> in id order (D907 — a sorted insert scored
+    /// zero against every guard, because it never moved anyone). <c>CemeteryTests.TheListEqualsAScanOverDecadesOfDeathsAndASaveMidway</c>
     /// is what fails if that ever stops being true.
+    /// </para>
     /// </remarks>
-    internal void JoinTheUnburied(Villager villager)
+    internal void ADeath(Villager villager)
     {
+        DeathsEver++;
+        if (DeathsEver == 1)
+        {
+            AFreeCemeteryIsOwed = true;
+            RaiseMoment(
+                "The village's first death",
+                $"{villager.FullName} is dead at {villager.AgeYears} — the first this village has lost. They will need somewhere "
+                + "to lie: a small cemetery is yours to place, and it will cost you nothing. "
+                + $"{Clock.SeasonAndYear()}.");
+        }
+
         if (AwaitsBurial(villager))
         {
             _unburied.Add(villager.Id);
         }
     }
+
+    /// <summary>The cemetery row with the fewest graves (ties: the lower id) — the gift's. Null if the data has none.</summary>
+    internal BuildingKind? TheFreeCemetery()
+    {
+        BuildingKind? free = null;
+        int fewest = int.MaxValue;
+        for (int id = 0; id < BuildingsCatalog.Count; id++)
+        {
+            if (BuildingsCatalog[id] is { Graves: > 0 } row && row.Graves < fewest)
+            {
+                (free, fewest) = ((BuildingKind)id, row.Graves);
+            }
+        }
+
+        return free;
+    }
+
+    /// <summary>On load, after the villagers: the count of the dead, from what the save holds.</summary>
+    private void RebuildTheDeathsEver() => DeathsEver = Villagers.Count(v => v.DiedAtTick is not null);
 
     /// <summary>A burial: the tick is set and they leave the list.</summary>
     internal void LayToRest(Villager villager, ulong tick)

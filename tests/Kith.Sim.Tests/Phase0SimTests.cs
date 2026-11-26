@@ -468,9 +468,10 @@ public sealed class Phase0SimTests
         // a line saying what went with her (`KnowledgeSystem` runs after `MortalitySystem`, by
         // design). **`log[^1]` quietly meant "the death" across this suite and now means "the
         // consequence"** — which is worth knowing before the next system appends anything.
+        // ⚠️ And not the cemetery's moment (W4, D908), said after a village's first death — in a village of one, every death.
         Assert.Contains(
             "died of old age at 48",
-            string.Join(" | ", log.TakeLast(3)),
+            string.Join(" | ", log.Where(line => !line.Contains("the first this village has lost", StringComparison.Ordinal)).TakeLast(3)),
             StringComparison.Ordinal);
     }
 }

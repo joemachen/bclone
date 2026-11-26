@@ -86,9 +86,6 @@ public sealed class MortalitySystem : ISimSystem
         villager.DiedAtTick = world.Tick;
         villager.ActionTicksRemaining = 0;
 
-        // W4 (`cemetery.md §8`): they wait for a grave — the list is kept here, where a death happens, and nowhere else.
-        world.JoinTheUnburied(villager);
-
         // The household's cart is not buried with them (`handcart.md §3`): it is the household's good, and counts as
         // home from here — the walk that would find it is not stepped (`Villager.PushingACart`). The works' cart the same
         // (`handcart.md §13.2`): it counts as back at its building.
@@ -122,6 +119,10 @@ public sealed class MortalitySystem : ISimSystem
         };
 
         world.Narrate(epitaph, LogCategory.Death);
+
+        // W4 (`cemetery.md §5.1, §8`): the count, the first death's moment, and the wait for a grave — kept here, where a death
+        // happens, and nowhere else. After the epitaph, so the log reads the death before the cemetery it asks for.
+        world.ADeath(villager);
 
         // ⭐⭐ AND IF THAT WAS THE LAST OF THEM, SAY SO (Joe, 2026-09-06). He watched a founding
         // freeze in Winter of Year 1, looked at an overview reading *"0 villagers in 0

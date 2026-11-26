@@ -14,6 +14,16 @@ public partial class Main
     /// shows its owed file and goes back; a worker's card and the roster show their trade; the Professions table and the
     /// moments wear the painted marks.
     /// </summary>
+    /// <summary>
+    /// ⏳ <b>Asked of the art lane and not painted yet</b> (`cemetery.md §11`, HANDOFF's 🅿️ ART list): each keeps its glyph, and
+    /// the probe names it on its ✅ line rather than failing for it. ⛔ <b>A name here that has its file fails</b> — take it off the
+    /// list the day the picture lands, so the list can only ever say what is still owed.
+    /// </summary>
+    private static readonly string[] ArtAwaited =
+    {
+        "buildings/small-cemetery", "buildings/cemetery", "buildings/large-cemetery", "trades/groundskeeper",
+    };
+
     private string TheIconsArePainted()
     {
         SimWorld world = _loop.World;
@@ -174,7 +184,19 @@ public partial class Main
             tradeIcons += cells[0] is UiIcon ? 1 : 0;
         }
 
-        if (tradeIcons != _professionRows.Count)
+        // The awaited art: a file for one is a list gone stale; the rest are named on the verdict, and their rows keep a glyph.
+        List<string> awaited = missing.Where(m => ArtAwaited.Any(a => m == a || m == a + "-owed")).ToList();
+        missing.RemoveAll(awaited.Contains);
+        foreach (string owed in ArtAwaited)
+        {
+            if (!awaited.Contains(owed))
+            {
+                faults.Add($"{owed} has its picture now — take it off ArtAwaited");
+            }
+        }
+
+        int awaitedTrades = awaited.Count(a => a.StartsWith("trades/", StringComparison.Ordinal));
+        if (tradeIcons != _professionRows.Count - awaitedTrades)
         {
             faults.Add($"{_professionRows.Count - tradeIcons} of the Professions table's {_professionRows.Count} rows keep a glyph");
         }
@@ -188,6 +210,7 @@ public partial class Main
             ? $"[widths] ui icons: ✅ {found} painted icons found by name, each at its master size with mipmaps; {painted} bar buttons "
               + $"wear one at 20 above the label, the tallest wanting {tallest:F0}px; the library shows owed and goes back; a "
               + $"worker's card and the roster show the trade; {tradeIcons} Professions rows painted; a name with no file keeps its glyph"
+              + (awaited.Count == 0 ? string.Empty : $"; ⏳ awaiting the art lane: {string.Join(", ", awaited)}")
             : $"[widths] ui icons: ⛔ {string.Join("; ", faults)}";
     }
 

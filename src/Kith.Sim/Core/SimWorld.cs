@@ -4137,6 +4137,9 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ THE HOUSES (`house-tiers.md §4.4`, D721): the family tree, both rungs — read off the latches, never the counters.
         BuildingKind.Cottage or BuildingKind.Manor => WhyNoHouseYet(kind),
 
+        // ⭐ THE CEMETERIES (W4, `cemetery.md §5.1`; D395, Joe's): learned at the village's first death — a leaver is not one.
+        _ when BuildingsCatalog[kind]?.Graves > 0 => DeathsEver == 0 ? NobodyHasDiedYet : null,
+
         // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
         _ => WhyNoBridgeYet(kind),
     };
@@ -10063,6 +10066,15 @@ public sealed partial class SimWorld : IObstacles
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
+        // ⭐ AND THE CEMETERY'S (W4, D906, Joe: *"first free"*): the row with the fewest graves, the same two rules.
+        if (AFreeCemeteryIsOwed && kind == TheFreeCemetery())
+        {
+            AFreeCemeteryIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate($"The timber and stone for the {BuildingsCatalog[kind]!.Name} were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
         // ⭐ THE SAME GIFT, THE SAME PLACE, THE SAME TWO RULES (D252): the materials fall away and
         // the work stands, because a building that appeared finished would be the only one in the
         // game nobody built. Asked of the ROW, like the library's above.
@@ -15518,6 +15530,7 @@ public sealed partial class SimWorld : IObstacles
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
             ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
             ["burials_from"] = SaveWriter.Hex(BurialsFromTick),
+            ["a_free_cemetery_is_owed"] = AFreeCemeteryIsOwed,
             ["a_first_path_has_worn"] = AFirstPathHasWorn,
             ["a_town_hall_is_owed"] = ATownHallIsOwed,
             ["said_the_founders_are_gone"] = SaidTheFoundersAreGone,
@@ -15721,6 +15734,11 @@ public sealed partial class SimWorld : IObstacles
         AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
         // W4 (D905): a save from before has no mark, and every death in it is before its own tick — those dead are gone.
         BurialsFromTick = save.HasValue("burials_from") ? save.ULong("burials_from") : Tick;
+
+        // An older save with dead in it is learned on load and owed the small one, with no moment (call 10, D906 — Joe: *"unlock
+        // on load as recommended"*). It can hold no cemetery: there were none.
+        RebuildTheDeathsEver();
+        AFreeCemeteryIsOwed = save.HasValue("a_free_cemetery_is_owed") ? save.Bool("a_free_cemetery_is_owed") : DeathsEver > 0;
         AFirstPathHasWorn = save.Bool("a_first_path_has_worn");
         ATownHallIsOwed = save.Bool("a_town_hall_is_owed");
         SaidTheFoundersAreGone = save.Bool("said_the_founders_are_gone");

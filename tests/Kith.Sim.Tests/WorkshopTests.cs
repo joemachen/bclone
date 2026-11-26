@@ -706,7 +706,8 @@ public sealed class WorkshopTests
             { "id": 16, "name": "carpenter", "plural": "carpenters",  "doing": "making handcarts",   "works_at": "Workshop",      "limited_by": "Handcart", "uses_tool": true },
             { "id": 17, "name": "teacher",   "plural": "teachers",    "doing": "teaching",           "works_at": "School" },
             { "id": 18, "name": "brewer",    "plural": "brewers",     "doing": "brewing ale",        "works_at": "Brewery",       "limited_by": "Ale", "uses_tool": true },
-            { "id": 19, "name": "tavern keeper", "plural": "tavern keepers", "doing": "keeping the tavern", "works_at": "Tavern" }
+            { "id": 19, "name": "tavern keeper", "plural": "tavern keepers", "doing": "keeping the tavern", "works_at": "Tavern" },
+            { "id": 20, "name": "groundskeeper", "plural": "groundskeepers", "doing": "keeping the cemetery", "works_at": "CemeterySmall", "also_works_at": [ "CemeteryMedium", "CemeteryLarge" ] }
           ]
         }
         """;

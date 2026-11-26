@@ -3440,14 +3440,14 @@ public partial class Main
         _schoolKnown = true;
         bool barley = _barleyKnown;
         _barleyKnown = true;
-        (bool brewery, bool tavern) = (_breweryKnown, _tavernKnown);
-        (_breweryKnown, _tavernKnown) = (true, true);
+        (bool brewery, bool tavern, bool cemetery) = (_breweryKnown, _tavernKnown, _cemeteryKnown);
+        (_breweryKnown, _tavernKnown, _cemeteryKnown) = (true, true, true);
         RefreshTheStrip();
         Ask("all learned", learned: true);
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) = (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
         _schoolKnown = school;
         _barleyKnown = barley;
-        (_breweryKnown, _tavernKnown) = (brewery, tavern);
+        (_breweryKnown, _tavernKnown, _cemeteryKnown) = (brewery, tavern, cemetery);
         RefreshTheStrip();
         RefreshCards(world);
         bool putBack = !GoodKnown(Goods.IronTools) && !_selectedCard!.Person.KeepTrades.Contains(JobKind.Smith);

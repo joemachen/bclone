@@ -206,4 +206,192 @@ public sealed class CemeteryTests
         Assert.Equal(years, checks);
         Assert.True(world.Unburied.Count >= 3, $"only {world.Unburied.Count} died in {years} years");
     }
+
+    // ---------------------------------------------------------------
+    //  Steps 2–3 (§9, D908): three sizes placed like any building, learned at the first death, the small one free
+    // ---------------------------------------------------------------
+
+    private static readonly BuildingKind[] Sizes = { BuildingKind.CemeterySmall, BuildingKind.CemeteryMedium, BuildingKind.CemeteryLarge };
+
+    private const string NobodyHasDied = "Nobody has died here yet — the village has no need of a cemetery.";
+
+    private static void SomebodyDies(SimLoop loop)
+    {
+        DiesOnTheNextTick(loop.World.Villagers.First(v => v.Alive));
+        loop.StepOnce();
+    }
+
+    /// <summary>Marks a cemetery of this size on the nearest spot to the founding that takes it.</summary>
+    private static Workplace MarkACemetery(SimWorld world, BuildingKind kind)
+    {
+        GridPos centre = world.Map.FoundingSite;
+        for (int r = 0; r <= 40; r++)
+        {
+            for (int dy = -r; dy <= r; dy++)
+            {
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r)
+                    {
+                        continue;
+                    }
+
+                    int before = world.Workplaces.Count;
+                    if (world.Mark(kind, new GridPos(centre.X + dx, centre.Y + dy)).Allowed)
+                    {
+                        Assert.Equal(before + 1, world.Workplaces.Count);
+                        return world.Workplaces[^1];
+                    }
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"no {kind} fits within 40 tiles of the founding");
+    }
+
+    [Theory]
+    [InlineData(BuildingKind.CemeterySmall, 4, 5, 20)]
+    [InlineData(BuildingKind.CemeteryMedium, 6, 7, 42)]
+    [InlineData(BuildingKind.CemeteryLarge, 8, 10, 80)]
+    public void EachSizeIsARowWithItsGravesAndOneGroundskeeper(BuildingKind kind, int width, int height, int graves)
+    {
+        SimWorld world = AVillage().World;
+        BuildingRow row = world.BuildingsCatalog[kind]!;
+        Assert.Equal((width, height, graves), (row.ExtentWidth, row.ExtentHeight, row.Graves));
+        Assert.Equal(1, row.Seats);
+        Assert.Equal(JobKind.Groundskeeper, world.BuildingsCatalog.EmployedBy(kind));
+        Assert.Equal((8, 12, 20), (row.WearsInYears, row.FailsInYears, row.RuinedInYears)); // a timber building's clock (call 9)
+    }
+
+    [Fact]
+    public void TheThreePricesAreTheDataFiles()
+    {
+        // Joe, D906: "all as recommended" — small 10 logs and 5 stone, medium 20 and 10, large 30 and 20.
+        SimConfig c = Config;
+        Assert.Equal((10, 5, 20, 10, 30, 20), (c.CemeterySmallLogs, c.CemeterySmallStone, c.CemeteryMediumLogs, c.CemeteryMediumStone,
+            c.CemeteryLargeLogs, c.CemeteryLargeStone));
+        BuildingRecipe large = BuildingRecipe.For(BuildingKind.CemeteryLarge, c);
+        Assert.Equal(new[] { new MaterialCost(Goods.Logs, 30), new MaterialCost(Goods.Stone, 20) }, large.Materials.OrderBy(m => m.Goods));
+        Assert.Equal(c.CemeteryLargeWorkTicks, large.WorkTicks);
+    }
+
+    [Fact]
+    public void ACemeteryWhoseGravesDoNotFillItsGroundIsRefused()
+    {
+        SimConfig bad = Config with
+        {
+            Buildings = Config.BuildingRows.Select(r => r.Id == (int)BuildingKind.CemeteryMedium ? r with { Graves = 41 } : r).ToArray(),
+        };
+        SimConfigException blew = Assert.Throws<SimConfigException>(bad.Validate);
+        Assert.Contains("graves", blew.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EverySizeIsLockedUntilSomebodyDiesAndALeaverDoesNotCount()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Assert.All(Sizes, k => Assert.Equal(NobodyHasDied, world.WhyNotYet(k)));
+
+        Villager leaver = world.Villagers.First(v => v.CanWork);
+        leaver.Alive = false;
+        leaver.State = VillagerState.Left;
+        leaver.LeftAtTick = world.Tick;
+        loop.StepOnce();
+        Assert.All(Sizes, k => Assert.False(world.IsUnlocked(k)));
+        Assert.Equal(0, world.DeathsEver);
+
+        SomebodyDies(loop);
+        Assert.Equal(1, world.DeathsEver);
+        Assert.All(Sizes, k => Assert.True(world.IsUnlocked(k)));
+        Assert.Equal(TechState.Known, TechTree.StateOf(world, world.Config.TechNodeRows.Single(n => n.Id == "cemetery")).State);
+    }
+
+    [Fact]
+    public void TheFirstDeathRaisesOneMomentAndOwesTheSmall()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        world.Moments.Clear();
+        Villager first = world.Villagers.First(v => v.Alive);
+        SomebodyDies(loop);
+
+        Moment said = Assert.Single(world.Moments);
+        Assert.True(said.WaitsToBeDismissed);
+        Assert.Contains(first.FullName, said.Body, StringComparison.Ordinal);
+        Assert.Contains("the first this village has lost", said.Body, StringComparison.Ordinal);
+        Assert.True(world.AFreeCemeteryIsOwed);
+
+        SomebodyDies(loop);
+        Assert.Single(world.Moments); // one moment ever: the transition cannot repeat
+        Assert.Equal(2, world.DeathsEver);
+    }
+
+    [Fact]
+    public void TheSmallIsFreeOnceAndEveryOtherIsPriced()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        SomebodyDies(loop);
+
+        Workplace medium = MarkACemetery(world, BuildingKind.CemeteryMedium);
+        Assert.True(medium.Construction!.Recipe.TotalMaterials > 0, "the medium was free");
+        Assert.True(world.AFreeCemeteryIsOwed, "a medium spent the small's gift");
+
+        Workplace small = MarkACemetery(world, BuildingKind.CemeterySmall);
+        Assert.Equal(0, small.Construction!.Recipe.TotalMaterials);
+        Assert.True(small.Construction.Recipe.WorkTicks > 0, "the gift raised itself — the work is owed");
+        Assert.False(world.AFreeCemeteryIsOwed);
+
+        Workplace again = MarkACemetery(world, BuildingKind.CemeterySmall);
+        Assert.Equal(world.Config.CemeterySmallLogs + world.Config.CemeterySmallStone, again.Construction!.Recipe.TotalMaterials);
+        Assert.Equal(BuildingKind.CemeterySmall, again.Construction.Kind); // a site is the builders' until it stands
+    }
+
+    [Fact]
+    public void TheGiftIsSavedAndInTheFingerprint()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        ulong before = StateHash.Compute(world);
+        world.AFreeCemeteryIsOwed = true;
+        Assert.NotEqual(before, StateHash.Compute(world));
+        Assert.True(RoundTrip(loop).World.AFreeCemeteryIsOwed);
+        world.AFreeCemeteryIsOwed = false;
+        Assert.False(RoundTrip(loop).World.AFreeCemeteryIsOwed);
+    }
+
+    [Fact]
+    public void AnOlderSaveWithDeadIsLearnedAndOwedOnLoadWithNoMoment()
+    {
+        // Joe, D906 (call 10): "unlock on load as recommended".
+        SimLoop loop = AVillage();
+        SomebodyDies(loop);
+        loop.World.AFreeCemeteryIsOwed = false; // as an older save would hold it: the key did not exist
+        loop.World.Moments.Clear();
+
+        SimWorld back = RoundTrip(loop, doc =>
+        {
+            Assert.Equal(1, Strip(doc, "a_free_cemetery_is_owed"));
+            Assert.Equal(1, Strip(doc, "burials_from"));
+        }).World;
+        Assert.True(back.AFreeCemeteryIsOwed);
+        Assert.Equal(1, back.DeathsEver);
+        Assert.All(Sizes, k => Assert.True(back.IsUnlocked(k)));
+        Assert.Empty(back.Moments);
+        Assert.Empty(back.Unburied); // its dead are gone (call 6)
+    }
+
+    [Fact]
+    public void AnOlderSaveWithNobodyDeadWaitsForItsFirstDeath()
+    {
+        SimLoop loop = AVillage();
+        SimLoop back = RoundTrip(loop, doc => Assert.Equal(1, Strip(doc, "a_free_cemetery_is_owed")));
+        Assert.False(back.World.AFreeCemeteryIsOwed);
+        Assert.All(Sizes, k => Assert.False(back.World.IsUnlocked(k)));
+        back.World.Moments.Clear();
+        SomebodyDies(back);
+        Assert.Single(back.World.Moments);
+        Assert.True(back.World.AFreeCemeteryIsOwed);
+    }
 }

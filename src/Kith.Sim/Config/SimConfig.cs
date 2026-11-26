@@ -1735,6 +1735,42 @@ public sealed record SimConfig
     [JsonPropertyName("tavern_work_ticks")]
     public int TavernWorkTicks { get; init; } = 40;
 
+    /// <summary>Logs a small cemetery takes — its fence and gate (W4, D906, Joe: <i>"all as recommended"</i>).</summary>
+    [JsonPropertyName("cemetery_small_logs")]
+    public int CemeterySmallLogs { get; init; } = 10;
+
+    /// <summary>Stone a small cemetery takes — its gateposts. A grave's stone costs nothing (`cemetery.md §5.3`).</summary>
+    [JsonPropertyName("cemetery_small_stone")]
+    public int CemeterySmallStone { get; init; } = 5;
+
+    /// <summary>Ticks of a builder's work a small cemetery takes.</summary>
+    [JsonPropertyName("cemetery_small_work_ticks")]
+    public int CemeterySmallWorkTicks { get; init; } = 20;
+
+    /// <summary>Logs a medium cemetery takes — its fence and gate (W4, D906, Joe: <i>"all as recommended"</i>).</summary>
+    [JsonPropertyName("cemetery_medium_logs")]
+    public int CemeteryMediumLogs { get; init; } = 20;
+
+    /// <summary>Stone a medium cemetery takes — its gateposts. A grave's stone costs nothing (`cemetery.md §5.3`).</summary>
+    [JsonPropertyName("cemetery_medium_stone")]
+    public int CemeteryMediumStone { get; init; } = 10;
+
+    /// <summary>Ticks of a builder's work a medium cemetery takes.</summary>
+    [JsonPropertyName("cemetery_medium_work_ticks")]
+    public int CemeteryMediumWorkTicks { get; init; } = 40;
+
+    /// <summary>Logs a large cemetery takes — its fence and gate (W4, D906, Joe: <i>"all as recommended"</i>).</summary>
+    [JsonPropertyName("cemetery_large_logs")]
+    public int CemeteryLargeLogs { get; init; } = 30;
+
+    /// <summary>Stone a large cemetery takes — its gateposts. A grave's stone costs nothing (`cemetery.md §5.3`).</summary>
+    [JsonPropertyName("cemetery_large_stone")]
+    public int CemeteryLargeStone { get; init; } = 20;
+
+    /// <summary>Ticks of a builder's work a large cemetery takes.</summary>
+    [JsonPropertyName("cemetery_large_work_ticks")]
+    public int CemeteryLargeWorkTicks { get; init; } = 60;
+
     /// <summary>How many keepers a tavern seats — one (Joe's call 3c, D834).</summary>
     [JsonPropertyName("tavern_capacity")]
     public int TavernCapacity { get; init; } = 1;
@@ -4260,6 +4296,17 @@ public sealed record SimConfig
             WorksAt = BuildingKind.Tavern,
         },
 
+        // ⭐ W4 (`cemetery.md §6.1`, D905): one trade at all three sizes, as the marketer works at the market and the stall.
+        new JobRow
+        {
+            Id = (int)JobKind.Groundskeeper,
+            Name = "groundskeeper",
+            Plural = "groundskeepers",
+            Doing = "keeping the cemetery",
+            WorksAt = BuildingKind.CemeterySmall,
+            AlsoWorksAt = new[] { BuildingKind.CemeteryMedium, BuildingKind.CemeteryLarge },
+        },
+
         // ⭐ TRADE AND THE HERD (D590, `trade.md §11` commit 1). Rows only: nothing asks for either until the herd
         // and the post behave (commits 3 and 4), so the quota leaves both at nobody.
         new JobRow
@@ -5036,6 +5083,54 @@ public sealed record SimConfig
             ExposureDaysSheltered = ManorExposureDaysSheltered,
             HouseName = "{family} Manor",
             ExtentWidth = 2,
+        },
+
+        // ⭐ THE CEMETERIES (W4, `cemetery.md §5.2`; Joe, D905–D906): three sizes, one grave a tile, a groundskeeper each.
+        // Their wear is a timber building's (`WithTheShippedWear`, call 9).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.CemeterySmall,
+            Name = "small cemetery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, CemeterySmallLogs),
+                new MaterialCost(World.Goods.Stone, CemeterySmallStone),
+            },
+            WorkTicks = CemeterySmallWorkTicks,
+            Seats = 1,
+            Graves = 20,
+            ExtentWidth = 4,
+            ExtentHeight = 5,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.CemeteryMedium,
+            Name = "cemetery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, CemeteryMediumLogs),
+                new MaterialCost(World.Goods.Stone, CemeteryMediumStone),
+            },
+            WorkTicks = CemeteryMediumWorkTicks,
+            Seats = 1,
+            Graves = 42,
+            ExtentWidth = 6,
+            ExtentHeight = 7,
+        },
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.CemeteryLarge,
+            Name = "large cemetery",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, CemeteryLargeLogs),
+                new MaterialCost(World.Goods.Stone, CemeteryLargeStone),
+            },
+            WorkTicks = CemeteryLargeWorkTicks,
+            Seats = 1,
+            Graves = 80,
+            ExtentWidth = 8,
+            ExtentHeight = 10,
         },
 
         // ⛔ NO ROW 14. The longhouse (D320's three-tile store, D566's nomads' house) was removed after play (D571;
@@ -6906,7 +7001,8 @@ public sealed record SimConfig
             ("barley_per_brew", BarleyPerBrew), ("ale_per_brew", AlePerBrew), ("brew_ticks", BrewTicks),
             ("brews_per_stint", BrewsPerStint), ("brewery_logs", BreweryLogs), ("brewery_work_ticks", BreweryWorkTicks),
             ("brewery_capacity", BreweryCapacity), ("tavern_logs", TavernLogs), ("tavern_work_ticks", TavernWorkTicks),
-            ("tavern_capacity", TavernCapacity), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
+            ("tavern_capacity", TavernCapacity), ("cemetery_small_work_ticks", CemeterySmallWorkTicks),
+            ("cemetery_medium_work_ticks", CemeteryMediumWorkTicks), ("cemetery_large_work_ticks", CemeteryLargeWorkTicks), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
             ("tavern_sit_ticks", TavernSitTicks), ("tavern_stock", TavernStock),
             ("library_reach_tiles", LibraryReachTiles), ("letter_every_days", LetterEveryDays),
             ("library_sit_ticks", LibrarySitTicks), ("letters_answered_within", LettersAnsweredWithin),
@@ -7526,7 +7622,9 @@ public sealed record SimConfig
             bool anybodyWorksThere = false;
             for (int j = 0; j < JobsCatalog.Count; j++)
             {
-                anybodyWorksThere |= (int?)JobsCatalog[j].WorksAt == row.Id;
+                // A trade's second buildings count as its first does (W4: the groundskeeper at three sizes; the marketer's stall
+                // passed only because it stores).
+                anybodyWorksThere |= (int?)JobsCatalog[j].WorksAt == row.Id || JobsCatalog[j].AlsoWorksAt.Contains((BuildingKind)row.Id);
             }
 
             if (anybodyWorksThere && row.Seats is null && !economyDerivesTheSeats)
@@ -7605,6 +7703,14 @@ public sealed record SimConfig
                     $"buildings[{i}] (id {row.Id}, {row.Name}) spans water, so its deck_tile_cost must be "
                     + $"1 to {World.TravelCostField.BaseTileCost} (got {row.DeckTileCost}) and its extent 1×1 — "
                     + "a bridge's length is the river's, not the row's.");
+            }
+
+            // ⭐ A CEMETERY'S GRAVES ARE ITS GROUND (W4, `cemetery.md §5.2`): one a tile, numbered row by row in its own frame.
+            if (row.Graves < 0 || (row.Graves > 0 && row.Graves != row.ExtentWidth * row.ExtentHeight))
+            {
+                throw new SimConfigException(
+                    $"buildings[{i}] (id {row.Id}, {row.Name}) has {row.Graves} graves on {row.ExtentWidth}×{row.ExtentHeight} — a "
+                    + "cemetery's graves are one a tile, so they must be its width times its height (or 0 for no cemetery).");
             }
 
             // Condition (D552): a row wears in three rising years, or never.

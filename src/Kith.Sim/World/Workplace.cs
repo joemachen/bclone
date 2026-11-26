@@ -226,6 +226,13 @@ public enum JobKind
     /// <b>Appended at 19.</b>
     /// </summary>
     TavernKeeper = 19,
+
+    /// <summary>
+    /// The groundskeeper (W4, `cemetery.md §6`; Joe, D905: <i>"The groundskeeper does. gravedigger = groundskeeper"</i>) — buries
+    /// the village's dead and tends the cemetery all year, with no laborer's fallback. One a cemetery, of any size; no skill.
+    /// <b>Appended at 20.</b>
+    /// </summary>
+    Groundskeeper = 20,
 }
 
 /// <summary>

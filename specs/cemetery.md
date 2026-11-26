@@ -1,7 +1,8 @@
 # Spec: The cemetery and the groundskeeper (W4)
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
-> **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907).** The instrument is
+> **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
+> the small one free (D908).** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -255,7 +256,9 @@ Never both for the same person.
   **Hashed sparsely**, so a village nobody has buried in hashes as today.
 - **Derived, kept where it changes, never hashed, rebuilt on load** (CLAUDE.md's rule): the waiting list (joined in `Kill`, left at burial), who lies
   in each place, the free graves of each cemetery, the count of the dead.
-- **Goldens:** steps 1–4 move none (no golden village builds a cemetery — to be measured, not assumed). **Step 5 moves them once**: an unattended village
+- **Goldens:** ~~steps 1–4 move none~~ — *(void — six moved at step 2, D908: the gift is owed at any village's first death, and the owed
+  latch is hashed, so every golden village that has had a death moved once, for that reason only, each proven by ablation)*. Steps 3–4 move none
+  beyond it (no golden village builds a cemetery — to be measured, not assumed). **Step 5 moves them once**: an unattended village
   never answers the cause, so families with dead wait longer for a child and some go (§4.4, the valleys). Each proved by ablation. A **posed golden** that
   buries people is the gate's (item 2).
 
@@ -264,10 +267,18 @@ Never both for the same person.
 1. **The waiting list and the fields** — `BurialsFromTick`; who is dead and unburied, kept at `Kill`, rebuilt on load; the fields saved and hashed sparsely.
    *Tests: the list equals a scan over a century with deaths; an old save's dead are gone and its next death waits; round trip; two worlds differing only
    in a burial hash apart, and a new village hashes as before.* — ✅ **built (D907).**
-2. **Learned at the first death, and the gift** — `WhyNotYet`, the moment, the latch, the Lore node. *Tests: locked before, learned after one death and not after a
-   departure; one moment ever; the gift free once and the second priced; an old save with dead is learned on load, with no moment.*
-3. **The three rows** — their extents, graves and costs, placement, the refusals, no pulling down with anybody in it. *Tests: each size's graves; a refusal each;
-   walked around, entered by the gate; a turned one's places turn with it.*
+2. **Learned at the first death, and the gift** — `WhyNotYet`, the moment, the latch, the Lore node. ✅ **Built with step 3 (D908).** `DeathsEver`
+   (derived, kept in `ADeath` from `Kill`, rebuilt on load); `AFreeCemeteryIsOwed` (saved, hashed sparsely, owed on load of an older save with dead);
+   the moment raised once, at the count's 0 → 1; the gift spent in `Mark` on the row with the fewest graves; the Lore node *The cemetery*
+   (`TechCondition.SomebodyDied`, never introducing the map). *Tests: locked before, learned after one death and not after a departure; one moment ever;
+   the small free once and every other priced; the gift saved and hashed; an older save with dead learned and owed on load with no moment, one without
+   waiting for its first death.*
+3. **The three rows** — `BuildingKind.CemeterySmall`/`Medium`/`Large` (34–36), `JobKind.Groundskeeper` (20, at all three by `AlsoWorksAt`), the row's
+   `graves` column (the validator holds it to width × height), the nine keys in `data/sim.config.json`. ✅ **Built (D908).** The validator's *employs
+   nobody* now counts a trade's second buildings — it had passed the marketer's stall only because a stall stores. Placement and its refusals are any
+   building's, unchanged. *Tests: each size's extent, graves, seat, trade and wear; the prices are the data's; graves that do not fill the ground refused.*
+   ⏩ **Moved to step 4, because they need a grave to exist:** no pulling down with anybody in it; a turned one's places turn with it; walked around and
+   entered by the gate.
 4. **The groundskeeper, a burial and tending** — the seat, the quota's place, the states, which grave, the log line. *Tests: oldest first; beside the partner,
    else the household, else the lowest place; the dead set down where the carrier fell; no seat in a famine; an unreachable one passed over; a year with nobody
    to bury is a year of tending; two cemeteries; determinism.*

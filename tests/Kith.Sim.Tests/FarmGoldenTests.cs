@@ -307,7 +307,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 1442264922084308000.
     // RE-TAKEN (D804) — contentment is hashed (W2 step 4: its tallies, causes and seasons unsettled, sparsely), now the births gate reads it. ⭐ PROVEN BY ABLATION: with those fields unmixed the old value passes, and with the longer wait off (`contentment_birth_interval_percent` 100) the new one is unchanged — the hash moved, the village did not. Was 5473338158645883485.
     // RE-TAKEN (D825) — barley is learned when the foragers have gathered `barley_unlock_forage` (5,000), a tag byte in the hash and Lore introduced (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate set out of reach (`barley_unlock_forage` 2147483647) the old value passes. Was 2474953652485391675.
-    private const ulong SeamGoldenHash = 16863515498446432425UL;
+    // RE-TAKEN (D908) — the cemetery's gift is owed at a village's first death (W4, `cemetery.md §5.1`), a tag byte in the hash. ⭐ PROVEN BY ABLATION: with that one line unmixed the old value passed; nothing else in steps 1–3 moved it.
+    private const ulong SeamGoldenHash = 9085183550611972035UL;
 
     /// <summary>
     /// ⭐ The village underneath the counters — <b>unmoved by anybody getting better at
@@ -400,7 +401,8 @@ public sealed class FarmGoldenTests
     // RE-TAKEN (D782), with its golden above, for the same reason and the same ablation: D781's water rule put back, the old value passes. Was 1039095688598838064.
     // RE-TAKEN (D804) — contentment is hashed (W2 step 4: its tallies, causes and seasons unsettled, sparsely), now the births gate reads it. ⭐ PROVEN BY ABLATION: with those fields unmixed the old value passes, and with the longer wait off (`contentment_birth_interval_percent` 100) the new one is unchanged — the hash moved, the village did not. Was 3501960786095513977.
     // RE-TAKEN (D825) — barley is learned when the foragers have gathered `barley_unlock_forage` (5,000), a tag byte in the hash and Lore introduced (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate set out of reach (`barley_unlock_forage` 2147483647) the old value passes. Was 16040484506301769577.
-    private const ulong SeamBeforeAnybodyGotBetter = 1703003484284865619UL;
+    // RE-TAKEN (D908) — the cemetery's gift is owed at a village's first death (W4, `cemetery.md §5.1`), a tag byte in the hash. ⭐ PROVEN BY ABLATION: with that one line unmixed the old value passed; nothing else in steps 1–3 moved it.
+    private const ulong SeamBeforeAnybodyGotBetter = 10840112743569406233UL;
 
     /// <summary>The seam, in one number.</summary>
     [Fact]

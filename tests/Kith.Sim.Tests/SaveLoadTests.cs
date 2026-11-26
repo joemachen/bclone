@@ -330,9 +330,9 @@ public sealed class SaveLoadTests : IDisposable
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
             // W4 (D905): the dead before it are gone — `burials_from`, written in every save (`CemeteryTests`).
-            "BurialsFromTick",
+            "BurialsFromTick", "AFreeCemeteryIsOwed",
         }),
-        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround", "_unburied" }),
+        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround", "_unburied", "DeathsEver" }),
         (typeof(SimWorld), Kept.Data, new[]
         {
             "Config", "GoodsCatalog", "Crops", "JobsCatalog", "TechniquesCatalog", "BuildingsCatalog", "Logger",
