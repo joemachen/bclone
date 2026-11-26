@@ -1,5 +1,7 @@
 # The gold seal for new items (A255)
 
+> ⚠️ **Joe played it and it does not read (2026-11-26): *"Gold badge on new items doesnt read. make it red badge instead. or use the red underline that is used on main menu"*. Its replacement is `specs/new-mark-red.md`: the title menu's red stroke and the word in red, built (A272); `gold-seal.png` deleted.** The record below stands as it was built.
+
 > **Status: ✅ BUILT (A257, 2026-11-25) on `art`, UNPLAYED — Joe looks before it merges.** His five calls (§6): *"All as recommended"*. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. The *when* is built and stays as it is (D880, D894); this is the seal's picture and where it sits. Pictures:
 > `D:\Projects\brushes\gold-seal\` (`seal_1_designs.jpg`, `seal_2_bar.jpg`, `seal_3_options.jpg`).

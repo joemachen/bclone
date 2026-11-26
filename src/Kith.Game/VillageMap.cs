@@ -7643,7 +7643,7 @@ public partial class VillageMap : Control
     /// A construction site's shape on screen and its colours — the one place they are worked out, for its solid draw in
     /// <see cref="DrawWorkplaces"/> and its dashes over the painted canopy (A53, <see cref="DrawTheSitesThroughTheCanopy"/>).
     /// </summary>
-    private (Vector2 Centre, float Wide, float Deep, ushort Facing, Color Fill, Color Edge) SiteShapeOf(SimWorld world, Workplace workplace)
+    internal (Vector2 Centre, float Wide, float Deep, ushort Facing, Color Fill, Color Edge) SiteShapeOf(SimWorld world, Workplace workplace)
     {
         ConstructionSite site = workplace.Construction!;
         Vector2 centre = ToScreen(workplace.Position);
@@ -7823,13 +7823,9 @@ public partial class VillageMap : Control
             if (workplace.Construction is { } site)
             {
                 (centre, float wide, float deep, ushort facing, Color colourOfWork, Color edgeOfWork) = SiteShapeOf(world, workplace);
-                bool pullingDown = site.Demolishing;
 
-                // Every material plus the work, so a two-material building fills its ring
-                // honestly rather than showing full while its stone is still coming (D213).
-                int total = System.Math.Max(1, site.Recipe.TotalMaterials + site.Recipe.WorkTicks);
-                float done = (site.TotalDelivered + site.WorkDone) / (float)total;
-                float shown = pullingDown ? 1f - done : done;
+                // Every material plus the work (D213); a demolition drains — one rule, the card's picture asks it too (A262).
+                float shown = SiteShown(site);
 
                 DrawColoredPolygon(
                     FootprintQuad(centre, wide, deep, facing), colourOfWork with { A = 0.18f });

@@ -70,10 +70,12 @@ internal static class ParchmentLook
         // ⭐ Red for warnings, lapis for selected, held and on (hud.md §10, A207): red means something is wrong.
         theme.SetColor("selected_edge", t, LapisFill);
 
-        // ⭐ New, until clicked (hud.md §8.3, D880): the gold word, and the gold seal on its icon (A257, `gold-seal.md`; Joe's play note 2,
-        // "All as recommended") — which took the gold-leaf swash's place (D894 kept the swash "until the art lane's seal").
-        theme.SetColor("new", t, GoldInk);
-        theme.SetIcon("new_seal", t, Tex("controls/gold-seal.png"));
+        // ⭐ New, until clicked (hud.md §8.3, D880): the word in the rubric's red and the title menu's red stroke under it (A272,
+        // `new-mark-red.md`). Joe, of the gold seal (A257): "Gold badge on new items doesnt read … or use the red underline that is
+        // used on main menu"; shown both, "2". The gold was a brown beside the ink's brown, the seal a tan spot on tan paper.
+        // ⚠️ Red here is not a warning: it is the title menu's "this one" (A242), his pick by eye over A207's rule.
+        theme.SetColor("new", t, RubricInk);
+        theme.SetStylebox("new_stroke", t, NewStroke());
         theme.SetColor("card_edge", t, InkMuted);
         theme.SetColor("tree_edge", t, Ink with { A = 0.35f });
         theme.SetColor("empty", t, Ink with { A = 0.12f });
@@ -190,6 +192,20 @@ internal static class ParchmentLook
         stroke.Outset = new Vector4(0, 9f - band, 0, band - 9f);
         return stroke;
     }
+
+    /// <summary>
+    /// A new thing's mark (A272): the title's red swash across the button's foot — the held button's lapis swash (<c>NewValley</c>),
+    /// the same painting in red and a pixel taller, so the two read as one family and never as each other.
+    /// </summary>
+    private static PaintedPatch NewStroke()
+    {
+        PaintedPatch stroke = PaintedPatch.Make(Tex("controls/underline.png"), 0.25f, new Vector4(24, 0, 24, 0), new Vector4(6, 4, 6, 4));
+        stroke.Band = NewStrokeBand;
+        return stroke;
+    }
+
+    /// <summary>The new mark's band, logical px (the held button's is 3).</summary>
+    internal const float NewStrokeBand = 4f;
 
     private static PenFrame Framed(StyleBoxFlat? box, Color line, int width) => new()
     {
