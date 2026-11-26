@@ -1,6 +1,6 @@
 # The new item's mark in red (A270)
 
-> **Status: ✅ BUILT (A272, 2026-11-26) on `art`, UNPLAYED — Joe: *"2, files OK"*. Mocked A271.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
+> **Status: ✅ BUILT (A272, 2026-11-26), played and merged into `main` at Joe's word (A273, *"Played it, merge"*, `2b519cb`); not pushed. His call: *"2, files OK"*. Mocked A271.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
 > Replaces the picture of the gold seal (`specs/gold-seal.md`, A255–A258); the *when* is the systems lane's and stays as it is (D880,
 > D894). Pictures: `D:\Projects\brushes\red-mark\` (`red_1_food_open.jpg`, `red_2_bar_closed.jpg`, `redseal_sheet.png`).
 
