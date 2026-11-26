@@ -1,6 +1,6 @@
 # A topography layer, off by default (A265–A266)
 
-**Status: ✍️ mocked, ⏸️ Joe's calls (§4). Nothing built.** Art lane, branch `art`.
+**Status: ✅ built on `art` (A267), ⏸️ Joe to play it. Not merged.** Art lane, branch `art`.
 
 Joe's play note 3 (2026-11-24): *"a topography layer that is off by default, but can be toggled on in settings like the grid
 is? or can the grid be turned into a topographic map?"*
@@ -52,7 +52,22 @@ people too (the canopy is over them, A36), so it is not mocked.
    ⚠️ It is drawn by the watercolour layer, so with *paint the valley in watercolour* off the layer has nothing to draw on
    (the tick says so in its tooltip).
 
-## 5. Build (after his calls)
+**Answered (A267, 2026-11-26): *"Yes, as recommended"*** — A, contour lines; its own tick, off by default, beside the grid;
+on the ground, under the woods; his OK for `Main.Settings.cs` and `Main.cs`.
 
-Not started. Probe line `topography:` (off by default; on, the shader's uniform follows the tick; the setting round-trips),
-red-checked.
+## 5. Build (A267)
+
+- **The shader** (`shaders/valley_terrain.gdshader`): `topo_on` (off) and the contours' own numbers as uniform defaults —
+  `topo_step` 10 levels, `topo_index` 5 (every 5th heavier, 1.8× as wide), `topo_ink` sepia (0.45, 0.29, 0.16),
+  `topo_width_px` 1.3, `topo_strength` .75, `topo_hatch` 1. Drawn after the ink, before the paper's grain: a line's
+  distance in levels over the levels a pixel spans, so a line is the same width at every zoom; plain lines fade where they
+  would be closer than 4–9 px, index lines under 2–4 px; the hachures on the steep mask (`hill.g`), along the contour,
+  dashed down the slope. Only where the hills are baked (`hills_on`) and only over land (`weights.a`).
+- **The map** (`VillageMap.Topography.cs`): `ShowTopography(bool)` sets the uniform; `TopographyShown`. A layer built
+  after the tick was pressed takes it from `_topography` (`VillageMap.Watercolour.cs`, where the material is made);
+  `topo_on` is in the uniforms the watercolour line checks the shader declares.
+- **The tick** (`Main.Settings.cs`, `Main.cs`): the row `topography` — *"show the land's height"*, off, *On the map* —
+  built beside the grid's, its tooltip saying it is drawn on the watercolour valley; in the view ticks, so the settings
+  line's round trip carries it.
+- **The probe's `topography:` line**: the row off by default, the tick and the map agreeing, the tick pressed on and off
+  moving the map and the shader's `topo_on` with it.

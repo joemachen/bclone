@@ -648,6 +648,7 @@ public partial class Main : Control
         GD.Print(ValleyTexture.SelfCheck(_loop.World));
         GD.Print(ValleyTexture.SeamsHugTheirTiles(_loop.World));
         GD.Print(_map.TheWatercolourHolds());
+        GD.Print(_map.TheTopographyHolds(_viewToggles.Find(t => t.Key == "topography").Box, TickRow("topography").Default));
         GD.Print(_map.ThePaintedTreesHold());
         GD.Print(_map.TheSitesShowThroughTheCanopy());
         GD.Print(_map.TheFreeBuildingsWaitingAreDrawn());
@@ -7186,6 +7187,15 @@ public partial class Main : Control
         grid.Toggled += on => _map.ShowGrid(on);
         body.AddChild(grid);
         _viewToggles.Add(("grid", "the tile grid", grid, () => _map.GridShown));
+
+        // The land's height (A267, `topography.md`; Joe's play note 3): off by default, beside the grid. The map's half is
+        // `VillageMap.Topography.cs`.
+        var topography = Tick("topography");
+        topography.AddThemeFontSizeOverride("font_size", 12);
+        topography.TooltipText = "Contour lines and steep ground, drawn on the watercolour valley (off with it).";
+        topography.Toggled += on => _map.ShowTopography(on);
+        body.AddChild(topography);
+        _viewToggles.Add(("topography", "the land's height", topography, () => _map.TopographyShown));
 
         // ⭐ THE VALLEY IN WATERCOLOUR (A25, `terrain-shader.md §5`; Joe, A23: *"Yes add a tick box"*, and a before/after
         // slider *"like in the attached image"*). ⭐ ON BY DEFAULT SINCE A58 (Joe: *"yes, make watercolour the default look"*):
