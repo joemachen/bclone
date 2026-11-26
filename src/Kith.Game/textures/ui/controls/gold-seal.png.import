@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://sqh2601ggcuv"
-path="res://.godot/imported/underline-gold.png-806f184eccab965b0b219f81632c2300.ctex"
+uid="uid://bojbmkejtfqff"
+path="res://.godot/imported/gold-seal.png-d37b2722c3af044b32be8f70b2be8b90.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/ui/controls/underline-gold.png"
-dest_files=["res://.godot/imported/underline-gold.png-806f184eccab965b0b219f81632c2300.ctex"]
+source_file="res://textures/ui/controls/gold-seal.png"
+dest_files=["res://.godot/imported/gold-seal.png-d37b2722c3af044b32be8f70b2be8b90.ctex"]
 
 [params]
 

@@ -185,14 +185,14 @@ the *Show:* row and the hotkey line (§8.4).
 ### 8.3 New, until clicked (A210)
 
 When a category or a building becomes earned, it is marked **new**: its word in gold ink (`#553e0c`, the palette's gold
-word) with a **gold-leaf swash** under it (`#c4983e`). A category clears when its flyout is opened, a building when it is
-picked. *(Call 5.)*
+word) and ⭐ **the gold seal on its icon's upper right** (A257, `gold-seal.md`; it took the place of D880's gold-leaf swash).
+A category clears when its flyout is opened, a building when it is picked. *(Call 5.)*
 
 ⭐ **A category is new while a building inside it is new and not yet seen in its flyout** (Joe's play note 2, D894: *"new items main
 categories should also highlight … until clicked"*; he answered the reading *"rest as you said"*). Until D894 it asked whether the
 category had *ever* been opened, so the quarry lit and Resources, opened on the first day, did not. **The cottage and the manor
-light Homes** the same way, and their *Build homes as* choice until it is chosen. The seal he asked for beside it is the art lane's
-to paint (HANDOFF ⏸️ 🎨); the gold swash stands until then. ⚠️ **A building learned counts as known by the sim's gate, not only by the
+light Homes** the same way, and their *Build homes as* choice until it is chosen. The seal he asked for beside it is the art lane's,
+✅ built (A257): seal B, on red ribbons, over the icon's upper right; the swash went with it. ⚠️ **A building learned counts as known by the sim's gate, not only by the
 bar's flags** — the seen set is taken while the bar is built, before the first refresh sets them, and a village opened from a save
 without the section lit everything it had learned (found D894; his Millbrook's autosave holds it).
 
