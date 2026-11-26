@@ -554,7 +554,8 @@ public partial class Main
         column.AddChild(peopleScroll);
 
         // ---- the picture ----
-        var portrait = new BuildingPortrait { CustomMinimumSize = new Vector2(0, 64) };
+        // ⭐ 120 tall since the picture is the map's painted building (A262, Joe: *"Yes, as recommended"*) — 64 left its yard crumbs.
+        var portrait = new BuildingPortrait { CustomMinimumSize = new Vector2(0, 120) };
         column.AddChild(portrait);
         Label caption = Muted(string.Empty);
         caption.HorizontalAlignment = HorizontalAlignment.Center;
@@ -1602,6 +1603,7 @@ public partial class Main
         card.Portrait.Show(
             VillageMap.ColourOf(store.Kind), store.ExtentWidth * 0.8f, store.ExtentHeight * 0.8f, store.Facing.Raw,
             store.Store.IsFull && _map.FullMarkerShownFor(store.Id) ? VillageMap.FullStoreRing : null);
+        card.Portrait.Paint(_map, store.Position);
         card.Caption.Text = $"a {store.Kind.ToString().ToLowerInvariant()} · ring when full: {(_map.FullMarkerShownFor(store.Id) ? "on" : "off")}";
         return true;
     }
@@ -1727,6 +1729,7 @@ public partial class Main
         card.Portrait.Show(
             TradeGlyph.ColourOf(place.Kind), place.ExtentWidth * 0.8f, place.ExtentHeight * 0.8f, place.Facing.Raw,
             idleRing ? VillageMap.IdleWorkplaceRing : null);
+        card.Portrait.Paint(_map, world, place);
         card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
             : place.IsSite ? "a building site" : Workers(world, place);
         return true;
@@ -2024,6 +2027,7 @@ public partial class Main
         float drawn = VillageMap.DrawnShareOf(home.HomeKind);
         card.Portrait.Show(VillageMap.DwellingColourOf(home.HomeKind), houseRow.ExtentWidth * drawn, houseRow.ExtentHeight * drawn,
             home.HomeFacing.Raw, null, home.HomeKind);
+        card.Portrait.Paint(_map, home.HomePosition);
 
         // ⭐ WHY THE HOUSE IS WHERE IT IS (D386): the chooser's own sentence, in the currency it
         // scored — *"10 tiles to work and 3 to the granary, facing the lane to the south, beside
@@ -2556,6 +2560,7 @@ public partial class Main
         }
 
         WriteLibraryCard(card, library.Name, library.Shelves, records, library.ExtentWidth, library.ExtentHeight, library.Facing.Raw);
+        card.Portrait.Paint(_map, library.Position);
         Wear(card, world.WearOf(library), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(library)));
 
@@ -2661,6 +2666,7 @@ public partial class Main
 
         int raised = (int)(hall.RaisedAtTick / (ulong)world.Config.TicksPerYear) + 1;
         WriteTownHallCard(card, hall.Name, founders, raised, hall.ExtentWidth, hall.ExtentHeight, hall.Facing.Raw);
+        card.Portrait.Paint(_map, hall.Position);
         Wear(card, world.WearOf(hall), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(hall)));
         return true;
@@ -2688,6 +2694,7 @@ public partial class Main
 
         WriteWellCard(card, well.Name, _drawingAt.GetValueOrDefault(well), well.Draws,
             world.Config.HomeWellReachTiles, well.ExtentWidth, well.ExtentHeight, well.Facing.Raw);
+        card.Portrait.Paint(_map, well.Position);
         Wear(card, world.WearOf(well), world.Config);
         return true;
     }
@@ -4620,6 +4627,9 @@ public partial class Main
 
     private string TheCardsHoldTheirShape()
     {
+        // ⭐ The picture's own line (A262), printed beside the card's shape it belongs to — `Main.cs`'s list is the systems lane's.
+        GD.Print(ThePictureIsTheMaps());
+
         SimWorld world = _loop.World;
         var faults = new List<string>();
 
@@ -5191,87 +5201,5 @@ public partial class Main
         }
 
         pin.Icon = pin.ButtonPressed ? UiLook.NamedIcon("pin_pinned") : hovered ? UiLook.NamedIcon("pin_hover") ?? rest : rest;
-    }
-}
-
-/// <summary>
-/// A building's own map drawing, scaled up to fill a card's picture (D376, Joe: *"add building's
-/// real map drawing scaled up"*): the footprint quad in the map's colour, turned as it is turned,
-/// with its ring when the map would draw one.
-/// </summary>
-public sealed partial class BuildingPortrait : Control
-{
-    private Color _fill;
-    private float _wide = 0.8f;
-    private float _tall = 0.8f;
-    private ushort _facing;
-    private Color? _ring;
-    private Condition _wear;
-
-    /// <summary>The building's condition — the portrait weathers as the map does (D556).</summary>
-    public Condition Wear
-    {
-        get => _wear;
-        set
-        {
-            if (_wear != value)
-            {
-                _wear = value;
-                QueueRedraw();
-            }
-        }
-    }
-
-    /// <remarks><c>house</c> is a house's row, for the marks its tier wears inside its walls (D722) — null for every other building.</remarks>
-    public void Show(Color fill, float wideTiles, float tallTiles, ushort facing, Color? ring, BuildingKind? house = null)
-    {
-        _fill = fill;
-        _wide = wideTiles;
-        _tall = tallTiles;
-        _facing = facing;
-        _ring = ring;
-        _house = house;
-        QueueRedraw();
-    }
-
-    private BuildingKind? _house;
-
-    public override void _Draw()
-    {
-        Vector2 centre = Size / 2f;
-        float longest = Mathf.Max(_wide, _tall) + 0.6f;
-        float pixelsPerTile = Mathf.Min(Size.X, Size.Y) / longest;
-
-        // A picture of a world thing sits on the world's own ground (D637): a parchment chip, the building inked on it as
-        // the map draws it — so the card and the map stay one palette while the card's chrome stays slate.
-        DrawRect(new Rect2(Vector2.Zero, Size), VillageMap.Parchment);
-
-        Vector2[] quad = VillageMap.FootprintQuadAt(centre, _wide, _tall, _facing, pixelsPerTile);
-        Color fill = VillageMap.Weathered(_fill, _wear);
-        DrawColoredPolygon(quad, fill with { A = 0.85f });
-        if (_house is BuildingKind house)
-        {
-            foreach ((Vector2[] shape, Color colour) in VillageMap.HouseMarksAt(house, centre, _wide, _tall, _facing, pixelsPerTile))
-            {
-                DrawColoredPolygon(shape, VillageMap.Weathered(colour, _wear));
-            }
-        }
-
-        for (int i = 0; i < 4; i++)
-        {
-            if (_wear == Condition.Ruin)
-            {
-                DrawDashedLine(quad[i], quad[(i + 1) % 4], VillageMap.Ink, 2f, 4f);
-            }
-            else
-            {
-                DrawLine(quad[i], quad[(i + 1) % 4], VillageMap.Ink, 2f);
-            }
-        }
-
-        if (_ring is Color ring)
-        {
-            DrawArc(centre, pixelsPerTile * 0.8f * 0.85f, 0f, Mathf.Tau, 32, ring, 2f);
-        }
     }
 }
