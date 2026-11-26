@@ -1,6 +1,6 @@
 # A topography layer, off by default (A265–A266)
 
-**Status: ✅ built (A267), played and merged into `main` at Joe's word (A268, *"Played it, merge"*, `be338ca`). Not pushed.** Art lane, branch `art`.
+**Status: ✅ built (A267), played and merged into `main` at Joe's word (A268, *"Played it, merge"*, `be338ca`); pushed at his word (A269, *"Push main"*).** Art lane, branch `art`.
 
 Joe's play note 3 (2026-11-24): *"a topography layer that is off by default, but can be toggled on in settings like the grid
 is? or can the grid be turned into a topographic map?"*
