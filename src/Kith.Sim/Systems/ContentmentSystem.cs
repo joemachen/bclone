@@ -116,6 +116,22 @@ public sealed class ContentmentSystem : ISimSystem
             }
         }
 
+        // ⭐ W4 (`cemetery.md §7`): whose dead lie unburied, and whether the village has a place for them — one pass over the
+        // waiting, one over the cemeteries. A place: a cemetery standing that is not set to no groundskeepers (call 7 a); room: one
+        // of those with a free grave. With both, they are waiting their turn, and nobody minds.
+        var unburiedHouseholds = new HashSet<int>();
+        var unburiedPartners = new HashSet<int>();
+        foreach (int id in world.Unburied)
+        {
+            if (world.FindVillager(id) is Villager waiting)
+            {
+                unburiedHouseholds.Add(waiting.HouseholdId);
+                unburiedPartners.Add(waiting.PartnerId);
+            }
+        }
+
+        (bool aPlace, bool room) = unburiedHouseholds.Count == 0 ? (true, true) : world.TheDeadHaveAPlace();
+
         for (int i = 0; i < world.Villagers.Count; i++)
         {
             Villager villager = world.Villagers[i];
@@ -123,6 +139,8 @@ public sealed class ContentmentSystem : ISimSystem
             {
                 continue;
             }
+
+            bool oneOfTheirsWaits = unburiedHouseholds.Contains(villager.HouseholdId) || unburiedPartners.Contains(villager.Id);
 
             if (endedWinter && cold is not null && villager.ColdDaysThisWinter >= cold.At)
             {
@@ -143,6 +161,8 @@ public sealed class ContentmentSystem : ISimSystem
                     ContentmentCause.DryJar => household is not null && household.DryDaysThisSeason >= row.At,
                     ContentmentCause.DeathInTheFamily =>
                         bereavedHouseholds.Contains(villager.HouseholdId) || bereavedPartners.Contains(villager.Id),
+                    ContentmentCause.DeadInTheOpen => oneOfTheirsWaits && !aPlace,
+                    ContentmentCause.CemeteryFull => oneOfTheirsWaits && aPlace && !room,
                     _ => false,
                 };
 

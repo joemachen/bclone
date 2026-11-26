@@ -1779,6 +1779,13 @@ public sealed record SimConfig
     [JsonPropertyName("grave_fill_ticks")]
     public int GraveFillTicks { get; init; } = 4;
 
+    /// <summary>
+    /// Days from a burial in which each adult of the household, and the partner, walks to the grave once (W4, `cemetery.md §6.3`;
+    /// Joe's call 4 a). It changes no number; it is there to be seen.
+    /// </summary>
+    [JsonPropertyName("grave_visit_days")]
+    public int GraveVisitDays { get; init; } = 30;
+
     /// <summary>How many keepers a tavern seats — one (Joe's call 3c, D834).</summary>
     [JsonPropertyName("tavern_capacity")]
     public int TavernCapacity { get; init; } = 1;
@@ -3360,6 +3367,10 @@ public sealed record SimConfig
         new ContentmentCauseRow { Cause = ContentmentCause.FireOut, HeldSeasons = 4 },
         new ContentmentCauseRow { Cause = ContentmentCause.DryJar, At = 3 },
         new ContentmentCauseRow { Cause = ContentmentCause.DeathInTheFamily, HeldSeasons = 4 },
+
+        // ⭐ W4 (`cemetery.md §7`; D797, D905): the village's dead have a place — one rule, two cases.
+        new ContentmentCauseRow { Cause = ContentmentCause.DeadInTheOpen },
+        new ContentmentCauseRow { Cause = ContentmentCause.CemeteryFull },
     };
 
     /// <summary>
@@ -7011,7 +7022,7 @@ public sealed record SimConfig
             ("brewery_capacity", BreweryCapacity), ("tavern_logs", TavernLogs), ("tavern_work_ticks", TavernWorkTicks),
             ("tavern_capacity", TavernCapacity), ("cemetery_small_work_ticks", CemeterySmallWorkTicks),
             ("cemetery_medium_work_ticks", CemeteryMediumWorkTicks), ("cemetery_large_work_ticks", CemeteryLargeWorkTicks),
-            ("grave_dig_ticks", GraveDigTicks), ("grave_fill_ticks", GraveFillTicks), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
+            ("grave_dig_ticks", GraveDigTicks), ("grave_fill_ticks", GraveFillTicks), ("grave_visit_days", GraveVisitDays), ("tavern_reach_tiles", TavernReachTiles), ("tavern_every_days", TavernEveryDays),
             ("tavern_sit_ticks", TavernSitTicks), ("tavern_stock", TavernStock),
             ("library_reach_tiles", LibraryReachTiles), ("letter_every_days", LetterEveryDays),
             ("library_sit_ticks", LibrarySitTicks), ("letters_answered_within", LettersAnsweredWithin),

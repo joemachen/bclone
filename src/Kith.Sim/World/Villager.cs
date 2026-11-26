@@ -643,6 +643,12 @@ public sealed class Villager
     /// </summary>
     public int CarryingTheDead { get; set; }
 
+    /// <summary>
+    /// The tick they last stood at the grave of one of their own (W4, `cemetery.md §6.3`) — once a burial, against its tick. Null
+    /// for never. Saved when set (`last_grave_visit`), hashed sparsely.
+    /// </summary>
+    public ulong? LastGraveVisitTick { get; set; }
+
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
 
@@ -1047,6 +1053,8 @@ public sealed class Villager
             VillagerState.CarryingTheDead => $"carrying one of the village's dead to {where}",
             VillagerState.Burying => $"digging a grave at {where}",
             VillagerState.KeepingTheCemetery => $"keeping {where}",
+            VillagerState.WalkingToTheGrave => "walking to the grave of one of their own",
+            VillagerState.AtTheGrave => "standing at the grave of one of their own",
             VillagerState.WalkingToTheRiver => "walking to the river for water",
             VillagerState.DrawingAtTheRiver => "drawing water at the river",
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
@@ -1138,6 +1146,7 @@ public sealed class Villager
             ["grave_at"] = GraveAt == 0 ? null : GraveAt,
             ["grave_place"] = GraveAt == 0 ? null : GravePlace,
             ["carrying_the_dead"] = CarryingTheDead == 0 ? null : CarryingTheDead,
+            ["last_grave_visit"] = LastGraveVisitTick is null ? null : SaveWriter.Hex(LastGraveVisitTick),
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1217,6 +1226,7 @@ public sealed class Villager
             GraveAt = save.HasValue("grave_at") ? save.Int("grave_at") : 0,
             GravePlace = save.HasValue("grave_place") ? save.Int("grave_place") : 0,
             CarryingTheDead = save.HasValue("carrying_the_dead") ? save.Int("carrying_the_dead") : 0,
+            LastGraveVisitTick = save.HasValue("last_grave_visit") ? save.NullableULong("last_grave_visit") : null,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

@@ -43,7 +43,18 @@ public sealed class ZzCemetery
             return;
         }
 
-        SaveOpened opened = SaveFile.Open(what, ShippedConfig.Load());
+        // ZZ_NOW4=1 (D910): the same saves with W4's two causes taken out of the data — the real code's arm against the built rows.
+        SimConfig shipped = ShippedConfig.Load();
+        if (Environment.GetEnvironmentVariable("ZZ_NOW4") == "1")
+        {
+            shipped = shipped with
+            {
+                ContentmentCauses = shipped.ContentmentCauses
+                    .Where(r => r.Cause is not (ContentmentCause.DeadInTheOpen or ContentmentCause.CemeteryFull)).ToArray(),
+            };
+        }
+
+        SaveOpened opened = SaveFile.Open(what, shipped);
         if (opened.Loop is not SimLoop loop)
         {
             _o.WriteLine($"ZZX {Path.GetFileName(Path.GetDirectoryName(what))} refused {opened.Refusal}");

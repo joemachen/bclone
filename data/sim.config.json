@@ -1098,6 +1098,9 @@
   // A burial (W4, `cemetery.md §6.2`, measured at D891): two days to dig, one to lay them to rest and fill it.
   "grave_dig_ticks": 8,
   "grave_fill_ticks": 4,
+  // The family at the grave (cemetery.md 6.3, call 4): each adult once, within this many days of
+  // the burial. It changes no number.
+  "grave_visit_days": 30,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,
@@ -1709,6 +1712,10 @@
     { "cause": "FireOut", "held_seasons": 4 },
     { "cause": "DryJar", "at": 3 },
     { "cause": "DeathInTheFamily", "held_seasons": 4 },
+    // W4 (cemetery.md 7; D797, D905): one of theirs unburied, and no place for them -- none
+    // standing (or every one set to no groundskeepers), or every one full. Never for a queue.
+    { "cause": "DeadInTheOpen" },
+    { "cause": "CemeteryFull" },
   ],
   // W3's comfort (tavern.md 6, Joe's call 1A, D834): an evening at the tavern this
   // season takes one held cause off at the read -- never below nought, and nothing

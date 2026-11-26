@@ -1535,6 +1535,12 @@ public static class StateHash
 
         hash = MixSparse(hash, 28u, villager.CarryingTheDead);
 
+        // The family at the grave (W4 step 5): sparse, so nobody who has never stood at one hashes as before.
+        if (villager.LastGraveVisitTick is ulong visited)
+        {
+            hash = MixUInt64(MixUInt32(hash, 29u), visited);
+        }
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

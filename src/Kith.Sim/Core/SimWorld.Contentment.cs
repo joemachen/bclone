@@ -171,6 +171,10 @@ public sealed partial class SimWorld
                     ContentmentCause.DeathInTheFamily => WhoTheyLost(person, row) is Villager lost
                         ? $"they are grieving {lost.Name}"
                         : "there has been a death in the family",
+                    ContentmentCause.DeadInTheOpen => "their dead lie in the open, with nowhere to be buried",
+                    ContentmentCause.CemeteryFull => WhoWaitsFor(person) is Villager waits
+                        ? $"there is no room left in the cemetery for {waits.Name}"
+                        : "there is no room left in the cemetery",
                     _ => $"{row.Cause}",
                 };
 

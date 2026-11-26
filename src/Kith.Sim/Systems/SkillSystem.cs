@@ -312,6 +312,10 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.CarryingTheDead => true,
         VillagerState.Burying => true,
         VillagerState.KeepingTheCemetery => true,
+
+        // The family at the grave (W4 step 5): nobody's trade.
+        VillagerState.WalkingToTheGrave => false,
+        VillagerState.AtTheGrave => false,
         VillagerState.WalkingToTheRiver => false,
         VillagerState.DrawingAtTheRiver => false,
 

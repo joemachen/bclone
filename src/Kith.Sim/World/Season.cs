@@ -426,6 +426,12 @@ public enum VillagerState
 
     /// <summary>A groundskeeper keeping the cemetery — a day of it, then home, the tavern keeper's shape (§6.1, D905).</summary>
     KeepingTheCemetery,
+
+    /// <summary>One of the family walking to the grave of one of their own (W4, `cemetery.md §6.3`; Joe's call 4 a).</summary>
+    WalkingToTheGrave,
+
+    /// <summary>Standing at the grave a day, then home. It changes nothing (§6.3).</summary>
+    AtTheGrave,
 }
 
 /// <summary>

@@ -71,11 +71,14 @@ public sealed class ContentmentTests
                 (ContentmentCause.NoRoof, 1, 0, 0), (ContentmentCause.FarWalk, 1, 24, 0),
                 (ContentmentCause.ColdWinter, 1, 6, 4), (ContentmentCause.FireOut, 1, 0, 4),
                 (ContentmentCause.DryJar, 1, 3, 0), (ContentmentCause.DeathInTheFamily, 1, 0, 4),
+
+                // W4 (D910): the village's dead have a place — Joe's D797 rule, its two cases.
+                (ContentmentCause.DeadInTheOpen, 1, 0, 0), (ContentmentCause.CemeteryFull, 1, 0, 0),
             },
             shipped.ContentmentCauses.Select(r => (r.Cause, r.Weight, r.At, r.HeldSeasons)));
 
-        // ⛔ And none of them is health's (D797): the kinds are a life's, and there are six.
-        Assert.Equal(6, Enum.GetValues<ContentmentCause>().Length);
+        // ⛔ And none of them is health's (D797): the kinds are a life's, and there are eight since W4's two (D910).
+        Assert.Equal(8, Enum.GetValues<ContentmentCause>().Length);
     }
 
     /// <summary>⛔ A row the build cannot read is refused at load, not discovered as a cause that never fires.</summary>
@@ -1036,7 +1039,14 @@ public sealed class ContentmentTests
     [Fact]
     public void AKeptVillageLosesNobodyItKeeps()
     {
-        var runs = Valleys(Config with { WaterPerPersonPerDay = 0 }, 50);
+        // ⚠️ And the dead's place answered too (W4, D910): the harness never builds a cemetery, as it never builds a well, so the
+        // two rows that ask for one are taken out — a kept village is one whose every cause the harness could not answer is answered.
+        var runs = Valleys(Config with
+        {
+            WaterPerPersonPerDay = 0,
+            ContentmentCauses = Config.ContentmentCauses
+                .Where(r => r.Cause is not (ContentmentCause.DeadInTheOpen or ContentmentCause.CemeteryFull)).ToArray(),
+        }, 50);
         int alive = 0;
         foreach ((int seed, SimWorld world, _) in runs)
         {

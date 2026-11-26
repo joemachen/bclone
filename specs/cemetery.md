@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909).** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910).** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -119,6 +119,9 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
 - **The family, until buried**, is felt at once — the year's grief is already one cause, so *a death with no grave leaves that family
   unsettled for the year* — and lost people only where the player built no cemetery for decades (8 in 360 village-years, 121 in 1,080).
   Answered, it costs nobody anything. That is both halves of `morale.md §11` item 4. A year's hold loses nobody: decorative.
+- ⭐ **Measured again on the real code (D910)** — the same 18 save copies, 20 unattended years, no cemetery built (`ZZ_NOW4=1` takes the two rows
+  out for the other arm): **adult-seasons unsettled 2.30 % → 3.79 %** (the paper said 3.6 %), people ever thinking of leaving 41 → 103, and
+  **really gone 9 → 17** (the paper said 8 more). The paper's arm held.
 
 ### 4.5 The three sizes (D905) — how fast a village fills one, and whether it fits
 
@@ -239,6 +242,11 @@ one** — as it does a tavern keeper — and a number typed there overrides the 
 
 ### 7.1 Who holds it (call 1 a, D905)
 
+> ⭐ **As built (D910):** read once a season over the waiting list (`Unburied`) and the cemeteries (`TheDeadHaveAPlace`), never per tick.
+> *A place* is a standing cemetery while the player's Groundskeepers number is not 0 (call 7 a); *room* is one of those with a free grave. A
+> cemetery nobody is keeping yet, with the number not typed, is a place — they are waiting their turn. The card says *"their dead lie in the
+> open, with nowhere to be buried"* and *"there is no room left in the cemetery for Mabel"*.
+
 **The dead person's own**: every adult of the household they died in, and their partner, **while one of theirs lies unburied and the village
 has no place for them**. Read once a season like every cause; a person moved away keeps it only as the partner. The dead from before the
 slice hold nothing (§5.1).
@@ -293,7 +301,7 @@ Never both for the same person.
 4. **The groundskeeper, a burial and tending** — ✅ **built (D909).** the seat, the quota's place, the states, which grave, the log line. *Tests: oldest first; beside the partner,
    else the household, else the lowest place; the dead set down where the carrier fell; no seat in a famine; an unreachable one passed over; a year with nobody
    to bury is a year of tending; two cemeteries; determinism.*
-5. **The family at the grave, and the two causes** — measured again with the real code (§4.4's arms, on his saves) before the goldens are re-pinned. *Tests:
+5. **The family at the grave, and the two causes** — ✅ **built (D910)**; measured on the real code (§4.4) and six goldens re-pinned, each by ablation — measured again with the real code (§4.4's arms, on his saves) before the goldens are re-pinned. *Tests:
    each row of §7; the queue raises nothing; the dead from before raise nothing; both sides of the anti-vacuity.*
 6. **Wear** (call 9, D906) — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
    overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*

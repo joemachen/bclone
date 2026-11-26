@@ -424,10 +424,10 @@ public sealed class CemeteryTests
     }
 
     /// <summary>Seat a groundskeeper by hand and pin them to the trade, so the labour pass keeps them there.</summary>
-    private static Villager Keep(SimWorld world, Workplace cemetery)
+    private static Villager Keep(SimWorld world, Workplace cemetery, Villager? chosen = null)
     {
         world.VillageSharesOutWork = false;
-        Villager hand = world.Villagers.First(v => v.Alive && v.CanTakeAJob && !cemetery.WorkerIds.Contains(v.Id));
+        Villager hand = chosen ?? world.Villagers.First(v => v.Alive && v.CanTakeAJob && !cemetery.WorkerIds.Contains(v.Id));
         foreach (Workplace other in world.Workplaces)
         {
             other.WorkerIds.Remove(hand.Id);
@@ -783,5 +783,214 @@ public sealed class CemeteryTests
         Assert.Equal(0, keeper.CarryingTheDead);
         Assert.False(world.IsBeingCarried(body));
         Assert.Contains(dead, world.Unburied);
+    }
+
+    // ---------------------------------------------------------------
+    //  Step 5 (§9, D910): the two causes, and the family at the grave
+    // ---------------------------------------------------------------
+
+    private static bool Holds(Villager v, ContentmentCause cause) => (v.ContentmentCauses & (1 << (int)cause)) != 0;
+
+    /// <summary>To the end of the next season read — where every cause is looked at.</summary>
+    private static void ToTheNextRead(SimLoop loop)
+    {
+        int season = loop.World.SeasonNumber;
+        while (loop.World.SeasonNumber == season)
+        {
+            loop.StepOnce();
+        }
+
+        loop.StepOnce();
+    }
+
+    /// <summary>One of a household of two adults or more, the rest of that household's adults, and an adult of another household.</summary>
+    private static (Villager Dead, List<Villager> Family, Villager Stranger) AFamily(SimWorld world, Villager? notThem = null)
+    {
+        IGrouping<int, Villager> home = world.Villagers.Where(v => v.Alive && v.CanWork && v != notThem)
+            .GroupBy(v => v.HouseholdId).First(g => g.Count() >= 2);
+        Villager dead = home.First();
+        List<Villager> family = home.Skip(1).ToList();
+        Villager stranger = world.Villagers.First(v => v.Alive && v.CanWork && v.HouseholdId != home.Key && v != notThem && v.Id != dead.PartnerId);
+        return (dead, family, stranger);
+    }
+
+    [Fact]
+    public void TheirOwnMindTheirDeadInTheOpenAndAStrangerDoesNot()
+    {
+        SimLoop loop = ABiggerVillage();
+        SimWorld world = loop.World;
+        (Villager dead, List<Villager> family, Villager stranger) = AFamily(world);
+        Dies(loop, dead);
+        ToTheNextRead(loop);
+
+        family = family.Where(v => v.Alive && v.CanWork).ToList(); // a founding of six households starves some of its own
+        Assert.NotEmpty(family);
+        Assert.All(family, v => Assert.True(Holds(v, ContentmentCause.DeadInTheOpen), $"{v.Name} of the household does not mind"));
+        if (world.FindVillager(dead.PartnerId) is { Alive: true } partner)
+        {
+            Assert.True(Holds(partner, ContentmentCause.DeadInTheOpen));
+        }
+
+        Assert.False(Holds(stranger, ContentmentCause.DeadInTheOpen));
+        Assert.All(family, v => Assert.False(Holds(v, ContentmentCause.CemeteryFull))); // never both
+        Assert.Contains("lie in the open", world.ContentmentNoteFor(family[0]) ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AStandingCemeteryWithRoomIsAPlaceEvenWhileTheyWaitTheirTurn()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        (Villager dead, List<Villager> family, _) = AFamily(world);
+        Dies(loop, dead);
+        StandACemetery(loop); // room for twenty, and nobody keeps it yet: a founding hires no comfort by itself
+        ToTheNextRead(loop);
+        Assert.Contains(dead.Id, world.Unburied); // the premise: they still wait
+        Assert.All(family, v => Assert.False(Holds(v, ContentmentCause.DeadInTheOpen)));
+        Assert.All(family, v => Assert.False(Holds(v, ContentmentCause.CemeteryFull)));
+    }
+
+    [Fact]
+    public void ACemeterySetToNoGroundskeepersCountsAsNoPlace()
+    {
+        // Joe, D905 (call 7 a).
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        (Villager dead, List<Villager> family, _) = AFamily(world);
+        Dies(loop, dead);
+        StandACemetery(loop);
+        Assert.True(world.SetJobLimit(JobKind.Groundskeeper, 0).Allowed);
+        ToTheNextRead(loop);
+        family = family.Where(v => v.Alive && v.CanWork).ToList();
+        Assert.NotEmpty(family);
+        Assert.All(family, v => Assert.True(Holds(v, ContentmentCause.DeadInTheOpen)));
+    }
+
+    [Fact]
+    public void EveryCemeteryFullIsAFullCemeteryNotNoPlace()
+    {
+        SimConfig tiny = Config with
+        {
+            StartingHouseholds = 6,
+            Buildings = Config.BuildingRows.Select(r => r.Id == (int)BuildingKind.CemeterySmall
+                ? r with { ExtentWidth = 1, ExtentHeight = 1, Graves = 1 } : r).ToArray(),
+        };
+        SimLoop loop = SimFactory.CreatePhase0(tiny, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        Villager keeper = Keep(world, cemetery);
+        StepUntil(loop, () => world.FreeGraves(cemetery) == 0);
+
+        (Villager dead, List<Villager> family, Villager stranger) = AFamily(world, keeper);
+        Dies(loop, dead);
+        ToTheNextRead(loop);
+        family = family.Where(v => v.Alive && v.CanWork).ToList();
+        Assert.NotEmpty(family);
+        Assert.All(family, v => Assert.True(Holds(v, ContentmentCause.CemeteryFull), $"{v.Name} does not mind a full cemetery"));
+        Assert.All(family, v => Assert.False(Holds(v, ContentmentCause.DeadInTheOpen)));
+        Assert.False(Holds(stranger, ContentmentCause.CemeteryFull));
+    }
+
+    [Fact]
+    public void TheDeadFromBeforeAreMindedByNobody()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        (Villager dead, List<Villager> family, _) = AFamily(world);
+        Dies(loop, dead);
+        world.BurialsFromTick = world.Tick + 1; // as an older save loads: the dead in it are gone
+        world.RebuildTheUnburied();
+        ToTheNextRead(loop);
+        Assert.Empty(world.Unburied); // the premise: nobody has died since
+        Assert.All(family.Where(v => v.Alive && v.CanWork), v => Assert.False(Holds(v, ContentmentCause.DeadInTheOpen)));
+        Assert.Contains(family, v => v.Alive && v.CanWork);
+    }
+
+    [Fact]
+    public void TheFamilyComesToTheGraveOnceAndAStrangerDoesNot()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        (Villager dead, List<Villager> family, Villager stranger) = AFamily(world);
+
+        // Houses (a pose: the founders arrive with a cart, not a house) — a visit begins at the door, as an evening does.
+        foreach (Household household in world.Households)
+        {
+            household.HomePosition ??= world.Villagers.First(v => v.HouseholdId == household.Id).Position;
+        }
+
+        Dies(loop, dead); // the first death: the cemetery is learned by it
+        Workplace cemetery = StandACemetery(loop);
+        Keep(world, cemetery, world.Villagers.First(v => v.Alive && v.CanTakeAJob && v.HouseholdId != dead.HouseholdId && v != stranger));
+        StepUntil(loop, () => dead.BuriedAtTick is not null);
+
+        var visits = new Dictionary<int, int>();
+        var wasThere = new HashSet<int>();
+        int days = world.Config.GraveVisitDays + 10;
+        for (int t = 0; t < days * world.Config.TicksPerDay; t++)
+        {
+            loop.StepOnce();
+            foreach (Villager v in world.Villagers)
+            {
+                bool there = v.State == VillagerState.AtTheGrave;
+                if (there && !wasThere.Contains(v.Id))
+                {
+                    visits[v.Id] = visits.GetValueOrDefault(v.Id) + 1;
+                }
+
+                if (there)
+                {
+                    wasThere.Add(v.Id);
+                }
+                else
+                {
+                    wasThere.Remove(v.Id);
+                }
+            }
+        }
+
+        foreach (Villager v in family.Where(f => f.Alive))
+        {
+            Assert.Equal(1, visits.GetValueOrDefault(v.Id));
+            Assert.True(v.LastGraveVisitTick >= dead.BuriedAtTick);
+        }
+
+        Assert.Equal(0, visits.GetValueOrDefault(stranger.Id));
+        Assert.Null(stranger.LastGraveVisitTick);
+    }
+
+    [Fact]
+    public void AVisitIsSavedAndInTheFingerprint()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Villager v = world.Villagers.First(p => p.Alive);
+        ulong before = StateHash.Compute(world);
+        v.LastGraveVisitTick = 77;
+        ulong at77 = StateHash.Compute(world);
+        Assert.NotEqual(before, at77);
+        v.LastGraveVisitTick = 78;
+        Assert.NotEqual(at77, StateHash.Compute(world));
+        Assert.Equal((ulong?)78, RoundTrip(loop).World.FindVillager(v.Id)!.LastGraveVisitTick);
+    }
+
+    [Fact]
+    public void APartnerInAnotherHouseholdMindsToo()
+    {
+        // Founding couples share a household, so the household rule alone would hide a partner's own (the red-check found it, D910).
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        List<Villager> adults = world.Villagers.Where(v => v.Alive && v.CanWork).ToList();
+        Villager dead = adults[0];
+        Villager partner = adults.First(v => v.HouseholdId != dead.HouseholdId);
+        Villager partnersHousemate = adults.First(v => v.HouseholdId == partner.HouseholdId && v != partner);
+        Unpair(world, dead);
+        Unpair(world, partner);
+        (dead.PartnerId, partner.PartnerId) = (partner.Id, dead.Id);
+
+        Dies(loop, dead);
+        ToTheNextRead(loop);
+        Assert.True(Holds(partner, ContentmentCause.DeadInTheOpen), "the partner, in another household, does not mind");
+        Assert.False(Holds(partnersHousemate, ContentmentCause.DeadInTheOpen)); // the partner's household is not the dead's
     }
 }

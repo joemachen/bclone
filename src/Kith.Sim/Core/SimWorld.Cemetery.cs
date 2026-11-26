@@ -253,6 +253,7 @@ public sealed partial class SimWorld
         keeper.CarryingTheDead = 0;
         dead.Position = keeper.Position;
         LayToRest(dead, Tick);
+        _recentBurials.Add(dead.Id);
         dead.GraveAt = cemetery.Id;
         dead.GravePlace = place;
         PlacesOf(cemetery)[place] = dead.Id;
@@ -362,11 +363,18 @@ public sealed partial class SimWorld
               + "ever moved — it stays where it is.";
     }
 
-    /// <summary>On load, after the villagers and the workplaces: who lies where, and who is carried.</summary>
+    /// <summary>On load, after the villagers and the workplaces: who lies where, who is carried, and who was buried lately.</summary>
     private void RebuildTheGraves()
     {
         _graves.Clear();
         _carried.Clear();
+        _recentBurials.Clear();
+        foreach (Villager buried in Villagers.Where(v => v.BuriedAtTick is not null).OrderBy(v => v.BuriedAtTick).ThenBy(v => v.Id))
+        {
+            _recentBurials.Add(buried.Id);
+        }
+
+        PruneTheRecentBurials();
         foreach (Villager villager in Villagers)
         {
             if (villager.GraveAt != 0 && FindWorkplace(villager.GraveAt) is Workplace cemetery)
@@ -383,5 +391,97 @@ public sealed partial class SimWorld
                 _carried.Add(villager.CarryingTheDead);
             }
         }
+    }
+
+    // ---------------------------------------------------------------
+    //  Step 5 (`cemetery.md §6.3, §7`, D910): the place, and the family at the grave
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The buried of the last <c>grave_visit_days</c>, in the order they were buried — the family's visits read this, never a scan of
+    /// the village. Derived: kept in <see cref="Bury"/>, pruned as it is read, rebuilt on load; never saved or hashed.
+    /// </summary>
+    private readonly List<int> _recentBurials = new();
+
+    /// <summary>
+    /// Whether the village's dead have a place (§7): a cemetery standing that is not set to no groundskeepers (call 7 a), and whether
+    /// one of those has a free grave. Asked once a season, by the contentment read, only when somebody waits.
+    /// </summary>
+    public (bool APlace, bool Room) TheDeadHaveAPlace()
+    {
+        if (JobLimits.For(JobKind.Groundskeeper) == 0)
+        {
+            return (false, false);
+        }
+
+        bool aPlace = false;
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            Workplace cemetery = Workplaces[i];
+            if (cemetery.Kind != JobKind.Groundskeeper || cemetery.IsSite)
+            {
+                continue;
+            }
+
+            aPlace = true;
+            if (FreeGraves(cemetery) > 0)
+            {
+                return (true, true);
+            }
+        }
+
+        return (aPlace, false);
+    }
+
+    /// <summary>The oldest of theirs still waiting — the household's, or the partner — for the card's sentence. Null for nobody.</summary>
+    internal Villager? WhoWaitsFor(Villager person)
+    {
+        foreach (int id in _unburied)
+        {
+            if (FindVillager(id) is Villager waiting && (waiting.HouseholdId == person.HouseholdId || waiting.PartnerId == person.Id))
+            {
+                return waiting;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The cemetery holding one of this person's own (§6.3) buried in the last <c>grave_visit_days</c> whose grave they have not stood
+    /// at since — or null. Of the household, or the partner.
+    /// </summary>
+    internal Workplace? GraveToVisitFor(Villager person)
+    {
+        PruneTheRecentBurials();
+        for (int i = 0; i < _recentBurials.Count; i++)
+        {
+            if (FindVillager(_recentBurials[i]) is not Villager buried || buried.Id == person.Id)
+            {
+                continue;
+            }
+
+            bool theirs = buried.HouseholdId == person.HouseholdId || buried.PartnerId == person.Id;
+            bool stood = person.LastGraveVisitTick is ulong at && at >= buried.BuriedAtTick;
+            if (theirs && !stood && FindWorkplace(buried.GraveAt) is { IsSite: false } cemetery)
+            {
+                return cemetery;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Off the front of the list, the buried longer ago than the visits run.</summary>
+    private void PruneTheRecentBurials()
+    {
+        ulong window = (ulong)Config.GraveVisitDays * (ulong)Config.TicksPerDay;
+        int old = 0;
+        while (old < _recentBurials.Count && FindVillager(_recentBurials[old]) is { BuriedAtTick: ulong at } && Tick - at > window)
+        {
+            old++;
+        }
+
+        _recentBurials.RemoveRange(0, old);
     }
 }
