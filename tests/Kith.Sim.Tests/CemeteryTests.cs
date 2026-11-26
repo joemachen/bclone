@@ -647,18 +647,135 @@ public sealed class CemeteryTests
         Assert.False(world.IsBeingCarried(body));
     }
 
-    [Fact]
-    public void WithNobodyToBuryTheGroundskeeperTendsTheCemetery()
+    /// <summary>A standing cemetery with its keeper seated and nobody waiting — the unlock's dead is from before.</summary>
+    private static (SimLoop Loop, Workplace Cemetery, Villager Keeper) AKeptCemeteryNobodyWaitsFor()
     {
         SimLoop loop = AVillage();
         SimWorld world = loop.World;
         Workplace cemetery = StandACemetery(loop);
-        world.BurialsFromTick = world.Tick + 1; // the unlock's dead is from before: nobody waits
+        world.BurialsFromTick = world.Tick + 1;
         world.RebuildTheUnburied();
         Assert.Empty(world.Unburied);
-        Villager keeper = Keep(world, cemetery);
-        StepUntil(loop, () => keeper.State == VillagerState.KeepingTheCemetery && keeper.ActionTicksRemaining > 0, years: 1); // the day itself, not the walk
+        return (loop, cemetery, Keep(world, cemetery));
+    }
+
+    /// <summary>Trees painted for clearing around the founding — a spare hand's work, so a keeper helping out is seen at it.</summary>
+    private static void PaintTreesToClear(SimWorld world, int radius = 7)
+    {
+        GridPos site = world.Map.FoundingSite;
+        int painted = 0;
+        for (int dy = -radius; dy <= radius; dy++)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                if (world.PaintHarvest(new GridPos(site.X + dx, site.Y + dy)).Allowed)
+                {
+                    painted++;
+                }
+            }
+        }
+
+        Assert.True(painted > 0, "nothing near the founding to paint");
+    }
+
+    /// <summary>Steps a season and says whether the keeper was seen clearing painted ground, as a laborer does.</summary>
+    private static bool SeenClearing(SimLoop loop, Villager keeper, int seasons = 1)
+    {
+        bool cleared = false;
+        for (int t = 0; t < seasons * loop.World.Config.TicksPerSeason; t++)
+        {
+            loop.StepOnce();
+            cleared |= keeper.State == VillagerState.Clearing;
+        }
+
+        return cleared;
+    }
+
+    /// <summary>
+    /// ⭐ Joe's play note (D915, *"Laborer between"*): a fresh cemetery with nobody to bury does not want its keeper, so they help
+    /// out as a laborer does — and the seat stays theirs, and the card says why they are not at the graves.
+    /// </summary>
+    [Fact]
+    public void AFreshCemeteryWithNobodyToBuryLetsItsKeeperHelpOut()
+    {
+        (SimLoop loop, Workplace cemetery, Villager keeper) = AKeptCemeteryNobodyWaitsFor();
+        SimWorld world = loop.World;
+        Assert.False(world.TheCemeteryWantsKeeping(cemetery));
+        PaintTreesToClear(world);
+        bool cleared = false;
+        for (int t = 0; t < 3 * world.Config.TicksPerSeason && !world.TheCemeteryWantsKeeping(cemetery); t++)
+        {
+            loop.StepOnce();
+            Assert.NotEqual(VillagerState.KeepingTheCemetery, keeper.State);
+            cleared |= keeper.State == VillagerState.Clearing; // a spare hand's work
+        }
+
+        Assert.True(cleared, "the keeper never took a spare hand's day");
+
+        Assert.Equal(0, cemetery.TendedDaysThisSeason);
+        Assert.Equal(cemetery.Id, keeper.WorkplaceId); // the seat stays theirs
+        Assert.Contains(keeper.Id, cemetery.WorkerIds);
+        Assert.Contains("helping out", keeper.WorkNote, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⭐ And a year's wear calls them back (D915): well before it looks untidy, for the days a season needs and no more; at the
+    /// season's turn it is sound again, and they are free until the next year's wear.
+    /// </summary>
+    [Fact]
+    public void AYearsWearCallsTheKeeperBackForTheDaysItNeedsAndNoMore()
+    {
+        (SimLoop loop, Workplace cemetery, Villager keeper) = AKeptCemeteryNobodyWaitsFor();
+        SimWorld world = loop.World;
+        int season = world.Config.TicksPerSeason;
+        int waited = StepUntil(loop, () => world.TheCemeteryWantsKeeping(cemetery));
+        Assert.InRange(waited, (world.Config.CemeteryTendAfterSeasons - 1) * season, world.Config.CemeteryTendAfterSeasons * season);
+
+        StepUntil(loop, () => keeper.State == VillagerState.KeepingTheCemetery && keeper.ActionTicksRemaining > 0, years: 1);
         Assert.True(cemetery.Footprint.Covers(keeper.Tile) || keeper.Tile == cemetery.Tile, "tending somewhere that is not the cemetery");
+        Assert.Equal(Condition.Sound, world.ConditionOf(cemetery)); // back well before it is untidy
+        Assert.Equal(string.Empty, keeper.WorkNote);
+
+        int most = 0;
+        StepUntil(loop, () =>
+        {
+            most = Math.Max(most, cemetery.TendedDaysThisSeason);
+            return cemetery.RepairedAtTick > cemetery.RaisedAtTick;
+        }, years: 1);
+        Assert.True(most <= world.Config.CemeteryTendedDaysASeason, $"kept {most} days in a season that wanted {world.Config.CemeteryTendedDaysASeason}");
+        Assert.False(world.TheCemeteryWantsKeeping(cemetery));
+    }
+
+    /// <summary>⭐ A keeper helping out comes back when somebody dies (D915), as the builders come back to a repair.</summary>
+    [Fact]
+    public void AKeeperHelpingOutComesBackForABurial()
+    {
+        (SimLoop loop, Workplace cemetery, Villager keeper) = AKeptCemeteryNobodyWaitsFor();
+        SimWorld world = loop.World;
+        loop.Step(world.Config.TicksPerSeason);
+        Assert.NotEqual(VillagerState.KeepingTheCemetery, keeper.State);
+
+        Villager dead = Dies(loop, world.Villagers.First(v => v.Alive && v.Id != keeper.Id && v.CanWork));
+        StepUntil(loop, () => dead.BuriedAtTick is not null, years: 1);
+        Assert.Equal(cemetery.Id, dead.GraveAt);
+
+        // And the grave filled, back to helping out — not left standing where they dug.
+        PaintTreesToClear(world);
+        Assert.True(SeenClearing(loop, keeper), $"after the burial the keeper stayed {keeper.State}");
+    }
+
+    /// <summary>A keeper who walks over to keep it and finds it kept by the time they arrive goes back to helping out (D915).</summary>
+    [Fact]
+    public void AKeeperWhoArrivesToFindItKeptHelpsOutAgain()
+    {
+        (SimLoop loop, Workplace cemetery, Villager keeper) = AKeptCemeteryNobodyWaitsFor();
+        SimWorld world = loop.World;
+        StepUntil(loop, () => keeper.State == VillagerState.KeepingTheCemetery && keeper.ActionTicksRemaining == 0
+            && keeper.Tile != cemetery.Tile);
+        cemetery.RepairedAtTick = world.Tick; // kept, as far as the stamps say, while they walk
+        PaintTreesToClear(world);
+        Assert.True(SeenClearing(loop, keeper), $"they arrived and stayed {keeper.State}");
+        Assert.Equal(0, cemetery.TendedDaysThisSeason);
     }
 
     [Fact]

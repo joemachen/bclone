@@ -505,6 +505,18 @@ public sealed partial class SimWorld
     // ---------------------------------------------------------------
 
     /// <summary>
+    /// ⭐ Whether a cemetery wants its groundskeeper's keeping today (Joe's play note, D915: <i>"Laborer between"</i>) —
+    /// <c>cemetery_tend_after_seasons</c> seasons' wear since it was last kept, and fewer than <c>cemetery_tended_days_a_season</c>
+    /// days kept this season. Otherwise, with nobody to bury, the keeper helps out as a laborer does. Derived from the stamps.
+    /// </summary>
+    public bool TheCemeteryWantsKeeping(Workplace cemetery)
+    {
+        ArgumentNullException.ThrowIfNull(cemetery);
+        return cemetery.TendedDaysThisSeason < Config.CemeteryTendedDaysASeason
+            && WearTicksOf(cemetery.RaisedAtTick, cemetery.RepairedAtTick) >= (ulong)Config.CemeteryTendAfterSeasons * (ulong)Config.TicksPerSeason;
+    }
+
+    /// <summary>
     /// A cemetery at the season's turn: kept <c>cemetery_tended_days_a_season</c> days, it is sound again; otherwise what it has
     /// become is said, in a cemetery's words. Never closed, never a repair site. The count is cleared for the next season.
     /// </summary>

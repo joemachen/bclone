@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). ▶️ Joe's play is next.** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). 🐞 Joe played it (D915): the idle groundskeeper is a laborer between, §6.1.** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -26,7 +26,7 @@ the person from the village's living concerns and nothing marks the spot"* — a
 | Until a cemetery exists the dead simply go; it wants a place, a catchment and work someone does | D35 | a building, a walk in the one cost field, a trade |
 | The first is free on the first death; **one keeper a cemetery**; every one full at a death is a happiness hit | D395 (Joe) | §5, §6, §7 |
 | ~~The first is 4×5 and unlocks a cemetery **painted** at any size~~ → **every cemetery is placed like a building, in one of three sizes; none is painted, and the first is still free** | D395 → **D905 (Joe: *"there should be small/medium/large size options maybe?"* … *"yes first one is still free"*)** | §5 |
-| **The groundskeeper**: the job's name; buries the dead and tends the cemetery all year; no laborer's fallback. *"The family does not look after the grave. The groundskeeper does. gravedigger = groundskeeper"* | D905 (Joe) | §6 |
+| **The groundskeeper**: the job's name; buries the dead and tends the cemetery all year; no laborer's fallback *(⛔ reversed by Joe's play note — a laborer between, D915: "Laborer between")*. *"The family does not look after the grave. The groundskeeper does. gravedigger = groundskeeper"* | D905 (Joe) | §6 |
 | **Who minds:** *"only the dead person's family and partner mind, until a cemetery exists"* | D905 (Joe; call 1 a) | §7 |
 | **The dead from before:** *"the dead from before do not get buried too. they are gone."* | D905 (Joe; call 6 b) | §5.1, §8 |
 | The dead lie under a cloth until fetched; the family walks to the grave once; a cemetery set to no groundskeepers counts as no place | D905 (Joe: *"The rest stays as you recommended"*; calls 4 a, 7 a) | §6.3, §7 |
@@ -176,7 +176,7 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
   `cemetery_tended_days_a_season` days (10) that season is stamped `RepairedAtTick` — sound again. ⭐ **As built (D911): a groundskeeper keeps it
   all year** — after a day there the day is asked again from the top (hunger, cold, rest first, as anyone's), not the walk home: the tavern
   keeper's day-then-home spent a far cemetery's season on the road (3–4 days kept of 30, measured on a cemetery ten tiles out) and it wore
-  regardless; kept all year, 15–24 days a season, 6–8 in winter. **No repair site is raised for it**: it is not the
+  regardless; kept all year, 15–24 days a season, 6–8 in winter *(⛔ until D915: now kept the days it needs, after a year's wear, §6.1)*. **No repair site is raised for it**: it is not the
   builders' work. A tended cemetery never shows wear; it shows only where nobody keeps it.
 - **It is never closed, and no grave is ever lost**: wild still holds its dead, takes new ones when it has a keeper, and counts as a place (§7).
   Neglect upsets nobody — D797's *no place* stays the only cost.
@@ -210,7 +210,21 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
   short of food** — the tavern keeper's rule. The Professions row appears when the cemetery can be built (D887).
 - **They keep the cemetery all year** (D905): between burials they are at work inside it — the work state *tending*, at the graves, through the
   working day, broken off for meals and the cold like any work. **No laborer's fallback**: a groundskeeper is a groundskeeper. Tending is what keeps
-  it sound (§5.2, call 9).
+  it sound (§5.2, call 9). *(⛔ reversed by Joe's play note — a laborer between, D915: "Laborer between")*
+- ⭐ **A laborer between (D915, Joe's play note, 2026-11-26).** He played it: *"the cemetery groundskeeper just stands there the whole time doing
+  nothing while there are no graves to tend is weird."* Asked, he chose *"Laborer between"*, put to him as: *"When nobody needs burying and nothing is
+  worn, they go and haul and build with everyone else. They walk back when someone dies, or when the cemetery starts to look worn, the way builders
+  come back to repair."* **As built:**
+  - **The seat stays theirs.** They keep the job by name, Professions still counts them, and the labour pass does not take it back.
+  - **A cemetery wants keeping** (`SimWorld.TheCemeteryWantsKeeping`, derived from the stamps) once it has taken `cemetery_tend_after_seasons` (4,
+    new key) seasons' wear since it was last kept — about a year, well before it looks untidy in its 8th — and only until
+    `cemetery_tended_days_a_season` (10) days are kept that season. At the turn it is sound again, and the next year's wear starts.
+  - **Otherwise, with nobody to bury, they fall through to a spare hand's day** — the same path a laborer takes, below every trade: the painted
+    ground to clear, a load lying about, then a spell at home with its errands (water, the grave, the tavern). ⚠️ *"Haul and build"* in his words
+    is loose: in this game a laborer clears and tidies, and building is the builders' trade (`stock-limits-and-laborers.md §5`). Their card says
+    *"Nobody to bury, and the cemetery is kept — helping out until it wants keeping again."*
+  - **A death calls them back** at their next decision, as before: a burial outranks everything a spare hand does.
+  - Before, a fresh cemetery's keeper spent 15–24 days a season standing in it, where 10 days in one season a year now keep it sound.
 
 ### 6.2 A burial, step by step
 
@@ -318,7 +332,9 @@ Never both for the same person.
 6. **Wear** (call 9, D906) — ✅ **built (D911)** — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
    overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*
 7. **The view** — ✅ **built (D912)**, stand-ins drawn in code until the art lane's land — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
-8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.**
+8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.** 🐞 Played (D915): the idle groundskeeper a laborer
+   between (§6.1); *tests: a fresh cemetery's keeper helps out and keeps the seat; a year's wear calls them back for the days a season needs and no
+   more; a keeper helping out comes back for a burial, and goes back to helping out after it; one who arrives to find it kept helps out again.*
 
 ## 10. Joe's calls
 
@@ -326,7 +342,7 @@ Never both for the same person.
 
 1. Who minds: **(a) the dead person's family and partner, until there is a cemetery.**
 2. ~~Twenty graves in the first plot~~ → **three sizes, every one placed like a building; none painted** (*"i dont agree with 20 graves to a cemetery"*).
-3. **The groundskeeper** — buries and tends all year; no laborer's fallback (call 3 c, renamed).
+3. **The groundskeeper** — buries and tends all year; no laborer's fallback (call 3 c, renamed). *(⛔ reversed by Joe's play note — a laborer between, D915: "Laborer between")*
 4. **(a) the cloth, and the family's visit.**
 5. ~~The first painted bigger~~ → **the first is still free** (*"yes first one is still free"*); which size is call 8.
 6. **(b) only those who die after this slice is in your game** — the dead from before are gone.

@@ -3313,11 +3313,16 @@ public sealed partial class BehaviorSystem : ISimSystem
         }
 
         // ⭐ THE GROUNDSKEEPER (W4, `cemetery.md §6`; Joe, D905) — buries the oldest of the dead there is room and a road for, and
-        // otherwise keeps the cemetery, a day at a time. No laborer's fallback.
+        // keeps the cemetery, a day at a time, while it wants keeping. ⭐ Otherwise a laborer between (Joe's play note, D915,
+        // reversing D905's "no laborer's fallback"): the seat stays theirs and they fall through to what any spare hand does.
         if (villager.CanWork && job is { Kind: JobKind.Groundskeeper, IsSite: false })
         {
-            KeepTheCemetery(world, villager, job);
-            return;
+            if (KeepTheCemetery(world, villager, job))
+            {
+                return;
+            }
+
+            villager.WorkNote = NothingToKeep;
         }
 
         // ⭐ THE SMITH (D391) — the woodcutter's shape, one good over: a stint at the forge while
@@ -6218,45 +6223,58 @@ public sealed partial class BehaviorSystem : ISimSystem
         Travel(world, villager, tavern.Position, VillagerState.KeepingTheTavern);
     }
 
+    /// <summary>What a groundskeeper helping out says on their card (D915): why they are not at the graves.</summary>
+    private const string NothingToKeep = "Nobody to bury, and the cemetery is kept — helping out until it wants keeping again.";
+
     /// <summary>
     /// ⭐ THE GROUNDSKEEPER'S DAY (W4, `cemetery.md §6.1–6.2`). Carrying somebody: to the cemetery, and the grave there. Somebody
-    /// waiting there is room and a road for: to them. Nobody: a day keeping the cemetery.
+    /// waiting there is room and a road for: to them. Nobody, and the cemetery wants keeping: a day keeping it. ⭐ Otherwise false,
+    /// touching nothing (D915, Joe: <i>"Laborer between"</i>) — the keeper helps out as a laborer does.
     /// </summary>
-    private static void KeepTheCemetery(SimWorld world, Villager villager, Workplace cemetery)
+    private static bool KeepTheCemetery(SimWorld world, Villager villager, Workplace cemetery)
     {
         if (villager.CarryingTheDead != 0)
         {
+            villager.WorkNote = string.Empty;
             if (villager.Tile == cemetery.Tile)
             {
                 villager.State = VillagerState.Burying;
                 villager.ActionTicksRemaining = world.Config.GraveDigTicks + world.Config.GraveFillTicks;
-                return;
+                return true;
             }
 
             villager.State = VillagerState.CarryingTheDead;
             Travel(world, villager, cemetery.Position, VillagerState.CarryingTheDead);
-            return;
+            return true;
         }
 
         if (world.NextToBury(cemetery) is Villager dead)
         {
+            villager.WorkNote = string.Empty;
             villager.ErrandX = dead.Tile.X;
             villager.ErrandY = dead.Tile.Y;
             villager.State = VillagerState.FetchingTheDead;
             Travel(world, villager, dead.Position, VillagerState.FetchingTheDead);
-            return;
+            return true;
         }
 
+        if (!world.TheCemeteryWantsKeeping(cemetery))
+        {
+            return false;
+        }
+
+        villager.WorkNote = string.Empty;
         if (villager.Tile == cemetery.Tile)
         {
             villager.State = VillagerState.KeepingTheCemetery;
             villager.ActionTicksRemaining = world.Config.TicksPerDay;
             cemetery.TendedDaysThisSeason++; // a day of keeping it: the season's turn reads these (step 6, call 9)
-            return;
+            return true;
         }
 
         villager.State = VillagerState.KeepingTheCemetery;
         Travel(world, villager, cemetery.Position, VillagerState.KeepingTheCemetery);
+        return true;
     }
 
     /// <summary>
@@ -6313,7 +6331,11 @@ public sealed partial class BehaviorSystem : ISimSystem
             }
         }
 
-        KeepTheCemetery(world, villager, cemetery);
+        // Nothing left to do here (D915): the day asked again from the top, where a keeper with nothing to keep helps out.
+        if (!KeepTheCemetery(world, villager, cemetery))
+        {
+            Decide(world, villager);
+        }
     }
 
     /// <summary>The keeper's armful into the tavern's own store — never the household's larder (the D513 trap).</summary>
@@ -8158,7 +8180,11 @@ public sealed partial class BehaviorSystem : ISimSystem
                 if (WorkplaceOf(world, villager) is { Kind: JobKind.Groundskeeper, IsSite: false } burying)
                 {
                     world.Bury(villager, burying);
-                    KeepTheCemetery(world, villager, burying);
+                    if (!KeepTheCemetery(world, villager, burying))
+                    {
+                        Decide(world, villager); // nothing more here (D915): helping out
+                    }
+
                     return;
                 }
 

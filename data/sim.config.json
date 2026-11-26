@@ -1104,6 +1104,10 @@
   // A cemetery wears as a timber building does (Joe's call 9, "Yes, as you put it"); this many
   // days of a groundskeeper keeping it in a season make it sound again -- no logs, no builders.
   "cemetery_tended_days_a_season": 10,
+  // Joe's play note (D915, "Laborer between"): with nobody to bury, the groundskeeper helps out as a
+  // laborer does, and comes back to keep the cemetery once it has taken this many seasons' wear since
+  // it was last kept -- about a year, well before it looks untidy (its 8th year).
+  "cemetery_tend_after_seasons": 4,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,
