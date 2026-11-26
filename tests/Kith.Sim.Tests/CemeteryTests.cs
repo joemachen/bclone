@@ -6,6 +6,7 @@ using Kith.Sim.Logging;
 using Kith.Sim.Persistence;
 using Kith.Sim.World;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Kith.Sim.Tests;
 
@@ -16,6 +17,10 @@ namespace Kith.Sim.Tests;
 /// </summary>
 public sealed class CemeteryTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public CemeteryTests(ITestOutputHelper output) => _output = output;
+
     private static SimConfig Config => VillageFixtures.Village;
 
     private static SimLoop AVillage() => SimFactory.CreatePhase0(Config, new InMemoryLogSink());
@@ -1291,4 +1296,81 @@ public sealed class CemeteryTests
         Assert.Equal(world.GraveGeneration, RoundTrip(loop).World.GraveGeneration);
         Assert.Equal(1, world.GravesLaidIn(cemetery).Count(id => id != 0));
     }
+
+    // ---------------------------------------------------------------
+    //  Step 8 (§9, D916): the golden that buries people
+    // ---------------------------------------------------------------
+
+    /// <summary>What the burying valley reached, counted as it ran.</summary>
+    private sealed record Buried(SimWorld World, int Burials, int Visits, int KeptDays, int HelpingOut, int Repairs);
+
+    /// <summary>
+    /// The posed village (D916): the fixture's founding; its first death (old age, the mortality system's own path) learns the
+    /// cemetery, and the free small one stands by the founding at once; a groundskeeper asked for in Professions and one adult
+    /// pinned to it, as the player does, the labour pass left on; then 30 years, the eldest living who is not the keeper dying of
+    /// old age every ten, so burials, the family's visit, the keeper's year of helping out and the wear that calls them back
+    /// all happen.
+    /// </summary>
+    private static Buried ABuryingValley()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        world.SetJobLimit(JobKind.Groundskeeper, 1);
+        Villager keeper = world.Villagers.Where(v => v.Alive && v.CanTakeAJob).OrderBy(v => v.Id).First();
+        keeper.PinnedTrade = JobKind.Groundskeeper;
+        int visits = 0, kept = 0, helping = 0, repairs = 0;
+        ulong repairedAt = cemetery.RepairedAtTick;
+        var visited = new HashSet<(int, ulong)>();
+        for (int year = 0; year < 30; year++)
+        {
+            if (year % 10 == 5 && world.Villagers.Where(v => v.Alive && v.Id != keeper.Id && v.CanWork).MaxBy(v => v.AgeYears) is Villager eldest)
+            {
+                DiesOnTheNextTick(eldest);
+            }
+
+            for (int tick = 0; tick < world.Config.TicksPerYear; tick++)
+            {
+                int before = cemetery.TendedDaysThisSeason;
+                loop.StepOnce();
+                kept += cemetery.TendedDaysThisSeason > before ? 1 : 0;
+                helping += keeper.Alive && keeper.WorkplaceId == cemetery.Id && keeper.WorkNote.StartsWith("Nobody to bury", StringComparison.Ordinal) ? 1 : 0;
+                if (cemetery.RepairedAtTick != repairedAt)
+                {
+                    repairs++;
+                    repairedAt = cemetery.RepairedAtTick;
+                }
+
+                foreach (Villager v in world.Villagers)
+                {
+                    if (v.LastGraveVisitTick is ulong at && visited.Add((v.Id, at)))
+                    {
+                        visits++;
+                    }
+                }
+            }
+        }
+
+        return new Buried(world, world.GravesLaidIn(cemetery).Count(id => id != 0), visits, kept, helping, repairs);
+    }
+
+    private static readonly Lazy<Buried> TheBuryingValley = new(ABuryingValley);
+
+    /// <summary>
+    /// ⭐ PHASE 6 GATE ITEM 2 — A GOLDEN THAT BURIES PEOPLE (D916, `cemetery.md §9` step 8): the valley above at Year 30. Every
+    /// other golden has no cemetery, so this is the one that sees the graves, the visits, the keeping and the wear in the hash.
+    /// </summary>
+    [Fact]
+    public void TheGoldenThatBuriesPeople()
+    {
+        Buried b = TheBuryingValley.Value;
+        _output.WriteLine($"burials {b.Burials}, visits {b.Visits}, kept days {b.KeptDays}, helping-out ticks {b.HelpingOut}, repairs {b.Repairs}, alive {b.World.Population}, year {b.World.Clock.Year}, unburied {b.World.Unburied.Count}");
+        _output.WriteLine($"hash {StateHash.Compute(b.World)}");
+        Assert.True(b.Burials >= 2 && b.Visits > 0 && b.KeptDays > 0 && b.HelpingOut > 0 && b.Repairs > 0,
+            "the golden's valley never reached a burial, a visit, a kept day, a keeper helping out and a repair");
+        Assert.Equal(BuryingGolden, StateHash.Compute(b.World));
+    }
+
+    /// <summary>Taken 2026-11-26 (D916), on its first run.</summary>
+    private const ulong BuryingGolden = 10431254814961408444UL;
 }

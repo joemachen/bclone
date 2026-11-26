@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). 🐞 Joe played it (D915): the idle groundskeeper is a laborer between, §6.1.** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). 🐞 Joe played it (D915): the idle groundskeeper is a laborer between, §6.1; ✅ played again, *"looks good!"*, and the golden that buries people and the milestone-map row (D916). ▶️ The merge at his word.** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -332,7 +332,7 @@ Never both for the same person.
 6. **Wear** (call 9, D906) — ✅ **built (D911)** — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
    overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*
 7. **The view** — ✅ **built (D912)**, stand-ins drawn in code until the art lane's land — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
-8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.** 🐞 Played (D915): the idle groundskeeper a laborer
+8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.** ✅ **Played again, *"looks good!"*; the golden and the row built (D916)**: `CemeteryTests.TheGoldenThatBuriesPeople` — the fixture's founding, its first death learning the cemetery, the free small one by the founding, a groundskeeper asked for and one adult pinned, the labour pass on, thirty years with the eldest dying every ten — 6 burials, 6 visits, 27 seasons kept back to sound, the keeper helping out between, 9 alive at Year 31. 🐞 Played first (D915): the idle groundskeeper a laborer
    between (§6.1); *tests: a fresh cemetery's keeper helps out and keeps the seat; a year's wear calls them back for the days a season needs and no
    more; a keeper helping out comes back for a burial, and goes back to helping out after it; one who arrives to find it kept helps out again.*
 
