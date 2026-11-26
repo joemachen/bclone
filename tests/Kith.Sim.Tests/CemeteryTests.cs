@@ -1083,4 +1083,95 @@ public sealed class CemeteryTests
         Assert.NotEqual(three, StateHash.Compute(world));
         Assert.Equal(4, RoundTrip(loop).World.FindWorkplace(cemetery.Id)!.TendedDaysThisSeason);
     }
+
+    // ---------------------------------------------------------------
+    //  Step 7 (§9, D912): what the cemetery, its stones and a household say
+    // ---------------------------------------------------------------
+
+    [Fact]
+    public void TheCemeterysSentenceSaysWhoKeepsItWhoWaitsAndWhenItIsFull()
+    {
+        SimConfig tiny = Config with
+        {
+            Buildings = Config.BuildingRows.Select(r => r.Id == (int)BuildingKind.CemeterySmall
+                ? r with { ExtentWidth = 1, ExtentHeight = 1, Graves = 1 } : r).ToArray(),
+        };
+        SimLoop loop = SimFactory.CreatePhase0(tiny, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        (bool kept, string said) = world.SayTheCemetery(cemetery);
+        Assert.False(kept);
+        Assert.Contains("Nobody keeps it", said, StringComparison.Ordinal);
+        Assert.Contains("raise Groundskeepers", said, StringComparison.Ordinal);
+        Assert.Contains("One lies waiting", said, StringComparison.Ordinal);
+
+        world.SetJobLimit(JobKind.Groundskeeper, 0);
+        Assert.Contains("set to none", world.SayTheCemetery(cemetery).Sentence, StringComparison.Ordinal);
+        world.SetJobLimit(JobKind.Groundskeeper, null);
+
+        Villager keeper = Keep(world, cemetery);
+        Assert.Equal((true, $"Kept by {keeper.Name}. One lies waiting for a grave."), world.SayTheCemetery(cemetery));
+        StepUntil(loop, () => world.FreeGraves(cemetery) == 0);
+        Assert.StartsWith("Full", world.SayTheCemetery(cemetery).Sentence, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AStoneSaysWhoTheyWereHowTheyDiedAndWhomTheyLieBeside()
+    {
+        (SimLoop loop, Workplace cemetery, _, List<Villager> adults) = AKeptCemeteryWithAStranger();
+        SimWorld world = loop.World;
+        List<Villager> apart = adults.GroupBy(v => v.HouseholdId).Select(g => g.First()).Take(2).ToList();
+        Villager a = apart[0], b = apart[1];
+        Unpair(world, a);
+        Unpair(world, b);
+        (a.PartnerId, b.PartnerId) = (b.Id, a.Id);
+        Dies(loop, a);
+        StepUntil(loop, () => a.BuriedAtTick is not null);
+        Dies(loop, b);
+        StepUntil(loop, () => b.BuriedAtTick is not null);
+
+        string stone = world.TheStoneSays(b);
+        Assert.StartsWith($"{b.FullName} · {b.AgeYears}. Died in ", stone, StringComparison.Ordinal);
+        Assert.Contains(", of old age.", stone, StringComparison.Ordinal); // they died by the pose's old age
+        Assert.EndsWith($" Beside {a.Name}.", stone, StringComparison.Ordinal);
+        Assert.Contains(cemetery.Id, new[] { b.GraveAt });
+    }
+
+    [Fact]
+    public void AHouseholdsCardSaysWhoOfTheirsWaitsAndWhenTheyAreCarried()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        (Villager dead, _, _) = AFamily(world);
+        Household home = world.FindHousehold(dead.HouseholdId)!;
+        Assert.Null(world.WhoOfTheirsWaits(home));
+        Dies(loop, dead);
+        Point fell = dead.Position;
+        dead.Position = Point.CentreOf(world.HomePlaceOf(dead));
+        Assert.Equal($"{dead.Name} lies at home, waiting for a grave.", world.WhoOfTheirsWaits(home));
+        dead.Position = Point.CentreOf(new GridPos(world.HomePlaceOf(dead).X + 3, world.HomePlaceOf(dead).Y));
+        Assert.Equal($"{dead.Name} lies where they fell, waiting for a grave.", world.WhoOfTheirsWaits(home));
+        dead.Position = fell;
+
+        Workplace cemetery = StandACemetery(loop);
+        Villager keeper = Keep(world, cemetery, world.Villagers.First(v => v.Alive && v.CanTakeAJob && v.HouseholdId != dead.HouseholdId));
+        StepUntil(loop, () => keeper.CarryingTheDead == dead.Id);
+        Assert.Equal($"{dead.Name} is being carried to the cemetery.", world.WhoOfTheirsWaits(home));
+        StepUntil(loop, () => dead.BuriedAtTick is not null);
+        Assert.Null(world.WhoOfTheirsWaits(home));
+    }
+
+    [Fact]
+    public void EveryBurialMovesTheGravesCounterAndALoadRebuildsIt()
+    {
+        SimLoop loop = AVillage();
+        SimWorld world = loop.World;
+        Workplace cemetery = StandACemetery(loop);
+        int before = world.GraveGeneration;
+        Keep(world, cemetery);
+        StepUntil(loop, () => world.Unburied.Count == 0);
+        Assert.Equal(before + 1, world.GraveGeneration);
+        Assert.Equal(world.GraveGeneration, RoundTrip(loop).World.GraveGeneration);
+        Assert.Equal(1, world.GravesLaidIn(cemetery).Count(id => id != 0));
+    }
 }

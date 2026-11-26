@@ -162,6 +162,19 @@ public sealed partial class SimWorld
         return free;
     }
 
+    /// <summary>
+    /// ⭐ Bumped at every burial — the cheapest honest answer to <i>"has any grave changed since I last looked?"</i> (CLAUDE.md), read by
+    /// the view's grave patterns. Derived: the count of the buried, rebuilt on load; never saved or hashed.
+    /// </summary>
+    public int GraveGeneration { get; private set; }
+
+    /// <summary>A cemetery's places — the id of who lies in each, 0 for free — in the sim's own order (row by row from the gate).</summary>
+    public IReadOnlyList<int> GravesLaidIn(Workplace cemetery)
+    {
+        ArgumentNullException.ThrowIfNull(cemetery);
+        return PlacesOf(cemetery);
+    }
+
     /// <summary>Whether a groundskeeper has this one of the dead in their arms.</summary>
     public bool IsBeingCarried(Villager dead) => _carried.Contains(dead.Id);
 
@@ -257,6 +270,7 @@ public sealed partial class SimWorld
         dead.GraveAt = cemetery.Id;
         dead.GravePlace = place;
         PlacesOf(cemetery)[place] = dead.Id;
+        GraveGeneration++;
 
         string beside = BesideWhom(cemetery, dead, place) is Villager kin ? $" beside {kin.Name}" : string.Empty;
         Narrate($"{dead.FullName} was buried{beside}. {Clock.SeasonAndYear()}.", LogCategory.Death);
@@ -366,6 +380,7 @@ public sealed partial class SimWorld
     /// <summary>On load, after the villagers and the workplaces: who lies where, who is carried, and who was buried lately.</summary>
     private void RebuildTheGraves()
     {
+        GraveGeneration = Villagers.Count(v => v.BuriedAtTick is not null);
         _graves.Clear();
         _carried.Clear();
         _recentBurials.Clear();
@@ -516,5 +531,77 @@ public sealed partial class SimWorld
         };
 
         Narrate($"{line} {Clock.SeasonAndYear()}.", LogCategory.Building);
+    }
+
+    // ---------------------------------------------------------------
+    //  Step 7 (`cemetery.md §5.3`, D912): what the cemetery and its stones say
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// The cemetery's card sentence (§5.3, §6.4): who keeps it and who waits — or why nobody does, or that it is full. The bool is
+    /// whether it is being kept.
+    /// </summary>
+    public (bool Kept, string Sentence) SayTheCemetery(Workplace cemetery)
+    {
+        ArgumentNullException.ThrowIfNull(cemetery);
+        int waiting = _unburied.Count;
+        string waits = waiting switch { 0 => string.Empty, 1 => " One lies waiting for a grave.", _ => $" {waiting} lie waiting for a grave." };
+        if (FreeGraves(cemetery) == 0)
+        {
+            return (false, "Full — every grave is taken. Another cemetery will be wanted." + waits);
+        }
+
+        if (cemetery.WorkerIds.Count == 0)
+        {
+            string why = JobLimits.For(JobKind.Groundskeeper) == 0
+                ? "the number of groundskeepers is set to none"
+                : "nobody has been asked to keep it — raise Groundskeepers in Professions";
+            return (false, $"Nobody keeps it — {why}." + waits);
+        }
+
+        string keeper = FindVillager(cemetery.WorkerIds[0]) is Villager kept ? kept.Name : "somebody";
+        return (true, $"Kept by {keeper}." + waits);
+    }
+
+    /// <summary>
+    /// ⭐ What a stone says (§5.3) — derived from the person's own record each time, so it reads the same in a hundred years:
+    /// <i>"Otto Ashford · 64. Died in Winter of Year 67, of old age. Beside Mira."</i>
+    /// </summary>
+    public string TheStoneSays(Villager dead)
+    {
+        ArgumentNullException.ThrowIfNull(dead);
+        string when = dead.DiedAtTick is ulong at ? $" Died in {SimClock.FromTick(at, Config).SeasonAndYear()}" : string.Empty;
+        string how = dead.CauseOfDeath switch
+        {
+            CauseOfDeath.OldAge => ", of old age",
+            CauseOfDeath.Starvation => ", in a hungry year",
+            CauseOfDeath.Cold => ", in the cold",
+            _ => string.Empty,
+        };
+        string beside = FindWorkplace(dead.GraveAt) is Workplace cemetery && BesideWhom(cemetery, dead, dead.GravePlace) is Villager kin
+            ? $" Beside {kin.Name}."
+            : string.Empty;
+        return $"{dead.FullName} · {dead.AgeYears}.{when}{how}.{beside}";
+    }
+
+    /// <summary>
+    /// The household card's line (§6.3) while one of theirs waits for a grave — <i>"Mabel lies at home, waiting for a grave."</i> —
+    /// the oldest of them; null when nobody does.
+    /// </summary>
+    public string? WhoOfTheirsWaits(Household household)
+    {
+        ArgumentNullException.ThrowIfNull(household);
+        foreach (int id in _unburied)
+        {
+            if (FindVillager(id) is Villager dead && dead.HouseholdId == household.Id)
+            {
+                string where = household.HasHome && dead.Tile == HomePlaceOf(dead) ? "at home" : "where they fell";
+                return IsBeingCarried(dead)
+                    ? $"{dead.Name} is being carried to the cemetery."
+                    : $"{dead.Name} lies {where}, waiting for a grave.";
+            }
+        }
+
+        return null;
     }
 }

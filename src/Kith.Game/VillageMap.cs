@@ -7867,7 +7867,9 @@ public partial class VillageMap : Control
             // ⭐ With its yard (A86, `building-yards.md`): stock from its own store where it keeps one, else whether it is working.
             RoofLook workLook = RoofOf(workplace.Kind);
             YardState workYard = PaintsBuildings ? YardStateOf(world, workplace, workLook.Yard) : default;
-            if (!DrawPaintedBuilding(workLook, centre, workplace.ExtentWidth * 0.8f, workplace.ExtentHeight * 0.8f, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id, yard: workYard, burning: FireLitAt(world, workplace)))
+            // A cemetery is its ground, edge to edge (W4, D912); a building stands back from its neighbours at 0.8.
+            float share = workplace.Kind == JobKind.Groundskeeper ? 0.96f : 0.8f;
+            if (!DrawPaintedBuilding(workLook, centre, workplace.ExtentWidth * share, workplace.ExtentHeight * share, workplace.Facing.Raw, paint, worn, world.DoorOf(workplace), workplace.Id, yard: workYard, burning: FireLitAt(world, workplace)))
             {
                 DrawFootprint(
                     centre,
@@ -9456,6 +9458,9 @@ public partial class VillageMap : Control
         // test asks DrawnCentre too — one answer per frame, or the dot and the hit test
         // would disagree by a tile.
         AdvanceInterpolation(world);
+
+        // ⭐ W4 (D912): the dead who wait for a grave, under a cloth, beneath the living who walk past.
+        DrawTheWaitingDead(world);
 
         // ⭐ With the tick on, people standing up instead of dots (A93, `villager-art.md §3b`); off, the dots below, to the byte.
         if (PaintsPeople)

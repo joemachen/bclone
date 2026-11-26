@@ -1643,7 +1643,7 @@ public partial class Main
         }
         else
         {
-            Wear(card, world.WearOf(place), world.Config);
+            Wear(card, world.WearOf(place), world.Config, isACemetery: place.Kind == JobKind.Groundskeeper);
 
             // ⭐ The market's or the post's handcart (`handcart.md §13.5`): the household card's line, one owner over.
             CartLine(card, place.IsACartOwner ? WorksCartSentence(world, place) : null);
@@ -1712,6 +1712,12 @@ public partial class Main
                 Number(card, 0, $"{place.Store[Goods.Ale]}", "ale in");
                 Number(card, 1, $"{place.EveningsThisSeason}", "evenings this season");
             }
+            else if (place.Kind == JobKind.Groundskeeper)
+            {
+                // ⭐ THE CEMETERY (W4, `cemetery.md §5.3`): how many lie there and how many graves are free, who keeps it, who waits; the
+                // names, newest first, each with its stone's words.
+                WriteCemeteryCard(card, world, place);
+            }
             else if (place.Kind == JobKind.Teacher)
             {
                 // ⭐ THE SCHOOL SAYS ITS PLACES (D765, §6: *"14 of 20 places taken"*) — and who waits, and its stove (D764).
@@ -1721,7 +1727,8 @@ public partial class Main
             }
         }
 
-        card.PeopleScroll.Visible = false;
+        // The cemetery lists its dead (W4); nothing else on this card lists people.
+        card.PeopleScroll.Visible = place is { Kind: JobKind.Groundskeeper, IsSite: false };
 
         bool idleRing = !place.IsSite && world.IdleNote(place) is not null && _map.IdleMarkerShownFor(place.Id);
         card.Portrait.Show(
@@ -1730,6 +1737,37 @@ public partial class Main
         card.Caption.Text = place.Construction is { Repairing: true } ? "the builders mending it"
             : place.IsSite ? "a building site" : Workers(world, place);
         return true;
+    }
+
+    /// <summary>The cemetery's card (W4, D912): the sim's sentence, three numbers, and the names on its stones, newest first.</summary>
+    private void WriteCemeteryCard(Card card, SimWorld world, Workplace cemetery)
+    {
+        (bool kept, string sentence) = world.SayTheCemetery(cemetery);
+        Status(card, kept, sentence);
+        int graves = world.GravesOf(cemetery);
+        int free = world.FreeGraves(cemetery);
+        Number(card, 0, $"{graves - free}", "lie here");
+        Number(card, 1, $"{free}", free == 1 ? "grave free" : "graves free");
+        Number(card, 2, $"{world.Unburied.Count}", "waiting");
+
+        ClearThePeople(card);
+        List<Villager> buried = world.GravesLaidIn(cemetery).Where(id => id != 0).Select(id => world.FindVillager(id)!)
+            .OrderByDescending(v => v.BuriedAtTick).ThenBy(v => v.Id).ToList();
+        foreach (Villager dead in buried)
+        {
+            var row = new HBoxContainer();
+            Label who = Body(dead.FullName);
+            who.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            who.ClipText = true;
+            who.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
+            who.TooltipText = world.TheStoneSays(dead);
+            who.MouseFilter = Control.MouseFilterEnum.Pass;
+            row.AddChild(who);
+            row.AddChild(Muted($"{dead.AgeYears}"));
+            card.People.AddChild(row);
+        }
+
+        card.PeopleScroll.CustomMinimumSize = new Vector2(0, RowSize * 1.45f * Mathf.Min(PeopleRowsShown, Mathf.Max(1, buried.Count)));
     }
 
     /// <summary>What the school's card says (D765) — read from the sim once, written by <see cref="WriteSchoolCard"/>.</summary>
@@ -1985,6 +2023,12 @@ public partial class Main
         if (living > 0 && world.ChildNoteFor(home) is string waiting)
         {
             Status(card, working: UiLook.TintOf(card.Status) == UiLook.Text, $"{card.Status.Text} {waiting}");
+        }
+
+        // ⭐ ONE OF THEIRS WAITING FOR A GRAVE (W4, `cemetery.md §6.3`): said on the status, once, the oldest of them.
+        if (world.WhoOfTheirsWaits(home) is string unburied)
+        {
+            Status(card, working: UiLook.TintOf(card.Status) == UiLook.Text, $"{card.Status.Text} {unburied}");
         }
 
         card.WorkersRow.Visible = false;
@@ -3026,9 +3070,10 @@ public partial class Main
 
     /// <summary>Write the condition line and weather the portrait — or hide the line, for a thing with no row.</summary>
     private static void Wear(
-        Card card, WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
+        Card card, WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null,
+        bool isACemetery = false)
     {
-        (string Text, bool Warn)? line = WearLine(report, config, isABridge, closed, keptOpenBecause);
+        (string Text, bool Warn)? line = isACemetery ? CemeteryWearLine(report) : WearLine(report, config, isABridge, closed, keptOpenBecause);
         card.Established.Visible = report is not null;
         card.Established.Text = report is WearReport r ? EstablishedLine(r.Raised, config) : string.Empty;
         card.Wear.Visible = line is not null;
@@ -3059,6 +3104,20 @@ public partial class Main
     /// (is there timber? are there builders?). A sound building says when it was raised or last mended, so the line is
     /// never empty and a fresh repair can be seen to have happened.
     /// </remarks>
+    /// <summary>
+    /// A cemetery's condition in its own words (W4, `cemetery.md §5.2`; Joe's call 9): its groundskeeper keeps it, not the builders,
+    /// and it never closes — wild, its dead are still there.
+    /// </summary>
+    internal static (string Text, bool Warn)? CemeteryWearLine(WearReport? report) => report is not WearReport { Percent: int percent } r
+        ? null
+        : r.State switch
+        {
+            Condition.Sound => ($"Kept · {percent} % worn.", false),
+            Condition.Worn => ($"Untidy · {percent} % — a season's keeping makes it sound again.", true),
+            Condition.Failing => ($"Overgrown · {percent} % — a season's keeping makes it sound again.", true),
+            _ => ($"Wild · {percent} % — its dead are still there, under the grass; a season's keeping makes it sound again.", true),
+        };
+
     internal static (string Text, bool Warn)? WearLine(
         WearReport? report, SimConfig config, bool isABridge = false, bool closed = false, string? keptOpenBecause = null)
     {

@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911).** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). ▶️ Joe's play is next.** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -191,6 +191,13 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
   cart. A master farmer. Beside Mira, his wife of forty years"* — each clause derived from the person's own record, so it is the same in a hundred years.
 - **The cemetery's card:** how many lie there and how many graves are free; who keeps it; who waits; the names, newest first, each
   opening its stone.
+  > ⭐ **As built (D912):** the card's sentence is the sim's (`SayTheCemetery`: *"Kept by Anna. One lies waiting for a grave."*, *"Nobody
+  > keeps it — raise Groundskeepers in Professions."*, *"Full — every grave is taken."*); three numbers (lie here · graves free · waiting); the
+  > names newest first with their age, **each name's stone in its tooltip** (`TheStoneSays`: *"Otto Ashford · 64. Died in Winter, Year 67, of
+  > old age. Beside Mira."*) — ⚠️ **not yet a stone's own card on a click on the grave**; that and the map's grave picking are left for Joe's
+  > play to ask for. Its wear line is a cemetery's (*Kept · Untidy · Overgrown · Wild — a season's keeping makes it sound again*), never the
+  > builders'. The household's card says *"Mabel lies at home / where they fell, waiting for a grave."* or *"… is being carried to the
+  > cemetery."*
 - **The log:** *"Otto Ashford was buried beside Mira. Spring, Year 68."* One line a burial, under Deaths. And once, when three graves are
   left across every cemetery: *"There is room for three more in the cemetery — build another before it fills."*
 
@@ -310,7 +317,7 @@ Never both for the same person.
    each row of §7; the queue raises nothing; the dead from before raise nothing; both sides of the anti-vacuity.*
 6. **Wear** (call 9, D906) — ✅ **built (D911)** — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
    overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*
-7. **The view** — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
+7. **The view** — ✅ **built (D912)**, stand-ins drawn in code until the art lane's land — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
 8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.**
 
 ## 10. Joe's calls
