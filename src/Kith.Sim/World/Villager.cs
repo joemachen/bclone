@@ -627,6 +627,22 @@ public sealed class Villager
     /// </summary>
     public ulong? BuriedAtTick { get; set; }
 
+    /// <summary>
+    /// The cemetery they lie in (its workplace id) and their place in it, 0 … graves − 1, row by row from the gate in the
+    /// cemetery's own frame (W4, `cemetery.md §5.2–5.3`). 0 and 0 until buried. Saved when set (`grave_at`, `grave_place`), hashed
+    /// sparsely; the index of who lies where is derived from these.
+    /// </summary>
+    public int GraveAt { get; set; }
+
+    /// <inheritdoc cref="GraveAt"/>
+    public int GravePlace { get; set; }
+
+    /// <summary>
+    /// The id of one of the dead this groundskeeper has taken up and not yet laid to rest — 0 for nobody (`cemetery.md §6.2`).
+    /// Saved when set (`carrying_the_dead`), hashed sparsely.
+    /// </summary>
+    public int CarryingTheDead { get; set; }
+
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
 
@@ -1027,6 +1043,10 @@ public sealed class Villager
             VillagerState.FetchingAle => "fetching ale for the tavern",
             VillagerState.CarryingAle => "carrying ale to the tavern",
             VillagerState.KeepingTheTavern => $"keeping {where}",
+            VillagerState.FetchingTheDead => "going to fetch one of the village's dead",
+            VillagerState.CarryingTheDead => $"carrying one of the village's dead to {where}",
+            VillagerState.Burying => $"digging a grave at {where}",
+            VillagerState.KeepingTheCemetery => $"keeping {where}",
             VillagerState.WalkingToTheRiver => "walking to the river for water",
             VillagerState.DrawingAtTheRiver => "drawing water at the river",
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
@@ -1115,6 +1135,9 @@ public sealed class Villager
             ["died_at"] = SaveWriter.Hex(DiedAtTick),
             ["left_at"] = LeftAtTick is null ? null : SaveWriter.Hex(LeftAtTick),
             ["buried_at"] = BuriedAtTick is null ? null : SaveWriter.Hex(BuriedAtTick),
+            ["grave_at"] = GraveAt == 0 ? null : GraveAt,
+            ["grave_place"] = GraveAt == 0 ? null : GravePlace,
+            ["carrying_the_dead"] = CarryingTheDead == 0 ? null : CarryingTheDead,
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1191,6 +1214,9 @@ public sealed class Villager
             DiedAtTick = save.NullableULong("died_at"),
             LeftAtTick = save.HasValue("left_at") ? save.NullableULong("left_at") : null,
             BuriedAtTick = save.HasValue("buried_at") ? save.NullableULong("buried_at") : null,
+            GraveAt = save.HasValue("grave_at") ? save.Int("grave_at") : 0,
+            GravePlace = save.HasValue("grave_place") ? save.Int("grave_place") : 0,
+            CarryingTheDead = save.HasValue("carrying_the_dead") ? save.Int("carrying_the_dead") : 0,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

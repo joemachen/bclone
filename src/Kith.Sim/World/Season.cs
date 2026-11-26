@@ -414,6 +414,18 @@ public enum VillagerState
 
     /// <summary>At the library taking paper — <c>library_sit_ticks</c>, then home with it in hand (§5.1).</summary>
     AtTheLibrary,
+
+    /// <summary>A groundskeeper walking to where one of the dead lies, to take them up (W4, `cemetery.md §6.2`). Appended.</summary>
+    FetchingTheDead,
+
+    /// <summary>A groundskeeper carrying one of the dead to the cemetery — nothing else in the arms (§6.2).</summary>
+    CarryingTheDead,
+
+    /// <summary>Digging the grave and laying them to rest — <c>grave_dig_ticks</c> and <c>grave_fill_ticks</c> (§6.2).</summary>
+    Burying,
+
+    /// <summary>A groundskeeper keeping the cemetery — a day of it, then home, the tavern keeper's shape (§6.1, D905).</summary>
+    KeepingTheCemetery,
 }
 
 /// <summary>

@@ -365,6 +365,7 @@ public readonly record struct LabourQuota
         needed[(int)JobKind.Herdsman] = HerdsmenWanted(world, foodComesFirst: false);
         needed[(int)JobKind.Merchant] = MerchantsWanted(world);
         needed[(int)JobKind.TavernKeeper] = KeepersWanted(world);
+        needed[(int)JobKind.Groundskeeper] = GroundskeepersWanted(world);
 
         // ⭐ The village never asks for a teacher by itself (D754): a school is the player's decision, so the want is
         // nobody and only the number he types stands — the merchant's shape without a want of its own.
@@ -444,6 +445,9 @@ public readonly record struct LabourQuota
         // ⭐ THE TAVERN KEEPERS (W3, Joe's call 3b, D834): one a tavern while there is ale to pour — and none while food comes
         // first, the tavern shut and saying why (a need before a comfort).
         int keepersWanted = foodComesFirst ? 0 : KeepersWanted(world);
+
+        // ⭐ THE GROUNDSKEEPERS (W4, `cemetery.md §6.1`): one a standing cemetery, all year — and none while food comes first.
+        int groundskeepersWanted = foodComesFirst ? 0 : GroundskeepersWanted(world);
 
         // ---- Survival first, in the order things kill you -------------
         //
@@ -699,6 +703,9 @@ public readonly record struct LabourQuota
         // The keepers after the merchants (W3): a comfort, out of what feeding, warming, building and trade leave. Their slot
         // rides in the by-job array, as the batch trades' do.
         batchTaken[(int)JobKind.TavernKeeper] = Take(ref free, Cap(keepersWanted, TotalCapacityFor(world, JobKind.TavernKeeper)));
+
+        // The groundskeepers after the tavern keepers (W4): a comfort's place, out of what is left. The same by-job slot.
+        batchTaken[(int)JobKind.Groundskeeper] = Take(ref free, Cap(groundskeepersWanted, TotalCapacityFor(world, JobKind.Groundskeeper)));
         int teachers = 0;
 
         // And the market, last of all, out of hands nobody else needs (D14).
@@ -888,6 +895,7 @@ public readonly record struct LabourQuota
         merchants = Asked(world, JobKind.Merchant, merchants, hands);
         teachers = Asked(world, JobKind.Teacher, teachers, hands);
         batchTaken[(int)JobKind.TavernKeeper] = Asked(world, JobKind.TavernKeeper, batchTaken[(int)JobKind.TavernKeeper], hands);
+        batchTaken[(int)JobKind.Groundskeeper] = Asked(world, JobKind.Groundskeeper, batchTaken[(int)JobKind.Groundskeeper], hands);
         foreach (BatchRow row in world.Batches.Rows)
         {
             batchTaken[(int)row.Trade] = Asked(world, row.Trade, batchTaken[(int)row.Trade], hands);
@@ -919,6 +927,7 @@ public readonly record struct LabourQuota
         merchants = AtLeastPinned(world, JobKind.Merchant, merchants);
         teachers = AtLeastPinned(world, JobKind.Teacher, teachers);
         batchTaken[(int)JobKind.TavernKeeper] = AtLeastPinned(world, JobKind.TavernKeeper, batchTaken[(int)JobKind.TavernKeeper]);
+        batchTaken[(int)JobKind.Groundskeeper] = AtLeastPinned(world, JobKind.Groundskeeper, batchTaken[(int)JobKind.Groundskeeper]);
         foreach (BatchRow row in world.Batches.Rows)
         {
             batchTaken[(int)row.Trade] = AtLeastPinned(world, row.Trade, batchTaken[(int)row.Trade]);
@@ -1882,6 +1891,26 @@ public readonly record struct LabourQuota
                 && (tavern.Store[Goods.Ale] > 0 || world.StoreHoldingAle(tavern.Tile) is not null))
             {
                 wanted += tavern.Places;
+            }
+        }
+
+        return wanted;
+    }
+
+    /// <summary>
+    /// ⭐ Groundskeepers the cemeteries want (W4, `cemetery.md §6.1`; D395, D905): every seat of a standing cemetery, all year — a
+    /// cemetery is kept whether or not anybody waits. The famine stand-down is the caller's, as the tavern keeper's is.
+    /// </summary>
+    public static int GroundskeepersWanted(SimWorld world)
+    {
+        ArgumentNullException.ThrowIfNull(world);
+        int wanted = 0;
+        for (int i = 0; i < world.Workplaces.Count; i++)
+        {
+            Workplace cemetery = world.Workplaces[i];
+            if (cemetery.Kind == JobKind.Groundskeeper && !cemetery.IsSite && !cemetery.Closed)
+            {
+                wanted += cemetery.Places;
             }
         }
 

@@ -1095,6 +1095,9 @@
   "cemetery_large_logs": 30,
   "cemetery_large_stone": 20,
   "cemetery_large_work_ticks": 60,
+  // A burial (W4, `cemetery.md §6.2`, measured at D891): two days to dig, one to lay them to rest and fill it.
+  "grave_dig_ticks": 8,
+  "grave_fill_ticks": 4,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,

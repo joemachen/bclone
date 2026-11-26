@@ -1,3 +1,4 @@
+using Kith.Sim.Logging;
 using Kith.Sim.World;
 
 namespace Kith.Sim.Core;
@@ -68,6 +69,12 @@ public sealed partial class SimWorld
     /// </remarks>
     internal void ADeath(Villager villager)
     {
+        // A groundskeeper who dies with one of the dead in their arms sets them down where they fell (§6.2).
+        if (villager.CarryingTheDead != 0)
+        {
+            SetDownTheDead(villager);
+        }
+
         DeathsEver++;
         if (DeathsEver == 1)
         {
@@ -112,7 +119,7 @@ public sealed partial class SimWorld
     }
 
     /// <summary>On load, after the villagers: the list again, from what the save holds.</summary>
-    private void RebuildTheUnburied()
+    internal void RebuildTheUnburied()
     {
         _unburied.Clear();
         foreach (Villager villager in Villagers
@@ -121,6 +128,260 @@ public sealed partial class SimWorld
             .ThenBy(v => v.Id))
         {
             _unburied.Add(villager.Id);
+        }
+    }
+
+    // ---------------------------------------------------------------
+    //  Step 4 (`cemetery.md §5.3, §6`, D909): the graves, the carried, a burial
+    // ---------------------------------------------------------------
+
+    /// <summary>Each cemetery's places — the id of who lies in each, 0 for free. Derived from the villagers, never saved or hashed.</summary>
+    private readonly Dictionary<int, int[]> _graves = new();
+
+    /// <summary>The ids of the dead a groundskeeper has taken up. Derived from <see cref="Villager.CarryingTheDead"/>.</summary>
+    private readonly HashSet<int> _carried = new();
+
+    /// <summary>How many lie in a cemetery of this row: its graves, one a tile; 0 for any workplace that is not one.</summary>
+    public int GravesOf(Workplace cemetery) => RowOf(cemetery)?.Graves ?? 0;
+
+    /// <summary>How many of a cemetery's places nobody lies in.</summary>
+    public int FreeGraves(Workplace cemetery)
+    {
+        ArgumentNullException.ThrowIfNull(cemetery);
+        if (!_graves.TryGetValue(cemetery.Id, out int[]? places))
+        {
+            return GravesOf(cemetery);
+        }
+
+        int free = 0;
+        foreach (int id in places)
+        {
+            free += id == 0 ? 1 : 0;
+        }
+
+        return free;
+    }
+
+    /// <summary>Whether a groundskeeper has this one of the dead in their arms.</summary>
+    public bool IsBeingCarried(Villager dead) => _carried.Contains(dead.Id);
+
+    /// <summary>
+    /// The one this cemetery's groundskeeper should fetch next: <b>the oldest of the waiting</b> nobody is carrying whom the cemetery
+    /// can be walked to from — or nobody, if it has no free place (`cemetery.md §6.2, §6.4`). An unreachable one is passed over.
+    /// </summary>
+    public Villager? NextToBury(Workplace cemetery)
+    {
+        ArgumentNullException.ThrowIfNull(cemetery);
+        if (FreeGraves(cemetery) == 0)
+        {
+            return null;
+        }
+
+        foreach (int id in _unburied)
+        {
+            if (_carried.Contains(id) || FindVillager(id) is not Villager dead)
+            {
+                continue;
+            }
+
+            if (TravelCost.TicksBetween(cemetery.Tile, dead.Tile) != TravelCostField.Unreachable)
+            {
+                return dead;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The waiting dead lying on a tile, nobody carrying them — the oldest if more than one.</summary>
+    internal Villager? WaitingAt(GridPos tile)
+    {
+        foreach (int id in _unburied)
+        {
+            if (!_carried.Contains(id) && FindVillager(id) is Villager dead && dead.Tile == tile)
+            {
+                return dead;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Taken up: in the groundskeeper's arms until they are laid to rest or set down.</summary>
+    internal void TakeUp(Villager keeper, Villager dead)
+    {
+        keeper.CarryingTheDead = dead.Id;
+        _carried.Add(dead.Id);
+    }
+
+    /// <summary>Set down where the carrier stands — they lie there and wait again (§6.2 step 5).</summary>
+    internal void SetDownTheDead(Villager keeper)
+    {
+        if (keeper.CarryingTheDead == 0)
+        {
+            return;
+        }
+
+        if (FindVillager(keeper.CarryingTheDead) is Villager dead)
+        {
+            dead.Position = keeper.Position;
+        }
+
+        _carried.Remove(keeper.CarryingTheDead);
+        keeper.CarryingTheDead = 0;
+    }
+
+    /// <summary>
+    /// ⭐ THE GRAVE FILLED (§6.2 step 4): whoever the groundskeeper carries is laid in the place <see cref="PlaceFor"/> gives, the
+    /// line is said — or, the cemetery filled meanwhile, they are set down at the gate to wait.
+    /// </summary>
+    internal void Bury(Villager keeper, Workplace cemetery)
+    {
+        if (FindVillager(keeper.CarryingTheDead) is not Villager dead)
+        {
+            keeper.CarryingTheDead = 0;
+            return;
+        }
+
+        if (PlaceFor(cemetery, dead) is not int place)
+        {
+            SetDownTheDead(keeper);
+            return;
+        }
+
+        _carried.Remove(dead.Id);
+        keeper.CarryingTheDead = 0;
+        dead.Position = keeper.Position;
+        LayToRest(dead, Tick);
+        dead.GraveAt = cemetery.Id;
+        dead.GravePlace = place;
+        PlacesOf(cemetery)[place] = dead.Id;
+
+        string beside = BesideWhom(cemetery, dead, place) is Villager kin ? $" beside {kin.Name}" : string.Empty;
+        Narrate($"{dead.FullName} was buried{beside}. {Clock.SeasonAndYear()}.", LogCategory.Death);
+    }
+
+    /// <summary>
+    /// Where somebody lies (§5.3): a free place next to their partner's grave, else next to one of their household's, else the lowest
+    /// free place — so families lie together without anybody planning it. <i>Next to</i> is the same row, one either side, then the
+    /// rows in front and behind. Null when the cemetery is full.
+    /// </summary>
+    internal int? PlaceFor(Workplace cemetery, Villager dead)
+    {
+        int[] places = PlacesOf(cemetery);
+        int width = Math.Max(1, cemetery.ExtentWidth);
+
+        int? NextTo(Villager kin)
+        {
+            if (kin.GraveAt != cemetery.Id || kin.BuriedAtTick is null)
+            {
+                return null;
+            }
+
+            int p = kin.GravePlace;
+            foreach (int q in new[] { p + 1, p - 1, p + width, p - width })
+            {
+                bool sameRowOrColumn = Math.Abs(q - p) == width || q / width == p / width;
+                if (q >= 0 && q < places.Length && sameRowOrColumn && places[q] == 0)
+                {
+                    return q;
+                }
+            }
+
+            return null;
+        }
+
+        if (dead.PartnerId != 0 && FindVillager(dead.PartnerId) is Villager partner && NextTo(partner) is int byPartner)
+        {
+            return byPartner;
+        }
+
+        for (int i = 0; i < Villagers.Count; i++)
+        {
+            Villager kin = Villagers[i];
+            if (kin.Id != dead.Id && kin.HouseholdId == dead.HouseholdId && NextTo(kin) is int byKin)
+            {
+                return byKin;
+            }
+        }
+
+        for (int q = 0; q < places.Length; q++)
+        {
+            if (places[q] == 0)
+            {
+                return q;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>The partner, else the one of the household, lying next to a place — for the log line.</summary>
+    private Villager? BesideWhom(Workplace cemetery, Villager dead, int place)
+    {
+        int[] places = PlacesOf(cemetery);
+        int width = Math.Max(1, cemetery.ExtentWidth);
+        Villager? household = null;
+        foreach (int q in new[] { place + 1, place - 1, place + width, place - width })
+        {
+            if (q < 0 || q >= places.Length || places[q] == 0 || FindVillager(places[q]) is not Villager next)
+            {
+                continue;
+            }
+
+            if (next.Id == dead.PartnerId)
+            {
+                return next;
+            }
+
+            household ??= next.HouseholdId == dead.HouseholdId ? next : null;
+        }
+
+        return household;
+    }
+
+    /// <summary>A cemetery's places, made when first asked — as many as its row's graves.</summary>
+    private int[] PlacesOf(Workplace cemetery)
+    {
+        if (!_graves.TryGetValue(cemetery.Id, out int[]? places))
+        {
+            places = new int[GravesOf(cemetery)];
+            _graves[cemetery.Id] = places;
+        }
+
+        return places;
+    }
+
+    /// <summary>The sentence a cemetery with anybody in it gives a pull-down or a move (§5.2) — null for an empty one.</summary>
+    internal string? WhyItStays(Workplace cemetery)
+    {
+        int lie = GravesOf(cemetery) - FreeGraves(cemetery);
+        return lie == 0
+            ? null
+            : $"{Capitalised(cemetery.Name)} has {lie} {(lie == 1 ? "grave" : "graves")} in it, and nobody who lies under a stone is "
+              + "ever moved — it stays where it is.";
+    }
+
+    /// <summary>On load, after the villagers and the workplaces: who lies where, and who is carried.</summary>
+    private void RebuildTheGraves()
+    {
+        _graves.Clear();
+        _carried.Clear();
+        foreach (Villager villager in Villagers)
+        {
+            if (villager.GraveAt != 0 && FindWorkplace(villager.GraveAt) is Workplace cemetery)
+            {
+                int[] places = PlacesOf(cemetery);
+                if (villager.GravePlace >= 0 && villager.GravePlace < places.Length)
+                {
+                    places[villager.GravePlace] = villager.Id;
+                }
+            }
+
+            if (villager.CarryingTheDead != 0)
+            {
+                _carried.Add(villager.CarryingTheDead);
+            }
         }
     }
 }

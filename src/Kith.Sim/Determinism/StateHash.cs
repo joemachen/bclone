@@ -1527,6 +1527,14 @@ public static class StateHash
             hash = MixUInt64(MixUInt32(hash, 26u), buried);
         }
 
+        // Where they lie, and whom a groundskeeper carries (W4 step 4) — sparse, as the burial is.
+        if (villager.GraveAt != 0)
+        {
+            hash = MixUInt32(MixUInt32(MixUInt32(hash, 27u), (uint)villager.GraveAt), (uint)villager.GravePlace);
+        }
+
+        hash = MixSparse(hash, 28u, villager.CarryingTheDead);
+
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).
         // Sparse and in id order: `Villager.Skills` is kept sorted by its one door, so this
         // mixes nothing for a villager who has never held a job and cannot depend on the

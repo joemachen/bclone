@@ -8347,6 +8347,12 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing there to move.");
         }
 
+        // ⛔ NOR A CEMETERY WITH ANYBODY IN IT (W4, `cemetery.md §5.2`).
+        if (WorkplaceCovering(from) is { Kind: JobKind.Groundskeeper } kept && WhyItStays(kept) is string stays)
+        {
+            return PlacementVerdict.No(stays);
+        }
+
         // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
         if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
         {
@@ -8558,6 +8564,12 @@ public sealed partial class SimWorld : IObstacles
         if (kind is null)
         {
             return PlacementVerdict.No("There is nothing there to pull down.");
+        }
+
+        // ⛔ A CEMETERY WITH ANYBODY IN IT IS NEVER PULLED DOWN (W4, `cemetery.md §5.2`); an empty one is, like anything else.
+        if (WorkplaceCovering(tile) is { Kind: JobKind.Groundskeeper } cemetery && WhyItStays(cemetery) is string stays)
+        {
+            return PlacementVerdict.No(stays);
         }
 
         string name = NameOfWhatStandsAt(tile);
@@ -15850,8 +15862,9 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ The pastures' fences (D598): their locks, and the walls of those that stand — derived from the barns' facts.
         RebuildThePastureFences();
 
-        // W4: who lies unburied — derived from the villagers and `BurialsFromTick`, both read above.
+        // W4: who lies unburied, who lies where, and who is being carried — derived from the villagers, read above.
         RebuildTheUnburied();
+        RebuildTheGraves();
     }
 
     /// <summary>

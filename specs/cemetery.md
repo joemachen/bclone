@@ -2,7 +2,7 @@
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908).** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909).** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -199,14 +199,25 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
 
 ### 6.2 A burial, step by step
 
-1. **The oldest of the waiting** (by the tick they died, then id) that can be walked to.
-2. The groundskeeper walks to the grave's place and **digs** (`grave_dig_ticks` 8), outdoors, in any season; meals and cold break it off as any work, and a dig begun again begins again.
-3. Walks to where they lie, takes them up, **carries them back** (no load in the arms besides).
-4. **Lays them to rest and fills the grave** (`grave_fill_ticks` 4). `BuriedAtTick` and the grave's place are set; the stone stands; the line is said.
-5. If the groundskeeper dies, is called away or freezes on the road, whoever they carried **lies where they were set down** and waits again.
+> ⭐ **As built (D909): the fetch comes before the grave.** The spec first had the grave dug, then the fetch; built, the groundskeeper
+> fetches first and digs and fills at the cemetery in one action — the same twelve days at the median, one state fewer, and no half-dug
+> grave to save. The dead lie by the gate while it is dug.
 
-A village with two cemeteries: each groundskeeper buries into their own, oldest first; a dead person goes to the cemetery whose keeper
-reaches them first (cheapest walk, then the lower id), and a full one's keeper only tends.
+1. **The oldest of the waiting** (by the tick they died, then id) that nobody carries and the cemetery can be walked to from —
+   while it has a free place (`NextToBury`).
+2. The groundskeeper walks to where they lie and **takes them up** (`CarryingTheDead`; nothing else in the arms).
+3. **Carries them to the cemetery**, then **digs and fills the grave** (`grave_dig_ticks` 8 + `grave_fill_ticks` 4), outdoors, in any season.
+4. **Lays them to rest** in the place §5.3 gives: `BuriedAtTick`, the grave (`GraveAt`, `GravePlace`); the line is said, under Deaths:
+   *"Otto Ashford was buried beside Mira. Spring, Year 68."* If the cemetery filled meanwhile, they are set down at the gate and wait.
+5. If the groundskeeper dies, or no longer keeps a cemetery, whoever they carried **lies where they were set down** and waits again.
+
+A village with two cemeteries: each groundskeeper buries into their own; whichever asks first takes the oldest one waiting (villager id
+order within a tick), and a full one's keeper only keeps it.
+
+⚠️ **A founding has no hands to spare for a comfort** (D909, measured in the tests): the quota takes the groundskeeper after the tavern
+keeper, out of what food, warmth, building and trade leave, and in a young village that is nobody. **The player's Professions number seats
+one** — as it does a tavern keeper — and a number typed there overrides the famine stand-down, which governs only the village's own want
+(`LabourQuota.Asked`, the tavern keeper's rule exactly).
 
 ### 6.3 Where the dead wait, and who comes (call 4, as recommended)
 
@@ -279,7 +290,7 @@ Never both for the same person.
    building's, unchanged. *Tests: each size's extent, graves, seat, trade and wear; the prices are the data's; graves that do not fill the ground refused.*
    ⏩ **Moved to step 4, because they need a grave to exist:** no pulling down with anybody in it; a turned one's places turn with it; walked around and
    entered by the gate.
-4. **The groundskeeper, a burial and tending** — the seat, the quota's place, the states, which grave, the log line. *Tests: oldest first; beside the partner,
+4. **The groundskeeper, a burial and tending** — ✅ **built (D909).** the seat, the quota's place, the states, which grave, the log line. *Tests: oldest first; beside the partner,
    else the household, else the lowest place; the dead set down where the carrier fell; no seat in a famine; an unreachable one passed over; a year with nobody
    to bury is a year of tending; two cemeteries; determinism.*
 5. **The family at the grave, and the two causes** — measured again with the real code (§4.4's arms, on his saves) before the goldens are re-pinned. *Tests:

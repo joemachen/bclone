@@ -332,7 +332,7 @@ public sealed class SaveLoadTests : IDisposable
             // W4 (D905): the dead before it are gone — `burials_from`, written in every save (`CemeteryTests`).
             "BurialsFromTick", "AFreeCemeteryIsOwed",
         }),
-        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround", "_unburied", "DeathsEver" }),
+        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround", "_unburied", "DeathsEver", "_graves", "_carried" }),
         (typeof(SimWorld), Kept.Data, new[]
         {
             "Config", "GoodsCatalog", "Crops", "JobsCatalog", "TechniquesCatalog", "BuildingsCatalog", "Logger",
@@ -387,7 +387,7 @@ public sealed class SaveLoadTests : IDisposable
             "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts", "CarryingPaper", "CameByLetterOf",
 
             // Laid to rest (W4) — `buried_at`, written only when set (`CemeteryTests.LaidToRestLeavesTheListAndIsSavedAndHashed`).
-            "BuriedAtTick",
+            "BuriedAtTick", "GraveAt", "GravePlace", "CarryingTheDead",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
