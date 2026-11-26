@@ -1,8 +1,7 @@
 # Spec: The cemetery and the groundskeeper (W4)
 
-> Status: **📏 MEASURED AND 📝 SPECCED (D891), JOE'S ANSWERS IN (D905, 2026-11-25) — ⏸️ TWO CALLS HIS (§10): the three sizes and
-> which is free, and whether a cemetery wears. 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut,
-> D890–D891, merged as docs at D892). Built so far: nothing in `src/` — §9 says which step is where. The instrument is
+> Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
+> **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907).** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
@@ -132,7 +131,6 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
   from the lived-in homes), on yesterday's copies: **4×5 in all 18, a median walk 18 ticks; 6×7 in all 18, 23 ticks; 8×10 in 16 of 18, 31 ticks**
   (one at 76) — the other two have no flat clear 8×10 that near. The largest building today is 3×2.
 
-
 ## 5. The shape — the cemetery
 
 ### 5.1 Learned at the first death, and free
@@ -143,17 +141,18 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
 - **The first death raises one moment that waits to be dismissed** (the gift's shape): *"Mabel Ashford is dead at 64 — the first this
   village has lost. They will need somewhere to lie: a small cemetery is yours to place, and it will cost you nothing."* Raised in `Kill` on
   the tick the count goes 0 → 1 (D313's shape: the transition cannot repeat, so no *said it* flag).
-- **The gift:** the free size's materials (call 8 — ⭐ the small), the work still owed, the player's spot, exactly one. *Spent* is the one
+- **The gift:** the free size's materials (call 8 — the small, D906), the work still owed, the player's spot, exactly one. *Spent* is the one
   new latch (hashed when true). The other two sizes are priced from the first.
-- **A save from before this slice with dead in it** (6 of his 18) is learned on load and owed the gift, with no moment; the gold seal is on
+- **A save from before this slice with dead in it** (6 of his 18) is learned on load and owed the gift, with no moment (call 10, D906 — Joe:
+  *"unlock on load as recommended"*); the gold seal is on
   the bar. **Its dead are gone (call 6): never buried, never waited for, held by nobody** — §8's `BurialsFromTick`. One with nobody dead
   waits for its first death like any other.
 
 ### 5.2 Three sizes, placed like any building
 
-| Row | Footprint | Graves | Cost ⭐ (call 8) | Work | Fills, in a village of 30–40 · 60–80 people (§4.5) |
+| Row | Footprint | Graves | Cost (call 8, D906) | Work | Fills, in a village of 30–40 · 60–80 people (§4.5) |
 |---|---|---|---|---|---|
-| `CemeterySmall` (34) | 4×5 | **20** | ⭐ free the first time; then 10 logs, 5 stone | 20 | about 75 years · about 25 |
+| `CemeterySmall` (34) | 4×5 | **20** | free the first time; then 10 logs, 5 stone | 20 | about 75 years · about 25 |
 | `CemeteryMedium` (35) | 6×7 | **42** | 20 logs, 10 stone | 40 | about 150 · about 50 |
 | `CemeteryLarge` (36) | 8×10 | **80** | 30 logs, 20 stone | 60 | — · about 100 |
 
@@ -164,7 +163,14 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
 - **Graves are numbered places inside it** (0 … graves − 1), laid out row by row from the gate in the cemetery's own frame, so a
   turned cemetery's rows turn with it. One a tile; the count is the row's `graves`, which the validator holds to width × height.
 - **A cemetery with anybody in it** cannot be pulled down or moved. An empty one is pulled down like anything else.
-- **Wear** is call 9 (§10). As specced until he answers: it never wears.
+- **It wears, as one building** (call 9, D906 — Joe: *"Yes, as you put it"*): on a timber building's clock, `wears_in_years` 8 / 12 / 20 on each
+  row — **worn** 8 years untended, **overgrown** at 12 (the condition's *failing*), **wild** at 20 (its *ruin*). Drawn so, and the card says the state and
+  how far, as a building's does: *Overgrown · 63 % — nobody has kept it for 13 years.*
+- **Its groundskeeper restores it, with no logs**: at the season's turn (`TendWhatStands`), a cemetery whose groundskeeper tended it on
+  `cemetery_tended_days_a_season` days (10) that season is stamped `RepairedAtTick` — sound again. **No repair site is raised for it**: it is not the
+  builders' work. A tended cemetery never shows wear; it shows only where nobody keeps it.
+- **It is never closed, and no grave is ever lost**: wild still holds its dead, takes new ones when it has a keeper, and counts as a place (§7).
+  Neglect upsets nobody — D797's *no place* stays the only cost.
 
 ### 5.3 The stone
 
@@ -187,8 +193,8 @@ honoured); nobody is removed, so a leaver's own later seasons drop out and nothi
 - **Asked for after the keepers** (a comfort, out of what feeding, warming, building and trade leave), and **stood down while the village is
   short of food** — the tavern keeper's rule. The Professions row appears when the cemetery can be built (D887).
 - **They keep the cemetery all year** (D905): between burials they are at work inside it — the work state *tending*, at the graves, through the
-  working day, broken off for meals and the cold like any work. **No laborer's fallback**: a groundskeeper is a groundskeeper. With wear (call 9),
-  tending is what keeps it sound; without, it is there to be seen.
+  working day, broken off for meals and the cold like any work. **No laborer's fallback**: a groundskeeper is a groundskeeper. Tending is what keeps
+  it sound (§5.2, call 9).
 
 ### 6.2 A burial, step by step
 
@@ -236,7 +242,7 @@ Never both for the same person.
 
 - **Waiting your turn**: there is a free grave and a groundskeeper's seat — a famine's queue, a long walk, the groundskeeper stood down for food.
 - A dead person nobody living is kin to; somebody who left the valley (not a death); a village that cannot build one yet; the dead from before.
-- **A worn or overgrown cemetery** (if call 9 is a): neglect upsets nobody — D797's *no place* is the only cost.
+- **A worn, overgrown or wild cemetery** (call 9): neglect upsets nobody — D797's *no place* is the only cost.
 
 ## 8. Determinism, the hash, saves, goldens
 
@@ -257,23 +263,24 @@ Never both for the same person.
 
 1. **The waiting list and the fields** — `BurialsFromTick`; who is dead and unburied, kept at `Kill`, rebuilt on load; the fields saved and hashed sparsely.
    *Tests: the list equals a scan over a century with deaths; an old save's dead are gone and its next death waits; round trip; two worlds differing only
-   in a burial hash apart, and a new village hashes as before.* — **can be built before calls 8 and 9.**
+   in a burial hash apart, and a new village hashes as before.* — ✅ **built (D907).**
 2. **Learned at the first death, and the gift** — `WhyNotYet`, the moment, the latch, the Lore node. *Tests: locked before, learned after one death and not after a
-   departure; one moment ever; the gift free once and the second priced; an old save with dead is learned on load, with no moment.* — after call 8.
+   departure; one moment ever; the gift free once and the second priced; an old save with dead is learned on load, with no moment.*
 3. **The three rows** — their extents, graves and costs, placement, the refusals, no pulling down with anybody in it. *Tests: each size's graves; a refusal each;
-   walked around, entered by the gate; a turned one's places turn with it.* — after call 8.
+   walked around, entered by the gate; a turned one's places turn with it.*
 4. **The groundskeeper, a burial and tending** — the seat, the quota's place, the states, which grave, the log line. *Tests: oldest first; beside the partner,
    else the household, else the lowest place; the dead set down where the carrier fell; no seat in a famine; an unreachable one passed over; a year with nobody
    to bury is a year of tending; two cemeteries; determinism.*
 5. **The family at the grave, and the two causes** — measured again with the real code (§4.4's arms, on his saves) before the goldens are re-pinned. *Tests:
    each row of §7; the queue raises nothing; the dead from before raise nothing; both sides of the anti-vacuity.*
-6. **Wear, if call 9 is a** — the row's clock, tending stamps `RepairedAtTick`, never closed.
+6. **Wear** (call 9, D906) — the row's clock, a season's tending stamps `RepairedAtTick`, no repair site, never closed. *Tests: untended it is worn at 8 years,
+   overgrown at 12, wild at 20; tended it stays sound; wild still buries and still counts as a place; no logs are ever owed.*
 7. **The view** — the stones, the cloth, the two cards, the three buttons, the Professions row, the probe lines.
 8. **Joe plays it; then the posed golden, the milestone-map row, the merge at his word.**
 
 ## 10. Joe's calls
 
-### Answered (D905, relayed by the coordinating session with the reading it said back to him, which he confirmed)
+### Answered — D905 (relayed by the coordinating session with the reading it said back to him, which he confirmed) and D906
 
 1. Who minds: **(a) the dead person's family and partner, until there is a cemetery.**
 2. ~~Twenty graves in the first plot~~ → **three sizes, every one placed like a building; none painted** (*"i dont agree with 20 graves to a cemetery"*).
@@ -282,20 +289,14 @@ Never both for the same person.
 5. ~~The first painted bigger~~ → **the first is still free** (*"yes first one is still free"*); which size is call 8.
 6. **(b) only those who die after this slice is in your game** — the dead from before are gone.
 7. **(a) set to no groundskeepers counts as no place.**
-
-### ⏸️ Open
-
-8. **The three sizes, and which is free.** Measured on copies of your saves (§4.5): a village loses about one person a year to old age per hundred living.
-   ⭐ **Small 4×5, 20 graves — the free one**; **medium 6×7, 42 graves, 20 logs and 10 stone**; **large 8×10, 80 graves, 30 logs and 20 stone.** Your first death
-   comes at Year 24–40 with 12–40 people; the free small lasts that village fifty years or more, and a grown village of 70 fills a small in about 25 years, a medium
-   in 50 and a large in a century. All three fit near the homes in every one of your villages but the large, which two of the 18 have no flat clear ground for
-   within 30 tiles. *Or:* the free one is any size you pick, once.
-9. **Does a cemetery wear?** (Joe: *"so graves degrade like buildings and groundskeepers restore them like builders?"*) ⭐ **Yes, the whole cemetery as one building,
-   on the same clock as a timber building — worn at 8 years untended, overgrown at 12, wild at 20 — and its groundskeeper's tending restores it, with no logs.**
-   Measured: a burial is 12 days and your villages bury 0.3–0.9 a year, so **more than 80 % of a groundskeeper's year is tending** — wear gives that time something
-   you can see. With a groundskeeper it stays sound; it shows wear only where nobody keeps it (the number at 0, or hungry years). **No grave is ever lost, it never
-   closes, and neglect upsets nobody** — no place stays the only cost (D797). The card says it, as buildings' do: *Overgrown · 63 % — nobody has kept it for 13
-   years.* *Or:* it never wears, and tending is only seen.
+8. **The three sizes as recommended, the small free** (D906; Joe, typed in this session: *"all as recommended, first free"*): small 4×5, 20 graves,
+   free the first time and then 10 logs and 5 stone; medium 6×7, 42 graves, 20 logs and 10 stone; large 8×10, 80 graves, 30 logs and 20 stone (§5.2, §4.5).
+9. **It wears** (D906; Joe, to *"so graves degrade like buildings and groundskeepers restore them like builders?"* put back to him as below: *"Yes, as you put it"*):
+   the whole cemetery as one building; its groundskeeper keeps it up; a neglected one looks overgrown and its card says so; no grave is ever lost; neglect
+   upsets nobody. The clock (8 / 12 / 20 years, restored by tending with no logs) is this spec's, inside his answer — §5.2.
+10. **An older save with dead in it unlocks the cemetery on load** (D906; Joe, typed in this session, asked *"did we agree on what unlocks/triggers
+   the cemetery?"* and answered: *"unlock on load as recommended"*): learned and owed the free small, no moment; its dead from before stay gone. The
+   trigger itself is D395's, his: the village's first death.
 
 **As specced unless you say otherwise:** you can never pull down or move one with people in it; a stone costs nothing; families lie side by side; the one popup is
 the first death; it is fenced, so people walk around it, not through.
@@ -303,7 +304,7 @@ the first death; it is fenced, so people walk around it, not through.
 ## 11. For the art lane (D774) — to HANDOFF's 🅿️ ART section, asked and not drawn
 
 - **The cemetery** at three sizes — mown grass with a worn line, its fence or low hedge, the gate on a short end (a lychgate); the four seasons; snow on it;
-  and, if call 9 is a, worn, overgrown and wild.
+  and worn, overgrown and wild (call 9).
 - Its **three building icons** (or one at three sizes); the **groundskeeper's** icon and trade colour.
 - **Graves:** a fresh mound, an older grassed one, and the stone — a few shapes so a row is not a stamp; does a founder's differ?
 - **The dead waiting** — a small plain shape under a cloth. ⚠️ Cozy, never grim: Joe's eyes before it ships.

@@ -621,6 +621,12 @@ public sealed class Villager
     /// </summary>
     public ulong? GoneAtTick => DiedAtTick ?? LeftAtTick;
 
+    /// <summary>
+    /// The tick they were laid to rest (W4, `specs/cemetery.md §6.2`). Null while alive, while unburied, and for the dead from
+    /// before W4, who are gone (<see cref="Core.SimWorld.BurialsFromTick"/>). Saved when set (`buried_at`), hashed sparsely.
+    /// </summary>
+    public ulong? BuriedAtTick { get; set; }
+
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
 
@@ -1108,6 +1114,7 @@ public sealed class Villager
             ["cause_of_death"] = SaveWriter.Enum(CauseOfDeath),
             ["died_at"] = SaveWriter.Hex(DiedAtTick),
             ["left_at"] = LeftAtTick is null ? null : SaveWriter.Hex(LeftAtTick),
+            ["buried_at"] = BuriedAtTick is null ? null : SaveWriter.Hex(BuriedAtTick),
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1183,6 +1190,7 @@ public sealed class Villager
             CauseOfDeath = save.Enum<CauseOfDeath>("cause_of_death"),
             DiedAtTick = save.NullableULong("died_at"),
             LeftAtTick = save.HasValue("left_at") ? save.NullableULong("left_at") : null,
+            BuriedAtTick = save.HasValue("buried_at") ? save.NullableULong("buried_at") : null,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

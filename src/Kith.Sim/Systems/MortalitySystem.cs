@@ -86,6 +86,9 @@ public sealed class MortalitySystem : ISimSystem
         villager.DiedAtTick = world.Tick;
         villager.ActionTicksRemaining = 0;
 
+        // W4 (`cemetery.md §8`): they wait for a grave — the list is kept here, where a death happens, and nowhere else.
+        world.JoinTheUnburied(villager);
+
         // The household's cart is not buried with them (`handcart.md §3`): it is the household's good, and counts as
         // home from here — the walk that would find it is not stepped (`Villager.PushingACart`). The works' cart the same
         // (`handcart.md §13.2`): it counts as back at its building.

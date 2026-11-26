@@ -15517,6 +15517,7 @@ public sealed partial class SimWorld : IObstacles
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
             ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
+            ["burials_from"] = SaveWriter.Hex(BurialsFromTick),
             ["a_first_path_has_worn"] = AFirstPathHasWorn,
             ["a_town_hall_is_owed"] = ATownHallIsOwed,
             ["said_the_founders_are_gone"] = SaidTheFoundersAreGone,
@@ -15718,6 +15719,8 @@ public sealed partial class SimWorld : IObstacles
         FoodEverEaten = save.Int("food_ever_eaten");
         AFreeLibraryIsOwed = save.Bool("a_free_library_is_owed");
         AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
+        // W4 (D905): a save from before has no mark, and every death in it is before its own tick — those dead are gone.
+        BurialsFromTick = save.HasValue("burials_from") ? save.ULong("burials_from") : Tick;
         AFirstPathHasWorn = save.Bool("a_first_path_has_worn");
         ATownHallIsOwed = save.Bool("a_town_hall_is_owed");
         SaidTheFoundersAreGone = save.Bool("said_the_founders_are_gone");
@@ -15828,6 +15831,9 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ The pastures' fences (D598): their locks, and the walls of those that stand — derived from the barns' facts.
         RebuildThePastureFences();
+
+        // W4: who lies unburied — derived from the villagers and `BurialsFromTick`, both read above.
+        RebuildTheUnburied();
     }
 
     /// <summary>

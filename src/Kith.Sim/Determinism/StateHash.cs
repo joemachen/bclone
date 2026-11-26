@@ -739,6 +739,12 @@ public static class StateHash
             hash = MixByte(hash, 0x5F);
         }
 
+        // W4 (D905): the dead before this tick are gone — sparse, so a new village (0) hashes as it did before W4.
+        if (world.BurialsFromTick != 0)
+        {
+            hash = MixUInt64(MixByte(hash, 0x6B), world.BurialsFromTick);
+        }
+
         // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
         // sparse, so a valley nobody has walked mixes nothing. It is state because it decides
         // where people go and how long they take; a fingerprint that skipped it would stay green
@@ -1507,6 +1513,12 @@ public static class StateHash
         if (villager.LeftAtTick is ulong left)
         {
             hash = MixUInt64(MixUInt32(hash, 20u), left);
+        }
+
+        // Laid to rest (W4, `cemetery.md §8`): sparse, so a village nobody has buried in hashes as it did.
+        if (villager.BuriedAtTick is ulong buried)
+        {
+            hash = MixUInt64(MixUInt32(hash, 26u), buried);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

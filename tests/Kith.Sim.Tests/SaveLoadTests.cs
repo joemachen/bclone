@@ -329,8 +329,10 @@ public sealed class SaveLoadTests : IDisposable
             "HandcartsEverMade", "WorkshopLearned", "MarketStallLearned", "HouseholdsThatWalkedFar", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
             "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
+            // W4 (D905): the dead before it are gone — `burials_from`, written in every save (`CemeteryTests`).
+            "BurialsFromTick",
         }),
-        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround" }),
+        (typeof(SimWorld), Kept.Rebuilt, new[] { "_onTheGround", "_unburied" }),
         (typeof(SimWorld), Kept.Data, new[]
         {
             "Config", "GoodsCatalog", "Crops", "JobsCatalog", "TechniquesCatalog", "BuildingsCatalog", "Logger",
@@ -383,6 +385,9 @@ public sealed class SaveLoadTests : IDisposable
 
             // The tavern (W3, D836) — saved and hashed sparsely (`TavernTests.EveryTavernFieldIsHashedAndSaved`).
             "LastTavernDay", "TavernEveningsThisSeason", "ContentmentComforts", "CarryingPaper", "CameByLetterOf",
+
+            // Laid to rest (W4) — `buried_at`, written only when set (`CemeteryTests.LaidToRestLeavesTheListAndIsSavedAndHashed`).
+            "BuriedAtTick",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 
