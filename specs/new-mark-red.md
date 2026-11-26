@@ -1,6 +1,6 @@
 # The new item's mark in red (A270)
 
-> **Status: ✍️ MOCKED (A271, 2026-11-26) on `art`, ⏸️ JOE'S PICK — nothing wired.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
+> **Status: ✅ BUILT (A272, 2026-11-26) on `art`, UNPLAYED — Joe: *"2, files OK"*. Mocked A271.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
 > Replaces the picture of the gold seal (`specs/gold-seal.md`, A255–A258); the *when* is the systems lane's and stays as it is (D880,
 > D894). Pictures: `D:\Projects\brushes\red-mark\` (`red_1_food_open.jpg`, `red_2_bar_closed.jpg`, `redseal_sheet.png`).
 
@@ -51,7 +51,25 @@ wears both at once.
 
 No file under `src/Kith.Sim`, `data` or `tests`.
 
-## 5. Calls — Joe's
+## 5. Calls — answered: Joe, 2026-11-26, *"2, files OK"* (A272)
+
+Option 2, the red stroke and the red word; his OK for the four files in §4.
 
 1. **Which:** ⭐ 2, the red stroke and the red word (recommended); 1b, the red seal and the red word; 1, the red seal alone.
 2. **His OK** for the four systems-lane files in §4 (the same four he passed for the gold seal).
+
+## 6. As built (A272)
+
+- `ParchmentLook`: the theme's `new` colour is `RubricInk`; `new_stroke` is `NewStroke()` — `underline.png` (the title menu's red
+  swash) as a `PaintedPatch` at 0.25, ends 24 px, the held button's content margins, in a `NewStrokeBand` = 4 px band at the foot.
+  `UiLook.NewStroke` in place of `NewSeal`. `gold-seal.png` deleted: nothing wears it now.
+- `Main.NewMarks.WearNew`: the red word, and the stroke as the button's `normal` and `hover` override (as D880's swash was); a cleared
+  button loses both only where they are the stroke (`StrokeOn`). The seal's `TextureRect` and its placement are gone.
+- ⚠️ **Red is not only a warning now.** `hud.md §10` gave rubric to *something is wrong* and gold to *new*; Joe chose red for new
+  by eye, as the title menu already uses it for its chosen item (A242). The table says so.
+- The probe: `new:` asks the red word and the stroke at rest and under the pointer wherever it asked the gold and the seal, none
+  wherever it asked plain, and on Knowledge and the Library the rubric's red over `underline.png` at 4 px with no seal left over;
+  `ui colours:` loads `underline.png` at 256 × 12 with mipmaps in the seal's place. The probe method keeps its name
+  (`WhatIsNewIsGoldUntilClicked`): `Main.cs` calls it and was not among his four files.
+- Red-checked: 7 mutants, 7 reds on `new:` (no stroke laid; not under the pointer; left on a cleared button; the word in gold; the lapis swash; the held button's 3 px band; none in the look); `ui colours:` scored 0 of them — none was aimed at its `underline.png` entry, kept and noted.
+- Seen in the game on the Elderwood copy (three buildings unseen), day and night: `red-mark\built\`, `red_3_built.jpg`.

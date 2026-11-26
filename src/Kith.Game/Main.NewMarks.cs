@@ -8,9 +8,9 @@ namespace Kith.Game;
 
 /// <remarks>
 /// ⭐ NEW, UNTIL CLICKED (<c>hud.md §8.3</c>, D880; Joe, A210: <i>"highlight newly unlocked categories and buildings until
-/// they are clicked on"</i>; call 5): a category or a building that becomes earned is marked — its word in gold ink and ⭐ <b>the
-/// gold seal on its icon's upper right</b> (A257, <c>gold-seal.md</c>; Joe's play note 2: <i>"add a gold seal to the main category until
-/// clicked and add the same gold seal to the new building until clicked"</i>; the swash D880 wore went with it). A category clears when its flyout opens, a building when it is
+/// they are clicked on"</i>; call 5): a category or a building that becomes earned is marked — its word in the rubric's red and ⭐ <b>the
+/// title menu's red stroke under it</b> (A272, <c>new-mark-red.md</c>; Joe, of the gold seal A257 wore: <i>"Gold badge on new items
+/// doesnt read … or use the red underline that is used on main menu"</i>, then <i>"2"</i>). A category clears when its flyout opens, a building when it is
 /// picked. ⭐ <b>A category is new while a building inside it is</b> (Joe's play note 2, D894: <i>"new items main categories should
 /// also highlight"</i>) — new, and not seen in its flyout since: it asked whether the category had <i>ever</i> been opened, so
 /// the quarry lit and Resources, opened on the first day, did not. The cottage and the manor light Homes the same way.
@@ -177,19 +177,18 @@ public partial class Main
         }
     }
 
-    /// <summary>The seal's side, a share of the icon's (call 4: three quarters).</summary>
-    internal const float SealShare = 0.75f;
-
-    /// <summary>The word in gold and the seal on its icon — or neither.</summary>
+    /// <summary>The word in red and the red stroke under it — or neither (A272).</summary>
     private static void WearNew(Button button, bool isNew)
     {
         if (isNew)
         {
             button.AddThemeColorOverride("font_color", UiLook.New);
             button.AddThemeColorOverride("font_hover_color", UiLook.New);
-            if (SealOn(button) is null && UiLook.NewSeal is Texture2D picture)
+            if (UiLook.NewStroke is StyleBox stroke)
             {
-                button.AddChild(Seal(button, picture));
+                // Under the pointer too: the hover's wash gives way to the stroke, as the swash D880 wore did.
+                button.AddThemeStyleboxOverride("normal", stroke);
+                button.AddThemeStyleboxOverride("hover", stroke);
             }
 
             button.SetMeta(NewMeta, true);
@@ -204,48 +203,21 @@ public partial class Main
                 button.RemoveThemeColorOverride("font_color");
             }
 
-            if (SealOn(button) is TextureRect seal)
+            foreach (string state in new[] { "normal", "hover" })
             {
-                button.RemoveChild(seal);
-                seal.QueueFree();
+                if (StrokeOn(button, state))
+                {
+                    button.RemoveThemeStyleboxOverride(state);
+                }
             }
 
             button.RemoveMeta(NewMeta);
         }
     }
 
-    /// <summary>The seal a button wears, or null.</summary>
-    private static TextureRect? SealOn(Button button) => button.GetNodeOrNull<TextureRect>(SealName);
-
-    private const string SealName = "NewSeal";
-
-    /// <summary>
-    /// ⭐ The gold seal (A257): over the icon's upper right (call 2) — the owed coin is its lower right (A106) — three quarters of the
-    /// icon's side, a little proud of it. Anchored to the button's top middle, where the button lays its icon, so it holds through a
-    /// resize. A glyph with no painted icon takes the seal at its own 14 px.
-    /// </summary>
-    private static TextureRect Seal(Button button, Texture2D picture)
-    {
-        int iconSide = button.Icon is null ? 14 : button.GetThemeConstant("icon_max_width");
-        float side = iconSide * SealShare;
-        float top = button.GetThemeStylebox("normal").GetMargin(Side.Top);
-        var seal = new TextureRect
-        {
-            Name = SealName,
-            Texture = picture,
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-            TextureFilter = TextureFilterEnum.LinearWithMipmaps,
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-            AnchorLeft = 0.5f,
-            AnchorRight = 0.5f,
-        };
-        seal.OffsetLeft = (iconSide / 2f) - (side * 0.45f);
-        seal.OffsetRight = seal.OffsetLeft + side;
-        seal.OffsetTop = top - (side * 0.3f);
-        seal.OffsetBottom = seal.OffsetTop + side;
-        return seal;
-    }
+    /// <summary>Whether a button wears the new mark's stroke in this state.</summary>
+    private static bool StrokeOn(Button button, string state) =>
+        UiLook.NewStroke is { } stroke && button.HasThemeStyleboxOverride(state) && ReferenceEquals(button.GetThemeStylebox(state), stroke);
 
     private const string NewMeta = "kith_new";
 
@@ -259,7 +231,7 @@ public partial class Main
 
     /// <summary>
     /// ⭐ <c>new:</c> (<c>hud.md §8.3</c>, step 7) — nothing is new at the founding; a library posed learned lights Knowledge and
-    /// the Library gold with the gold seal (A257) on its icon's upper right; opening Knowledge clears it and leaves the Library gold; picking the Library clears
+    /// the Library red with the red stroke under each (A272); opening Knowledge clears it and leaves the Library gold; picking the Library clears
     /// it; the seen set goes out in the save's view section and comes back the same; and a save without one sees everything.
     /// ⭐ And a category opened long ago lights again for what is learned in it since (D894).
     /// </summary>
@@ -268,10 +240,10 @@ public partial class Main
         var faults = new List<string>();
         Button knowledge = _categoryButtons.Find(c => c.Category == BuildCategory.Knowledge).Button;
         Button? library = _libraryButton;
-        // New: the gold word and the seal; plain: neither — a seal left behind on a cleared button is a fault too.
-        bool Gold(Button? b) => b is not null && b.GetThemeColor("font_color").IsEqualApprox(UiLook.New)
-            && SealOn(b) is { } s && ReferenceEquals(s.Texture, UiLook.NewSeal) && UiLook.NewSeal is not null && !b.HasThemeStyleboxOverride("normal");
-        bool Plain(Button? b) => b is not null && !b.GetThemeColor("font_color").IsEqualApprox(UiLook.New) && SealOn(b) is null;
+        // New: the red word and the stroke, at rest and under the pointer; plain: neither — a stroke left on a cleared button is a
+        // fault too. (Named Gold for the mark D880 first wore; the probe line's name is Main.cs's.)
+        bool Gold(Button? b) => b is not null && b.GetThemeColor("font_color").IsEqualApprox(UiLook.New) && StrokeOn(b, "normal") && StrokeOn(b, "hover");
+        bool Plain(Button? b) => b is not null && !b.GetThemeColor("font_color").IsEqualApprox(UiLook.New) && !StrokeOn(b, "normal") && !StrokeOn(b, "hover");
 
         int newAtTheFounding = _categoryButtons.Count(c => !Plain(c.Button)) + _strip.Count(e => !Plain(e.Button));
         if (newAtTheFounding > 0)
@@ -289,24 +261,20 @@ public partial class Main
             RefreshTheStrip();
             if (!Gold(knowledge) || !Gold(library))
             {
-                faults.Add($"a library learned: Knowledge gold {Gold(knowledge)}, the Library gold {Gold(library)}");
+                faults.Add($"a library learned: Knowledge marked {Gold(knowledge)}, the Library marked {Gold(library)}");
             }
 
-            // The seal on the icon's upper right, three quarters of it, a little proud of it: right of the button's middle, its foot
-            // above the label's top; its side the share of the icon's.
+            // The mark itself: the word in the rubric's red, and the title menu's painted swash in a 4 px band at the button's foot —
+            // not the held button's lapis one, and no seal left over from A257.
             foreach (Button b in new[] { knowledge, library! })
             {
-                if (SealOn(b) is not TextureRect seal)
+                string swash = b.GetThemeStylebox("normal") is PaintedPatch { Texture: { } painted } p
+                    ? $"{painted.ResourcePath.GetFile()} at {p.Band:F0} px" : "no painted swash";
+                if (!UiLook.New.IsEqualApprox(ParchmentLook.RubricInk) || swash != $"underline.png at {ParchmentLook.NewStrokeBand:F0} px"
+                    || b.GetNodeOrNull("NewSeal") is not null)
                 {
-                    continue;
-                }
-
-                int iconSide = b.Icon is null ? 14 : b.GetThemeConstant("icon_max_width");
-                float top = b.GetThemeStylebox("normal").GetMargin(Side.Top);
-                if (!Mathf.IsEqualApprox(seal.OffsetRight - seal.OffsetLeft, iconSide * SealShare) || seal.AnchorLeft != 0.5f
-                    || !(seal.OffsetLeft > 0f && seal.OffsetLeft < iconSide / 2f) || !(seal.OffsetTop < top && seal.OffsetBottom < top + iconSide))
-                {
-                    faults.Add($"{b.Text}'s seal stands at {seal.OffsetLeft:F1},{seal.OffsetTop:F1} to {seal.OffsetRight:F1},{seal.OffsetBottom:F1} from its top middle (icon {iconSide}, top {top:F1}): not the icon's upper right at three quarters");
+                    faults.Add($"{b.Text} wears {UiLook.New.ToHtml(false)} words, {swash}{(b.GetNodeOrNull("NewSeal") is null ? "" : ", and a seal")}: "
+                        + "not the rubric's red over the title's red stroke");
                 }
             }
 
@@ -366,7 +334,7 @@ public partial class Main
             if (!quarryLights || !openingClears || !openedKept || !mineLightsAgain || !picked)
             {
                 faults.Add($"the quarry learned lights it and Resources {quarryLights}; opening Resources clears it and keeps the quarry {openingClears}, through a save {openedKept}; "
-                    + $"the mine lights Resources again {mineLightsAgain}; both picked, nothing is gold {picked}");
+                    + $"the mine lights Resources again {mineLightsAgain}; both picked, nothing is marked {picked}");
             }
 
             // ⭐ The cottage lights Homes (b, his word); chosen, it goes. A section from D880 — no "shown" — calls it old news.
@@ -385,7 +353,7 @@ public partial class Main
             bool chosen = Plain(homes) && Plain(cottages);
             if (!cottageLights || !oldNews || !chosen)
             {
-                faults.Add($"the cottage learned lights Homes and Cottages {cottageLights}; an older section calls it old news {oldNews}; chosen, neither is gold {chosen}");
+                faults.Add($"the cottage learned lights Homes and Cottages {cottageLights}; an older section calls it old news {oldNews}; chosen, neither is marked {chosen}");
             }
 
             // ⭐ The sim's gate, not the flags the first refresh has yet to set: a world that knows the bridge from its founding.
@@ -408,7 +376,7 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] new: ✅ nothing new at the founding; a library learned lights Knowledge and the Library in gold with the gold seal on the icon's upper right, three quarters of it, and no swash; "
+            ? "[widths] new: ✅ nothing new at the founding; a library learned lights Knowledge and the Library in red with the title menu's red stroke under each, and no seal; "
               + "opening Knowledge clears it, picking the Library clears it; the seen set through the save's view section comes back as it went, "
               + "and a save without one sees everything earned; the quarry lights Resources though it was opened before, opening it clears it "
               + "(through a save too), the mine lights it again; the cottage lights Homes, and a D880 section calls it old news; what a village "

@@ -198,11 +198,11 @@ internal static class UiLook
     /// <summary>The bar's tab that is held open.</summary>
     internal static Color Held => Named("held", new Color(1f, 0.85f, 0.4f));
 
-    /// <summary>New, until clicked (hud.md §8.3, D880): the gold word; slate's owed gold.</summary>
+    /// <summary>New, until clicked (hud.md §8.3, D880): the word in red (A272); slate's owed gold.</summary>
     internal static Color New => Named("new", new Color(1f, 0.85f, 0.4f));
 
-    /// <summary>The gold seal on a new thing's icon (A257), or null on slate.</summary>
-    internal static Texture2D? NewSeal => Theme is { } theme && theme.HasIcon("new_seal", Type) ? theme.GetIcon("new_seal", Type) : null;
+    /// <summary>The red stroke under a new thing (A272), or null on slate.</summary>
+    internal static StyleBox? NewStroke => Theme is { } theme && theme.HasStylebox("new_stroke", Type) ? theme.GetStylebox("new_stroke", Type) : null;
 
     /// <summary>A refusal or a failure said in words: a save that failed, a valley that will not found.</summary>
     internal static Color Refused => Named("refused", new Color(1f, 0.55f, 0.45f));

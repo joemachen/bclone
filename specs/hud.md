@@ -184,15 +184,16 @@ the *Show:* row and the hotkey line (§8.4).
 
 ### 8.3 New, until clicked (A210)
 
-When a category or a building becomes earned, it is marked **new**: its word in gold ink (`#553e0c`, the palette's gold
-word) and ⭐ **the gold seal on its icon's upper right** (A257, `gold-seal.md`; it took the place of D880's gold-leaf swash).
+When a category or a building becomes earned, it is marked **new**: its word in the rubric's red (`#7b2318`) and ⭐ **the title menu's
+red stroke under it** (A272, `new-mark-red.md`; Joe: *"Gold badge on new items doesnt read"*, then *"2"*). It replaced the gold
+word and the gold seal (A257, `gold-seal.md`), which had replaced D880's gold-leaf swash.
 A category clears when its flyout is opened, a building when it is picked. *(Call 5.)*
 
 ⭐ **A category is new while a building inside it is new and not yet seen in its flyout** (Joe's play note 2, D894: *"new items main
 categories should also highlight … until clicked"*; he answered the reading *"rest as you said"*). Until D894 it asked whether the
 category had *ever* been opened, so the quarry lit and Resources, opened on the first day, did not. **The cottage and the manor
-light Homes** the same way, and their *Build homes as* choice until it is chosen. The seal he asked for beside it is the art lane's,
-✅ built (A257): seal B, on red ribbons, over the icon's upper right; the swash went with it. ⚠️ **A building learned counts as known by the sim's gate, not only by the
+light Homes** the same way, and their *Build homes as* choice until it is chosen. The seal he asked for beside it was the art lane's,
+built (A257) and replaced by the red stroke (A272) when he played it. ⚠️ **A building learned counts as known by the sim's gate, not only by the
 bar's flags** — the seen set is taken while the bar is built, before the first refresh sets them, and a village opened from a save
 without the section lit everything it had learned (found D894; his Millbrook's autosave holds it).
 
@@ -294,9 +295,9 @@ renamed; rebuilt only when a row differs.
 
 | Ink | Means | Where |
 |---|---|---|
-| **Rubric** `#7b2318` (words), `#9b2d1f` | **something is wrong**: a warning, a stop, a refusal, a death | `stopped`, `refused`, `log_death`, ⚠, `ShowShortfall`, the cards' stopped lines — unchanged |
+| **Rubric** `#7b2318` (words), `#9b2d1f` | **something is wrong**: a warning, a stop, a refusal, a death — ⚠️ and, since A272, **new** (§8.3: the red word and the title menu's red stroke, his pick by eye; the title's chosen item, A242, is the precedent) | `stopped`, `refused`, `log_death`, ⚠, `ShowShortfall`, the cards' stopped lines — unchanged |
 | **Lapis** `#2a3f7b` (words), `#30488c` | **selected, held, on, chosen** | `held` (`ParchmentLook.cs:46`), a pinned card's pin (`pin-pinned-lapis.png`, A217), every pressed button's font and swash (277–290), `selected_edge` (69), `UiLook.Held` (`Main.cs:8782`), the ticked seal |
-| **Gold** `#553e0c` (words), gold leaf `#c4983e` | **new** (§8.3), and owed (the medallion) | — |
+| **Gold** `#553e0c` (words), gold leaf `#c4983e` | owed (the medallion); **new** until A272 | — |
 | **Verdigris** `#264a21` | working, met | unchanged |
 
 - Lapis words already pass 5 : 1 on the painted paper's darkest mottle (A117); the gold word ink is the palette's own.
