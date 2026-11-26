@@ -900,6 +900,73 @@ decision that sets it. **Add a row when a milestone lands; move a year when a me
 | ~51 (median) | **Trade** — the town hall's gift is the permission; a trading post on the bank and a boat every 2–3 years | D586, D587, `trade.md §8.2a` |
 | later | Shining Rock — after some ore is mined; undecided | §5 |
 
+### Joe's ideas, not yet scheduled (D913)
+
+Ideas Joe has asked to keep on the roadmap. **None of them has a W number or a phase, and nothing is built.** Each is in
+his words as typed, followed by what a session has to settle before it is specced. When one is picked up it gets a
+spec, its calls go to Joe, and it moves into the phase list above with a §7 entry. Until then it stays here.
+
+1. **The elder's voice.** *"When unlocking techniques or buildings or new villagers nomads come to town, the village
+   spokesperson should "tell" the player and thank them and treat them with reverence in the pop up alert - current
+   eldest villager, AKA the elder - this helps the player get more familiar. i took the inspo from the Godfellas episode
+   of futurama when malachai speaks for the beings that live on bender"*
+   - **Which moments get the elder.** The candidates are the ones `RaiseMoment` raises today: a technique worked out
+     (`KnowledgeSystem`), a building learned (`LearnedByDoing`, the gifts, the town hall in `CivicSystem`), nomads
+     settling (`SimWorld.Nomads`), kin arriving up the valley (D863–D870), and the boat. Deaths, departures and the
+     first death (the cemetery's, D908) are moments too. Whether the elder thanks the player for those, or keeps quiet,
+     is a separate call.
+   - **Who the elder is.** The one sim rule: the eldest living villager, with a tie-break, read when the moment is raised
+     so it never needs storing. ⚠️ *"Elder"* is already a word in the game. `LifeStage.Elder` (D12) is every frail old
+     villager, so a village can have six elders and one spokesperson. The spokesperson needs a name that doesn't
+     collide, such as *"the eldest"* or a title Joe picks.
+   - **When the eldest dies.** The next eldest takes over and speaks by name. Settle whether that handover is said out
+     loud, for example in the epitaph or the next moment, and what happens to a village whose eldest is a child after a
+     hard winter.
+   - **The tone is new.** Today a moment is a narrator writing about the village in the third person (*"The village
+     learned to write"*, *"Nomads have settled …"*), sometimes telling the player where to put a thing. It has never
+     been a villager talking *to* the player. Thanks and reverence cast the player as someone the village knows is
+     there. §0 and §1 don't forbid that, but nothing there has said it yet. Check it against §1.4 (stories come from
+     people): a named speaker helps there. Check it against D577 (a moment in short paragraphs, each with a mark the sim
+     names), so the speech doesn't grow the popup back. Check it against the log line every moment also writes
+     (D232: a moment accompanies a log line, never replaces it).
+   - **Both lanes.** The writing and the popup are the view's and the art lane's (a portrait or the speaker's figure,
+     perhaps). The eldest rule and the speaker's name in the moment are the sim's: one small, derived, unhashed read.
+2. **A terrain editor.** *"Carve new rivers/shape land? Aka terrain editor"*
+   - **Before founding or in play.** This decides the size.
+     - **Before founding**, on the new-game screen (`new-game-screen.md`, D477, D481), it is far smaller: nothing has
+       been built, and no villager or flow field exists yet. But D18 says one seed reproduces the whole run, and the
+       share code (D478) quotes a valley by its seed. An edited valley needs its edits to travel with the code, or it
+       stops being quotable.
+     - **In play** it touches everything that reads the ground:
+       - the one cost field (§2.6, D15): carving water changes passability, and that clears every flow field
+         (`pathfinding-and-water.md`; the drought entry already refuses moving water for this reason);
+       - heights and steepness (`heights.md`, D735–D742);
+       - bridges, which span water by row (`bridges.md`, D547);
+       - the drawn river, read once from the water (`river-drawn.md`, the view's `RiverTable`);
+       - the map in the state hash (D18).
+       There are no fords: `pathfinding-and-water.md §11` question 2 still stands, and a carved shallow would reopen it.
+       `SetTerrain` is already the one door for changes to the ground (`mutable-terrain.md`, D85). An editor would go
+       through it, not around it.
+   - **The §0.1 lens.** Shaping land is cosy. Ask whether it is also merely easier: §2.5's *terrain dictates viability*
+     is a challenge an editor can remove. Settle what it costs, if anything, and who does the work: the player's hand,
+     or villagers with a job, the way paving (§2.6) is labour.
+3. **Flood.** *"Flood disaster at somepoint, like fire and drought."*
+   - **Where it belongs.** §2.5, environment with teeth, beside drought and fire and blight (Phase 6's W8). It is not on
+     W8's list today, so adding it there is Joe's call.
+   - **What's already known.** The sim has the river and real heights (D735–D742), so *"low ground by the river"* can be
+     derived from what is saved. A flood can be shown on the map before it happens, because the ground that floods is
+     knowable.
+   - **The Non-Negotiables it must keep.** §1.1 and §0.1's *no unforeseeable punishment*, the same sentence drought and
+     fire are under (Phase 6 gate item 6):
+     - it is foretold, with a warning the player sees in time to act;
+     - it is legible on the map;
+     - it is answerable, by building higher or by something else Joe names;
+     - it never wipes a village without being readable ahead of time;
+     - its pace is meditative (§1.2), with nothing to rush.
+     Today a home is lost to wear only after years of being seen worn (D552). A flood should be no harsher than that.
+   - **The same trap as the editor.** If the water itself spreads, passability changes and every flow field clears.
+     Flooded ground that stays walkable, or a cost on the field rather than water, avoids it.
+
 ### v1 milestone (release)
 `v1.0.0` is the first real public release — declared when the game is a coherent, stable, enjoyable whole (not tied to a specific pillar count; it's a judgment call made with Joe). At that point the release machinery activates: `CHANGELOG.md` gets stamped, the version source is bumped, and pushing a `vX.Y.Z` tag triggers the GitHub Actions build of a Windows `.exe` release. Process details live in `METHODOLOGY.md §5–6`. Nothing about releases needs to run before v1 — the workflow is tag-gated and dormant until then.
 
@@ -5716,3 +5783,4 @@ building (D176, `specs/tech-tree.md §7f`). The rest are still notes.
 - **D910 · 2026-11-26 · ✅ W4 STEP 5 — THE TWO CAUSES, AND THE FAMILY AT THE GRAVE. ON `slice/w4-cemetery`.** `cemetery.md §6.3, §7`, tests first (`CemeteryTests`, 8 more). **`ContentmentCause.DeadInTheOpen` (6) and `CemeteryFull` (7)**, a data row each, weight 1: held by every adult of the household the dead person died in and by their partner while one of theirs waits (`Unburied`, so never the dead from before) and the village has **no place** (no cemetery standing, or the player's Groundskeepers number at 0 — Joe's call 7 a) — or a place and **no room** in any; never both, and never for a queue — a cemetery standing with room is a place even unkept, and they are waiting their turn. Read once a season (`TheDeadHaveAPlace`, one pass over the waiting). The card: *"their dead lie in the open, with nowhere to be buried"*, *"there is no room left in the cemetery for Mabel"*. **The family at the grave** (Joe's call 4 a): within `grave_visit_days` (30, new key) of a burial each adult of the household and the partner walks to the grave once where a rest at home would begin, before the tavern, stands a day and goes home — `WalkingToTheGrave`, `AtTheGrave` appended; `Villager.LastGraveVisitTick` saved and hashed sparsely; the recent burials an index kept in `Bury`, pruned as read, rebuilt on load. It moves no number. ⚠️ **Found building it:** a walking errand needs its own arm in the walk's switch, or the walker re-decides every tick and, away from home, is never offered it again — the walk stalled a tile out. **Measured on the real code** (§4.4; `ZZ_NOW4` in the harness): his 18 save copies 20 unattended years with no cemetery built — unsettled 2.30 % → **3.79 %**, thinking of leaving 41 → 103, **really gone 9 → 17**; the paper's arm said 3.6 % and 8 more. **⭐ Six goldens moved once, for this reason only** — every golden village is unattended and never builds a cemetery: the farm's two, the skill test's two, the stock limits' two. **Proven by ablation:** with the two rows out of the data *and* the code's defaults all six old values passed (the data alone left the `shipped: false` arms red — they read the code's list). **Two guards told about it:** `ContentmentTests.AKeptVillageLosesNobodyItKeeps` answers the dead's place as it answers the water (the harness builds neither), and `FirewoodTests.TheFuelChainWarmsAGrowingVillageAndFreezesNobody` likewise — its 300 unattended years fell to 80 of 193 deaths old age (41 %) under its 43 % bar; answered, 97 of 179. `TheShippedRowsAreJoesNumbers` has the two rows and eight causes. **Red-checked (D326): 18 mutants, 22 reds; one zero on the first pass** — a partner in another household minding, hidden because founding couples share a household — **closed with a test** (1 red). **Checks:** suite **2350 / 0 / 5 of 2355 in 15m59 (D909's 2342 + the 8 here)**; view build 0 warnings; probe 206 lines, 171 ✅, 0 ⛔, bar 110, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 461 → 461 in number, six re-pinned.
 - **D911 · 2026-11-26 · ✅ W4 STEP 6 — A CEMETERY WEARS, AND ITS GROUNDSKEEPER KEEPS IT (Joe's call 9). ON `slice/w4-cemetery`.** `cemetery.md §5.2`, tests first (`CemeteryTests`, 5 more). The three rows wear on the timber clock they already had (8 / 12 / 20 years of mild weather — **in the calendar worn in the 8th year, overgrown in the 11th, wild in the 18th**, a winter wearing half again; the spec's plain *8, 12 and 20* corrected). **`Workplace.TendedDaysThisSeason`** (saved when set, hashed sparsely) counts each day a groundskeeper begins keeping it; at the season's turn `TendWhatStands` gives a cemetery its own branch — `cemetery_tended_days_a_season` (10, new key) of them stamp `RepairedAtTick`, no logs, no repair site, **never closed**, and a wild one still holds its dead, takes more and counts as a place; it says what it has become in a cemetery's words (*"… is growing untidy"*, *"… is overgrown"*, *"… has gone wild. Its dead are still there, under the grass."*). ⚠️ **Found:** the tavern keeper's day-then-home left a cemetery ten tiles out kept 3–4 days a season of 30 — it wore however it was kept, and his villages pose a plot a median 18 ticks out — so **a groundskeeper keeps it all year**: a day done, the day is asked again from the top (meals, cold and rest first), and otherwise another day there; 15–24 days a season measured, 6–8 in winter. **Red-checked (D326): 8 mutants, 13 reds, no zeros.** **Checks:** suite **2355 / 0 / 5 of 2360 in 16m29 (D910's 2350 + the 5 here)**; view build 0 warnings; probe 206 lines, 171 ✅, 0 ⛔, bar 110, `done.`, no Godot left; goldens 461 → 461, none moved.
 - **D912 · 2026-11-26 · ✅ W4 STEP 7 — THE VIEW, STAND-INS IN CODE; ▶️ JOE'S PLAY NEXT. ON `slice/w4-cemetery`.** New `VillageMap.Cemetery.cs`. **A cemetery is drawn as ground, not a building:** `RoofForm.Cemetery` for the groundskeeper's trade (it would have been a 4×5 shingle roof) — mown grass edge to edge (0.96 of the footprint, not a building's 0.8), a stone a grave and a fresh mound before it the first year, in the sim's own places row by row from the gate, a low fence with posts and the gate on the front edge, and tufts only as it wears (wild still shows its stones). The grave pattern is kept between frames, laid again only on a burial (`SimWorld.GraveGeneration`, new, derived) or a year's turn (CLAUDE.md). **The dead who wait** are drawn where they fell, small and plain under a pale cloth, beneath the living; nothing for one laid out at home; the same cloth at a groundskeeper's side while carried. **The cards:** the cemetery's sentence, numbers and names newest first, each stone's words in its tooltip (`SayTheCemetery`, `TheStoneSays`); its wear in a cemetery's words; the household's line while one of theirs waits (`WhoOfTheirsWaits`). ⚠️ **Not built, said in the spec:** a stone's own card on a click, and the art (⏳ the seven pictures already on `ArtAwaited`, and the cloth, the stones and the figures are code until the art lane's land — *cozy, never grim*, Joe's eyes first). Probe: `cemetery:` (the drawing posed, the four wear sentences). Tests first for the sim's sentences (`CemeteryTests`, 4 more). **Red-checked (D326): 4 sim mutants, 4 reds; 2 probe mutants, 5 faults; no zeros.** **Checks:** suite **2359 / 0 / 5 of 2364 in 16m40 (D911's 2355 + the 4 here)**; view build 0 warnings; probe 207 lines, 172 ✅, 0 ⛔, `cemetery:` ✅, bar 110, tile centres ✅, new game ✅, `done.`, no Godot left; goldens 461 → 461, none moved.
+- **D913 · 2026-11-26 · 📝 JOE'S THREE IDEAS ON THE ROADMAP, UNSCHEDULED — THE ELDER'S VOICE, A TERRAIN EDITOR, A FLOOD; DOCS ONLY, ON `slice/w4-cemetery`.** Joe, through the coordinating session, asked for three ideas to be kept: the eldest villager speaking for the village in the moment popups and thanking the player (*"i took the inspo from the Godfellas episode of futurama"*), *"Carve new rivers/shape land? Aka terrain editor"*, and *"Flood disaster at somepoint, like fire and drought."* They are in §4's new list *Joe's ideas, not yet scheduled*, in his words, each with what a session must settle first. **None has a W number and none is built.** Found while writing them: `LifeStage.Elder` (D12) already names every frail old villager, so the spokesperson needs a word of its own. Today's moments are a narrator in the third person, never a villager speaking to the player. A terrain editor before founding meets D18's one-seed rule and the share code (D478); in play it meets the one cost field, heights, bridges, the drawn river and the hash, and carving water clears every flow field. There are no fords today. A flood is §2.5's, beside W8, and must stay foretold, on the map and answerable (§0.1, Phase 6 gate item 6). The cemetery is untouched: Joe's play of W4 is still next.
