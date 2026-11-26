@@ -1,6 +1,6 @@
 # The building's picture on its window (A260–A262)
 
-**Status: 🔨 built on `art` (A262), Joe's calls answered — *"Yes, as recommended"*: B, 120, S1, and his OK for `Main.Cards.cs` and `VillageMap.cs`. ✅ Played and merged into `main` at his word (A263, *"Played it, merge"*).** Art lane, branch `art`.
+**Status: 🔨 built on `art` (A262), Joe's calls answered — *"Yes, as recommended"*: B, 120, S1, and his OK for `Main.Cards.cs` and `VillageMap.cs`. ✅ Played and merged into `main` at his word (A263, *"Played it, merge"*); pushed at his word (A264).** Art lane, branch `art`.
 
 Joe's play note 5 (2026-11-24): *"on building windows, the building should look like the actual in-game version"*.
 
