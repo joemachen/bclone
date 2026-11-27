@@ -23,8 +23,7 @@ public partial class Main
     {
         "buildings/small-cemetery", "buildings/cemetery", "buildings/large-cemetery", "trades/groundskeeper",
 
-        // ⏳ W5 (D927): the great library, its icon and its owed version (`skills-for-every-trade.md §8`).
-        "buildings/great-library",
+        // ✅ W5's great library (D927) came off here at A306: painted, its owed version with it.
     };
 
     private string TheIconsArePainted()

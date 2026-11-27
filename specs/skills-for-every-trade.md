@@ -220,7 +220,7 @@ the measurement in §9 says how often a second library is wanted, and the number
 
 **One new building since D922: the great library** — its build-bar icon and its owed version (`buildings/great-library`,
 on `Main.UiIconsProbe.ArtAwaited` until painted), and its roof on the map (a stand-in today: the library's slate, a storey
-up, 3×3). Otherwise new lines on cards and in the log only. Two notes for the lane:
+up, 3×3). ✅ **Both painted on `art` (A306, `great-library-art.md`): a cloister round a garden court, and a gate-tower icon.** Otherwise new lines on cards and in the log only. Two notes for the lane:
 - **A master fisher's cast is half as long**, and `VillageMap.Fishing` already reads its length from `WorkTicksFor`
   (A275–A277), so the cast animation shortens for a master without a change. Worth a look in play.
 - **A ripe field in winter's first five days** draws as the ripe field it is, under the winter wash. No stooks-in-snow

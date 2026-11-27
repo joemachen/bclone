@@ -34,6 +34,12 @@ internal enum RoofForm
     /// <summary>A cemetery (W4, D912): fenced, mown ground and its graves — no roof (`VillageMap.Cemetery.cs`).</summary>
     Cemetery,
 
+    /// <summary>
+    /// The great library (A306, `great-library-art.md`, Joe's *"B"*): four ranges in its material round an open garden court, a
+    /// gatehouse over the door — the whole footprint, the library's sundial and benches in the court.
+    /// </summary>
+    Cloister,
+
     /// <summary>A trade whose building is a store (the market, the barn, the trading post): the store paints it.</summary>
     ByItsStore,
 }
@@ -136,8 +142,8 @@ public partial class VillageMap
         BuildingKind.Manor => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 2, UpperStorey: true, Lift: 1.4f, Yard: YardKind.Manor),
         BuildingKind.Library => new(RoofForm.Roof, RoofMaterial.Slate, Yard: YardKind.Library),
 
-        // ⭐ The great library (W5): a stand-in until the art lane paints one — the library's slate, a storey up.
-        BuildingKind.GreatLibrary => new(RoofForm.Roof, RoofMaterial.Slate, UpperStorey: true, Lift: 1.4f, Yard: YardKind.Library),
+        // ⭐ The great library (W5; A306, Joe's *"B"*): the library's slate round a garden court — the one roof with a hole in it.
+        BuildingKind.GreatLibrary => new(RoofForm.Cloister, RoofMaterial.Slate, Lift: 1.4f, Yard: YardKind.Library),
         BuildingKind.TownHall => new(RoofForm.Roof, RoofMaterial.StoneSlab, Turret: true, Lift: 1.5f, Yard: YardKind.TownHall),
         BuildingKind.Well => new(RoofForm.Well, RoofMaterial.StoneSlab, Yard: YardKind.Well),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
@@ -640,6 +646,9 @@ public partial class VillageMap
             case RoofForm.Cemetery:
                 Cemetery(pieces, frame, hw, hd, yard, seed);
                 break;
+            case RoofForm.Cloister:
+                Cloister(pieces, frame, look, wide, deep, facing, colour, door, doorAt, doorIn.Out, ppt, fallenIn, seed);
+                break;
             default:
                 // ⭐ A86: the yard first (`building-yards.md §3`), then the roof on its own part of the ground.
                 if (yarded)
@@ -879,6 +888,78 @@ public partial class VillageMap
         pieces.Add(new RoofPiece(RoofPieceKind.Fill, "chimney", stack, ChimneyStone));
         pieces.Add(new RoofPiece(RoofPieceKind.Fill, "chimney", frame.Box(at, half * 0.45f, half * 0.45f), ChimneyFlue));
         pieces.Add(new RoofPiece(RoofPieceKind.Line, "chimney", stack, Ink, Width: 1f, Closed: true));
+    }
+
+    /// <summary>The cloister's lawn (A306): a little cooler and paler than the valley's grass, so the garth reads as kept.</summary>
+    private static readonly Color CloisterLawn = new("#9fb07a");
+
+    private static readonly Color CloisterTree = new("#5f8848");
+    private static readonly Color CloisterLeaf = new("#7aa25c");
+
+    /// <summary>
+    /// ⭐ A306 (`great-library-art.md`, Joe's <i>"B"</i>): the great library — four ranges in its material round an open garden court
+    /// (a lawn, a cross of paving, the library's sundial in a round bed, its two benches, a small tree in one quarter), the ranges'
+    /// shadow falling into the court from the light, and a gatehouse over the range the door is in. The whole footprint: no forecourt.
+    /// </summary>
+    private static void Cloister(
+        List<RoofPiece> pieces, RoofFrame frame, RoofLook look, float wide, float deep, ushort facing, Color colour, Door? door, Vector2 doorAt,
+        Vector2 doorOut, float ppt, bool fallenIn, int seed)
+    {
+        float ew = (wide / 2f) + RoofEaves;
+        float ed = (deep / 2f) + RoofEaves;
+        float w = Mathf.Min(ew, ed) * 0.36f;
+        float ihw = ew - w;
+        float ihd = ed - w;
+        Shadow(pieces, frame, ew, ed, Vector2.Zero, look.Lift);
+        if (door is Door d)
+        {
+            Step(pieces, frame, wide, deep, facing, d, doorAt, ppt, Vector2.Zero, ew - RoofEaves, ed - RoofEaves);
+        }
+
+        // The court, under the open sky.
+        var k = new YardKit(pieces, frame);
+        k.Fill("court", Box(Vector2.Zero, ihw * 2f, ihd * 2f, 0f), CloisterLawn);
+        k.Fill("court path", Box(Vector2.Zero, ihw * 2f, 0.16f, 0f), Pavement);
+        k.Fill("court path", Box(Vector2.Zero, 0.16f, ihd * 2f, 0f), Pavement);
+        float bed = Mathf.Min(ihw, ihd) * 0.4f;
+        k.Thing("court bed", Oval(Vector2.Zero, bed, bed, 0f, 16), Pavement, 0.5f);
+        Sundial(k, Vector2.Zero);
+        Bench(k, new Vector2(-ihw * 0.55f, -0.17f), 0f);
+        Bench(k, new Vector2(ihw * 0.55f, 0.17f), 0f);
+        int quarter = (seed >> 1) & 3;
+        var tree = new Vector2((quarter & 1) == 0 ? ihw * 0.5f : -ihw * 0.5f, (quarter & 2) == 0 ? -ihd * 0.5f : ihd * 0.5f);
+        float crown = Mathf.Min(ihw, ihd) * 0.3f;
+        k.Shade("court tree", Oval(tree, crown, crown, 0f, 14), 0.5f);
+        k.Thing("court tree", Blob(tree, crown, crown, 0f, seed, 0.18f), CloisterTree, 0.7f);
+        k.Fill("court tree", Blob(tree + new Vector2(-crown * 0.25f, -crown * 0.25f), crown * 0.53f, crown * 0.53f, 0f, seed + 3, 0.2f), CloisterLeaf);
+
+        // The ranges' shadow on the court: what the open square, moved with the light, no longer covers — a strip on each of
+        // the two walls the light comes over, wherever the building is turned.
+        Vector2 off = frame.Local(new Vector2(0.13f, 0.17f) * look.Lift);
+        float sx = Mathf.Min(Mathf.Abs(off.X), ihw * 2f);
+        float sy = Mathf.Min(Mathf.Abs(off.Y), ihd * 2f);
+        float xAt = Mathf.Sign(off.X) * -(ihw - (sx / 2f));
+        float yAt = Mathf.Sign(off.Y) * -(ihd - (sy / 2f));
+        k.Fill("court shade", Box(new Vector2(xAt, 0f), sx, ihd * 2f, 0f), RoofShadow with { A = 0.3f });
+        k.Fill("court shade", Box(new Vector2(Mathf.Sign(off.X) * (sx / 2f), yAt), (ihw * 2f) - sx, sy, 0f), RoofShadow with { A = 0.3f });
+
+        // The four ranges, each a gable along its own length; the long pair overlaps the short pair's ends.
+        bool mirrored = (seed & 1) == 1;
+        Color wash = Washed(colour);
+        RoofFaces(pieces, frame, w / 2f, ihd, new Vector2(-(ew - (w / 2f)), 0f), wash, look.Material, mirrored, fallenIn, "face", seed);
+        RoofFaces(pieces, frame, w / 2f, ihd, new Vector2(ew - (w / 2f), 0f), wash, look.Material, !mirrored, fallenIn, "face", seed + 1);
+        RoofFaces(pieces, frame, ew, w / 2f, new Vector2(0f, -(ed - (w / 2f))), wash, look.Material, mirrored, fallenIn, "face", seed + 2);
+        RoofFaces(pieces, frame, ew, w / 2f, new Vector2(0f, ed - (w / 2f)), wash, look.Material, !mirrored, fallenIn, "face", seed + 3);
+
+        // The gatehouse: a square roof standing over the middle of the range the door is in.
+        Vector2 way = Mathf.Abs(doorOut.X) > Mathf.Abs(doorOut.Y) ? new Vector2(Mathf.Sign(doorOut.X), 0f) : new Vector2(0f, Mathf.Sign(doorOut.Y));
+        Vector2 gate = way * ((way.X != 0f ? ew : ed) - (w / 2f));
+        float along = Mathf.Min(ew, ed) * 0.25f;
+        float across = (w / 2f) + 0.06f;
+        float ghw = way.Y != 0f ? along : across;
+        float ghd = way.Y != 0f ? across : along;
+        Shadow(pieces, frame, ghw, ghd, gate, 0.6f);
+        RoofFaces(pieces, frame, ghw, ghd, gate, wash.Lightened(0.1f), look.Material, false, fallenIn, "gatehouse", seed + 4);
     }
 
     private static void Market(List<RoofPiece> pieces, RoofFrame frame, float hw, float hd, Color colour, bool fallenIn)
@@ -1202,6 +1283,66 @@ public partial class VillageMap
                 faults.Add($"turret pieces {turrets} (on the library {strays}), sails {sails}, well water {water}, stalls {stalls} with {stripes} stripes, a market's trade drawn as {byStore} pieces (want some, 0, 4, 1, 3, some, 0)");
             }
 
+            // ⭐ A306: the great library a cloister — four ranges round an open court (nothing of a roof over its middle), the
+            // court inside the ranges, one gatehouse on the door's own side, at four turns and two doors; the library has no court.
+            Want("the great library", RoofOf(BuildingKind.GreatLibrary), RoofForm.Cloister, RoofMaterial.Slate);
+            static bool Covers(Vector2[] poly, Vector2 p)
+            {
+                float sign = 0f;
+                for (int i = 0; i < poly.Length; i++)
+                {
+                    Vector2 a = poly[i];
+                    Vector2 b = poly[(i + 1) % poly.Length];
+                    float cross = ((b.X - a.X) * (p.Y - a.Y)) - ((b.Y - a.Y) * (p.X - a.X));
+                    if (Mathf.Abs(cross) < 1e-4f)
+                    {
+                        continue;
+                    }
+
+                    if (sign == 0f)
+                    {
+                        sign = Mathf.Sign(cross);
+                    }
+                    else if (Mathf.Sign(cross) != sign)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            int cloistersHeld = 0;
+            foreach ((Compass faces, Vector2 way) in new[] { (Compass.North, new Vector2(0, -1)), (Compass.East, new Vector2(1, 0)) })
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    ushort facing = (ushort)((k * 16384) + 2048);
+                    var door = new Door(default, default, faces, Compass.North, DoorBlock.None, default, false);
+                    List<RoofPiece> great = Draw(RoofOf(BuildingKind.GreatLibrary), 2.4f, 2.4f, facing, door);
+                    int ranges = great.Count(p => p.Part == "face eave");
+                    RoofPiece[] courts = great.Where(p => p.Part == "court").ToArray();
+                    bool open = !great.Any(p => p.Kind == RoofPieceKind.Textured && Covers(p.Points, centre));
+                    bool courtInside = courts.Length == 1 && courts[0].Points.All(q => Mathf.Abs(Local(q, facing).X) < 1.24f - 0.3f && Mathf.Abs(Local(q, facing).Y) < 1.24f - 0.3f);
+                    RoofPiece[] gates = great.Where(p => p.Part == "gatehouse eave").ToArray();
+                    Vector2 gateAt = gates.Length == 1 ? Local(gates[0].Points.Aggregate(Vector2.Zero, (s, q) => s + q) / gates[0].Points.Length, facing) : Vector2.Zero;
+                    bool gateOnTheDoor = gates.Length == 1 && gateAt.Dot(way) > 0.8f && Mathf.Abs(gateAt.Dot(new Vector2(-way.Y, way.X))) < 0.01f;
+                    if (ranges != 4 || !open || !courtInside || !gateOnTheDoor)
+                    {
+                        faults.Add($"the great library at turn {k}/4, its door {faces}: {ranges} ranges, its middle open {open}, one court inside the ranges {courtInside}, {gates.Length} gatehouse at {gateAt} (want 4, true, true, 1 on the door's side)");
+                        continue;
+                    }
+
+                    cloistersHeld++;
+                }
+            }
+
+            int libraryCourts = Draw(RoofOf(BuildingKind.Library), 1.6f, 1.6f, 0).Count(p => p.Part == "court");
+            if (libraryCourts != 0)
+            {
+                faults.Add($"the library has {libraryCourts} court pieces (want none: the cloister is the great library's alone)");
+            }
+
             // Kept between frames: the same building twice lays nothing; a change of colour lays it once; the runs carry every
             // piece in its order, each polygon fanned (n − 2 triangles), the pen lines kept as lines.
             var far = new Vector2(-9999f, -9999f);
@@ -1253,7 +1394,7 @@ public partial class VillageMap
             }
 
             return faults.Count == 0
-                ? $"[widths] painted buildings: ✅ the seven roof materials 384 × 128, lossless, mipmapped, drawn with mipmaps, each mean tone 0.8; every kind in its material (§3's table, 30 rows); the chimneys counted on eleven kinds; a 2 × 1 and a 3 × 2 a gable along the long side, a 2 × 2 and a 1 × 1 a hip, the faces tiling the eaves' rectangle 0.04 out, the face toward the upper left the lightest (a gable whose ridge points at the light lit evenly), its opposite the darkest and the mean 1, at sixteen turns ({turnsHeld} of 64 held); a door's step past the eave on its own wall; the turret on the town hall alone, the mill's four sails, the well's water, the market's three striped stalls, the shared trades left to their stores; laid once and kept until the building changes, the runs every piece in order, the pen lines a mesh laid for the zoom; painted only with the tick"
+                ? $"[widths] painted buildings: ✅ the seven roof materials 384 × 128, lossless, mipmapped, drawn with mipmaps, each mean tone 0.8; every kind in its material (§3's table, 30 rows); the chimneys counted on eleven kinds; a 2 × 1 and a 3 × 2 a gable along the long side, a 2 × 2 and a 1 × 1 a hip, the faces tiling the eaves' rectangle 0.04 out, the face toward the upper left the lightest (a gable whose ridge points at the light lit evenly), its opposite the darkest and the mean 1, at sixteen turns ({turnsHeld} of 64 held); a door's step past the eave on its own wall; the turret on the town hall alone, the mill's four sails, the well's water, the market's three striped stalls, the shared trades left to their stores; the great library a cloister, four ranges round an open court with its gatehouse on the door's side ({cloistersHeld} of 8 held), no court on the library; laid once and kept until the building changes, the runs every piece in order, the pen lines a mesh laid for the zoom; painted only with the tick"
                 : $"[widths] painted buildings: ⛔ {string.Join("; ", faults)}";
         }
         catch (System.Exception e)

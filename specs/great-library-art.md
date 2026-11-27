@@ -1,6 +1,6 @@
 # The great library's pictures — its roof on the map and its build-bar icon (A304)
 
-> **Status: ✍️ MOCKED (A305, 2026-11-27), ⏸️ FOUR CALLS JOE'S; NOTHING BUILT.** Claimed A304. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ BUILT (A306, 2026-11-27) on `art`, UNPLAYED — Joe: *"1. B 2. yes 3. Photoshop is ready"* (roof B, icon B, his OK for the files, Photoshop clear). ⏸️ His play, then the merge at his word.** Mocked A305; claimed A304. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W5's ask of the lane (`skills-for-every-trade.md §8`, D922, D927). Mocks: `D:\Projects\brushes\great-library\`
 > (`great_library_pick.jpg`; the renders in `out\`, the scratch game in `game\`, `mock.py` and `VillageMap.MockGreatLibrary.cs`
 > patch it, `patch.py` makes the save copy, `icons_sketch.py` the icon sketches).
@@ -59,3 +59,26 @@ Each icon pairs with the roof of its letter; mixing is fine.
   catch all play). ✅ By the code; worth a look in play when a fisher masters.
 - **A ripe field in winter's first five days** paints ripe: `CropStageAt` gives a ripe tile *"ripe"* in every quarter and the snow
   is laid over it. ✅ By the code. No stooks-in-snow picture is asked.
+
+## 5. Built (A306) — roof B and icon B
+
+His answers, said back: **roof B, the cloister; icon B, the gate tower; his OK for `VillageMap.Roofs.cs` and `Main.UiIconsProbe.cs`**
+(`VillageMap.Yards.cs` was not needed: the court is drawn by the roof, the yard kind stays the library's so its night and
+its card read as the library's); **Photoshop clear**.
+
+- **The roof:** `RoofForm.Cloister`, the great library's row in `RoofOf`, drawn by `Cloister()` in `VillageMap.Roofs.cs` with the
+  map's own pieces — the shadow and the step as any roof; the court (lawn `#9fb07a`, a cross of the yard's paving, a round bed
+  with the library's sundial, its two benches, a small tree in a quarter chosen by the seed); the ranges' shadow into the court as
+  two strips on the walls the light comes over, worked out in the building's own frame so it holds at any turn; the four ranges,
+  each a gable (`RoofFaces`), a fifth of the footprint deep (0.36 × the half-side); the gatehouse, a square hip a little lighter,
+  over the middle of the range the door is in. The whole footprint: no forecourt.
+- **The icon:** `buildings/great-library` and `-owed`, painted by `p3_icons.jsx`'s shapes (`D:/Projects/brushes/great-library/p3_icons_gl.jsx`, the shared painter untouched), 80 × 80, mipmapped like the rest; the owed medallion at (213, 208) on the
+  256 grid, measured the way `medallions.json` was (the library's 202, 208 and the town hall's 205, 208 come out of the same
+  measure). Taken off `ArtAwaited`, so `ui icons:` names only the cemetery's four.
+- **The probe:** `painted buildings:` now wants the great library a cloister — four ranges, nothing of a roof over the court's
+  middle, the court inside the ranges, one gatehouse on the door's side — at four turns and two doors (8 of 8), and no court on
+  the library. Red-checked: see A306 in DESIGN §7.
+- **To play it:** his pre-W5 saves do not open on W5's build, so two labelled copies of his honey-harrow Hollowmere, made
+  openable, in his saves folder: `great-library-to-place` (the gift owed: the button starred with the gold medal, placed free)
+  and `great-library-standing` (already standing below the town hall).
+
