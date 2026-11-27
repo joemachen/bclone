@@ -11197,7 +11197,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
 - ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
-  2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); ⏳ not pushed; `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
+  2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); pushed at his word (D931, *"Push main"*); `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and
   the groundskeeper came after it; the teacher has none by his call, D754). 📝 **Specced (D920, `specs/skills-for-every-trade.md`);
   ✅ every call his answered (D921–D922); ✅ **built (D923–D928)**: nine skill rows, seven techniques (one unwritable, carried by
