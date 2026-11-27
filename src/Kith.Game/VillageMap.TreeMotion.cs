@@ -614,7 +614,9 @@ public partial class VillageMap
 
         Color seen = Colors.White with { A = frame.Alpha };
         Vector2 tl = Corner(-1f, -1f), tr = Corner(1f, -1f), br = Corner(1f, 1f), bl = Corner(-1f, 1f);
-        foreach ((Vector2 at, Vector2 uv) in new[] { (tl, Uv(0f, 0f)), (tr, Uv(1f, 0f)), (br, Uv(1f, 1f)), (tl, Uv(0f, 0f)), (br, Uv(1f, 1f)), (bl, Uv(0f, 1f)) })
+        // ⭐ The top corners carry the wind's mark as the mesh's do (A299), so a fall still starts as the mesh's own tree.
+        var mark = new Vector2(MeshBuilder.SwayMark, 0f);
+        foreach ((Vector2 at, Vector2 uv) in new[] { (tl, Uv(0f, 0f) + mark), (tr, Uv(1f, 0f) + mark), (br, Uv(1f, 1f)), (tl, Uv(0f, 0f) + mark), (br, Uv(1f, 1f)), (bl, Uv(0f, 1f)) })
         {
             vertices.Add(at);
             colours.Add(seen);

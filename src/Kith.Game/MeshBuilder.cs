@@ -184,7 +184,7 @@ internal sealed class MeshBuilder
         int across = young ? YoungSpriteColumns : SpriteColumns;
         float du = 1f / across, dv = (young ? 0.5f : 1f) / SpriteRows;
         float u0 = (k % across) * du, v0 = ((young ? GrownSpriteRows : 0) + ((k / across) * (young ? 0.5f : 1f))) / SpriteRows;
-        SpriteFrom(centre, half, u0, v0, du, dv, mirrored);
+        SpriteFrom(centre, half, u0, v0, du, dv, mirrored, sways: true);
     }
 
     /// <summary>
@@ -192,19 +192,35 @@ internal sealed class MeshBuilder
     /// <paramref name="dv"/> in the texture's 0–1 — as a square in tile space, mirrored across its light's diagonal or not.
     /// The trees' <see cref="Sprite"/> and the painted deposits (A60) both lay their cells through here.
     /// </summary>
-    public void SpriteFrom(Vector2 centre, float half, float u0, float v0, float du, float dv, bool mirrored)
+    /// <remarks>⭐ <paramref name="sways"/> (A299, the trees in the wind): the cell's TOP corners carry the wind's mark, a
+    /// <see cref="SwayMark"/> nudge of their UV.x that <c>tree_sway.gdshader</c> reads to lean them; the trunk's corners do not.</remarks>
+    public void SpriteFrom(Vector2 centre, float half, float u0, float v0, float du, float dv, bool mirrored, bool sways = false)
     {
         Vector2 Uv(float s, float t) => mirrored ? new Vector2(u0 + (t * du), v0 + (s * dv)) : new Vector2(u0 + (s * du), v0 + (t * dv));
+        Vector2 Top(Vector2 uv) => sways ? uv + new Vector2(SwayMark, 0f) : uv;
 
         Vector2 tl = centre + new Vector2(-half, -half), tr = centre + new Vector2(half, -half);
         Vector2 br = centre + new Vector2(half, half), bl = centre + new Vector2(-half, half);
-        AddUv(tl, Uv(0f, 0f));
-        AddUv(tr, Uv(1f, 0f));
+        AddUv(tl, Top(Uv(0f, 0f)));
+        AddUv(tr, Top(Uv(1f, 0f)));
         AddUv(br, Uv(1f, 1f));
-        AddUv(tl, Uv(0f, 0f));
+        AddUv(tl, Top(Uv(0f, 0f)));
         AddUv(br, Uv(1f, 1f));
         AddUv(bl, Uv(0f, 1f));
     }
+
+    /// <summary>The wind's mark on a tree's top corner (A299): fract(UV.x × 24) = 0.001 — a hair of the atlas, never seen.</summary>
+    internal const float SwayMark = 0.001f / 24f;
+
+    /// <summary>Pure: whether a UV carries the wind's mark — the shader's own test, for the probe.</summary>
+    internal static bool Sways(Vector2 uv)
+    {
+        float f = (uv.X * 24f) - Mathf.Floor(uv.X * 24f);
+        return Mathf.Abs(f - 0.001f) < 0.0003f;
+    }
+
+    /// <summary>A vertex's UV, for the probe.</summary>
+    internal Vector2 UvAt(int i) => _uvs[i];
 
     /// <summary>
     /// The atlas's grid (<c>tree-sprites.md §3</c>): 4 cells across; 5 down of grown trees since the three more kinds

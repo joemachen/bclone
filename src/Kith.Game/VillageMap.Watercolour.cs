@@ -781,17 +781,20 @@ public partial class VillageMap
             for (int v = 0; v + 5 < at.Length; v += 6)
             {
                 trees++;
-                bool youngCell = uv[v].Y >= YoungFrom - 1e-4f;
+                // The top corners carry the wind's mark (A299): read without it, the cell is the cell.
+                Vector2 mark = new(MeshBuilder.SwayMark, 0f);
+                Vector2 uv0 = uv[v] - mark, uv1 = uv[v + 1] - mark, uv2 = uv[v + 2];
+                bool youngCell = uv0.Y >= YoungFrom - 1e-4f;
                 float du = youngCell ? 128f / 1024f : 256f / 1024f, dv = youngCell ? 128f / 1536f : 256f / 1536f;
                 int across = youngCell ? 8 : 4;
                 float top = youngCell ? YoungFrom : 0f;
-                int k = (int)((uv[v].X / du) + 1e-3f) + ((int)(((uv[v].Y - top) / dv) + 1e-3f) * across);
+                int k = (int)((uv0.X / du) + 1e-3f) + ((int)(((uv0.Y - top) / dv) + 1e-3f) * across);
                 int cell = Mathf.Clamp((youngCell ? 20 : 0) + k, 0, cells.Length - 1);
                 Vector2 corner = new(k % across * du, top + (k / across * dv));
-                bool mirrored = uv[v + 1].IsEqualApprox(corner + new Vector2(0f, dv));
-                bool plain = uv[v + 1].IsEqualApprox(corner + new Vector2(du, 0f));
+                bool mirrored = uv1.IsEqualApprox(corner + new Vector2(0f, dv));
+                bool plain = uv1.IsEqualApprox(corner + new Vector2(du, 0f));
                 float side = at[v + 1].X - at[v].X;
-                bool whole = uv[v].IsEqualApprox(corner) && uv[v + 2].IsEqualApprox(corner + new Vector2(du, dv)) && (mirrored || plain)
+                bool whole = uv0.IsEqualApprox(corner) && uv2.IsEqualApprox(corner + new Vector2(du, dv)) && (mirrored || plain)
                     && (youngCell ? k < 16 : k < 20);
                 bool grownSize = !youngCell && side >= grownLow - 1e-3f && side <= grownHigh + 1e-3f;
                 bool youngSize = youngCell && side >= youngLow - 1e-3f && side <= youngHigh + 1e-3f;

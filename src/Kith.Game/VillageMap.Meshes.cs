@@ -501,6 +501,7 @@ public partial class VillageMap
 
         // ⭐ The trees' motion (A197): its clock a frame on, an ended growing's trees given back before the chunks are drawn.
         AdvanceTheTreeMotion();
+        SwayTheTrees(from, fromAlpha, to, toAlpha);
         DrawThePaintedTrees(minX, maxX, minY, maxY, TheTreeAtlasFor(from)!, fromAlpha, TreeTintFor(from));
         if (toAlpha > 0f)
         {
