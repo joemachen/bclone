@@ -1,6 +1,6 @@
 # The cemetery's pictures — the ground, the edge, the gate, the graves, the cloth (A285)
 
-> **Status: ✍️ MOCKED (A286, 2026-11-26) on `art`, ⏸️ JOE'S PICK — nothing built.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
+> **Status: ✅ BUILT (A287, 2026-11-26) on `art`, UNPLAYED — Joe: *"All as recommended"*. Mocked A286.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
 > W4's ask of the art lane (`specs/cemetery.md §11`, D908), scoped to the stones, the mounds, the gate and the cloth with the ground and
 > edge they sit in; the icons, the groundskeeper's figures and the Lore picture stay asked, for later pieces. Mocks:
 > `D:\Projects\brushes\cemetery\` (`cemetery_options.jpg`, `cemetery_today_vs_A.jpg`, `cemetery_cloth.jpg`).
@@ -27,7 +27,9 @@ the game's closest zoom (3×, a 1:1 inset), with his three graves and with a ful
 - **The dead waiting:** a person's length under plain linen with soft folds and a soft shadow — or the same with a few
   wildflowers laid on it (at the game's size the flowers are a speck of colour). ⚠️ Cozy, never grim: his eyes on it.
 
-## 3. Calls — Joe's
+## 3. Calls — answered: Joe, 2026-11-26, *"All as recommended"* (A287)
+
+The hedge; the three stone shapes by the grave's number, a founder's the same; plain linen; his OK for `VillageMap.Cemetery.cs`.
 
 1. **The edge:** ⭐ A the hedge; B the paling fence; C the dry-stone wall.
 2. **The stones:** ⭐ the three shapes by the grave's number, as mocked; or one shape for all. A founder's the same (⭐) or a taller cross.
@@ -39,3 +41,20 @@ the game's closest zoom (3×, a 1:1 inset), with his three graves and with a ful
 
 The seasons and snow on it; worn, overgrown and wild beyond W4's tufts (call 9); the three building icons and the groundskeeper's
 icon; the groundskeeper's figures (digging, carrying a bier, burying, tending) and the mourners; the Lore node's picture.
+
+## 5. As built (A287) — `VillageMap.Cemetery.cs`, at his OK
+
+- `Cemetery(...)`: W4's ground colours by wear and its tufts kept; mown stripes while it is kept; the worn line from the gate.
+  The graves back row first, the worn line left clear: `Grave` — a long low oval in the cemetery's frame (`mound` fresh earth the
+  first year, `grassed mound` after, so W4's count of fresh mounds keeps its meaning), and the stone built in **screen
+  directions** through `RoofFrame.Local` at its head, so it stands up whichever way the cemetery faces; `StoneShapeOf(place)`
+  gives the tablet, the cross (`stone` and `stone arm`) or the slab. `HedgeRound`: a dark band and rounded clumps along each
+  edge, open `LychgateWide` (0.7 tiles) at the front. `Lychgate`: two posts and a two-tone shingled roof over the gap. W4's
+  fence and posts are gone.
+- `DrawTheCloth`: a person's length (0.55 tiles), rounded at both ends, a soft shadow, three soft folds, the ink edge —
+  the same call W4 made, in the groundskeeper's arms at 0.7.
+- **Probe `cemetery:`** extended: a hedge and a lychgate and no fence; every stone taller than wide on screen at facing 0 and a
+  quarter turn; three shapes along a row; one grassed mound for one old grave. red-checked, 5 mutants, 5 red (the stones drawn in the cemetery's turning frame, lying down at a quarter turn; no hedge; one stone shape; a grassed mound counted fresh; no lychgate). The cloth is not drawn headless (D340) and has no guard — the renders' and his eyes'.
+- Seen in the game on his honey-harrow Hollowmere (`D:\Projects\brushes\cemetery\built_vs_today.jpg`): as the mock. ⚠️ **The
+  cloth is not yet seen in the game** — the save has nobody waiting for a grave; it is the mock's and the code's until a death
+  shows it.
