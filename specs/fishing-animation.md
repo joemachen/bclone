@@ -1,6 +1,6 @@
 # Fishing you can watch: the cast, the wait, the catch (A275)
 
-> **Status: ✅ BUILT (A277, 2026-11-26), played and merged into `main` at Joe's word (A278, *"Played it, merge"*, `3b50939`); not pushed. His call: *"B, as recommended"*. Mocked A276.** Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ BUILT (A277, 2026-11-26), played and merged into `main` at Joe's word (A278, *"Played it, merge"*, `3b50939`); pushed at his word (A279, *"Push main"*). His call: *"B, as recommended"*. Mocked A276.** Art lane (CLAUDE.md *Two tracks*),
 > branch `art`; the art queue's piece 3, *Animations* (Joe: *"proceed with the art arm as outlined"*). View only: nothing in
 > `Kith.Sim`, `data/` or `tests/` changes. Mocks: `D:\Projects\brushes\animations\` (`fish_A_dock.gif`, `fish_B_shuffled.gif`,
 > `fish_C_boat.gif`, `fish_contact.jpg`).
