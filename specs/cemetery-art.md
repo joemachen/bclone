@@ -1,6 +1,6 @@
 # The cemetery's pictures — the ground, the edge, the gate, the graves, the cloth (A285)
 
-> **Status: ✅ BUILT (A287, 2026-11-26) on `art`, UNPLAYED — Joe: *"All as recommended"*. Mocked A286.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
+> **Status: ✅ BUILT (A287, 2026-11-26), played and merged into `main` at Joe's word (A288, *"Played it, merge"*, `df48106`); not pushed. Joe: *"All as recommended"*. Mocked A286.** Art lane (CLAUDE.md *Two tracks*), branch `art`.
 > W4's ask of the art lane (`specs/cemetery.md §11`, D908), scoped to the stones, the mounds, the gate and the cloth with the ground and
 > edge they sit in; the icons, the groundskeeper's figures and the Lore picture stay asked, for later pieces. Mocks:
 > `D:\Projects\brushes\cemetery\` (`cemetery_options.jpg`, `cemetery_today_vs_A.jpg`, `cemetery_cloth.jpg`).
