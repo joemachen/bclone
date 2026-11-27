@@ -11196,6 +11196,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** (D932, 2026-11-27; Joe: *"systems: start W6
+  in a new session"*). 🔨 **being built on `slice/w6-health`** (cut from `main` at `72d21cf`). ⏸️ **Spec first (`specs/health.md`),
+  measured on his saves, his calls before code.**
 - ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
   2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); pushed at his word (D931, *"Push main"*); `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and
