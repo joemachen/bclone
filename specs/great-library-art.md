@@ -1,6 +1,6 @@
 # The great library's pictures — its roof on the map and its build-bar icon (A304)
 
-> **Status: ✅ BUILT (A306, 2026-11-27) on `art`, UNPLAYED — Joe: *"1. B 2. yes 3. Photoshop is ready"* (roof B, icon B, his OK for the files, Photoshop clear). ⏸️ His play, then the merge at his word.** Mocked A305; claimed A304. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ BUILT (A306, 2026-11-27), played and merged into `main` at Joe's word (A307, *"Played it, merge"*, `a621b4c`); not pushed. Joe: *"1. B 2. yes 3. Photoshop is ready"* (roof B, icon B, his OK for the files, Photoshop clear).** Mocked A305; claimed A304. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W5's ask of the lane (`skills-for-every-trade.md §8`, D922, D927). Mocks: `D:\Projects\brushes\great-library\`
 > (`great_library_pick.jpg`; the renders in `out\`, the scratch game in `game\`, `mock.py` and `VillageMap.MockGreatLibrary.cs`
 > patch it, `patch.py` makes the save copy, `icons_sketch.py` the icon sketches).
