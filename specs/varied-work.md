@@ -1,6 +1,6 @@
 # Varied work, trade by trade — the quarrier first (A280)
 
-> **Status: ✍️ MOCKED (A281, 2026-11-26) on `art`, ⏸️ JOE'S PICK — nothing built.** Art lane (CLAUDE.md *Two tracks*), branch
+> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26) on `art`, UNPLAYED — Joe: *"B, as recommended"*. Mocked A281. The other trades not started; the woodcutter next.** Art lane (CLAUDE.md *Two tracks*), branch
 > `art`; the art queue's piece 3, *Animations*, after fishing (`fishing-animation.md`). View only: nothing in `Kith.Sim`, `data/`
 > or `tests/` changes. Mock: `D:\Projects\brushes\animations\quarry_options.gif` (and `quarry_contact.jpg`).
 
@@ -33,7 +33,9 @@ mock painter that matches `PersonPainter` (A129's `anim.py`).
   (stooped, a quicker tap); now and then **a breather** (straightened, a hand to the back) at the start of a dig.
 - **C · B, with chips and a puff of dust** at each strike.
 
-## 4. Calls — Joe's
+## 4. Calls — answered: Joe, 2026-11-26, *"B, as recommended"* (A282)
+
+B; the miner too; the woodcutter next.
 
 1. **Which:** ⭐ B; A, the fix alone; C, B with chips and dust.
 2. **The miner too:** ⭐ yes, the same with iron ore (darker blocks), since the sim runs them alike; or the quarrier only.
@@ -49,3 +51,23 @@ mock painter that matches `PersonPainter` (A129's `anim.py`).
 
 The probe gains a `face work:` line: a quarrier holding stone keeps the pick, the stack shows their load, the lift falls at the
 dig's end, the shuffle is the same on a second ask.
+
+## 6. As built (A282) — the quarrier and the miner
+
+- **The pick stays in hand** (`VillageMap.People.cs`, `PersonKeyOf`): at a face (`AtAFace`: `Quarrying`, `Mining`) the load is
+  not painted on the figure, so the hold stays the tool; the map draws the load as the stack.
+- **The dig** (`VillageMap.FaceWork.cs`): pure `DigAt` — the lift in the dig's last 1.5 s, a breather in the first 1.6 s of one
+  dig in six, the wedge and mallet two digs in five, chosen by the person and the dig's start tick (the same on a reload); the
+  strikes keep the people's clock, as every swing does. The dig's length is the face row's (`face_dig_ticks`) as `WorkTicksFor`
+  gives it, and how far in is the countdown read back. ⭐ **Quick:** a dig under 2 real seconds (4× and up) is digging only; a
+  short dig gives the lift 45 % and the breather 40 % of itself. ⚠️ First built at 3.5 s: the film showed a quarrier with a tool
+  and mastery (2-tick digs, 2.7 s at 1×) never lifting a block; fixed before commit, and the probe asks it now.
+  `StackOf`: a block for each dig's worth they hold (`face_per_dig`), at most six. The lift: the block in the arms (the stone
+  or ore load key), stooped to take it, upright, stooped to set it down, the stack a block more at its end.
+- **The painter** (`PersonPainter.cs`): `MalletRaise`, `MalletStrike` (the hammer's own two poses, the pick swapped for the
+  mallet) and `Breather` (the pick lowered); the map stoops the wedge's body and leans the breather back.
+- **The map** draws the stack at their left and, in a wedge dig, the wedge in the stone at their right, through `AtNight`;
+  the miner's blocks are the ore's red-brown.
+- **Probe `face work:`** (`VillageMap.FaceWorkProbe.cs`, printed with the people's lines): red-checked, 10 mutants, 9 red (the load back in the arms; the stack rounding down; no lift, before and after the threshold's fix; quick digs off; never the wedge; the shuffle blind to the dig; the lift not stooping; the first build's 3.5 s threshold, a skilled quarrier never lifting). The 10th, the mallet not swapped in for the pick, scored 0: the line compares the mallet's pose with the raised pick, not the tool painted — kept, and the zero written down.
+- Filmed on a scratch copy of his nettle-beck Elderwood with the stone limit raised (the quarry had stopped at it):
+  `D:\Projects\brushes\animations\q2\`, `quarry_built.gif`.

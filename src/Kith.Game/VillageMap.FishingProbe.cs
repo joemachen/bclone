@@ -99,7 +99,7 @@ public partial class VillageMap
 
             FigureKey fisher = PersonKeyOf(21, LifeStage.Adult, JobKind.Fisher, VillagerState.Fishing, Vector2.Zero, null, false, false);
             var painted = new List<byte[]>();
-            for (int beat = 0; beat <= PersonPainter.MostBeats; beat++)
+            for (int beat = 0; beat <= PersonPainter.NetThrow; beat++)
             {
                 if (beat is 1 or 2)
                 {
