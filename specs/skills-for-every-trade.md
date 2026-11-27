@@ -9,8 +9,8 @@ catalogue), D754 (the teacher has no skill).
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
 **Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
 skill rows, burying through `BeginWork`; ✅ steps 2–3 (D924): techniques 4–9, tempering, the hay through `YieldFor`; ✅ step 3b (D925): reading the water
-unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter; ✅ step 5b (D927): the great library, its button and a stand-in roof.**
-Steps 6–9 to come (§9).
+unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter; ✅ step 5b (D927): the great library, its button and a stand-in roof; ✅ steps 6–8 (D928): the view's lines, the
+measurement (§9a), three goldens moved by the rows alone.** ⏸️ Joe's play, then the merge at his word.
 
 ---
 
@@ -242,6 +242,24 @@ up, 3×3). Otherwise new lines on cards and in the log only. Two notes for the l
    discovered and lost, how often a library is full, and food, stone, iron and hay against `main` — survival should not move
    outside noise, because a novice is today's villager and stock limits cap what masters make.
 8. **The goldens, once, last** (D152), each move explained by ablation (the rows out, the goldens back).
+
+### 9a. The measurement (D928, `tools/harness/ZzW5.cs`)
+
+ZzLimits' `every` opening (a lodge, a fishery and a farm raised free), seeds 1–36, a century; the base arm takes W5's rows out.
+
+| | base | W5 |
+|---|---|---|
+| dead valleys of 36 | 24 | 24 |
+| alive at the end (sum) | 336 | 296 — per seed W5 more in 5, fewer in 6, the same in 25: a reshuffle, not a shift |
+| died of cold | 1,930 | 1,801 |
+| fish / meat / wheat brought in | 2.01 M / 1.76 M / 1.53 M | 2.05 M / 1.84 M / 1.57 M (+2 %, +5 %, +2 %) |
+| masters reached here | — | hunter 68 in 17 valleys (mean age 52); fisher 2 (64, 74); none of the others |
+| techniques known at the end | — | 0–2 of 11; every one known: never |
+
+⚠️ **A harness is not a player (D447)**: twenty-four dead valleys in both arms is the unattended opening, not W5. What it says
+is that the rows do not move survival, add a little food, and are reached by the hunter far more than anyone. **Two findings
+for Joe:** a fisher almost never masters unattended (the fishery's four seats turn over), and no harness valley comes near
+the great library — it is a late-game gift for a played village, which this harness cannot show.
 
 **Tests first, red before green, each break counted (D326):**
 - A posed master of each of the six action trades and the groundskeeper takes mastery's ticks; a novice takes today's,

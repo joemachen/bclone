@@ -5515,6 +5515,11 @@ public sealed record SimConfig
     /// today a library holds everything, and the shelf is a decision again the day the tree
     /// passes five — the full-library guard poses three shelves for itself.
     /// </para>
+    /// <para>
+    /// <b>⭐ AND IT PASSED FIVE AT W5 (D924–D926): eleven techniques, ten of them writable.</b> Five stays (Joe's call, D921):
+    /// a full library refusing a shelf is a real moment now, and the great library (D927) is the answer once the village
+    /// knows every one.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("library_shelves")]
     public int LibraryShelves { get; init; } = 5;

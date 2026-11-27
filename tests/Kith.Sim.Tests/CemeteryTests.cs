@@ -1409,5 +1409,5 @@ public sealed class CemeteryTests
     }
 
     /// <summary>Taken 2026-11-26 (D916), on its first run.</summary>
-    private const ulong BuryingGolden = 10431254814961408444UL;
+    private const ulong BuryingGolden = 12492588746476946015UL; // 10431254814961408444 until W5 (D928): the new trades grow skill — ablated, it returns
 }

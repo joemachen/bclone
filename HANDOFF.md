@@ -11177,6 +11177,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **An aborted test run prints "Passed!"** (D926): the stack overflow killed the host after 9 of 20, and `dotnet test`'s summary
   line still read *Passed! — Failed: 0, Passed: 9, Total: 9*, followed by *Test Run Aborted.* A red-check script that greps the
   summary counts that as green. Compare the total with the green run's, and grep for `Aborted`.
+- **A golden whose config is built inside the test cannot be ablated by editing a list** (D928): to prove a move came from new
+  rows, switch the rows off where they are READ (`SimWorld.SkillGrownBy` and `SkillSystem`'s loop, `Id <= 11`), run the goldens, and
+  restore by reverse replacement — `git diff --stat` on the two files must be empty after.
 - **The labour pass runs once a season** (`labour_slack_ticks` 60, D926): a seat a test opens mid-season is not filled until the
   next season's first tick. Pose a trade's hand from the start and let something else (a limit) hold the work back.
 
@@ -11186,8 +11189,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   2026-11-26; Joe: *"start w5 in a new session"*). 🔨 **being built on `slice/w5-skills`** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and
   the groundskeeper came after it; the teacher has none by his call, D754). 📝 **Specced (D920, `specs/skills-for-every-trade.md`);
-  ✅ calls 1–3 and 5–7 as recommended (D921); ⏸️ two open: does a fisher beside the master learn the unwritable technique,
-  and his bigger library unlocked at the eleventh technique (§7a there). Earlier list:** — which trades, the two with nothing to speed, which techniques,
+  ✅ every call his answered (D921–D922); ✅ **built (D923–D928)**: nine skill rows, seven techniques (one unwritable, carried by
+  five years beside a master), the crop that stands five days into winter, the great library. ⏸️ **His play, then the merge at
+  his word.** What to look for in play is in the session's message to him. Earlier list:** — which trades, the two with nothing to speed, which techniques,
   fishing unwritable, the winter crop's five days and thirty years, the founders, and the builder's do-nothing skill (later).
 - ⏸️ 🎨 **THE GREAT LIBRARY'S PICTURES (W5, D927) — ASKED OF THE ART LANE, NOT CLAIMED.** Its build-bar icon and owed version
   (`buildings/great-library`, on `ArtAwaited` until painted) and its roof (a stand-in: the library's slate, a storey up, 3×3,

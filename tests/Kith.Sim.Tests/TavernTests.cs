@@ -460,7 +460,7 @@ public sealed class TavernTests
     }
 
     /// <summary>Taken 2026-11-22 (D841), on its first run.</summary>
-    private const ulong TavernGolden = 12596903190904750514UL;
+    private const ulong TavernGolden = 12394042199224372596UL; // 12596903190904750514 until W5 (D928): the new trades grow skill — ablated, it returns
 
     // -----------------------------------------------------------------
     //  helpers

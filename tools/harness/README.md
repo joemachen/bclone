@@ -28,6 +28,11 @@ How a number in `data/sim.config.json` or a new-game row's end gets **measured b
 ⚠️ **A harness is not a player (D447):** it measures that a setting can be lived in, not how it plays.
 ⚠️ Baselines move whenever the sim does: run `base` in the same sitting as the arm, never compare
 against a number from an older commit.
+- `ZzW5.cs` — D928's measurement for `specs/skills-for-every-trade.md §9` step 7: ZzLimits' `every` opening (a lodge, a fishery and a
+  farm raised free), seeds 1–36, a century; `ZZ_W5=0` takes W5's rows out (skills 12–20, techniques 4–10), the village as `main` had
+  it. One ZZW line a run: alive, peak, starved, cold, fish / meat / wheat, masters reached here per new trade and their mean age,
+  techniques known and lost, the year every technique was known, carriers of reading the water. Copy in, `-c Release --filter ZzW5`,
+  delete; about five minutes an arm.
 - `ZzLimits.cs` + `limits.py` — D611's measurement of the starting stock limits: `ZZ_LIMITS=old|new` (both typed in the file,
   so an arm cannot move with `sim.config.json`), `ZZ_OPEN=played|established|every` (⚠️ only `every` — a lodge, a fishery and
   a farm raised free — ever makes fish or meat; it carries D515's first-winter race), `ZZ_ONLY=<good>` (one good's new number

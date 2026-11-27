@@ -569,6 +569,10 @@ land a system without moving a golden.
 
 ### 4.2 The skills that exist on day one
 
+> **⭐ Twenty since W5** (D923): eleven by Phase 6 (the six below; milling, baking, tailoring, carpentry, brewing) and nine for the
+> trades that had none — fishing, hunting, smithing, quarrying, mining, herding, bartering, tavern keeping, grave keeping
+> (`skills-for-every-trade.md §2`). Only the teacher has none (D754). The table is day one's, kept as written.
+
 **One per job that exists, and no more.** Every ❌ profession in `professions.md §4` brings its
 own when it lands; inventing them now would be a catalogue of things nobody can hold.
 
@@ -578,8 +582,8 @@ own when it lands; inventing them now would be a catalogue of things nobody can 
 | **Forestry** | `JobKind.Forester` | Fells and plants quicker; the wood recovers around them | ✅ |
 | **Woodcutting** | `JobKind.Woodcutter` | More firewood from the same logs, and faster | ✅ |
 | **Farming** | `JobKind.Farmer` | Sows and reaps quicker — **the visible one**, because a field is a place you watch | ✅ |
-| **Building** | `JobKind.Builder` | Raises a frame in fewer ticks | ✅ |
-| **Trading** | `JobKind.Marketer` | Picks better legs; less walking for the same delivery | ✅ |
+| **Building** | `JobKind.Builder` | ⚠️ **Nothing yet** (W5, D920, Joe's call 7: later, as its own measured piece). *Raises a frame in fewer ticks* was the intent; the builder's action is one tick (`BeginWork(Builder, 1)`), so mastery never reaches it | ✅ |
+| **Trading** | `JobKind.Marketer` | ⚠️ **Nothing** — the marketer begins no action, so its years are recorded and change nothing (W5, D920). *Picks better legs* was the intent | ✅ |
 
 **⛔ Laborers hold no skill, and that is deliberate.** D66 refused `JobKind.Laborer` on the
 grounds that a laborer is *"the villagers no job currently wants"* rather than a trade — a
