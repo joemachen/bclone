@@ -77,8 +77,10 @@ public sealed class Phase0ScenarioTests
         // the two endings differ MORE than they did, not less.** The claim under test is that a
         // full life and a starvation read as different stories, and it is stronger now: the
         // starved villager never mastered anything, so there is nothing to lose and nothing said.
-        string plentyEpitaph = string.Join(" | ", Phase0Fixtures.LifeLog(plentyLog).TakeLast(3));
-        string scarceEpitaph = string.Join(" | ", Phase0Fixtures.LifeLog(scarceLog).TakeLast(3));
+        // ⚠️ AND NOT THE CEMETERY'S MOMENT (W4, D908): a village's first death raises one, said after the epitaph, and in a
+        // village of one it is every death. It is the same sentence for both lives, so it is left out of the ending it would pad.
+        string plentyEpitaph = string.Join(" | ", Ending(plentyLog));
+        string scarceEpitaph = string.Join(" | ", Ending(scarceLog));
 
         Assert.NotEqual(plentyEpitaph, scarceEpitaph);
         Assert.Contains("winters", plentyEpitaph, StringComparison.OrdinalIgnoreCase);
@@ -86,6 +88,10 @@ public sealed class Phase0ScenarioTests
             plenty.World.Villager.AgeYears > scarce.World.Villager.AgeYears * 3,
             "A full life should be dramatically longer than a starvation death.");
     }
+
+    private static IEnumerable<string> Ending(InMemoryLogSink log) => Phase0Fixtures.LifeLog(log)
+        .Where(line => !line.Contains("the first this village has lost", StringComparison.Ordinal))
+        .TakeLast(3);
 
     [Fact]
     public void AYearTakesSixtySecondsAtTheWatchingSpeed()

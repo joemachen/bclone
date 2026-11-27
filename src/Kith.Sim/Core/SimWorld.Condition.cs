@@ -180,6 +180,15 @@ public sealed partial class SimWorld
 
             Condition now = ConditionOf(workplace);
             Condition before = ConditionRules.Of(workplace.RaisedAtTick, workplace.RepairedAtTick, aSeasonAgo, row, Config);
+
+            // ⭐ A CEMETERY IS KEPT BY ITS GROUNDSKEEPER, NOT MENDED BY THE BUILDERS (W4, `cemetery.md §5.2`; Joe's call 9): a season's
+            // keeping makes it sound, no logs and no repair site; and it is never closed — wild, it still holds its dead and takes more.
+            if (workplace.Kind == JobKind.Groundskeeper)
+            {
+                KeepACemeteryAtTheTurn(workplace, before, now);
+                continue;
+            }
+
             SayWhatTurned(workplace.Name, before, now);
             if (now >= Condition.Worn)
             {

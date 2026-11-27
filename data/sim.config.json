@@ -1084,6 +1084,30 @@
   "tavern_stone": 12,
   "tavern_work_ticks": 40,
   "tavern_capacity": 1,
+  // The cemeteries (W4, `cemetery.md §5.2`; Joe, D906: "all as recommended", the small free the first time). A grave's
+  // stone costs nothing; these are the fence and the gate.
+  "cemetery_small_logs": 10,
+  "cemetery_small_stone": 5,
+  "cemetery_small_work_ticks": 20,
+  "cemetery_medium_logs": 20,
+  "cemetery_medium_stone": 10,
+  "cemetery_medium_work_ticks": 40,
+  "cemetery_large_logs": 30,
+  "cemetery_large_stone": 20,
+  "cemetery_large_work_ticks": 60,
+  // A burial (W4, `cemetery.md §6.2`, measured at D891): two days to dig, one to lay them to rest and fill it.
+  "grave_dig_ticks": 8,
+  "grave_fill_ticks": 4,
+  // The family at the grave (cemetery.md 6.3, call 4): each adult once, within this many days of
+  // the burial. It changes no number.
+  "grave_visit_days": 30,
+  // A cemetery wears as a timber building does (Joe's call 9, "Yes, as you put it"); this many
+  // days of a groundskeeper keeping it in a season make it sound again -- no logs, no builders.
+  "cemetery_tended_days_a_season": 10,
+  // Joe's play note (D915, "Laborer between"): with nobody to bury, the groundskeeper helps out as a
+  // laborer does, and comes back to keep the cemetery once it has taken this many seasons' wear since
+  // it was last kept -- about a year, well before it looks untidy (its 8th year).
+  "cemetery_tend_after_seasons": 4,
   "tavern_reach_tiles": 12,
   "tavern_every_days": 5,
   "tavern_sit_ticks": 2,
@@ -1695,6 +1719,10 @@
     { "cause": "FireOut", "held_seasons": 4 },
     { "cause": "DryJar", "at": 3 },
     { "cause": "DeathInTheFamily", "held_seasons": 4 },
+    // W4 (cemetery.md 7; D797, D905): one of theirs unburied, and no place for them -- none
+    // standing (or every one set to no groundskeepers), or every one full. Never for a queue.
+    { "cause": "DeadInTheOpen" },
+    { "cause": "CemeteryFull" },
   ],
   // W3's comfort (tavern.md 6, Joe's call 1A, D834): an evening at the tavern this
   // season takes one held cause off at the read -- never below nought, and nothing

@@ -405,7 +405,9 @@ public sealed class StockLimitTests
     // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 5003805206828685583.
     // RE-TAKEN (D804) — contentment is hashed (W2 step 4: its tallies, causes and seasons unsettled, sparsely), now the births gate reads it. ⭐ PROVEN BY ABLATION: with those fields unmixed the old value passes, and with the longer wait off (`contentment_birth_interval_percent` 100) the new one is unchanged — the hash moved, the village did not. Was 5890220585761650289.
     // RE-TAKEN (D825) — barley is learned when the foragers have gathered `barley_unlock_forage` (5,000), a tag byte in the hash and Lore introduced (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate set out of reach (`barley_unlock_forage` 2147483647) the old value passes. Was 248758319083502010.
-    private const ulong FixtureFiftyYearHash = 10177893130609959684UL;
+    // RE-TAKEN (D908) — the cemetery's gift is owed at a village's first death (W4, `cemetery.md §5.1`), a tag byte in the hash. ⭐ PROVEN BY ABLATION: with that one line unmixed the old value passed; nothing else in steps 1–3 moved it.
+    // RE-TAKEN (D910) — W4's two contentment causes (`cemetery.md §7`): this unattended village never builds a cemetery, so a family with a death minds it until somebody buries them, which is never. ⭐ PROVEN BY ABLATION: with the two rows taken out of the data and the code's defaults, the old value passed.
+    private const ulong FixtureFiftyYearHash = 10417742755263607721UL;
     //
     // ⭐ THE SHIPPED ONE ALONE MOVES FOR THE CONSUMPTION CHANGE (D189, Joe): food_per_meal
     // 5 -> 4 and firewood_burn_interval_days 4 -> 3. The FIXTURE hash above is untouched,
@@ -544,7 +546,9 @@ public sealed class StockLimitTests
     // RE-TAKEN (D782) — a jar is low at five days' drink (`water_low_days`), not "less than a day's" (which at a jar of 120 was only ever empty), and the trip is asked whenever an adult stands at their door, not only where a rest began (Joe: "any time at home"). ⭐ PROVEN BY ABLATION: with D781's rule put back (no ask at home, "less than", one day) the old value passes; the D782 commit's other sim change, the unhoused sentences, changes no state. Was 1516272682464998280.
     // RE-TAKEN (D804) — contentment is hashed (W2 step 4: its tallies, causes and seasons unsettled, sparsely), now the births gate reads it. ⭐ PROVEN BY ABLATION: with those fields unmixed the old value passes, and with the longer wait off (`contentment_birth_interval_percent` 100) the new one is unchanged — the hash moved, the village did not. Was 17238108172460108976.
     // RE-TAKEN (D825) — barley is learned (the gate, 5,000 forage) (W7, `barley.md §11`) — this run plays with no limits, so barley's limit is not what moved it. ⭐ PROVEN BY ABLATION: with the gate out of reach the old value passes. Was 11043638631107314449.
-    private const ulong ShippedFiftyYearHash = 17080733087929357159UL;
+    // RE-TAKEN (D908) — the cemetery's gift is owed at a village's first death (W4, `cemetery.md §5.1`), a tag byte in the hash. ⭐ PROVEN BY ABLATION: with that one line unmixed the old value passed; nothing else in steps 1–3 moved it.
+    // RE-TAKEN (D910) — W4's two contentment causes (`cemetery.md §7`): this unattended village never builds a cemetery, so a family with a death minds it until somebody buries them, which is never. ⭐ PROVEN BY ABLATION: with the two rows taken out of the data and the code's defaults, the old value passed.
+    private const ulong ShippedFiftyYearHash = 5182321886500525766UL;
 
     // ---------------------------------------------------------------
     //  The default is a no-op, and this is the whole slice's licence

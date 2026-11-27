@@ -249,6 +249,14 @@ public sealed record BuildingRow
     public int Shelves { get; init; }
 
     /// <summary>
+    /// ⭐ Graves (W4, `cemetery.md §5.2`) — above zero, the row is a cemetery: learned at the village's first death, its
+    /// dead laid in numbered places one a tile, so the validator holds it to the extent's width × height. The row with the
+    /// fewest is the first death's gift (Joe, D906: <i>"first free"</i>).
+    /// </summary>
+    [JsonPropertyName("graves")]
+    public int Graves { get; init; }
+
+    /// <summary>
     /// How many souls live in it. <b>Zero for a building nobody lives in.</b>
     /// </summary>
     /// <remarks>

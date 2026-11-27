@@ -37,7 +37,7 @@ public sealed class ModdedJobTests
     // ⚠️ 11 since the miner took 10 (D449) — the fifth move, for the fifth reason.
     // ⚠️ 13 since the miller and the baker took 11 and 12 (D522) — the sixth.
     // ⚠️ 15 since the herdsman and the merchant took 13 and 14 (D590) — the seventh; 16 since the tailor took 15 (D661).
-    private static JobKind Boatman => (JobKind)20; // 17 until the teacher took it (D755); 18 until the brewer and the tavern keeper (D836).
+    private static JobKind Boatman => (JobKind)21; // 20 until the groundskeeper took it (D908); 17 until the teacher took it (D755); 18 until the brewer and the tavern keeper (D836).
 
     /// <summary>
     /// A catalogue with a seventh trade, written the way a modder would write it.
@@ -72,16 +72,17 @@ public sealed class ModdedJobTests
         { "id": 17, "name": "teacher",   "plural": "teachers",    "doing": "teaching",           "works_at": "School" },
         { "id": 18, "name": "brewer",    "plural": "brewers",     "doing": "brewing ale",        "works_at": "Brewery",       "limited_by": "Ale", "uses_tool": true },
         { "id": 19, "name": "tavern keeper", "plural": "tavern keepers", "doing": "keeping the tavern", "works_at": "Tavern" },
+        { "id": 20, "name": "groundskeeper", "plural": "groundskeepers", "doing": "keeping the cemetery", "works_at": "CemeterySmall", "also_works_at": [ "CemeteryMedium", "CemeteryLarge" ] },
 
         // The modder's own trade. Nothing in the sim has ever heard of it.
         //
         // ⚠️ IT MOVED 6 → 7 WHEN FISHING SHIPPED (2026-09-02) AND 8 → 9 WHEN THE SMITH DID
-        // (2026-09-18, D391) AND 9 → 10 WHEN THE QUARRIER DID (D434) AND 10 → 11 WHEN THE MINER DID (D449) AND 11 → 13 WHEN THE MILLER AND THE BAKER DID (D522) AND 15 → 16 WHEN THE TAILOR DID (D661) AND 16 → 17 WHEN THE CARPENTER DID (D678), and that is the point rather than an inconvenience: this row exists
+        // (2026-09-18, D391) AND 9 → 10 WHEN THE QUARRIER DID (D434) AND 10 → 11 WHEN THE MINER DID (D449) AND 11 → 13 WHEN THE MILLER AND THE BAKER DID (D522) AND 15 → 16 WHEN THE TAILOR DID (D661) AND 16 → 17 WHEN THE CARPENTER DID (D678) AND 20 → 21 WHEN THE GROUNDSKEEPER DID (D908), and that is the point rather than an inconvenience: this row exists
         // to be an id the enum cannot name, and 6 stopped being one the day `JobKind.Boatman`
         // existed. **The example mod was a fisherman; the game grew one.** Renamed too — two
         // trades called "fisher" is a failure message nobody can read.
         // 17 → 18 when the teacher shipped (D755); 18 → 20 when the brewer and the tavern keeper did (D836).
-        { "id": 20, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
+        { "id": 21, "name": "boatman",   "plural": "boatmen",     "doing": "at the water",       "limited_by": "Produce" }
       ]
     }
     """;
@@ -99,7 +100,7 @@ public sealed class ModdedJobTests
         // 7 → 8 when the built-in fisher shipped (2026-09-02); 9 → 10 for the smith (D391); → 11
         // for the quarrier (D434); → 12 for the miner (D449); → 14 for the miller and the baker (D522); → 16 for the herdsman and the trader (D590);
         // → 17 for the tailor (D661); → 18 for the carpenter (D678).
-        Assert.Equal(21, catalog.Count); // → 19 with the teacher (D755); → 21 with the brewer and the tavern keeper (D836)
+        Assert.Equal(22, catalog.Count); // → 19 with the teacher (D755); → 21 with the brewer and the tavern keeper (D836); → 22 with the groundskeeper (D908)
 
         // ⭐ Everything the sim used to answer with a switch, answered for a trade no switch has
         // ever named.
@@ -165,12 +166,13 @@ public sealed class ModdedJobTests
           "jobs": [
             { "id": 6, "name": "fisher",     "plural": "fishers",     "doing": "fishing", "works_at": "FishingHut", "limited_by": "Fish" },
             { "id": 7, "name": "hunter",     "plural": "hunters",     "doing": "hunting", "works_at": "HunterLodge", "limited_by": "Meat" },
-            { "id": 20, "name": "boatman",   "plural": "boatmen",     "doing": "at the water" },
+            { "id": 21, "name": "boatman",   "plural": "boatmen",     "doing": "at the water" },
             { "id": 15, "name": "tailor",    "plural": "tailors",     "doing": "sewing coats",   "works_at": "TailorShop", "limited_by": "Clothing" },
             { "id": 16, "name": "carpenter", "plural": "carpenters",  "doing": "making handcarts", "works_at": "Workshop", "limited_by": "Handcart" },
             { "id": 17, "name": "teacher",   "plural": "teachers",    "doing": "teaching",           "works_at": "School" },
             { "id": 18, "name": "brewer",    "plural": "brewers",     "doing": "brewing ale",        "works_at": "Brewery",       "limited_by": "Ale", "uses_tool": true },
             { "id": 19, "name": "tavern keeper", "plural": "tavern keepers", "doing": "keeping the tavern", "works_at": "Tavern" },
+            { "id": 20, "name": "groundskeeper", "plural": "groundskeepers", "doing": "keeping the cemetery", "works_at": "CemeterySmall", "also_works_at": [ "CemeteryMedium", "CemeteryLarge" ] },
             { "id": 12, "name": "baker",     "plural": "bakers",      "doing": "baking bread",   "works_at": "Bakery", "limited_by": "Bread" },
             { "id": 13, "name": "herdsman",  "plural": "herdsmen",    "doing": "keeping the herd",   "works_at": "Barn",          "limited_by": "Hay" },
             { "id": 14, "name": "merchant",  "plural": "merchants",   "doing": "trading at the post", "works_at": "TradingPost" },
@@ -218,9 +220,9 @@ public sealed class ModdedJobTests
             foragers: 2, foresters: 1, woodcutters: 1, marketers: 1, builders: 1, farmers: 2,
             slots: 7);
 
-        // The built-ins' count since the brewer and the tavern keeper (D836) — twenty (eighteen since the teacher, D755); the seven
-        // asked for is fewer.
-        Assert.Equal(20, quota.Slots);
+        // The built-ins' count since the groundskeeper (D908) — twenty-one (twenty since the brewer and the tavern keeper, D836;
+        // eighteen since the teacher, D755); the seven asked for is fewer.
+        Assert.Equal(21, quota.Slots);
 
         // The built-ins still read exactly as they did, through the named readers.
         Assert.Equal(2, quota.Foragers);

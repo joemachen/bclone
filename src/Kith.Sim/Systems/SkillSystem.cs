@@ -306,6 +306,16 @@ public sealed class SkillSystem : ISimSystem
         VillagerState.FetchingAle => true,
         VillagerState.CarryingAle => true,
         VillagerState.KeepingTheTavern => true,
+
+        // The groundskeeper (W4): their legs and their day are their trade's, and grow nothing — no skill row (D905).
+        VillagerState.FetchingTheDead => true,
+        VillagerState.CarryingTheDead => true,
+        VillagerState.Burying => true,
+        VillagerState.KeepingTheCemetery => true,
+
+        // The family at the grave (W4 step 5): nobody's trade.
+        VillagerState.WalkingToTheGrave => false,
+        VillagerState.AtTheGrave => false,
         VillagerState.WalkingToTheRiver => false,
         VillagerState.DrawingAtTheRiver => false,
 

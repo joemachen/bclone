@@ -446,6 +446,19 @@ public enum BuildingKind
     /// marketer's trade works at two buildings. Learned by the long walk (§5.4). <b>Appended at 33.</b>
     /// </summary>
     MarketStall = 33,
+
+    /// <summary>
+    /// The cemeteries (W4, `cemetery.md §5.2`; Joe, D905: <i>"there should be small/medium/large size options"</i>) — placed like
+    /// any building, at three sizes, one grave a tile; fenced, so walked to and not through; a groundskeeper each. Learned at
+    /// the village's first death, the small one free (D906). <b>Appended at 34–36.</b>
+    /// </summary>
+    CemeterySmall = 34,
+
+    /// <inheritdoc cref="CemeterySmall"/>
+    CemeteryMedium = 35,
+
+    /// <inheritdoc cref="CemeterySmall"/>
+    CemeteryLarge = 36,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

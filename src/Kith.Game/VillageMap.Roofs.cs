@@ -31,6 +31,9 @@ internal enum RoofForm
     /// <summary>The founders' cart (A87, `building-yards.md §3.4`): a wagon on its own ground, its load from its store.</summary>
     Wagon,
 
+    /// <summary>A cemetery (W4, D912): fenced, mown ground and its graves — no roof (`VillageMap.Cemetery.cs`).</summary>
+    Cemetery,
+
     /// <summary>A trade whose building is a store (the market, the barn, the trading post): the store paints it.</summary>
     ByItsStore,
 }
@@ -176,6 +179,9 @@ public partial class VillageMap
         JobKind.Hunter => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Hunter),
         JobKind.Quarrier => new(RoofForm.Roof, RoofMaterial.Shingle, Yard: YardKind.Quarry),
         JobKind.Marketer or JobKind.Herdsman or JobKind.Merchant => new(RoofForm.ByItsStore, RoofMaterial.Shingle),
+
+        // ⭐ W4 (D912): a cemetery is ground, not a roofed building.
+        JobKind.Groundskeeper => new(RoofForm.Cemetery, RoofMaterial.Shingle),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),
     };
 
@@ -625,6 +631,9 @@ public partial class VillageMap
                 break;
             case RoofForm.Wagon:
                 Wagon(pieces, frame, yard, seed);
+                break;
+            case RoofForm.Cemetery:
+                Cemetery(pieces, frame, hw, hd, yard, seed);
                 break;
             default:
                 // ⭐ A86: the yard first (`building-yards.md §3`), then the roof on its own part of the ground.

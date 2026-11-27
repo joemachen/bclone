@@ -43,7 +43,18 @@ public sealed class ZzCemetery
             return;
         }
 
-        SaveOpened opened = SaveFile.Open(what, ShippedConfig.Load());
+        // ZZ_NOW4=1 (D910): the same saves with W4's two causes taken out of the data — the real code's arm against the built rows.
+        SimConfig shipped = ShippedConfig.Load();
+        if (Environment.GetEnvironmentVariable("ZZ_NOW4") == "1")
+        {
+            shipped = shipped with
+            {
+                ContentmentCauses = shipped.ContentmentCauses
+                    .Where(r => r.Cause is not (ContentmentCause.DeadInTheOpen or ContentmentCause.CemeteryFull)).ToArray(),
+            };
+        }
+
+        SaveOpened opened = SaveFile.Open(what, shipped);
         if (opened.Loop is not SimLoop loop)
         {
             _o.WriteLine($"ZZX {Path.GetFileName(Path.GetDirectoryName(what))} refused {opened.Refusal}");
@@ -286,7 +297,8 @@ public sealed class ZzCemetery
             {
                 for (int turn = 0; turn < 2; turn++)
                 {
-                    int w = turn == 0 ? 4 : 5, hgt = turn == 0 ? 5 : 4;
+                    (int pw, int ph) = PlotSize();
+                    int w = turn == 0 ? pw : ph, hgt = turn == 0 ? ph : pw;
                     bool ok = true;
                     for (int y = 0; y < hgt && ok; y++)
                     {
@@ -328,10 +340,17 @@ public sealed class ZzCemetery
         {
             List<int> walks = homes.Select(x => Ticks(world, plot, x)).Where(x => x >= 0).ToList();
             _o.WriteLine($"ZZP {village} {name} {(plot is GridPos p ? $"{p.X},{p.Y}" : "none")} "
-                + $"mean {(walks.Count == 0 ? -1 : walks.Average()):0.0} worst {(walks.Count == 0 ? -1 : walks.Max())} clear {clear.Count(k => k.Value)}");
+                + $"mean {(walks.Count == 0 ? -1 : walks.Average()):0.0} worst {(walks.Count == 0 ? -1 : walks.Max())} clear {clear.Count(k => k.Value)} size {PlotSize().W}x{PlotSize().H}");
         }
 
         return (near, edge);
+    }
+
+    // ZZ_PLOT=WxH (default 4x5): the plot posed, for D904's three sizes.
+    private static (int W, int H) PlotSize()
+    {
+        string[] p = (Environment.GetEnvironmentVariable("ZZ_PLOT") ?? "4x5").Split('x');
+        return (int.Parse(p[0]), int.Parse(p[1]));
     }
 
     private static int Ticks(SimWorld world, GridPos? from, GridPos to)

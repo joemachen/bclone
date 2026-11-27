@@ -583,6 +583,12 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)workplace.HayCutThisYear);
             }
 
+            // A cemetery's tending this season (W4 step 6) — it decides the next repair stamp. Sparse, under its own tag.
+            if (workplace.TendedDaysThisSeason != 0)
+            {
+                hash = MixUInt32(MixByte(hash, 0x7A), (uint)workplace.TendedDaysThisSeason);
+            }
+
             // When it was raised and last mended (D552): condition is derived from these two.
             hash = MixUInt64(hash, workplace.RaisedAtTick);
             hash = MixUInt64(hash, workplace.RepairedAtTick);
@@ -737,6 +743,18 @@ public static class StateHash
         if (world.AFreeSmithyIsOwed)
         {
             hash = MixByte(hash, 0x5F);
+        }
+
+        // W4 (D905): the dead before this tick are gone — sparse, so a new village (0) hashes as it did before W4.
+        if (world.BurialsFromTick != 0)
+        {
+            hash = MixUInt64(MixByte(hash, 0x6B), world.BurialsFromTick);
+        }
+
+        // The cemetery's gift (W4, D906), for the smithy's reason — it changes what a building costs. Sparse, under its own tag.
+        if (world.AFreeCemeteryIsOwed)
+        {
+            hash = MixByte(hash, 0x6C);
         }
 
         // ⭐ THE DESIRE PATHS (§2.6, D358): every trodden tile, index and wear, in map order —
@@ -1507,6 +1525,26 @@ public static class StateHash
         if (villager.LeftAtTick is ulong left)
         {
             hash = MixUInt64(MixUInt32(hash, 20u), left);
+        }
+
+        // Laid to rest (W4, `cemetery.md §8`): sparse, so a village nobody has buried in hashes as it did.
+        if (villager.BuriedAtTick is ulong buried)
+        {
+            hash = MixUInt64(MixUInt32(hash, 26u), buried);
+        }
+
+        // Where they lie, and whom a groundskeeper carries (W4 step 4) — sparse, as the burial is.
+        if (villager.GraveAt != 0)
+        {
+            hash = MixUInt32(MixUInt32(MixUInt32(hash, 27u), (uint)villager.GraveAt), (uint)villager.GravePlace);
+        }
+
+        hash = MixSparse(hash, 28u, villager.CarryingTheDead);
+
+        // The family at the grave (W4 step 5): sparse, so nobody who has never stood at one hashes as before.
+        if (villager.LastGraveVisitTick is ulong visited)
+        {
+            hash = MixUInt64(MixUInt32(hash, 29u), visited);
         }
 
         // ⭐ WHAT THEY HAVE PUT INTO EACH TRADE (`specs/skills-catalog.md §8`, Phase 3).

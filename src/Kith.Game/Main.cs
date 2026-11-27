@@ -660,6 +660,7 @@ public partial class Main : Control
         GD.Print(_map.ThePaintedPathsHold());
         GD.Print(_map.TheSnowfallHolds());
         GD.Print(_map.ThePaintedBuildingsHold());
+        GD.Print(_map.TheCemeteryHolds());
         GD.Print(_map.ThePaintedPeopleHold());
         GD.Print(_map.TheBuildingYardsHold());
         GD.Print(_map.TheRiverDrawnHolds());
@@ -813,6 +814,7 @@ public partial class Main : Control
     /// its combined minimum. Called twice — at the founding, and twelve years in with heaps and
     /// larders posed — because the strings that widen a panel do not exist at tick zero.
     /// </remarks>
+
     private void ProbePanelWidths(string when)
     {
         // ⚠️ UNFOLDED, OR A FOLDED PANEL HIDES ITS WIDTH. A folded panel's contents are not
@@ -1605,10 +1607,10 @@ public partial class Main : Control
 
         (bool quarry, bool mine, bool smithy, bool mill, bool bakery, bool trade, bool tailor, bool workshop) =
             (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown);
-        (bool school, bool brewery, bool tavern) = (_schoolKnown, _breweryKnown, _tavernKnown);
+        (bool school, bool brewery, bool tavern, bool cemetery) = (_schoolKnown, _breweryKnown, _tavernKnown, _cemeteryKnown);
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (true, true, true, true, true, true, true, true);
-        (_schoolKnown, _breweryKnown, _tavernKnown) = (true, true, true);
+        (_schoolKnown, _breweryKnown, _tavernKnown, _cemeteryKnown) = (true, true, true, true);
         RefreshTheStrip();
 
         float table = _professionsTable.GetCombinedMinimumSize().Y;
@@ -1617,7 +1619,7 @@ public partial class Main : Control
 
         (_quarryKnown, _mineKnown, _smithyKnown, _millKnown, _bakeryKnown, _hallTradeKnown, _tailorKnown, _workshopKnown) =
             (quarry, mine, smithy, mill, bakery, trade, tailor, workshop);
-        (_schoolKnown, _breweryKnown, _tavernKnown) = (school, brewery, tavern);
+        (_schoolKnown, _breweryKnown, _tavernKnown, _cemeteryKnown) = (school, brewery, tavern, cemetery);
         RefreshTheStrip();
         float founding = _professionsScroll.GetCombinedMinimumSize().Y;
         float foundingRows = _professionsTable.GetCombinedMinimumSize().Y;
@@ -2243,6 +2245,11 @@ public partial class Main : Control
     private Button? _breweryButton;
     private Button? _tavernButton;
     private Button? _marketStallButton;
+
+    // ⭐ The cemeteries (W4, `cemetery.md §5`): three buttons, learned together at the first death; the small one is the gift.
+    private Button? _smallCemeteryButton;
+    private Button? _cemeteryButton;
+    private Button? _largeCemeteryButton;
     private Button? _bridgeButton;
     private Button? _stoneBridgeButton;
 
@@ -2494,6 +2501,37 @@ public partial class Main : Control
     private bool _cottageKnown;
     private bool _manorKnown;
     private bool _smithyKnown;
+
+    /// <summary>The cemeteries learned (W4) — latched from <c>SimWorld.IsUnlocked</c>, the three at once.</summary>
+    private bool _cemeteryKnown;
+
+    /// <summary>
+    /// Show the three cemeteries once somebody has died, and gold and ★ on the small one while it is the unplaced gift
+    /// (W4, D906) — the smithy's rules, one gift over.
+    /// </summary>
+    private void RefreshTheCemeteryButtons(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.CemeterySmall);
+        if (_cemeteryKnown != known)
+        {
+            _cemeteryKnown = known;
+            RefreshTheStrip();
+        }
+
+        if (_smallCemeteryButton is null)
+        {
+            return;
+        }
+
+        if (world.AFreeCemeteryIsOwed || !_smallCemeteryButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_smallCemeteryButton, world.AFreeCemeteryIsOwed ? UiLook.Owed : UiLook.Text);
+        }
+
+        UiIcons.MarkOwed(_smallCemeteryButton, world.AFreeCemeteryIsOwed);
+        string name = Titled(world.BuildingsCatalog.NameOf(BuildingKind.CemeterySmall));
+        _smallCemeteryButton.Text = world.AFreeCemeteryIsOwed ? name + " ★" : name;
+    }
 
     /// <summary>
     /// Show the smithy once the village has dug its iron, gold and ★ while the gift is unplaced
@@ -3211,6 +3249,7 @@ public partial class Main : Control
         RefreshTheTownHallButton(world);
         RefreshTheQuarryButton(world);
         RefreshTheSmithyButton(world);
+        RefreshTheCemeteryButtons(world);
         RefreshTheTree(world);
 
         RefreshCards(world);
@@ -5685,7 +5724,10 @@ public partial class Main : Control
         _professionsScroll = new ScrollContainer
         {
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-            VerticalScrollMode = ScrollContainer.ScrollMode.Auto,
+            // ⛔ RESERVE, NOT AUTO (W4, D908): the bar appearing took 6px of width the panel did not have, and the probe's
+            // `panels:` line went red twelve years in — the groundskeeper's row was the one that took the table past the
+            // ceiling. Reserved, the table is as wide with the bar as without it; the columns gave the 6px back (below).
+            VerticalScrollMode = ScrollContainer.ScrollMode.Reserve,
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
         };
         _professionsTable = BuildProfessionsTable();
@@ -5761,7 +5803,9 @@ public partial class Main : Control
     private GridContainer BuildProfessionsTable()
     {
         var table = new GridContainer { Columns = 3 };
-        table.AddThemeConstantOverride("h_separation", 6);
+
+        // 3, not 6, since the scroll bar's room is reserved (W4, D908): the two gaps gave it the 6px, so the panel keeps its width.
+        table.AddThemeConstantOverride("h_separation", 3);
         table.AddThemeConstantOverride("v_separation", 1);
 
         table.AddChild(new Control());
@@ -8000,6 +8044,18 @@ public partial class Main : Control
             {
                 _marketStallButton = button;
             }
+            else if (kind == BuildingKind.CemeterySmall)
+            {
+                _smallCemeteryButton = button;
+            }
+            else if (kind == BuildingKind.CemeteryMedium)
+            {
+                _cemeteryButton = button;
+            }
+            else if (kind == BuildingKind.CemeteryLarge)
+            {
+                _largeCemeteryButton = button;
+            }
             else if (kind == BuildingKind.Bridge)
             {
                 _bridgeButton = button;
@@ -8234,6 +8290,9 @@ public partial class Main : Control
             // ⭐ The tavern with the hall (W3): where the village spends an evening — a civic building, not a trade's.
             BuildingKind.Tavern => BuildCategory.Civic,
 
+            // ⭐ The cemeteries with the hall (W4, `cemetery.md §5.2`): the village's memory, not a trade's building.
+            BuildingKind.CemeterySmall or BuildingKind.CemeteryMedium or BuildingKind.CemeteryLarge => BuildCategory.Civic,
+
             // ⭐ The well sits with the homes (D427): it is where a neighbourhood gathers, placed
             // beside the paint the houses go into — not a store, not a trade.
             BuildingKind.Well => BuildCategory.Homes,
@@ -8343,6 +8402,10 @@ public partial class Main : Control
 
         // ⛔ The market stall's arm (W14) — without it `_ => true` offers a stall at the founding.
         BuildingKind.MarketStall => _marketStallKnown,
+
+        // ⛔ The cemeteries' arm (W4) — without it `_ => true` offers all three at the founding, and the probe's `categories:`
+        // and `trades:` lines go red (they did).
+        BuildingKind.CemeterySmall or BuildingKind.CemeteryMedium or BuildingKind.CemeteryLarge => _cemeteryKnown,
         BuildingKind.Bridge => _bridgeKnown,
         BuildingKind.StoneBridge => _stoneBridgeKnown,
 

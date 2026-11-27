@@ -1053,9 +1053,10 @@ public sealed class FootprintTests
         {
             List<GridPos> covered = shape.CoveredTiles();
             GridPos anchor = shape.Origin.ToTile();
-            for (int dy = -5; dy <= 5; dy++)
+            int reach = shape.Width + shape.Height;
+            for (int dy = -reach; dy <= reach; dy++)
             {
-                for (int dx = -5; dx <= 5; dx++)
+                for (int dx = -reach; dx <= reach; dx++)
                 {
                     var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
                     Assert.True(covered.Contains(tile) == shape.Covers(tile), $"{tile} of a {shape.Width}x{shape.Height} facing {shape.Facing}");
@@ -1169,9 +1170,13 @@ public sealed class FootprintTests
     {
         GridPos anchor = shape.Origin.ToTile();
         var tiles = new List<GridPos>();
-        for (int dy = -5; dy <= 5; dy++)
+
+        // Wider than any half-diagonal, from the shape's own size and not the footprint's reach (W4: a turned 8×10 cemetery
+        // covers a tile six out, past the ±5 this scanned while the largest building was 3×2).
+        int reach = shape.Width + shape.Height;
+        for (int dy = -reach; dy <= reach; dy++)
         {
-            for (int dx = -5; dx <= 5; dx++)
+            for (int dx = -reach; dx <= reach; dx++)
             {
                 var tile = new GridPos(anchor.X + dx, anchor.Y + dy);
                 if (tile == anchor || shape.Covers(Point.CentreOf(tile)))
