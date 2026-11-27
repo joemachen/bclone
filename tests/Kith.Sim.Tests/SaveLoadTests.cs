@@ -481,7 +481,7 @@ public sealed class SaveLoadTests : IDisposable
             "_routeCost", "_routeCostBuiltAt",
         }),
         (typeof(Stockpile), Kept.Saved, new[] { "_held", "_produced", "Capacity" }),
-        (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
+        (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere", "BesideAMaster" }), // beside_a_master written only when set (W5, D922)
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed", "Marks" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),

@@ -5615,6 +5615,10 @@ public sealed record SimConfig
             Name = "reading the water",
             Skill = 12,
             YieldBonusPercent = 15,
+
+            // ⭐ THE FIRST THAT CANNOT BE WRITTEN DOWN (call 4; D922): *"knowing when the fish run"* (`tech-tree.md §3b`). It
+            // lives in masters, and in those who have fished five years beside one.
+            Recordable = false,
             DiscoveryLine = "{0} has fished this river long enough to know where the fish lie and when they run. "
                 + "Every cast brings in more now.",
             LostLine = "Nobody reads the water now. {0} was the last who knew where the fish lie.",
@@ -5742,6 +5746,14 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("skill_work_per_idle_tick")]
     public int SkillWorkPerIdleTick { get; init; } = 100;
+
+    /// <summary>
+    /// Years at the same workplace as a master that carry a technique which cannot be written down (W5, D922; Joe:
+    /// <i>"if there are people working alongside the master fisher, do they learn it from the master?"</i>). Five.
+    /// </summary>
+    /// <remarks>Zero: nobody but a master carries it. Validated at load: not negative.</remarks>
+    [JsonPropertyName("technique_carried_after_years")]
+    public int TechniqueCarriedAfterYears { get; init; } = 5;
 
     /// <summary>
     /// Extra work a learner gets per tick for standing beside a <b>master of the same trade at
@@ -7212,6 +7224,11 @@ public sealed record SimConfig
         }
         ValidateSkills();
         ValidateTechniques();
+        if (TechniqueCarriedAfterYears < 0)
+        {
+            throw new SimConfigException(
+                $"technique_carried_after_years cannot be negative (got {TechniqueCarriedAfterYears}); zero means only a master carries it.");
+        }
         ValidateBatchRows();
     }
 

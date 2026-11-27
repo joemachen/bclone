@@ -82,7 +82,8 @@ public sealed class KnowledgeSystem : ISimSystem
                 was = KnowledgeState.Known;
             }
 
-            Villager? knower = FirstLivingMasterOf(world, technique.Skill);
+            Villager? knower = FirstLivingMasterOf(world, technique.Skill)
+                ?? (technique.Recordable ? null : FirstLivingCarrierOf(world, technique));
 
             // ⭐⭐ DISCOVERY IS AN EVENT; PERSISTENCE IS A SCAN — and they ask different questions
             // (Joe, 2026-08-26, from play). A technique the village has never had is worked out by
@@ -123,7 +124,8 @@ public sealed class KnowledgeSystem : ISimSystem
             // or the log would fill with it for ever.
             if (now == KnowledgeState.Known && !world.IsWrittenDown(id))
             {
-                Library? shelved = world.WriteDown(id, knower?.Name ?? world.LastKnowerOf(id));
+                // ⛔ One that cannot be written down is never shelved (W5, D922): it lives in people, and the moment says so.
+                Library? shelved = technique.Recordable ? world.WriteDown(id, knower?.Name ?? world.LastKnowerOf(id)) : null;
                 if (shelved is not null)
                 {
                     world.KnowledgeStates[id] = KnowledgeState.Established;
@@ -262,6 +264,20 @@ public sealed class KnowledgeSystem : ISimSystem
         return false;
     }
 
+    /// <summary>The first living villager, by id, who carries this technique without having mastered its skill (D922).</summary>
+    private static Villager? FirstLivingCarrierOf(SimWorld world, TechniqueRow technique)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Carries(world.Villagers[i], technique))
+            {
+                return world.Villagers[i];
+            }
+        }
+
+        return null;
+    }
+
     private static Villager? FirstLivingMasterOf(SimWorld world, int skillId)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -303,6 +319,12 @@ public sealed class KnowledgeSystem : ISimSystem
     private static string Kept(
         SimWorld world, TechniqueRow technique, Villager knower, Library? shelved)
     {
+        if (!technique.Recordable)
+        {
+            return $"It cannot be written down: it lives in {knower.Name}'s hands, and in the hands of anybody who works "
+                + $"beside a master of it for {world.Config.TechniqueCarriedAfterYears} years.";
+        }
+
         if (shelved is not null)
         {
             int free = shelved.Shelves - shelved.Records.Count;

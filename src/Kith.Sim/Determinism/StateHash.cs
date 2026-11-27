@@ -1577,6 +1577,14 @@ public static class StateHash
             {
                 hash = MixByte(hash, 1);
             }
+
+            // ⭐ And the years beside a master that carry an unwritable technique (W5, D922) — sparse, tagged: the sim
+            // reads it to decide who keeps reading the water alive.
+            if (progress.BesideAMaster > 0)
+            {
+                hash = MixByte(hash, 0xB5);
+                hash = MixUInt32(hash, (uint)progress.BesideAMaster);
+            }
         }
 
         return hash;

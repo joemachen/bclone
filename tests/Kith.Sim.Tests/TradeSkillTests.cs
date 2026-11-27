@@ -239,4 +239,97 @@ public sealed class TradeSkillTests
 
         Assert.Equal(77 * herdsman.Vigour / 100, firstArmful);
     }
+
+    // -----------------------------------------------------------------
+    //  §7a (D922) — a technique that cannot be written down, carried by those who work beside its master
+    // -----------------------------------------------------------------
+
+    private const int ReadingTheWater = 4;
+
+    /// <summary>⭐ Reading the water is known by a master fisher and refused a shelf, by name — even with room.</summary>
+    [Fact]
+    public void ReadingTheWaterCannotBeWrittenDown()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+        world.Libraries.Add(new Library { Position = Point.CentreOf(new GridPos(2, 2)), Name = "library 1", Shelves = 5 });
+        Assert.False(world.TechniquesCatalog[ReadingTheWater].Recordable);
+
+        Villager master = MakeAMasterOf(world, JobKind.Fisher);
+        loop.Step(1);
+
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[ReadingTheWater]);
+        Assert.False(world.IsWrittenDown(ReadingTheWater));
+        Assert.Contains(world.Moments, m => m.Body.Contains("cannot be written down", StringComparison.Ordinal)
+            && m.Body.Contains(master.Name, StringComparison.Ordinal));
+
+        master.Alive = false;
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[ReadingTheWater]);
+    }
+
+    /// <summary>
+    /// ⭐ A fisher who has worked five years beside a master who reads the water reads it too — and keeps it alive when the
+    /// master dies, before mastering the trade. One year short, and it goes with the master.
+    /// </summary>
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    public void AFisherFiveYearsBesideTheMasterCarriesIt(int yearsShort, bool keeps)
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+        SimConfig config = world.Config;
+        Workplace hut = FishingTests.RaiseAFishery(world);
+        List<Villager> two = world.Villagers.Where(v => v.Alive && v.CanWork).OrderBy(v => v.Id).Take(2).ToList();
+        world.SetPinnedTrade(two[0], JobKind.Fisher);
+        world.SetPinnedTrade(two[1], JobKind.Fisher);
+        Villager master = two[0];
+        Villager learner = two[1];
+        SkillRow fishing = world.SkillGrownBy(JobKind.Fisher)!;
+        SkillProgress taught = master.ProgressIn(fishing.Id);
+        taught.Work = config.MasteryWorkFor(fishing);
+        taught.Mastered = true;
+        taught.MasteredHere = true;
+
+        for (int i = 0; i < config.TicksPerYear && !(master.WorkplaceId == hut.Id && learner.WorkplaceId == hut.Id); i++)
+        {
+            loop.Step(1);
+        }
+
+        Assert.Equal(hut.Id, master.WorkplaceId);
+        Assert.Equal(hut.Id, learner.WorkplaceId);
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[ReadingTheWater]);
+
+        // Posed a season short of the five years, so the guard plays the last stretch rather than the whole of it.
+        int needed = config.TechniqueCarriedAfterYears * config.TicksPerYear;
+        int season = config.DaysPerSeason * config.TicksPerDay;
+        learner.ProgressIn(fishing.Id).BesideAMaster = needed - season - (yearsShort * config.TicksPerYear);
+        loop.Step(season * 2);
+
+        Assert.Equal(keeps, world.Carries(learner, world.TechniquesCatalog[ReadingTheWater]));
+        Assert.Equal(keeps, sink.Entries.Any(e => e.Message.Contains($"{learner.Name} has worked beside {master.Name}", StringComparison.Ordinal)));
+        Assert.False(learner.FindProgressIn(fishing.Id)!.Mastered, "The premise: the learner is no master.");
+
+        master.Alive = false;
+        loop.Step(1);
+        Assert.Equal(keeps ? KnowledgeState.Known : KnowledgeState.Unknown, world.KnowledgeStates[ReadingTheWater]);
+        Assert.Equal(keeps, world.TechniquesCarriedBy(learner).Any(t => t.Id == ReadingTheWater));
+    }
+
+    /// <summary>⛔ A written technique is not carried by standing beside its master: the shelf is its keeper.</summary>
+    [Fact]
+    public void AWrittenTechniqueIsCarriedByItsMastersOnly()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Villager villager = world.Villagers.First(v => v.Alive);
+        SkillRow hunting = world.SkillGrownBy(JobKind.Hunter)!;
+        villager.ProgressIn(hunting.Id).BesideAMaster = int.MaxValue / 2;
+        TechniqueRow tracking = world.TechniquesCatalog[world.TechniquesCatalog.FromSkill(hunting.Id)];
+        Assert.True(tracking.Recordable);
+        Assert.False(world.Carries(villager, tracking));
+    }
 }

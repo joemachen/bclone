@@ -128,6 +128,26 @@ public sealed record TechniqueRow
     public int ToolUsesBonusPercent { get; init; }
 
     /// <summary>
+    /// Whether a library can write this down — <b>false for knowledge only a person can carry</b> (`tech-tree.md §3b`:
+    /// *"knowing when the fish run"*; W5, D922).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Refused a shelf, by name</b> (<see cref="Systems.KnowledgeSystem"/>), and so never <see cref="KnowledgeState.Established"/>.
+    /// It lives while somebody living carries it: a master of its skill, or — Joe's call, D922 — a villager who has worked
+    /// <c>technique_carried_after_years</c> at the same workplace as a master (<see cref="SkillProgress.BesideAMaster"/>,
+    /// <see cref="Core.SimWorld.Carries"/>). *"If there are people working alongside the master fisher, do they learn it
+    /// from the master?"* — for this kind, yes.
+    /// </para>
+    /// <para>
+    /// On the technique and not the skill: a library writes techniques. <see cref="SkillRow.Recordable"/> stays the inert
+    /// column it has always been.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("recordable")]
+    public bool Recordable { get; init; } = true;
+
+    /// <summary>
     /// What the village log says the first time anybody works it out. <c>{0}</c> is the person.
     /// </summary>
     /// <remarks>
@@ -164,6 +184,7 @@ public sealed class TechniquesCatalog
 {
     private readonly TechniqueRow[] _rows;
     private readonly int[] _bySkill;
+    private readonly bool[] _unwritableBySkill;
 
     /// <summary>Build the catalogue from config rows, and index them by the skill that yields them.</summary>
     public TechniquesCatalog(IReadOnlyList<TechniqueRow> rows, IReadOnlyList<SkillRow> skills)
@@ -213,7 +234,21 @@ public sealed class TechniquesCatalog
                 _bySkill[row.Skill] = id;
             }
         }
+
+        // Built once: `SkillSystem` asks it of every worker every tick, so the answer is an index, never a scan.
+        _unwritableBySkill = new bool[widest];
+        for (int id = 0; id < _rows.Length; id++)
+        {
+            if (_rows[id] is { Recordable: false } row && row.Skill >= 0 && row.Skill < widest)
+            {
+                _unwritableBySkill[row.Skill] = true;
+            }
+        }
     }
+
+    /// <summary>Whether any technique of this skill cannot be written down — and so is carried beside its master (D922).</summary>
+    public bool HasUnwritableFor(int skillId) =>
+        skillId >= 0 && skillId < _unwritableBySkill.Length && _unwritableBySkill[skillId];
 
     /// <summary>How many techniques exist.</summary>
     public int Count => _rows.Length;

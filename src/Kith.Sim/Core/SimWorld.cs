@@ -3512,6 +3512,25 @@ public sealed partial class SimWorld : IObstacles
     /// with years they have not spent.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Whether this villager carries this technique: a master of its skill — or, for one that cannot be written down, a
+    /// villager with <c>technique_carried_after_years</c> beside a master (W5, D922). Not whether the village knows it.
+    /// </summary>
+    public bool Carries(Villager villager, TechniqueRow technique)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        ArgumentNullException.ThrowIfNull(technique);
+        if (!villager.Alive || villager.FindProgressIn(technique.Skill) is not { } progress)
+        {
+            return false;
+        }
+
+        return progress.Mastered
+            || (!technique.Recordable
+                && Config.TechniqueCarriedAfterYears > 0
+                && progress.BesideAMaster >= Config.TechniqueCarriedAfterYears * Config.TicksPerYear);
+    }
+
     public List<TechniqueRow> TechniquesCarriedBy(Villager villager)
     {
         ArgumentNullException.ThrowIfNull(villager);
@@ -3525,8 +3544,7 @@ public sealed partial class SimWorld : IObstacles
         for (int id = 0; id < TechniquesCatalog.Count; id++)
         {
             TechniqueRow row = TechniquesCatalog[id];
-            if (KnowledgeStates[id] != KnowledgeState.Unknown
-                && villager.FindProgressIn(row.Skill) is { Mastered: true })
+            if (KnowledgeStates[id] != KnowledgeState.Unknown && Carries(villager, row))
             {
                 carried.Add(row);
             }
@@ -3550,9 +3568,7 @@ public sealed partial class SimWorld : IObstacles
         for (int i = 0; i < Villagers.Count; i++)
         {
             Villager other = Villagers[i];
-            if (other.Alive
-                && other.Id != villager.Id
-                && other.FindProgressIn(technique.Skill) is { Mastered: true })
+            if (other.Alive && other.Id != villager.Id && Carries(other, technique))
             {
                 return false;
             }
