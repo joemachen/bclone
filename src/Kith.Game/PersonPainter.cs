@@ -345,6 +345,12 @@ internal static class PersonPainter
                 Tool = Tool.Hammer;
             }
 
+            // The forester's axe for felling, in the spade's place (A296).
+            if (Tool == Tool.Spade && f.Beat is FellRaise or FellStrike or FellRest)
+            {
+                Tool = Tool.Axe;
+            }
+
             RodLine = f.Beat < RodBack;
             RodShown = f.Beat != NetThrow;
             CoatOn = f.Coat;
@@ -1366,6 +1372,11 @@ internal static class PersonPainter
         (Tool.Hammer, MalletRaise) => (-0.02f, -0.24f, 22f),
         (Tool.Hammer, MalletStrike) => (-0.09f, 0.03f, -105f),
         (Tool.Pick or Tool.Axe, Breather) => (0.02f, 0.06f, -12f),
+
+        // ⭐ The forester felling (A296): the axe in the spade's place, the axe's own two poses and its breather.
+        (Tool.Axe, FellRaise) => (-0.04f, -0.30f, 28f),
+        (Tool.Axe, FellStrike) => (-0.13f, 0.10f, -150f),
+        (Tool.Axe, FellRest) => (0.02f, 0.06f, -12f),
         (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
         (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
         (Tool.Saw, 1) => (0.05f, -0.02f, 0f),
@@ -1385,8 +1396,11 @@ internal static class PersonPainter
     /// <summary>At a face (A282): the mallet raised and struck (the pick swapped for the mallet), and the breather.</summary>
     internal const int MalletRaise = 11, MalletStrike = 12, Breather = 13;
 
+    /// <summary>The forester felling (A296): the axe raised and struck, and its breather — the spade swapped for the axe.</summary>
+    internal const int FellRaise = 14, FellStrike = 15, FellRest = 16;
+
     /// <summary>The highest beat any person is painted in.</summary>
-    internal const int MostBeats = Breather;
+    internal const int MostBeats = FellRest;
 
     /// <summary>
     /// ⭐ Pure: where the rod's tip is in a beat, in figure units from the feet (x to the right, unmirrored; up negative) — the

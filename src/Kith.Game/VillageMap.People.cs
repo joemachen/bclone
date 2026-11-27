@@ -97,8 +97,10 @@ public partial class VillageMap
         bool moving = heading.LengthSquared() > 1e-6f;
 
         // ⭐ At a face the load is the stack at their side, not in their arms, and the pick stays in hand (A282,
-        // `varied-work.md §2`): stone is no shoulder load, and from the second dig on they stood hugging it.
-        if (AtAFace(state))
+        // `varied-work.md §2`): stone is no shoulder load, and from the second dig on they stood hugging it. ⭐ And a forester
+        // felling or planting keeps the axe or the spade (A296): a seam on their ground leaves stone in their load while they
+        // plant (his Willowdale's Verren, 24 stone), and they stood hugging it — the load is drawn again when they haul it.
+        if (AtAFace(state) || state == VillagerState.Cutting)
         {
             good = null;
         }
@@ -305,6 +307,12 @@ public partial class VillageMap
             {
                 (key, motion) = SplitKeyAndMotion(still, sp.Moment);
             }
+
+            // ⭐ The forester: the axe to fell, the spade to plant (A296).
+            if (villager.Alive && poses && cast is null && dig is null && split is null && ForestryOf(world, villager, still) is ForestMoment fm)
+            {
+                (key, motion) = ForestKeyAndMotion(still, fm);
+            }
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             int drawnBeat = key.Beat;
             if (held is not null)
@@ -421,7 +429,7 @@ public partial class VillageMap
     /// </summary>
     private void KeepTheOtherPoses(FigureKey key, ulong frame)
     {
-        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter ? PersonPainter.MostBeats : 2;
+        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter or JobKind.Forester ? PersonPainter.MostBeats : 2;
         for (int b = 0; b <= most; b++)
         {
             if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))

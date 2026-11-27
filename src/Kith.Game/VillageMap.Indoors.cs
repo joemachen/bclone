@@ -99,6 +99,13 @@ public partial class VillageMap
             return FishingSpotOf(world, viewTile) is (Vector2 spot, _) ? spot - new Vector2(0f, PersonTiles * PersonPointUp) : viewTile;
         }
 
+        // ⭐ Felling, in front of the trunk (A296, `varied-work.md §8`): the sim's place is the tree's middle, in its crown.
+        if (state == VillagerState.Cutting && world.Map.Contains(new GridPos(Mathf.RoundToInt(viewTile.X), Mathf.RoundToInt(viewTile.Y)))
+            && world.Map.TerrainAt(new GridPos(Mathf.RoundToInt(viewTile.X), Mathf.RoundToInt(viewTile.Y))) == Terrain.Forest)
+        {
+            return viewTile + BeforeTheTrunk;
+        }
+
         // ⭐ Splitting, at the yard's chopping block (A292, `varied-work.md §7`): the sim's place is the hut's roof.
         if (state == VillagerState.MakingFirewood)
         {
