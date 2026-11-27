@@ -1,6 +1,6 @@
 # Varied work, trade by trade — the quarrier first (A280)
 
-> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The woodcutter ✅ BUILT (A292), played and merged into `main` at Joe's word (A293, *"Played it, merge"*, `60d5df8`); pushed at his word (A294, *"Push main"*). Joe: *"B, as recommended"*. The forester next; the other trades not started.** Art lane (CLAUDE.md *Two tracks*), branch
+> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The woodcutter ✅ BUILT (A292), played and merged into `main` at Joe's word (A293, *"Played it, merge"*, `60d5df8`); pushed at his word (A294, *"Push main"*). Joe: *"B, as recommended"*. The forester ✅ BUILT (A296) on `art`, UNPLAYED — Joe: *"just power through all these"*, the recommended option taken without a mock. The forager, builder, farmer, hunter and herdsman ✅ BUILT (A297) on `art`, UNREVIEWED. The indoor trades (baker, carpenter, smith, miller, tailor, brewer) are not drawn at work and are not in this piece.** Art lane (CLAUDE.md *Two tracks*), branch
 > `art`; the art queue's piece 3, *Animations*, after fishing (`fishing-animation.md`). View only: nothing in `Kith.Sim`, `data/`
 > or `tests/` changes. Mock: `D:\Projects\brushes\animations\quarry_options.gif` (and `quarry_contact.jpg`).
 
@@ -114,3 +114,47 @@ as a door's step is kept), `VillageMap.Indoors.cs` (`AtTheDoor`: a splitting woo
 - Filmed on his spruce-mill Ashbourne (`D:\Projects\brushes\woodcutter\woodcutter_built.gif`): the woodcutter walks up, works
   at the block, and walks off as the stint ends. ⚠️ Seen in passing, not this piece's: as a stint ends they are drawn a moment
   on the hut's own spot (the next state's place, as it always was) before walking away.
+
+## 8. The forester — built (A296), no mock: Joe's *"just power through all these, im going to approve them all"*
+
+**What the sim gives:** one state, `Cutting`, at a tile of the hut's work ground — felling while the tile is forest, planting
+when it is not (`IsPlantingErrand`); a fell is `cut_ticks` (4), a planting `VillageEconomy.PlantTicks` (three times that), both
+through `WorkTicksFor`. The tree's fall and the young sapling are already drawn when the tile changes (A196–A198). ⚠️ **Until now
+both were done with the painter's spade, the forester standing in the tree's crown.**
+
+**Built (the recommended option):**
+
+- **Felling** — **the axe** (`FellRaise`, `FellStrike`, `FellRest`: the axe swapped in for the spade, the axe's own poses),
+  standing `BeforeTheTrunk` (0.06, 0.34 tiles on screen) from the tree's middle (`AtTheDoor`: a `Cutting` villager on a forest
+  tile); strokes on the people's clock, a breather opening one fell in six.
+- **Planting** — **the spade**: the dig for the first 60 %, stooped to set the sapling for the next 25 %, treading it in for the
+  rest. Under 2 real seconds, strokes only.
+- `VillageMap.Forestry.cs` (`ForestAt`, `ForestryOf`, `ForestKeyAndMotion`); the probe's `forester:` line
+  (`VillageMap.ForestryProbe.cs`), red-checked 6 mutants, 6 red (not before the trunk; no axe; no breather; no stoop to set;
+  quick off; the stone load back in the arms).
+- ⚠️ **Found filming, and fixed:** his Willowdale's forester Verren planted with 24 stone in the load (a seam on the ground,
+  D211) and stood hugging it, no spade — the quarrier's bug one trade over. While `Cutting` the load is not drawn in the arms
+  (`PersonKeyOf`, beside the face's rule); it is drawn again the moment they haul it.
+- Filmed: his willowdale finch-grove (year 6), planting — the spade's dig, the saplings coming up, the stone carried off (`D:\Projects\brushes\forester\forester_built.gif`); his nettle-beck Elderwood caught only a felling's end (the fall, A198), the axe's strokes not seen in the game.
+
+## 9. The other outdoor trades — built (A297), no mock: Joe's *"just power through all these"*
+
+The forager (`Gathering`), the builder (`Building`), the farmer (`Sowing`, `Reaping`, `Tending`), the hunter (`Hunting`) and the
+herdsman (`CuttingHay`, `FeedingTheHerd`) each had one two-beat motion on the people's clock (A130). **Built (the recommended
+option), `VillageMap.Rhythm.cs`:** each works in **phrases** on the people's clock — a breather opening about one phrase in six,
+a run of strokes, and a motion of its own:
+
+| Trade at | Strokes | Its own motion |
+|---|---|---|
+| the forager, gathering | stoop and reach ×3 | every phrase: straightened, the pickings dropped in the basket |
+| the builder, building | the hammer ×5 | two phrases in five: stooped for a plank and up with it |
+| the farmer, sowing | **the seed basket** in the fork's place, reached into and **tossed** — the seed drawn in the air | — |
+| the farmer, reaping or tending | the fork ×4 | — |
+| the hunter, hunting | the bow raised and drawn ×2 | every phrase: drawn, **loosed** (an arrow drawn away a moment), lowered — no animal: the sim has none (`hunting.md §9`) |
+| the herdsman, at hay or feeding | **a fork** in the crook's place, lifted and pitched ×4 | — |
+
+Each person's phrases start at their own offset, so two never keep step. Culling and the herdsman's other work keep A130's lean.
+The painter: `SowReach`, `SowToss` (the basket swapped in for the fork), `HayLift`, `HayPitch` (the fork for the crook).
+**Probe `outdoor work:`** (`VillageMap.RhythmProbe.cs`): red-checked, 5 mutants, 5 red (no breathers; no motions of their own;
+everyone in step; the sower's fork; a phrase leaking to the woodcutter). ⚠️ Not filmed: no save catches these trades mid-task;
+his eyes on it at review.

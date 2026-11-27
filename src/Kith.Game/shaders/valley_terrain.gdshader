@@ -31,6 +31,8 @@ uniform float split_u = -1.0;
 
 // The young share of the wood (R) and the iron share of the seam (G), beside the mix (ValleyTexture, A24).
 uniform sampler2D ground_map_shares : hint_default_black, filter_linear, repeat_disable;
+// The shares as they were before the last change, faded from by `ground_fade` as the mix is (A300).
+uniform sampler2D ground_map_shares_from : hint_default_black, filter_linear, repeat_disable;
 
 // The map's colours, sRGB-encoded as written.
 uniform vec3 beyond_srgb = vec3(0.77, 0.71, 0.56);
@@ -503,6 +505,9 @@ void fragment() {
         vec4 kinds = terrain_splat_keeping_water(weights, land, splat_sharpness);
         float grass_weight = land.x / max(land.x + land.y + land.z, 1e-4) * (1.0 - weights.a);
         vec2 shares = texture(ground_map_shares, tile / ground_map_tiles + 0.5).rg;
+        if (ground_fade < 1.0) {
+            shares = mix(texture(ground_map_shares_from, tile / ground_map_tiles + 0.5).rg, shares, ground_fade);
+        }
         float young = valley_share(shares.r, splat_sharpness);
         float iron = valley_share(shares.g, splat_sharpness);
 

@@ -218,11 +218,14 @@ At Joe's OK (call 6): in `VillageMap.Meshes.cs` the diff hands each change on, a
   woods floor to grass, or young-wood ground to woods floor, in the frame the sim changes the tile — as before this piece.
   In the film of a stand growing it is the large change at each row's turn (4,600–5,900 pixels of a 560 × 360 crop at the
   closest zoom); with the trees moving over it, it reads as the wood changing under them. A fade there is its own piece.
+  → **Faded since A300** (`ground-fade.md §3`): over 2.25 ticks of game time from the floor as it was.
 - **Which crown is on top where two overlap, at a growing's end** (and a fall's first frame). The motion draws over the
   canopy; the mesh lays trees tile by tile. So the frame a grown tree goes back into the mesh, a neighbour that overlaps it
   from a later tile goes back on top: one patch of about 30 × 40 pixels at the closest zoom, about 500–700 changed pixels a
   row of three or four tiles, against 10–20 between other frames. Drawing the motion inside the mesh's order needs a
   change to `MeshBuilder.cs` (a third file) or a chunk rebuilt every frame of a motion; not done, his call if he sees it.
+  → **Still so (A300, `ground-fade.md §2`):** a half-second hand-back over the mesh was tried and measured worse (the soft rims
+  doubled); a true crossfade needs the tile's trees drawn to an offscreen layer.
 - **The trees beside a felled tile changing kind** (§8's note), as before.
 
 **Verified (A197):**

@@ -7,6 +7,10 @@
 // The fake coverage map (GrassLabGround.cs), weights: R grass, G wood, B seam, A water. Data, so no source_color.
 // R is the channel ValleyTexture's bake will write.
 uniform sampler2D ground_map : hint_default_white, filter_linear, repeat_disable;
+// ⭐ THE GROUND'S FADE (A300, `specs/ground-fade.md`): the mix as it was before the last change, and how far the ground has come
+// from it (0 the old, 1 the new — and then `ground_map_from` is not read). The lab never sets either: it stays at 1.
+uniform sampler2D ground_map_from : hint_default_white, filter_linear, repeat_disable;
+uniform float ground_fade = 1.0;
 uniform vec2 ground_map_tiles = vec2(120.0, 80.0);
 // Which seam B is (A20): white iron, black stone. The fifth kind rides on the seam's weight, so splat, bleed and the
 // water's contour stay four-way; the map flips only midway between seams, on grass. Black until baked: all stone.
@@ -103,7 +107,12 @@ vec3 terrain_shallows(vec3 water_tile) {
 
 // The map's weights at a tile, tiles counted from the map's centre. Off the map the clamp reads its edge: grass.
 vec4 terrain_weights(vec2 tile) {
-    return texture(ground_map, tile / ground_map_tiles + 0.5);
+    vec2 at = tile / ground_map_tiles + 0.5;
+    vec4 now = texture(ground_map, at);
+    if (ground_fade < 1.0) {
+        now = mix(texture(ground_map_from, at), now, ground_fade);
+    }
+    return now;
 }
 
 // Whether the seam at a tile is iron (A20). A pick, not a blend: the map is one or the other wherever a seam is drawn.

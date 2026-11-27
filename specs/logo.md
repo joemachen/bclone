@@ -75,7 +75,8 @@ icon is the `.ico` when one is made.
 
 ## 6. Next, not built
 
-- **A wordmark lockup** — "Kith" in Grenze Gotisch beside the seal, for store pages and trailers. At Joe's word.
+- ~~**A wordmark lockup** — "Kith" in Grenze Gotisch beside the seal, for store pages and trailers. At Joe's word.~~ →
+  ✅ **built (A301, 2026-11-26, the art queue's piece 7, at his *"just power through all these"*), UNREVIEWED** — §10.
 - **The splash** (`screens/splash.png`, A104) carries the blank seal, *"the name goes on when it is chosen"*. Not wired,
   so not repainted here.
 
@@ -151,3 +152,18 @@ of pen lettering. The seal is the page's only wax.
   (2.12 : 1), Found's focus filled; the primary in ink, Found's hover line at 20 %, a thick stroke under every item. Restored by
   reverse `sed`, compared byte for byte.
 - Captures: `button_built.jpg`. ⚠️ The pointer's wash is posed there (the hover box shown as the resting one).
+
+## 10. The wordmark lockup (A301) — the art queue's piece 7, at Joe's *"just power through all these"*
+
+Built with the recommended option and no mock, for his review. **A picture for others, not drawn by the game.**
+
+- **Files** — `press/` (a new folder at the repository's root, outside `src/`, so Godot never imports it into a build):
+  `kith-wordmark.png` (the name in the title's ink, `#2a2018`, for light pages), `kith-wordmark-light.png` (the name in the
+  paper's light, `#efe3c8`, for dark pages and trailers), both transparent, 1019 × 478; `kith-wordmark-sheet.jpg` (both, on
+  the valley's paper and on a dark ground, to look at); and `make_wordmark.py`, which makes all three from the game's own files.
+- **How:** the seal is `seal-k.png` at its own 512 px, never scaled up (its wax 381 px wide). The name is Grenze Gotisch at weight
+  400 — the title's face and the K pressed into the wax. Its capitals are half the wax's width (191 px; the face at 306 px) and
+  stand centred on the wax's middle; the gap from the wax to the K is a fifth of the wax (76 px); a 48 px clear margin all round.
+- **His to say:** the proportions (the name's size against the seal, the gap); whether a stacked version (the seal above the
+  name) is wanted too; any store's own sizes (e.g. a 1280 × 720 library logo) are cut from these when a store is chosen.
+- **Four checks** (nothing under `src/` changed): suite skipped — no sim, data or test file differs from `a65eff0` (W4's suite, 2363 / 0 / 5, D916); view build 0 warnings; probe 217 lines, 182 ✅, 0 ⛔, bar height 110, tile centres ✅, new game ✅, `done.`; goldens identical.

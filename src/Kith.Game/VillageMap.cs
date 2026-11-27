@@ -8559,9 +8559,20 @@ public partial class VillageMap : Control
                 continue;
             }
 
-            foreach (Vector2 spot in HerdSpots(barn, season))
+            List<Vector2> spots = HerdSpots(barn, season);
+            List<Vector2>? next = PaintsPeople ? HerdSpots(barn, season + 1.0) : null;
+            for (int b = 0; b < spots.Count; b++)
             {
-                Vector2 at = ToScreen(spot);
+                Vector2 at = ToScreen(spots[b]);
+                if (next is not null && b < next.Count)
+                {
+                    // ⭐ A cow, side-on (A298, the art lane's `VillageMap.Beasts.cs`): where it stands is unchanged.
+                    uint seed = Scramble(barn.Id + HerdSalt, b);
+                    float pace = spots[b].DistanceTo(next[b]);
+                    DrawTheBeast(at, false, FacingOf(spots[b], next[b], seed), Grazes(pace), (float)(season * 0.35) + ((seed % 100) / 100f), seed);
+                    continue;
+                }
+
                 DrawCircle(at, radius, CattleColour);
                 DrawArc(at, radius, 0f, Mathf.Tau, 12, CattleEdge, 1f);
             }
@@ -8719,7 +8730,17 @@ public partial class VillageMap : Control
                 // nothing.
                 if (seed % TilesPerAnimal == 0)
                 {
-                    DrawCircle(ToScreen(Roam(home, seed, season)), beastRadius, GameColour);
+                    Vector2 now = Roam(home, seed, season);
+                    if (PaintsPeople)
+                    {
+                        // ⭐ A deer, side-on (A298, the art lane's `VillageMap.Beasts.cs`): where it roams is unchanged.
+                        Vector2 then = Roam(home, seed, season + 1.0);
+                        DrawTheBeast(ToScreen(now), true, FacingOf(now, then, seed), Grazes(now.DistanceTo(then)), (float)(season * 0.4) + ((seed % 100) / 100f), seed);
+                    }
+                    else
+                    {
+                        DrawCircle(ToScreen(now), beastRadius, GameColour);
+                    }
                 }
             }
         }
