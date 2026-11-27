@@ -11189,16 +11189,19 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   restore by reverse replacement — `git diff --stat` on the two files must be empty after.
 - **The labour pass runs once a season** (`labour_slack_ticks` 60, D926): a seat a test opens mid-season is not filled until the
   next season's first tick. Pose a trade's hand from the start and let something else (a limit) hold the work back.
+- **Before `git checkout main`, run `git worktree list`** (D930): the art lane merges into `main` from inside its own
+  worktree, and until it switches back to `art` that worktree holds `main` — git refuses the checkout here, and a
+  `git merge` typed after the failed checkout runs on the slice and says *"Already up to date"*, which reads like
+  success. Chain the merge on the checkout (`&&`), and if `main` is held, ask; never switch another lane's worktree.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
-  2026-11-26; Joe: *"start w5 in a new session"*). 🔨 **being built on `slice/w5-skills`** (cut from `main` at `339f983`). Read off
+- ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
+  2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); ⏳ not pushed; `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and
   the groundskeeper came after it; the teacher has none by his call, D754). 📝 **Specced (D920, `specs/skills-for-every-trade.md`);
   ✅ every call his answered (D921–D922); ✅ **built (D923–D928)**: nine skill rows, seven techniques (one unwritable, carried by
-  five years beside a master), the crop that stands five days into winter, the great library. ⏸️ **His play, then the merge at
-  his word.** What to look for in play is in the session's message to him. His seven calls were: which trades, the two with
+  five years beside a master), the crop that stands five days into winter, the great library. ✅ **Played and merged at his word (D930).** What to look for in play is in the session's message to him. His seven calls were: which trades, the two with
   nothing to speed, which techniques, fishing unwritable, the winter crop's five days and thirty years, the founders, and the
   builder's do-nothing skill (later).
 - ⏸️ 🎨 **THE GREAT LIBRARY'S PICTURES (W5, D927) — ASKED OF THE ART LANE, NOT CLAIMED.** Its build-bar icon and owed version

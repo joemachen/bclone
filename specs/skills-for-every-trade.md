@@ -10,7 +10,7 @@ including Joe's crop that stands into winter."* Kind A, size M, independent of e
 **Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
 skill rows, burying through `BeginWork`; ✅ steps 2–3 (D924): techniques 4–9, tempering, the hay through `YieldFor`; ✅ step 3b (D925): reading the water
 unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter; ✅ step 5b (D927): the great library, its button and a stand-in roof; ✅ steps 6–8 (D928): the view's lines, the
-measurement (§9a), three goldens moved by the rows alone.** ⏸️ Joe's play, then the merge at his word.
+measurement (§9a), three goldens moved by the rows alone.** ✅ played and merged into `main` at his word (D930, *"Played it, merge"*).
 
 ---
 
