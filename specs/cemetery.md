@@ -1,8 +1,8 @@
 # Spec: The cemetery and the groundskeeper (W4)
 
-> Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 Being built on `slice/w4-cemetery`** (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
+> Status: **📏 MEASURED AND 📝 SPECCED (D891), EVERY CALL JOE'S ANSWERED (D905–D906, 2026-11-25). 🔨 ✅ Built and merged into `main` at his word (D917, *"Yes, merge"*, `6d03eab`), ⏳ not pushed; `slice/w4-cemetery` deleted** *(read "🔨 being built on `slice/w4-cemetery`" until D917)* (re-cut from `main` at `e6aca39`, D905; the first cut, D890–D891, merged as docs at D892).
 > **Built: step 1 (§9) — who lies unburied, `BurialsFromTick`, `BuriedAtTick` (D907); steps 2–3 — the three rows, learned at the first death,
-> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). 🐞 Joe played it (D915): the idle groundskeeper is a laborer between, §6.1; ✅ played again, *"looks good!"*, and the golden that buries people and the milestone-map row (D916). ▶️ The merge at his word.** The instrument is
+> the small one free (D908); step 4 — the groundskeeper, a burial, tending (D909); step 5 — the two causes and the family at the grave (D910); step 6 — it wears, and its groundskeeper keeps it (D911); step 7 — the view (D912). 🐞 Joe played it (D915): the idle groundskeeper is a laborer between, §6.1; ✅ played again, *"looks good!"*, and the golden that buries people and the milestone-map row (D916). ✅ Merged into `main` at his word (d917, *"yes, merge"*, `6d03eab`), ⏳ not pushed; `slice/w4-cemetery` deleted.** The instrument is
 > `tools/harness/ZzCemetery.cs` + `cemetery.py` (§4), run on copies of Joe's saves and on 100 unattended valleys.
 >
 > Phase 6, W4 of the workplan (`systems-complete.md §5.1`). The shape is Joe's (D395, D905); its place in contentment is his (D797).
