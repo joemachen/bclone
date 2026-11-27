@@ -94,7 +94,13 @@ public sealed class KnowledgeSystem : ISimSystem
             // being worked out on **tick one**, before the village had a house. *"Unlock by doing"*
             // with nothing done. **A founding master is skilled and did not have the moment here.**
             bool nobodyHasEverHadIt = was == KnowledgeState.Unknown;
-            if (nobodyHasEverHadIt && !AnybodyMasteredItHere(world, technique.Skill))
+            if (nobodyHasEverHadIt && technique.AfterYears is int years)
+            {
+                // ⭐ W5 (call 5): a technique with years of its own is worked out by a home-grown master with that many
+                // years on the task — and it is they the line names.
+                knower = FirstWhoWorkedItOutHere(world, technique.Skill, years);
+            }
+            else if (nobodyHasEverHadIt && !AnybodyMasteredItHere(world, technique.Skill))
             {
                 knower = null;
             }
@@ -250,6 +256,22 @@ public sealed class KnowledgeSystem : ISimSystem
     /// <b>The discovery half of the rule.</b> Asked only when nobody has ever had the technique —
     /// once the village has it, <see cref="FirstLivingMasterOf"/>'s looser question keeps it alive.
     /// </remarks>
+    /// <summary>The first living home-grown master, by id, with this many years on the task — or null (W5).</summary>
+    private static Villager? FirstWhoWorkedItOutHere(SimWorld world, int skillId, int years)
+    {
+        long needed = (long)years * world.Config.TicksPerYear;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.FindProgressIn(skillId) is { MasteredHere: true } progress && progress.Ticks >= needed)
+            {
+                return villager;
+            }
+        }
+
+        return null;
+    }
+
     private static bool AnybodyMasteredItHere(SimWorld world, int skillId)
     {
         for (int i = 0; i < world.Villagers.Count; i++)

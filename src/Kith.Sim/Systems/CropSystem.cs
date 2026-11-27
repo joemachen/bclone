@@ -51,7 +51,24 @@ public sealed class CropSystem : ISimSystem
         Season previous = SimClock.FromTick(world.Tick - 1UL, world.Config).Season;
         if (current.Season == previous)
         {
+            // ⭐ W5 (`skills-for-every-trade.md §5`): what stood into winter goes to the frost at the start of the day after
+            // its last — and the autumn's lesson is taken then, because the standing days were part of the harvest.
+            if (world.CropStandsUntilDay > 0 && current.Season == Season.Winter && current.DayOfSeason > world.CropStandsUntilDay)
+            {
+                world.CropStandsUntilDay = 0;
+                TakeTheAutumnsLesson(world);
+                Rot(world, current);
+            }
+
             return;
+        }
+
+        // A promise never outlives its winter (the validator holds the days inside one; this is the backstop).
+        if (world.CropStandsUntilDay > 0)
+        {
+            world.CropStandsUntilDay = 0;
+            TakeTheAutumnsLesson(world);
+            Rot(world, current);
         }
 
         if (current.Season == Season.Fall)
@@ -67,9 +84,37 @@ public sealed class CropSystem : ISimSystem
             // very next call clears it. Taking the lesson afterwards would ask every farm in
             // the valley the same question and always get "nothing standing", which reads as
             // total success and would climb every farm to the derived cap.
+            // ⭐⭐ JOE'S CROP THAT STANDS INTO WINTER (DESIGN §5, W5): known, what is still standing keeps a few days and the
+            // village is told which; the lesson and the rot wait for the frost. Unknown, today's rot to the tick.
+            int days = world.CropStandsIntoWinterDays();
+            int standing = days > 0 ? StandingTiles(world) : 0;
+            if (standing > 0)
+            {
+                world.CropStandsUntilDay = days;
+                world.Narrate(
+                    $"{standing} {Tiles(standing)} still standing — the frost will take them in {days} days. "
+                    + $"{current.SeasonAndYear()}.", LogCategory.Season);
+                return;
+            }
+
             TakeTheAutumnsLesson(world);
             Rot(world, current);
         }
+    }
+
+    /// <summary>Tiles still under a crop, ripe or sown — what the frost would take now.</summary>
+    private static int StandingTiles(SimWorld world)
+    {
+        int standing = 0;
+        for (int i = 0; i < world.Map.Tiles.Count; i++)
+        {
+            if (world.Map.Tiles[i] is Terrain.Ripe or Terrain.Sown)
+            {
+                standing++;
+            }
+        }
+
+        return standing;
     }
 
     /// <summary>

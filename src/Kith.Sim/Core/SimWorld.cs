@@ -2671,7 +2671,7 @@ public sealed partial class SimWorld : IObstacles
         // and since 2026-09-05 that season is AUTUMN, not spring: the limit gates the
         // harvest now, and sowing goes ahead regardless so the year is not thrown away in
         // April on the strength of a number that may be false by August.
-        if (SeasonRules.IsReaping(Clock.Season) && GrainHeldBackAt(farm) is Goods grown)
+        if (MayReapToday() && GrainHeldBackAt(farm) is Goods grown)
         {
             return $"{farm.Name} has stopped reaping — you asked the village to keep "
                 + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)} stored. "
@@ -2682,7 +2682,7 @@ public sealed partial class SimWorld : IObstacles
         // method that is about a loss rather than about idleness, and it is the reason the
         // method is worth having: winter takes what is left, and this is the last window in
         // which the player can do anything about it.
-        if (SeasonRules.IsReaping(Clock.Season) && StandingCropSixteenths(farm) > 0)
+        if (MayReapToday() && StandingCropSixteenths(farm) > 0)
         {
             return $"{farm.Name} has a crop standing and nobody reaping it — winter will "
                 + "take what is left.";
@@ -5624,7 +5624,7 @@ public sealed partial class SimWorld : IObstacles
         }
 
         bool sowing = SeasonRules.IsSowing(Clock.Season);
-        bool reaping = SeasonRules.IsReaping(Clock.Season);
+        bool reaping = MayReapToday();
         if (!sowing && !reaping)
         {
             return null;
@@ -15624,6 +15624,7 @@ public sealed partial class SimWorld : IObstacles
             ["tools_ever_taken"] = ToolsEverTaken,
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
             ["bands_ever_knocked"] = BandsEverKnocked,
+            ["crop_stands_until_day"] = CropStandsUntilDay,
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
@@ -15848,6 +15849,7 @@ public sealed partial class SimWorld : IObstacles
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
         BandsEverKnocked = save.Int("bands_ever_knocked");
+        CropStandsUntilDay = save.Has("crop_stands_until_day") ? save.Int("crop_stands_until_day") : 0; // W5; older saves 0
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");

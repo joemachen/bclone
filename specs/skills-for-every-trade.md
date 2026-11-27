@@ -9,7 +9,7 @@ catalogue), D754 (the teacher has no skill).
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
 **Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
 skill rows, burying through `BeginWork`; ✅ steps 2–3 (D924): techniques 4–9, tempering, the hay through `YieldFor`; ✅ step 3b (D925): reading the water
-unwritable, carried by five years beside a master.** Steps 5–9 to come (§9).
+unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter.** Steps 5b–9 to come (§9).
 
 ---
 

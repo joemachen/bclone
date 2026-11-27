@@ -5673,6 +5673,21 @@ public sealed record SimConfig
                 + "The same pasture fills the barn fuller now.",
             LostLine = "The hay is cut anyhow again. {0} was the last who knew when.",
         },
+
+        // ⭐⭐ JOE'S CROP THAT STANDS INTO WINTER (DESIGN §5; W5 call 5, D926): *"unless the user 'unlocks' a buff that allows
+        // crops to last into winter days."* Farming's second technique — the deadline moves, the yield does not. Worked out
+        // at thirty years in the fields, ten past mastery, so the two farming discoveries land a decade apart.
+        new TechniqueRow
+        {
+            Id = 10,
+            Name = "standing into winter",
+            Skill = 4,
+            StandsIntoWinterDays = 5,
+            AfterYears = 30,
+            DiscoveryLine = "{0} has farmed these fields for thirty years, and has learned to leave a standing crop "
+                + "stooked against the frost. What is not reaped by winter keeps a few days longer now.",
+            LostLine = "The first frost takes the standing crop again. {0} was the last who knew how to keep it.",
+        },
     };
 
     /// <summary>
@@ -7224,6 +7239,22 @@ public sealed record SimConfig
         }
         ValidateSkills();
         ValidateTechniques();
+        for (int t = 0; t < Techniques.Count; t++)
+        {
+            if (Techniques[t].StandsIntoWinterDays < 0 || Techniques[t].StandsIntoWinterDays >= DaysPerSeason)
+            {
+                throw new SimConfigException(
+                    $"techniques[{t}] ({Techniques[t].Name}) stands {Techniques[t].StandsIntoWinterDays} days into winter; it must be "
+                    + $"0 to {DaysPerSeason - 1}, so the frost still takes the crop inside the winter (days_per_season {DaysPerSeason}).");
+            }
+
+            if (Techniques[t].AfterYears is <= 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{t}] ({Techniques[t].Name}) has after_years {Techniques[t].AfterYears}; leave it out to work it out at mastery.");
+            }
+        }
+
         if (TechniqueCarriedAfterYears < 0)
         {
             throw new SimConfigException(

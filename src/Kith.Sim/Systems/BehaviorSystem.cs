@@ -652,7 +652,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // mid-walk lets them shuttle between two rows for ever and reach neither.
                 Travel(world, villager, new GridPos(villager.ErrandX, villager.ErrandY),
                     villager.State == VillagerState.TravelingToField
-                        ? (SeasonRules.IsReaping(world.Clock.Season)
+                        ? (world.MayReapToday()
                             ? VillagerState.Reaping
                             : VillagerState.Sowing)
                         : villager.State);
@@ -3734,7 +3734,7 @@ public sealed partial class BehaviorSystem : ISimSystem
                     world,
                     villager,
                     field,
-                    SeasonRules.IsReaping(world.Clock.Season)
+                    world.MayReapToday()
                         ? VillagerState.Reaping
                         : VillagerState.Sowing);
                 return;
@@ -3745,14 +3745,14 @@ public sealed partial class BehaviorSystem : ISimSystem
                 // gets its own sentence rather than one shrug (§1.1). The order matters: a
                 // met limit is the reason the player cannot see from the farm's own panel,
                 // which is D147's finding and why that marker was worth building.
-                Goods? heldBack = SeasonRules.IsReaping(world.Clock.Season) ? world.GrainHeldBackAt(job) : null;
+                Goods? heldBack = world.MayReapToday() ? world.GrainHeldBackAt(job) : null;
                 villager.WorkNote = heldBack is Goods grown
                     ? $"Not bringing the harvest in at {job.Name} — you asked the village to "
                       + $"keep {world.StockLimits.For(grown)} {world.GoodsCatalog.NameOf(grown)} and it has "
                       + $"{world.HeldAgainstItsLimit(grown)} stored. It stands until the village eats."
                     : SeasonRules.IsSowing(world.Clock.Season)
                         ? $"Every tile at {job.Name} is already sown."
-                        : SeasonRules.IsReaping(world.Clock.Season)
+                        : world.MayReapToday()
                             ? $"Nothing standing to reap at {job.Name}."
                             : $"{job.Name} is out of season — nothing to sow or reap.";
             }
@@ -5685,7 +5685,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             // stand again this instant. **A field is different because the work is a block of
             // ground the farmer is part-way through**, and a season is the deadline — a reaper
             // who stops for the walk home after every armful is not a reaper.
-            if (SeasonRules.IsReaping(world.Clock.Season)
+            if (world.MayReapToday()
                 && WorkplaceOf(world, villager) is { Kind: JobKind.Farmer } farm
                 && world.NextFieldToWork(farm, villager.Tile) is not null)
             {
@@ -7228,7 +7228,7 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         bool stillTheWork = work == VillagerState.Sowing
             ? SimWorld.IsSowable(here) && SeasonRules.IsSowing(world.Clock.Season)
-            : here == Terrain.Ripe && SeasonRules.IsReaping(world.Clock.Season);
+            : here == Terrain.Ripe && world.MayReapToday();
 
         if (!stillTheWork)
         {

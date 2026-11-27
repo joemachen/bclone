@@ -327,7 +327,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
             "HandcartsEverMade", "WorkshopLearned", "MarketStallLearned", "HouseholdsThatWalkedFar", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "CropStandsUntilDay", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
             // W4 (D905): the dead before it are gone — `burials_from`, written in every save (`CemeteryTests`).
             "BurialsFromTick", "AFreeCemeteryIsOwed",

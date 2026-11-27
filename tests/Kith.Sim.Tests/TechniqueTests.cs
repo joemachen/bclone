@@ -76,7 +76,7 @@ public sealed class TechniqueTests
             int first = catalogue.FromSkill(row.Skill);
             Assert.True(first >= 0 && first <= id, $"{row.Name}: no master of skill {row.Skill} would work it out.");
             Assert.True(
-                row.YieldBonusPercent > 0 || row.ToolUsesBonusPercent > 0,
+                row.YieldBonusPercent > 0 || row.ToolUsesBonusPercent > 0 || row.StandsIntoWinterDays > 0,
                 $"{row.Name} does nothing.");
             Assert.NotEqual(string.Empty, row.DiscoveryLine);
             Assert.NotEqual(string.Empty, row.LostLine);

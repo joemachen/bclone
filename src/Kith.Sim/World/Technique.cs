@@ -148,6 +148,28 @@ public sealed record TechniqueRow
     public bool Recordable { get; init; } = true;
 
     /// <summary>
+    /// Days a crop not reaped by winter's first day stands on, reapable, before the frost takes it — <b>Joe's crop that
+    /// stands into winter</b> (DESIGN §5, D300; W5 call 5). Zero: no effect.
+    /// </summary>
+    /// <remarks>
+    /// <b>A buff to the deadline, not the yield</b>: the crop still rots, on the day after its last
+    /// (<see cref="Systems.CropSystem"/>), and the turn of winter says which day (<see cref="Core.SimWorld.CropStandsUntilDay"/>).
+    /// </remarks>
+    [JsonPropertyName("stands_into_winter_days")]
+    public int StandsIntoWinterDays { get; init; }
+
+    /// <summary>
+    /// Years on the task — the calendar fact, <see cref="SkillProgress.Ticks"/> — before a home-grown master works this out,
+    /// or null to work it out at mastery as every other technique does (W5, call 5: farming's second, at thirty).
+    /// </summary>
+    /// <remarks>
+    /// Discovery only: once known, any living master of the skill keeps it, as with every technique. ⚠️ The row's
+    /// discovery line says the years in words, so the two move together.
+    /// </remarks>
+    [JsonPropertyName("after_years")]
+    public int? AfterYears { get; init; }
+
+    /// <summary>
     /// What the village log says the first time anybody works it out. <c>{0}</c> is the person.
     /// </summary>
     /// <remarks>

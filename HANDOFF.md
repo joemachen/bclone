@@ -11171,6 +11171,14 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   and a dig of iron is five — a 15 % technique there is a no-op that would still fire its discovery line.
 - **"The farm keeps its seats in any season" is not "the farmer reaps in any season"** (D920): the reap is gated by
   `SeasonRules.IsReaping` at six sites; the seat count alone would have left farmers standing in a ripe winter field.
+- **Every reap gate must give one answer, or a farmer recurses until the stack overflows** (D926): with eight sites saying
+  *"you may reap"* in winter and `ArriveInTheField` alone saying no, arriving re-decided, re-walked and re-arrived in the same
+  tick for ever. That is why the nine sites ask one method (`SimWorld.MayReapToday`), never the season.
+- **An aborted test run prints "Passed!"** (D926): the stack overflow killed the host after 9 of 20, and `dotnet test`'s summary
+  line still read *Passed! — Failed: 0, Passed: 9, Total: 9*, followed by *Test Run Aborted.* A red-check script that greps the
+  summary counts that as green. Compare the total with the green run's, and grep for `Aborted`.
+- **The labour pass runs once a season** (`labour_slack_ticks` 60, D926): a seat a test opens mid-season is not filled until the
+  next season's first tick. Pose a trade's hand from the start and let something else (a limit) hold the work back.
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 

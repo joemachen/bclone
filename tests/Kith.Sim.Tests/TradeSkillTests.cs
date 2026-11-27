@@ -332,4 +332,131 @@ public sealed class TradeSkillTests
         Assert.True(tracking.Recordable);
         Assert.False(world.Carries(villager, tracking));
     }
+
+    // -----------------------------------------------------------------
+    //  §5 — Joe's crop that stands into winter
+    // -----------------------------------------------------------------
+
+    private const int StandingIntoWinter = 10;
+
+    /// <summary>A master farmer worked out here, with this many years in the fields.</summary>
+    private static Villager AMasterFarmerOf(SimWorld world, int years)
+    {
+        Villager farmer = MakeAMasterOf(world, JobKind.Farmer);
+        farmer.ProgressIn(world.SkillGrownBy(JobKind.Farmer)!.Id).Ticks = years * world.Config.TicksPerYear;
+        return farmer;
+    }
+
+    private static int Ripe(SimWorld world) => world.Map.Tiles.Count(t => t == Terrain.Ripe);
+
+    /// <summary>
+    /// A farm sown, its farmhand kept on it all year, and the crop held on the stalk by a met wheat limit (D300's *storage on
+    /// the stalk*) to the turn of winter — so nothing is reaped until the limit lets it be.
+    /// </summary>
+    private static (SimLoop Loop, Workplace Farm) ACropLeftStanding(bool known, InMemoryLogSink sink)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+        Workplace farm = FarmFixtures.RaiseAFarm(world);
+        FarmFixtures.GiveItGround(world, farm, 2);
+        FarmFixtures.PinAFarmhand(world, farm);
+        world.StockLimits.Set(Goods.Wheat, 0);
+        if (known)
+        {
+            AMasterFarmerOf(world, 30);
+        }
+
+        loop.Step(1);
+        Assert.Equal(known ? KnowledgeState.Known : KnowledgeState.Unknown, world.KnowledgeStates[StandingIntoWinter]);
+        FarmFixtures.StepToTheStartOf(loop, Season.Summer);
+        FarmFixtures.SowEveryTileOf(world, farm); // whatever the farmhand left unsown in spring
+        FarmFixtures.StepToTheStartOf(loop, Season.Fall);
+        Assert.True(Ripe(world) > 0, "The premise: a ripe crop.");
+        FarmFixtures.StepToTheStartOf(loop, Season.Winter);
+        return (loop, farm);
+    }
+
+    /// <summary>
+    /// ⭐ Known: the crop not reaped by winter's first day stands five more days, and the village is told the day; the frost
+    /// takes it at the start of the sixth. Unknown: today's rot, at the turn.
+    /// </summary>
+    [Fact]
+    public void ACropStandsFiveDaysIntoWinterOnceKnownAndTheFrostTakesItOnTheSixth()
+    {
+        var sink = new InMemoryLogSink();
+        (SimLoop loop, _) = ACropLeftStanding(known: true, sink);
+        SimWorld world = loop.World;
+        int standing = Ripe(world);
+        Assert.True(standing > 0, "Winter's first day took the crop it was to spare.");
+        Assert.Contains(sink.Entries, e => e.Message.Contains("the frost will take them in 5 days", StringComparison.Ordinal));
+        Assert.DoesNotContain(sink.Entries, e => e.Message.StartsWith("Winter took", StringComparison.Ordinal));
+
+        int dayTicks = world.Config.TicksPerDay;
+        while (world.Clock.DayOfSeason < 5 || world.Tick % (ulong)dayTicks != (ulong)(dayTicks - 1))
+        {
+            loop.Step(1);
+        }
+
+        Assert.True(world.MayReapToday(), "Day 5's last tick: still reapable.");
+        Assert.Equal(standing, Ripe(world));
+        loop.Step(2);
+        Assert.Equal(6, world.Clock.DayOfSeason);
+        Assert.Equal(0, Ripe(world));
+        Assert.False(world.MayReapToday());
+        Assert.Contains(sink.Entries, e => e.Message.StartsWith("Winter took", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void WithoutItTheFrostTakesTheCropOnWintersFirstDay()
+    {
+        var sink = new InMemoryLogSink();
+        (SimLoop loop, _) = ACropLeftStanding(known: false, sink);
+        Assert.Equal(0, Ripe(loop.World));
+        Assert.False(loop.World.MayReapToday());
+        Assert.Contains(sink.Entries, e => e.Message.StartsWith("Winter took", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// ⭐ And a farmer reaps in those days: the crop held on the stalk all autumn is wanted at winter's turn, and the farmhand
+    /// brings some in before the frost.
+    /// </summary>
+    [Fact]
+    public void AFarmerReapsInTheStandingDays()
+    {
+        var sink = new InMemoryLogSink();
+        (SimLoop loop, _) = ACropLeftStanding(known: true, sink);
+        SimWorld world = loop.World;
+        int standing = Ripe(world);
+        world.StockLimits.Set(Goods.Wheat, null); // the village has eaten into its store: the crop is wanted again
+        int dayTicks = world.Config.TicksPerDay;
+        while (world.Clock.DayOfSeason < 5 || world.Tick % (ulong)dayTicks != (ulong)(dayTicks - 1))
+        {
+            loop.Step(1);
+        }
+
+        _output.WriteLine($"{standing} ripe at winter's turn, {Ripe(world)} on the fifth day's last tick");
+        Assert.True(Ripe(world) < standing, "Nobody reaped in winter's standing days.");
+    }
+
+    /// <summary>
+    /// ⭐ Farming's second technique waits for thirty years in the fields (call 5): a master at twenty works out crop
+    /// rotation and not this; at thirty, this — and the line names them.
+    /// </summary>
+    [Fact]
+    public void StandingIntoWinterWaitsForThirtyYearsInTheFields()
+    {
+        var sink = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, sink);
+        SimWorld world = loop.World;
+        Villager farmer = AMasterFarmerOf(world, 20);
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[2]); // crop rotation
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[StandingIntoWinter]);
+
+        farmer.ProgressIn(world.SkillGrownBy(JobKind.Farmer)!.Id).Ticks = 30 * world.Config.TicksPerYear;
+        loop.Step(1);
+        Assert.Equal(KnowledgeState.Known, world.KnowledgeStates[StandingIntoWinter]);
+        Assert.Contains(world.Moments, m => m.Body.Contains(farmer.Name, StringComparison.Ordinal)
+            && m.Body.Contains("thirty years", StringComparison.Ordinal));
+    }
 }

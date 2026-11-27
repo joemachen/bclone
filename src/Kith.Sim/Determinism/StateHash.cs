@@ -1077,6 +1077,13 @@ public static class StateHash
             hash = MixUInt32(hash, (uint)world.NextKnockYear);
         }
 
+        // The day the frost takes a crop standing into winter (W5, `skills-for-every-trade.md §5`) — the reap reads it. Sparse.
+        if (world.CropStandsUntilDay != 0)
+        {
+            hash = MixByte(hash, 0xC5);
+            hash = MixUInt32(hash, (uint)world.CropStandsUntilDay);
+        }
+
         // How many times the valley has been re-founded (D567) — the next wait is hashed on it. Sparse.
         if (world.Refoundings != 0)
         {
