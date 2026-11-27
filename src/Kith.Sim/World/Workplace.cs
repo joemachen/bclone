@@ -226,6 +226,13 @@ public enum JobKind
     /// <b>Appended at 19.</b>
     /// </summary>
     TavernKeeper = 19,
+
+    /// <summary>
+    /// The groundskeeper (W4, `cemetery.md §6`; Joe, D905: <i>"The groundskeeper does. gravedigger = groundskeeper"</i>) — buries
+    /// the village's dead and tends the cemetery all year, with no laborer's fallback. One a cemetery, of any size; no skill.
+    /// <b>Appended at 20.</b>
+    /// </summary>
+    Groundskeeper = 20,
 }
 
 /// <summary>
@@ -707,6 +714,13 @@ public sealed class Workplace
     /// </summary>
     public int EveningsThisSeason { get; set; }
 
+    /// <summary>
+    /// Days a groundskeeper has begun keeping this cemetery this season (W4, `cemetery.md §5.2`, call 9) — at the season's turn,
+    /// <c>cemetery_tended_days_a_season</c> of them make it sound again; cleared there. Saved when set, and hashed sparsely: it decides a
+    /// repair stamp.
+    /// </summary>
+    public int TendedDaysThisSeason { get; set; }
+
     /// <summary>Whether this year's field is one tile a hand bigger than the farm had proven (D361) — the probe, so a rot can undo it.</summary>
     public bool FieldProbedThisYear { get; set; }
 
@@ -927,6 +941,7 @@ public sealed class Workplace
 
         // W3's card count (D836) — an optional key, so a save from before reads a tavern nobody has come to yet.
         ["evenings_this_season"] = EveningsThisSeason != 0 ? EveningsThisSeason : null,
+        ["tended_days"] = TendedDaysThisSeason != 0 ? TendedDaysThisSeason : null,
         ["field_probed_this_year"] = FieldProbedThisYear,
         ["field_probe_failed"] = FieldProbeFailed,
         ["staffing_override"] = StaffingOverride,
@@ -973,6 +988,7 @@ public sealed class Workplace
             RepairedAtTick = save.ULong("repaired_at"),
             Closed = save.HasValue("closed") && save.Bool("closed"),
             EveningsThisSeason = save.HasValue("evenings_this_season") ? save.Int("evenings_this_season") : 0,
+            TendedDaysThisSeason = save.HasValue("tended_days") ? save.Int("tended_days") : 0,
             FieldProbedThisYear = save.Bool("field_probed_this_year"),
             FieldProbeFailed = save.Bool("field_probe_failed"),
             StaffingOverride = save.NullableInt("staffing_override"),

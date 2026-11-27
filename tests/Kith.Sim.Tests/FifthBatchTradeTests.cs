@@ -27,7 +27,7 @@ public sealed class FifthBatchTradeTests
     public FifthBatchTradeTests(ITestOutputHelper output) => _output = output;
 
     /// <summary>The boathouse's modded trade (<see cref="ModdedBuildingTests"/>), made a batch trade: stone into tools.</summary>
-    private static JobKind Boatman => (JobKind)20;
+    private static JobKind Boatman => (JobKind)21; // 20 until the groundskeeper took it (D908).
 
     private static BuildingKind Boathouse => (BuildingKind)10;
 

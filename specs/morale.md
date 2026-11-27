@@ -132,8 +132,8 @@ has two effects through two systems, and *"why did Otto leave?"* and *"why is Ot
 | **The walk to work** | Contentment | ✅ `Villager.CommuteNote` (D112) — the sentence already exists |
 | **The jar run dry** | Contentment (call 6, D798) | ✅ `Household.Water`, said since D780; harms nobody today |
 | **A death in the family** | Contentment | ✅ `Alive`, `DiedAtTick`, `HouseholdId` — derived on read |
-| **The dead with nowhere to lie** — people have died and there is no cemetery, once the cemetery can be built (Joe, D797: *"similar to a full cemetery"*) | Contentment — **built with W4**, the cemetery | no (W4) |
-| **Every cemetery full** (D395) | Contentment — **built with W4** | no (W4) — 📝 both specced and measured, `cemetery.md §4.4, §7` (D891) |
+| **The dead with nowhere to lie** — people have died and there is no cemetery, once the cemetery can be built (Joe, D797: *"similar to a full cemetery"*) | Contentment — **built with W4**, the cemetery | ✅ built as `DeadInTheOpen` (D910) — held by the dead person's own household and partner only (Joe, D905 call 1 a), `cemetery.md §7` |
+| **Every cemetery full** (D395) | Contentment — **built with W4** | ✅ both built, `DeadInTheOpen` and `CemeteryFull` (D910, `cemetery.md §7`) |
 | **The tavern within reach**, ale (W3); the chapel (later) | Contentment — **its levers**, built with their buildings | no (W3) |
 
 - **W2 ships the causes that exist today** (home, hearth, cold winters, the walk, the jar, a death in the family); the

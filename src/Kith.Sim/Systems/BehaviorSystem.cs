@@ -157,6 +157,12 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.FetchingAle => "fetching ale for the tavern",
         VillagerState.CarryingAle => "carrying ale to the tavern",
         VillagerState.KeepingTheTavern => "keeping the tavern",
+        VillagerState.FetchingTheDead => "fetching one of the dead",
+        VillagerState.CarryingTheDead => "carrying one of the dead to the cemetery",
+        VillagerState.Burying => "burying one of the dead",
+        VillagerState.KeepingTheCemetery => "keeping the cemetery",
+        VillagerState.WalkingToTheGrave => "walking to a grave",
+        VillagerState.AtTheGrave => "at a grave",
         VillagerState.WalkingToTheLibrary => "walking to the library",
         VillagerState.AtTheLibrary => "at the library",
         VillagerState.WalkingOutToTend => "walking out to tend the field",
@@ -318,6 +324,13 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             GoHome(world, villager);
             return;
+        }
+
+        // ⭐ W4 (`cemetery.md §6.2`): somebody carrying one of the dead who no longer keeps a cemetery sets them down where they
+        // stand — the dead lie there and wait again. (A carrier who dies sets them down in `Kill`.)
+        if (villager.CarryingTheDead != 0 && WorkplaceOf(world, villager) is not { Kind: JobKind.Groundskeeper, IsSite: false })
+        {
+            world.SetDownTheDead(villager);
         }
 
         // Otherwise finish whatever is underway before reconsidering. Without this,
@@ -511,6 +524,21 @@ public sealed partial class BehaviorSystem : ISimSystem
                 }
 
                 Travel(world, villager, tavern.Position, keeper ? VillagerState.KeepingTheTavern : VillagerState.AtTheTavern);
+                return;
+            }
+
+            case VillagerState.WalkingToTheGrave:
+            {
+                // To the cemetery they set off for (W4 step 5), fixed at departure. Gone on the way, and they turn for home.
+                if (world.WorkplaceCovering(new GridPos(villager.ErrandX, villager.ErrandY)) is not { Kind: JobKind.Groundskeeper, IsSite: false } grave)
+                {
+                    villager.ErrandX = 0;
+                    villager.ErrandY = 0;
+                    GoHome(world, villager);
+                    return;
+                }
+
+                Travel(world, villager, grave.Position, VillagerState.AtTheGrave);
                 return;
             }
 
@@ -2696,6 +2724,12 @@ public sealed partial class BehaviorSystem : ISimSystem
                 return;
             }
 
+            // ⭐ The family at the grave (W4, `cemetery.md §6.3`) — asked before the tavern, once a burial.
+            if (TryVisitTheGrave(world, villager))
+            {
+                return;
+            }
+
             // ⭐ And an evening at the tavern (W3, `tavern.md §5.4b`) — after the water, a need before a comfort.
             if (TryGoToTheTavern(world, villager))
             {
@@ -3276,6 +3310,19 @@ public sealed partial class BehaviorSystem : ISimSystem
         {
             KeepTheTavern(world, villager, job);
             return;
+        }
+
+        // ⭐ THE GROUNDSKEEPER (W4, `cemetery.md §6`; Joe, D905) — buries the oldest of the dead there is room and a road for, and
+        // keeps the cemetery, a day at a time, while it wants keeping. ⭐ Otherwise a laborer between (Joe's play note, D915,
+        // reversing D905's "no laborer's fallback"): the seat stays theirs and they fall through to what any spare hand does.
+        if (villager.CanWork && job is { Kind: JobKind.Groundskeeper, IsSite: false })
+        {
+            if (KeepTheCemetery(world, villager, job))
+            {
+                return;
+            }
+
+            villager.WorkNote = NothingToKeep;
         }
 
         // ⭐ THE SMITH (D391) — the woodcutter's shape, one good over: a stint at the forge while
@@ -3948,6 +3995,12 @@ public sealed partial class BehaviorSystem : ISimSystem
 
         // ⭐ And a summer farmhand at the steading tends instead, as a spell ends (D511).
         if (TryTend(world, villager))
+        {
+            return;
+        }
+
+        // ⭐ The family at the grave, as a spell begins at home (W4, `cemetery.md §6.3`) — before the tavern.
+        if (TryVisitTheGrave(world, villager))
         {
             return;
         }
@@ -5812,6 +5865,31 @@ public sealed partial class BehaviorSystem : ISimSystem
             return;
         }
 
+        // ⭐ THE FAMILY AT THE GRAVE (W4 step 5): a day standing there, if the cemetery still stands; then home.
+        if (onArrival == VillagerState.AtTheGrave)
+        {
+            Workplace? cemetery = world.WorkplaceCovering(new GridPos(villager.ErrandX, villager.ErrandY));
+            villager.ErrandX = 0;
+            villager.ErrandY = 0;
+            if (cemetery is not { Kind: JobKind.Groundskeeper, IsSite: false })
+            {
+                GoHome(world, villager);
+                return;
+            }
+
+            villager.LastGraveVisitTick = world.Tick;
+            villager.State = VillagerState.AtTheGrave;
+            villager.ActionTicksRemaining = world.Config.TicksPerDay;
+            return;
+        }
+
+        // ⭐ THE CEMETERY (W4): at the dead, taken up; at the cemetery with them, the grave begun; or a day of keeping it.
+        if (onArrival is VillagerState.FetchingTheDead or VillagerState.CarryingTheDead or VillagerState.KeepingTheCemetery)
+        {
+            ArriveOnTheCemeterysErrand(world, villager, onArrival);
+            return;
+        }
+
         // ⭐ THE TAVERN (W3): an evening begun, or the keeper's legs — at the store, the armful taken; at the tavern, put in.
         if (onArrival is VillagerState.AtTheTavern or VillagerState.FetchingAle or VillagerState.CarryingAle
             or VillagerState.KeepingTheTavern)
@@ -6143,6 +6221,121 @@ public sealed partial class BehaviorSystem : ISimSystem
         villager.ErrandY = tavern.Tile.Y;
         villager.State = VillagerState.WalkingToTheTavern;
         Travel(world, villager, tavern.Position, VillagerState.KeepingTheTavern);
+    }
+
+    /// <summary>What a groundskeeper helping out says on their card (D915): why they are not at the graves.</summary>
+    private const string NothingToKeep = "Nobody to bury, and the cemetery is kept — helping out until it wants keeping again.";
+
+    /// <summary>
+    /// ⭐ THE GROUNDSKEEPER'S DAY (W4, `cemetery.md §6.1–6.2`). Carrying somebody: to the cemetery, and the grave there. Somebody
+    /// waiting there is room and a road for: to them. Nobody, and the cemetery wants keeping: a day keeping it. ⭐ Otherwise false,
+    /// touching nothing (D915, Joe: <i>"Laborer between"</i>) — the keeper helps out as a laborer does.
+    /// </summary>
+    private static bool KeepTheCemetery(SimWorld world, Villager villager, Workplace cemetery)
+    {
+        if (villager.CarryingTheDead != 0)
+        {
+            villager.WorkNote = string.Empty;
+            if (villager.Tile == cemetery.Tile)
+            {
+                villager.State = VillagerState.Burying;
+                villager.ActionTicksRemaining = world.Config.GraveDigTicks + world.Config.GraveFillTicks;
+                return true;
+            }
+
+            villager.State = VillagerState.CarryingTheDead;
+            Travel(world, villager, cemetery.Position, VillagerState.CarryingTheDead);
+            return true;
+        }
+
+        if (world.NextToBury(cemetery) is Villager dead)
+        {
+            villager.WorkNote = string.Empty;
+            villager.ErrandX = dead.Tile.X;
+            villager.ErrandY = dead.Tile.Y;
+            villager.State = VillagerState.FetchingTheDead;
+            Travel(world, villager, dead.Position, VillagerState.FetchingTheDead);
+            return true;
+        }
+
+        if (!world.TheCemeteryWantsKeeping(cemetery))
+        {
+            return false;
+        }
+
+        villager.WorkNote = string.Empty;
+        if (villager.Tile == cemetery.Tile)
+        {
+            villager.State = VillagerState.KeepingTheCemetery;
+            villager.ActionTicksRemaining = world.Config.TicksPerDay;
+            cemetery.TendedDaysThisSeason++; // a day of keeping it: the season's turn reads these (step 6, call 9)
+            return true;
+        }
+
+        villager.State = VillagerState.KeepingTheCemetery;
+        Travel(world, villager, cemetery.Position, VillagerState.KeepingTheCemetery);
+        return true;
+    }
+
+    /// <summary>
+    /// ⭐ THE FAMILY AT THE GRAVE (W4, `cemetery.md §6.3`; Joe's call 4 a): offered where a rest at home would begin, before the
+    /// tavern — an adult at their door, empty-handed, with one of their own (the household, or the partner) buried in the last
+    /// <c>grave_visit_days</c> whose grave they have not stood at. Once a burial. <b>It changes no number</b>: there to be seen.
+    /// </summary>
+    private static bool TryVisitTheGrave(SimWorld world, Villager villager)
+    {
+        if (!villager.CanWork || villager.IsCarrying || villager.State == VillagerState.Left)
+        {
+            return false;
+        }
+
+        Household household = world.HouseholdOf(villager);
+        if (!household.HasHome || villager.Tile != world.HomePlaceOf(villager))
+        {
+            return false;
+        }
+
+        if (world.GraveToVisitFor(villager) is not Workplace cemetery)
+        {
+            return false;
+        }
+
+        villager.ActionTicksRemaining = 0;
+        villager.ErrandX = cemetery.Tile.X;
+        villager.ErrandY = cemetery.Tile.Y;
+        villager.State = VillagerState.WalkingToTheGrave;
+        Travel(world, villager, cemetery.Position, VillagerState.AtTheGrave);
+        return true;
+    }
+
+    private static void ArriveOnTheCemeterysErrand(SimWorld world, Villager villager, VillagerState onArrival)
+    {
+        if (WorkplaceOf(world, villager) is not { Kind: JobKind.Groundskeeper, IsSite: false } cemetery)
+        {
+            villager.ErrandX = 0;
+            villager.ErrandY = 0;
+            world.SetDownTheDead(villager);
+            GoHome(world, villager);
+            return;
+        }
+
+        if (onArrival == VillagerState.FetchingTheDead)
+        {
+            // Still there, still waiting, and nobody else has them — taken up; otherwise the day is asked again.
+            var at = new GridPos(villager.ErrandX, villager.ErrandY);
+            villager.ErrandX = 0;
+            villager.ErrandY = 0;
+            if (world.WaitingAt(at) is Villager dead && villager.CarryingTheDead == 0)
+            {
+                world.TakeUp(villager, dead);
+            }
+        }
+
+        // Nothing left to do here (D915): the day asked again from the top, where a keeper with nothing to keep helps out.
+        if (!KeepTheCemetery(world, villager, cemetery))
+        {
+            Decide(world, villager);
+        }
     }
 
     /// <summary>The keeper's armful into the tavern's own store — never the household's larder (the D513 trap).</summary>
@@ -7975,6 +8168,35 @@ public sealed partial class BehaviorSystem : ISimSystem
                 villager.ErrandX = 0;
                 villager.ErrandY = 0;
                 GoHome(world, villager);
+                return;
+
+            // The day at the grave stood (W4 step 5): home, as an evening at the tavern ends.
+            case VillagerState.AtTheGrave:
+                GoHome(world, villager);
+                return;
+
+            // ⭐ The grave filled (W4): laid to rest if there is still a place, set down at the gate if not; then the day goes on.
+            case VillagerState.Burying:
+                if (WorkplaceOf(world, villager) is { Kind: JobKind.Groundskeeper, IsSite: false } burying)
+                {
+                    world.Bury(villager, burying);
+                    if (!KeepTheCemetery(world, villager, burying))
+                    {
+                        Decide(world, villager); // nothing more here (D915): helping out
+                    }
+
+                    return;
+                }
+
+                world.SetDownTheDead(villager);
+                GoHome(world, villager);
+                return;
+
+            // ⭐ The cemetery kept a day: the day asked again from the top (W4 step 6, D911) — hunger, cold and rest first, as for anyone;
+            // otherwise another day there, not the walk home. Joe: the groundskeeper "tends the cemetery all year" (D905); the tavern
+            // keeper's day-then-home spent a far cemetery's season on the road (3–4 days kept of 30, measured), and it wore regardless.
+            case VillagerState.KeepingTheCemetery:
+                Decide(world, villager);
                 return;
 
             // The keeper's day kept: asked again — the ale may want fetching; otherwise home, as the teacher goes.

@@ -4137,6 +4137,9 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ THE HOUSES (`house-tiers.md §4.4`, D721): the family tree, both rungs — read off the latches, never the counters.
         BuildingKind.Cottage or BuildingKind.Manor => WhyNoHouseYet(kind),
 
+        // ⭐ THE CEMETERIES (W4, `cemetery.md §5.1`; D395, Joe's): learned at the village's first death — a leaver is not one.
+        _ when BuildingsCatalog[kind]?.Graves > 0 => DeathsEver == 0 ? NobodyHasDiedYet : null,
+
         // ⭐ THE BRIDGES (D546): wood by the village's size, stone by the crossings walked.
         _ => WhyNoBridgeYet(kind),
     };
@@ -8344,6 +8347,12 @@ public sealed partial class SimWorld : IObstacles
             return PlacementVerdict.No("There is nothing there to move.");
         }
 
+        // ⛔ NOR A CEMETERY WITH ANYBODY IN IT (W4, `cemetery.md §5.2`).
+        if (WorkplaceCovering(from) is { Kind: JobKind.Groundskeeper } kept && WhyItStays(kept) is string stays)
+        {
+            return PlacementVerdict.No(stays);
+        }
+
         // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
         if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
         {
@@ -8555,6 +8564,12 @@ public sealed partial class SimWorld : IObstacles
         if (kind is null)
         {
             return PlacementVerdict.No("There is nothing there to pull down.");
+        }
+
+        // ⛔ A CEMETERY WITH ANYBODY IN IT IS NEVER PULLED DOWN (W4, `cemetery.md §5.2`); an empty one is, like anything else.
+        if (WorkplaceCovering(tile) is { Kind: JobKind.Groundskeeper } cemetery && WhyItStays(cemetery) is string stays)
+        {
+            return PlacementVerdict.No(stays);
         }
 
         string name = NameOfWhatStandsAt(tile);
@@ -10060,6 +10075,15 @@ public sealed partial class SimWorld : IObstacles
             AFreeSmithyIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the smithy were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ AND THE CEMETERY'S (W4, D906, Joe: *"first free"*): the row with the fewest graves, the same two rules.
+        if (AFreeCemeteryIsOwed && kind == TheFreeCemetery())
+        {
+            AFreeCemeteryIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate($"The timber and stone for the {BuildingsCatalog[kind]!.Name} were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
@@ -15517,6 +15541,8 @@ public sealed partial class SimWorld : IObstacles
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
             ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
+            ["burials_from"] = SaveWriter.Hex(BurialsFromTick),
+            ["a_free_cemetery_is_owed"] = AFreeCemeteryIsOwed,
             ["a_first_path_has_worn"] = AFirstPathHasWorn,
             ["a_town_hall_is_owed"] = ATownHallIsOwed,
             ["said_the_founders_are_gone"] = SaidTheFoundersAreGone,
@@ -15718,6 +15744,13 @@ public sealed partial class SimWorld : IObstacles
         FoodEverEaten = save.Int("food_ever_eaten");
         AFreeLibraryIsOwed = save.Bool("a_free_library_is_owed");
         AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
+        // W4 (D905): a save from before has no mark, and every death in it is before its own tick — those dead are gone.
+        BurialsFromTick = save.HasValue("burials_from") ? save.ULong("burials_from") : Tick;
+
+        // An older save with dead in it is learned on load and owed the small one, with no moment (call 10, D906 — Joe: *"unlock
+        // on load as recommended"*). It can hold no cemetery: there were none.
+        RebuildTheDeathsEver();
+        AFreeCemeteryIsOwed = save.HasValue("a_free_cemetery_is_owed") ? save.Bool("a_free_cemetery_is_owed") : DeathsEver > 0;
         AFirstPathHasWorn = save.Bool("a_first_path_has_worn");
         ATownHallIsOwed = save.Bool("a_town_hall_is_owed");
         SaidTheFoundersAreGone = save.Bool("said_the_founders_are_gone");
@@ -15828,6 +15861,10 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ The pastures' fences (D598): their locks, and the walls of those that stand — derived from the barns' facts.
         RebuildThePastureFences();
+
+        // W4: who lies unburied, who lies where, and who is being carried — derived from the villagers, read above.
+        RebuildTheUnburied();
+        RebuildTheGraves();
     }
 
     /// <summary>

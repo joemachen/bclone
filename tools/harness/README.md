@@ -83,7 +83,7 @@ against a number from an older commit.
   `ZZ_MIN` 12 people, `ZZ_YEARS` 20, `ZZ_SHARD=k/n`) and the unattended valleys (`ZZ_VALLEYS=1`, seeds 200–299, `ZZ_YEARS` 50): every death —
   year, cause, how far from home they fell, the walk from a posed 4×5 plot to them — people and laborers a year, and what a contentment cause
   for the unburied would do under six rules, read-only. ⚠️ The `base` arm's *gone* is always 0: a real leaver is out of the village by the time
-  it reads (`reallyleft` has them). Copy in, `-c Release --filter ZzCemetery`, delete; about a minute in eight processes.
+  it reads (`reallyleft` has them). Copy in, `-c Release --filter ZzCemetery`, delete; about a minute in eight processes. `ZZ_PLOT=WxH` poses another size (D905, the three sizes); `ZZ_NOW4=1` takes W4's two contentment causes out of the data, the arm the built rows are measured against (D910).
 - `ZzTimberSeeds.cs` — D804's table for `WoodTests.TimberGatesGrowthWithoutStoppingIt`: the fixture's seeds 1–12, alive at
   Year 120, gated (30 logs a house) and free, with contentment's longer wait on (200) and off (100) — alive / born /
   unsettled adult-seasons, in parallel (~3 minutes). Copy in, `--filter ZzTimberSeeds`, delete. Re-run it when that test's

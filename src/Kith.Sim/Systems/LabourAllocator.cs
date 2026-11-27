@@ -1206,6 +1206,9 @@ internal static class LabourAllocator
         // The tavern keeper after the merchant (W3, D834), as the quota takes them: a comfort, out of what is left.
         JobKind.TavernKeeper,
 
+        // The groundskeeper after the tavern keeper (W4), as the quota takes them.
+        JobKind.Groundskeeper,
+
         // The teacher after the merchant (D754): only ever the player's number, so where it sits matters only when hands
         // run short — and then the trades that feed the village come first.
         JobKind.Teacher,

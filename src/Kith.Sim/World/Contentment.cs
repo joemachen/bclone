@@ -34,6 +34,15 @@ public enum ContentmentCause
 
     /// <summary>Somebody of the household, or the partner, died in the last <see cref="ContentmentCauseRow.HeldSeasons"/> seasons (4).</summary>
     DeathInTheFamily = 5,
+
+    /// <summary>
+    /// One of theirs — of the household, or the partner — lies unburied and the village has <b>no place for them</b>: no cemetery
+    /// standing, or every one set to no groundskeepers (W4, `cemetery.md §7`; D797, Joe's; D905 calls 1 a and 7 a). Not for a queue.
+    /// </summary>
+    DeadInTheOpen = 6,
+
+    /// <summary>One of theirs lies unburied, a cemetery stands, and <b>none has a free grave</b> (§7; D395, D797). Never with the other.</summary>
+    CemeteryFull = 7,
 }
 
 /// <summary>

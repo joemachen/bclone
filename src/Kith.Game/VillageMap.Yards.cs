@@ -48,7 +48,9 @@ internal enum YardKind
 /// it is working, the side its water is on (−1 none, 0 −y, 1 +x, 2 +y, 3 −x), a ground counter (the plot's or the
 /// terrain's edits), and a stockpile's goods by size (<see cref="VillageMap.PileSizesOf"/>, `stock-piles.md §5`).
 /// </summary>
-internal readonly record struct YardState(byte Stock = 0, byte Stock2 = 0, bool Working = false, sbyte Water = -1, int Ground = 0, string? Piles = null);
+internal readonly record struct YardState(
+    byte Stock = 0, byte Stock2 = 0, bool Working = false, sbyte Water = -1, int Ground = 0, string? Piles = null,
+    string? Graves = null, byte GravesWide = 0);
 
 /// <remarks>
 /// ⭐⭐ THE YARDS AND THE PEN (A86, `specs/building-yards.md`; Joe: *"a 'yard' for each building to add some visual
@@ -172,6 +174,12 @@ public partial class VillageMap
     /// <summary>A workplace's yard state (§2): its own store for the kinds that keep one, working for the rest.</summary>
     private YardState YardStateOf(SimWorld world, Workplace workplace, YardKind yard)
     {
+        // ⭐ W4 (D912): a cemetery's yard is its graves and its wear.
+        if (workplace.Kind == JobKind.Groundskeeper)
+        {
+            return CemeteryYardOf(world, workplace);
+        }
+
         (StockRead stock, StockRead stock2, bool whileWorking) = StockReadOf(yard);
         IReadOnlyList<Goods> edible = world.GoodsCatalog.EdibleGoods;
         bool fisher = yard == YardKind.Fisher;

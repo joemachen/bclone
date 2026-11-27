@@ -501,7 +501,7 @@ public partial class Main
             _shownWas = main._shown.ToArray();
             _was = new[] { main._literacy, main._foundersGone, main._quarryKnown, main._mineKnown, main._smithyKnown, main._millKnown,
                 main._bakeryKnown, main._tailorKnown, main._workshopKnown, main._schoolKnown, main._breweryKnown, main._tavernKnown,
-                main._marketStallKnown, main._bridgeKnown, main._stoneBridgeKnown, main._hallTradeKnown };
+                main._marketStallKnown, main._bridgeKnown, main._stoneBridgeKnown, main._hallTradeKnown, main._cemeteryKnown };
             Set(main, Enumerable.Repeat(true, _was.Length).ToArray());
             main.RefreshTheStrip();
             Button other = main._categoryButtons.Find(c => c.Category == BuildCategory.Other).Button;
@@ -512,8 +512,8 @@ public partial class Main
         private static void Set(Main m, bool[] v) =>
             (m._literacy, m._foundersGone, m._quarryKnown, m._mineKnown, m._smithyKnown, m._millKnown, m._bakeryKnown, m._tailorKnown,
                 m._workshopKnown, m._schoolKnown, m._breweryKnown, m._tavernKnown, m._marketStallKnown, m._bridgeKnown,
-                m._stoneBridgeKnown, m._hallTradeKnown) =
-            (v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14], v[15]);
+                m._stoneBridgeKnown, m._hallTradeKnown, m._cemeteryKnown) =
+            (v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13], v[14], v[15], v[16]);
 
         public void Dispose()
         {
