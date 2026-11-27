@@ -184,6 +184,17 @@ public sealed record GoodRow
     [JsonPropertyName("kept_with_food")]
     public bool KeptWithFood { get; init; }
 
+    /// <summary>
+    /// ⭐ Which of the five food groups it counts toward for a varied diet (W6, `health.md §5.1`; D357, Joe's fifth, D935:
+    /// <i>"poultry is its own group"</i>) — <b>in the row, so a modder's new food lands in its group without code</b>.
+    /// </summary>
+    /// <remarks>
+    /// ⛔ Every edible good names one and nothing else may: refused at load either way. ⚠️ A group is not a worth —
+    /// two foods of one group may carry different <see cref="Nutrition"/>.
+    /// </remarks>
+    [JsonPropertyName("food_group")]
+    public FoodGroup FoodGroup { get; init; }
+
     /// <summary>Whether anybody can eat it. Derived, so there is one fact and not two.</summary>
     [JsonIgnore]
     public bool Edible => Nutrition > 0;
@@ -313,6 +324,56 @@ public enum GoodCategory
 
     /// <summary>What is burned or used up — firewood, tools.</summary>
     FuelAndGoods = 3,
+}
+
+/// <summary>
+/// ⭐ What a food counts as, for a varied diet (W6, `health.md §5.1`). Two foods of one group are one kind of food to a body.
+/// </summary>
+/// <remarks>⛔ <b>The number is the save's</b> (a season's plate is kept by group): append, never reorder.</remarks>
+public enum FoodGroup
+{
+    /// <summary>Not food. Every edible good names a group, or the load refuses it.</summary>
+    None = 0,
+
+    /// <summary>Wheat, barley, bread.</summary>
+    Grain = 1,
+
+    /// <summary>The hunter's and the herd's meat.</summary>
+    Meat = 2,
+
+    /// <summary>Chickens, wildfowl — its own group (Joe, D935). Nothing is poultry yet.</summary>
+    Poultry = 3,
+
+    /// <summary>The river's.</summary>
+    Fish = 4,
+
+    /// <summary>What a forager brings in: fruit, nuts, mushrooms, greens, herbs.</summary>
+    Forage = 5,
+}
+
+/// <summary>The food groups, in their order — the one list a diet is read against.</summary>
+public static class FoodGroups
+{
+    /// <summary>Every group a food may sit in (not <see cref="FoodGroup.None"/>).</summary>
+    public static IReadOnlyList<FoodGroup> All { get; } =
+        new[] { FoodGroup.Grain, FoodGroup.Meat, FoodGroup.Poultry, FoodGroup.Fish, FoodGroup.Forage };
+
+    /// <summary>How many there are — the length of a plate kept by group.</summary>
+    public static int Count => All.Count;
+
+    /// <summary>A group's slot in a plate kept by group (0-based).</summary>
+    public static int Slot(FoodGroup group) => (int)group - 1;
+
+    /// <summary>The word a sentence uses.</summary>
+    public static string Word(FoodGroup group) => group switch
+    {
+        FoodGroup.Grain => "grain",
+        FoodGroup.Meat => "meat",
+        FoodGroup.Poultry => "poultry",
+        FoodGroup.Fish => "fish",
+        FoodGroup.Forage => "forage",
+        _ => "nothing",
+    };
 }
 
 /// <summary>
@@ -473,6 +534,9 @@ public sealed class GoodsCatalog
 
     /// <summary>Which stock-limit heading it sits under (D409).</summary>
     public GoodCategory CategoryOf(Goods goods) => _rows[(int)goods].Category;
+
+    /// <summary>Which food group it counts toward (W6, `health.md §5.1`); <see cref="FoodGroup.None"/> if nobody eats it.</summary>
+    public FoodGroup FoodGroupOf(Goods goods) => _rows[(int)goods].FoodGroup;
 
     /// <summary>
     /// Every good anybody can eat, in id order — <b>the list that replaces naming

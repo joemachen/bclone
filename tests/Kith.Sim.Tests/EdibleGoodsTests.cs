@@ -56,6 +56,9 @@ public sealed class EdibleGoodsTests
 
                     // An edible good sits under Food (D409), or the load refuses it.
                     Category = GoodCategory.Food,
+
+                    // …and counts toward a food group (W6, `health.md §5.1`), or the load refuses it.
+                    FoodGroup = FoodGroup.Forage,
                     StoredBy = new[] { StoreKind.Granary, StoreKind.Warehouse, StoreKind.Cart, StoreKind.Pile },
                 };
             }
@@ -95,7 +98,7 @@ public sealed class EdibleGoodsTests
         {
             if (rows[i].Id == (int)Goods.Logs)
             {
-                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition + 1, Category = GoodCategory.Food };
+                rows[i] = rows[i] with { Nutrition = config.GoodsCatalog[(int)Goods.Produce].Nutrition + 1, Category = GoodCategory.Food, FoodGroup = FoodGroup.Forage };
             }
         }
 

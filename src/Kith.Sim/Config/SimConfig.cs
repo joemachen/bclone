@@ -3785,6 +3785,7 @@ public sealed record SimConfig
             // is untouched. See `GoodRow.Nutrition`: the day two rows carry DIFFERENT non-zero
             // values, `RequiredGatherYield` and `MouthsFedByOneAdult` have to be re-derived first.
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Forage,
         },
         new GoodRow
         {
@@ -3873,6 +3874,7 @@ public sealed record SimConfig
             // Worth what food is worth. A second VALUE throws at load until the survival floor is
             // re-derived against a diet (D277, `GoodRow.Nutrition`).
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Fish,
         },
         new GoodRow
         {
@@ -3885,6 +3887,7 @@ public sealed record SimConfig
             // granaries, so meat that could only go in a warehouse would feed nobody's children.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Meat,
         },
         new GoodRow
         {
@@ -3910,6 +3913,7 @@ public sealed record SimConfig
 
             // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Grain,
         },
         new GoodRow
         {
@@ -3953,6 +3957,7 @@ public sealed record SimConfig
             // ⭐ THE FIRST FOOD WORTH MORE THAN ONE (`food-chain.md §3`): a meal of bread holds hunger off
             // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
             Nutrition = BreadNutrition,
+            FoodGroup = World.FoodGroup.Grain,
         },
         new GoodRow
         {
@@ -4012,6 +4017,7 @@ public sealed record SimConfig
             SourceName = "the fields",
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Grain,
         },
 
         // ⭐ ALE (W3, `tavern.md §5.1`, D834) — brewed from barley, drunk at a tavern. ⛔ NOT FOOD: no nutrition, so it never
@@ -7584,6 +7590,16 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') names no category. Say which stock-limit heading it "
                     + "sits under: Food, Materials or FuelAndGoods.");
+            }
+
+            // ⭐ W6 (`health.md §5.1`): a food counts toward one of the five groups, and only a food does.
+            if (good.Edible != (good.FoodGroup != World.FoodGroup.None)
+                || !System.Enum.IsDefined(good.FoodGroup))
+            {
+                throw new SimConfigException(good.Edible
+                    ? $"goods[{i}] ('{good.Name}') can be eaten and names no food_group. Say which it counts toward for a "
+                        + "varied diet: Grain, Meat, Poultry, Fish or Forage."
+                    : $"goods[{i}] ('{good.Name}') names food_group {good.FoodGroup} and nobody can eat it. Only a food has a group.");
             }
 
             if (good.Edible && good.Category != World.GoodCategory.Food)
