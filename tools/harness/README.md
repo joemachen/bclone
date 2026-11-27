@@ -292,3 +292,9 @@ against a number from an older commit.
   Error(s)`, run with `--no-build --filter "FullyQualifiedName~ZzLibrary.Measure"` (or `.OnTheHarness`), delete.
   `python library.py <logs-folder> base,<arm>,…` prints the saves table; `python library.py <logs-folder> --valleys v1,v2` the
   valleys'. Logs named `<arm>.<shard>.log`.
+- `ZzDiet.cs` — D933–D934's measurement for `specs/health.md §4`: what each person ate, read off the meal (arms and larder copied
+  before each step; where hunger fell, `FoodToTake` on the copy). `OnSaves` (`ZZ_SAVES` a folder of copies, newest per folder,
+  `ZZ_YEARS` 5), `OnEverySave` (`ZZ_ALL`, every save at load: food held and ever made by group), `OnHarness` (`ZZ_HARNESS=1`,
+  ZzW5's `every` opening, `ZZ_SEEDS`, `ZZ_YEARS` 50). ZZD/ZZY: groups' shares and per person-year the top group's share; ZZR:
+  the spec's rule run (plain at 90 %, +1/−2, told 4, run down 12) — who is told and run down, and which food the plain seasons
+  were. ⚠️ Saves from before D933's fix need the knowledge list padded to open. Copy in, `-c Release --filter ZzDiet`, delete.

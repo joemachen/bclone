@@ -696,6 +696,36 @@ public sealed class SaveLoadTests : IDisposable
         Assert.Contains("different list of buildings", refused.Refusal, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// ⭐ A save from before a technique was appended still opens, the new one unknown (D933: W5 appended seven inside format
+    /// 13 and every save Joe had was refused, *"a different list of techniques"*) — and one that knows a technique this data has
+    /// lost is still refused.
+    /// </summary>
+    [Fact]
+    public void ASaveFromBeforeAnAppendedTechniqueOpensAndOneFromLostDataDoesNot()
+    {
+        string older = Saved(doc =>
+        {
+            var knowledge = doc["world"]!["knowledge"]!.AsArray();
+            knowledge.RemoveAt(knowledge.Count - 1);
+            knowledge[^1] = new JsonObject { ["state"] = "Established", ["last_knower"] = 5 };
+        });
+        SaveOpened opened = SaveFile.Open(older, VillageFixtures.Village);
+        Assert.Null(opened.Refusal);
+        SimWorld world = opened.Loop!.World;
+        int last = world.KnowledgeStates.Length - 1;
+        Assert.Equal(KnowledgeState.Unknown, world.KnowledgeStates[last]);
+        Assert.Equal(0, world.LastKnowerIds[last]);
+        Assert.Equal(KnowledgeState.Established, world.KnowledgeStates[last - 1]);
+        Assert.Equal(5, world.LastKnowerIds[last - 1]);
+
+        string newer = Saved(doc => doc["world"]!["knowledge"]!.AsArray()
+            .Add(new JsonObject { ["state"] = "Unknown", ["last_knower"] = 0 }));
+        SaveOpened refused = SaveFile.Open(newer, VillageFixtures.Village);
+        Assert.Null(refused.Loop);
+        Assert.Contains("different list of techniques", refused.Refusal, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ASaveThatIsNotThereSaysSo()
     {

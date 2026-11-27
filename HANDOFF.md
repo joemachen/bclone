@@ -11168,6 +11168,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   what it does when its building needs nothing. And a trade that declines should **fall through** `Decide`, not `return`: the smith's
   `TryTidyGround || TryHelpWithHarvest || GoHome` idiom skips the rest spell's errands (water, the grave, the tavern) a laborer gets.
 
+## ⛔ THE TRAPS `slice/w6-health` PAID FOR (D932–)
+
+- **An appended row in a list the save writes must be read as a prefix, or every older save is refused** (D933): W5 appended
+  seven techniques inside format 13 and the loader's `!=` refused all 128 of Joe's openable saves — nobody noticed because W5
+  was played on a new game. Buildings have read as a prefix since D598; techniques did not. **When you append a row anywhere a
+  save lists by index, open a copy of his newest save before calling it done.**
+- **What a person ate is kept nowhere** (D933): `tools/harness/ZzDiet.cs` reads it off the meal — copy every villager's arms and
+  larder before the step, and where hunger fell, take `FoodToTake` from the copy (arms first if they held a meal). A household
+  that changed in the step was not copied: skip that meal, or the harness throws.
+- **Founding-day saves stepped unattended starve** (D933, D447): 96 of his 128 openable newest saves are Year 1 with four
+  people. Filter to lived-in villages before reading anything about how a village lives.
+
 ## ⛔ THE TRAPS `slice/w5-skills` PAID FOR (D919–)
 
 - **The review's counts were a snapshot, not the code** (D919): D788 said *"seven of eighteen trades"* have no skill; by W5 it
@@ -11197,6 +11209,12 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** (D932, 2026-11-27; Joe: *"systems: start W6
+  in a new session"*). 🔨 **being built on `slice/w6-health`** (cut from `main` at `72d21cf`). 📏📝 **Measured and specced (D934,
+  `specs/health.md`); ✅ every call his answered (D935: all as recommended, poultry its own group, the meal rule kept), nothing of
+  health built** — three pieces (the diet; fever with the herbalist; the
+  infirmary), told at a year on one food and run down at three, bread first left alone. 🐞 **D933, fixed on the slice: every save
+  he made before W5 was refused by `main`** (*"a different list of techniques"*); call 10 is whether it goes to `main` now.
 - ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
   2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); pushed at his word (D931, *"Push main"*); `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and

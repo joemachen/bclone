@@ -15773,8 +15773,11 @@ public sealed partial class SimWorld : IObstacles
             Moments.Add(Moment.FromSave(moment));
         }
 
+        // ⭐ Techniques are appended, never reordered (the row's id is its place), so a save from before one was added opens
+        // with the newcomers unknown, as a new village has them (D933: W5 appended seven inside format 13, and until this every
+        // save Joe had was refused). One that knows MORE than this data was written by data this game does not have.
         List<SaveReader> knowledge = save.Objects("knowledge").ToList();
-        if (knowledge.Count != KnowledgeStates.Length)
+        if (knowledge.Count > KnowledgeStates.Length)
         {
             throw new SaveDataException("a different list of techniques",
                 $"{save.Path}.knowledge: {knowledge.Count} techniques where this game's data has {KnowledgeStates.Length}.");
