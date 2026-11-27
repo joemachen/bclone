@@ -112,7 +112,9 @@ public partial class VillageMap
 
         bool cold = state == VillagerState.SeekingShelter;
         bool talking = state == VillagerState.Idle && !moving;
-        bool hasTool = PersonPainter.HasATool(trade, stage);
+        // ⭐ An elder fishing holds the rod (A277): the stick everywhere else (A93), but a cast needs the rod, and an old fisher is
+        // the commonest fisher there is.
+        bool hasTool = PersonPainter.HasATool(trade, stage) || (stage == LifeStage.Elder && state == VillagerState.Fishing && trade == JobKind.Fisher);
         FigureHold hold = cold ? FigureHold.Hug
             : good is Goods g && !PersonPainter.OnTheShoulder(g) ? FigureHold.Front
             : (working || GoingToWork(state)) && hasTool ? FigureHold.Tool
@@ -274,7 +276,16 @@ public partial class VillageMap
             FigureKey still = PersonKeyOf(villager, world, heading);
             PersonMotion motion = MotionOf(still, AtWork(villager.State), walked, _peopleClock, poses);
             FigureKey key = still with { Beat = motion.Beat };
+
+            // ⭐ A fisher at the dock's end casts, waits and lands the catch (A277): the beat and the facing are the cast's.
+            Cast? cast = villager.Alive && poses ? CastOf(world, villager, still) : null;
+            if (cast is Cast c)
+            {
+                key = still with { Beat = c.Moment.Beat, Flip = c.Flip };
+                motion = new PersonMotion(c.Moment.Beat, 0f, 0f, 0f, 1f);
+            }
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
+            int drawnBeat = key.Beat;
             if (held is not null)
             {
                 _lastPersonKey[villager.Id] = key;
@@ -282,6 +293,7 @@ public partial class VillageMap
             else if (_lastPersonKey.TryGetValue(villager.Id, out FigureKey before))
             {
                 held = CachedPerson(before, frame, false);
+                drawnBeat = before.Beat;
             }
 
             if (held is null)
@@ -313,12 +325,20 @@ public partial class VillageMap
             // ⭐ By night (A249) a person comes most of the way back to daylight, so they are found.
             Color faded = PersonTint(shown);
             DrawTextureRect(shadow.Texture, new Rect2(feet - (new Vector2(sf.FeetX, sf.FeetY) * ss), new Vector2(sf.Width, sf.Height) * ss), tile: false, modulate: new Color(1f, 1f, 1f, shown));
+            if (cast is Cast under)
+            {
+                DrawTheCastOnTheWater(under, feet, tall);
+            }
 
             // The person, lifted, leaned and squashed about their feet as the motion says.
             DrawSetTransform(feet + (new Vector2(motion.Dx, motion.Dy) * tall), Mathf.DegToRad(motion.Turn), new Vector2(1f, motion.Squash));
             var rect = new Rect2(-(new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
             DrawTextureRect(held.Texture, rect, tile: false, modulate: faded);
             DrawSetTransformMatrix(Transform2D.Identity);
+            if (cast is Cast over)
+            {
+                DrawTheLineAndTheCatch(over, feet, tall, drawnBeat);
+            }
 
             // ⭐ The water pail at their side (`water-need.md §2e`, D782) — the dots' stand-in, hung at a person's hip height.
             if (villager.Alive && _pails.TryGetValue(villager.Id, out bool full))
@@ -370,7 +390,8 @@ public partial class VillageMap
     /// </summary>
     private void KeepTheOtherPoses(FigureKey key, ulong frame)
     {
-        for (int b = 0; b <= 2; b++)
+        int most = key.Trade == JobKind.Fisher ? PersonPainter.MostBeats : 2;
+        for (int b = 0; b <= most; b++)
         {
             if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))
             {

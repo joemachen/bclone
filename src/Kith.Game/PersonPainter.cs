@@ -269,6 +269,12 @@ internal static class PersonPainter
         internal float K = 1f, HeadK = 1f, Stoop, Sway;
         internal bool CoatOn, CartOn, Cold, Elder, Cloth, Paper;
 
+        /// <summary>The rod's own short line hanging from its tip (A93); the cast's beats leave it to the map (A277).</summary>
+        internal bool RodLine = true;
+
+        /// <summary>The rod in hand; laid by while the net is thrown (A277).</summary>
+        internal bool RodShown = true;
+
         /// <summary>The cloak's colour — the household's dye (A143).</summary>
         internal Rgb Cloak;
         internal Goods? Good;
@@ -327,6 +333,14 @@ internal static class PersonPainter
                 Length = Length.Ankle;
             }
 
+            // An elder at the dock casts with the rod, not the stick (A277; the map keys them so only while fishing).
+            if (Elder && f.Hold == FigureHold.Tool && LookOf(f.Trade).Tool == Tool.Rod)
+            {
+                Tool = Tool.Rod;
+            }
+
+            RodLine = f.Beat < RodBack;
+            RodShown = f.Beat != NetThrow;
             CoatOn = f.Coat;
             Cloak = CloakOf(f.Dye);
             CartOn = f.Cart;
@@ -1023,8 +1037,17 @@ internal static class PersonPainter
                 c.Line(new[] { (x - 0.04f, -0.86f), (x + 0.10f, -0.98f), (x + 0.26f, -0.90f) }, Iron, 0.028f);
                 break;
             case Tool.Rod:
+                if (!w.RodShown)
+                {
+                    break;
+                }
+
                 c.Limb((x, y + 0.03f), (x + 0.42f, -1.18f), 0.016f, Wood);
-                c.Stroke((x + 0.42f, -1.18f), (x + 0.45f, -0.55f), Linen, 0.006f);
+                if (w.RodLine)
+                {
+                    c.Stroke((x + 0.42f, -1.18f), (x + 0.45f, -0.55f), Linen, 0.006f);
+                }
+
                 break;
             case Tool.Saw:
                 c.Poly(new[] { (x - 0.01f, y + 0.02f), (x + 0.04f, y - 0.01f), (x + 0.11f, -0.12f), (x + 0.03f, -0.10f) }, Rgb.Hex("#a8aeb6"));
@@ -1320,6 +1343,17 @@ internal static class PersonPainter
         (Tool.Spade, 2) => (0f, 0.07f, 0f),
         (Tool.Rod, 1) => (0f, -0.02f, 3f),
         (Tool.Rod, 2) => (0f, 0.02f, -7f),
+
+        // ⭐ The cast (A277, `fishing-animation.md §3`, Joe: "B, as recommended"): fish.py's poses, to the number. Turned
+        // toward the water (+), drawn mirrored when the water is to the left; the line is the map's from here on.
+        (Tool.Rod, RodBack) => (-0.03f, -0.05f, -62f),
+        (Tool.Rod, RodForward) => (0.04f, 0f, 38f),
+        (Tool.Rod, RodWait) => (0f, 0f, 14f),
+        (Tool.Rod, RodDip) => (0f, 0.015f, 20f),
+        (Tool.Rod, RodStrike) => (-0.02f, -0.05f, -34f),
+        (Tool.Rod, RodBent) => (-0.02f, -0.05f, -18f),
+        (Tool.Rod, RodHaul) => (-0.01f, -0.03f, -14f),
+        (Tool.Rod, NetThrow) => (0f, -0.04f, 0f),
         (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
         (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
         (Tool.Saw, 1) => (0.05f, -0.02f, 0f),
@@ -1330,6 +1364,28 @@ internal static class PersonPainter
         (Tool.Bow, 2) => (-0.03f, -0.20f, -80f),
         _ => null,
     };
+
+    /// <summary>The cast's beats past the dip's two (A277): the rod back, forward, waiting, dipping, struck, bent by a big fish,
+    /// hauling, and the net thrown (the rod laid by). From <see cref="RodBack"/> on the rod's own hanging line is not painted:
+    /// the map draws the line out to the float.</summary>
+    internal const int RodBack = 3, RodForward = 4, RodWait = 5, RodDip = 6, RodStrike = 7, RodBent = 8, RodHaul = 9, NetThrow = 10;
+
+    /// <summary>The highest beat any person is painted in.</summary>
+    internal const int MostBeats = NetThrow;
+
+    /// <summary>
+    /// ⭐ Pure: where the rod's tip is in a beat, in figure units from the feet (x to the right, unmirrored; up negative) — the
+    /// hand where <see cref="WorkPose"/> puts it and the tip <see cref="ToolFront"/> paints, turned about the hand the same way.
+    /// An adult's: the map scales it by the person's height.
+    /// </summary>
+    internal static (float X, float Y) RodTip(int beat)
+    {
+        (float dx, float dy, float degrees) = WorkPose(Tool.Rod, beat) ?? (0f, 0f, 0f);
+        float hx = 0.21f + dx, hy = -0.46f + dy;
+        float vx = 0.42f, vy = -1.18f - hy;
+        float a = degrees * MathF.PI / 180f;
+        return (hx + (vx * MathF.Cos(a)) - (vy * MathF.Sin(a)), hy + (vx * MathF.Sin(a)) + (vy * MathF.Cos(a)));
+    }
 
     /// <summary>The trade's tool as a person of this age holds it: none for a child, the stick for an elder.</summary>
     private static Tool ToolOf(JobKind? trade, LifeStage stage) =>
