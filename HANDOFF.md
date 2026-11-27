@@ -11167,6 +11167,18 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   what it does when its building needs nothing. And a trade that declines should **fall through** `Decide`, not `return`: the smith's
   `TryTidyGround || TryHelpWithHarvest || GoHome` idiom skips the rest spell's errands (water, the grave, the tavern) a laborer gets.
 
+## ⛔ THE TRAPS `slice/w6-health` PAID FOR (D932–)
+
+- **An appended row in a list the save writes must be read as a prefix, or every older save is refused** (D933): W5 appended
+  seven techniques inside format 13 and the loader's `!=` refused all 128 of Joe's openable saves — nobody noticed because W5
+  was played on a new game. Buildings have read as a prefix since D598; techniques did not. **When you append a row anywhere a
+  save lists by index, open a copy of his newest save before calling it done.**
+- **What a person ate is kept nowhere** (D933): `tools/harness/ZzDiet.cs` reads it off the meal — copy every villager's arms and
+  larder before the step, and where hunger fell, take `FoodToTake` from the copy (arms first if they held a meal). A household
+  that changed in the step was not copied: skip that meal, or the harness throws.
+- **Founding-day saves stepped unattended starve** (D933, D447): 96 of his 128 openable newest saves are Year 1 with four
+  people. Filter to lived-in villages before reading anything about how a village lives.
+
 ## ⛔ THE TRAPS `slice/w5-skills` PAID FOR (D919–)
 
 - **The review's counts were a snapshot, not the code** (D919): D788 said *"seven of eighteen trades"* have no skill; by W5 it
