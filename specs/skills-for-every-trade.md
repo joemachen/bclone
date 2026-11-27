@@ -7,7 +7,8 @@ buff that allows crops to last into winter days"*), D391/D392 (the founding draw
 catalogue), D754 (the teacher has no skill).
 **Workplan:** `systems-complete.md §5.1` W5 — *"a row each; a technique each for the trades with a master's craft,
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
-**Status:** 📝 **specced, ⏸️ seven calls Joe's (§7). Nothing built.** On `slice/w5-skills`.
+**Status:** 📝 **specced; ✅ calls 1–3 and 5–7 as recommended (D921, Joe: *"i agree with all except"*); ⏸️ two of his open:** call 4 (does someone fishing beside the master learn *reading the water*?) and his new library that unlocks at the
+eleventh technique (§7a). Nothing built.** On `slice/w5-skills`.
 
 ---
 
@@ -179,6 +180,23 @@ rows to what the code does, and HANDOFF carries the builder as an open item.
    since the buildings for the new ones don't exist at the start. ⭐ **Recommended: unchanged.**
 7. **The builder's and marketer's skill do nothing** (§6). Fix the builder later as its own measured piece, and correct the
    catalogue now? ⭐ **Recommended: later, recorded.**
+
+### 7a. ⏸️ Joe's answers (D921) and what is still open
+
+✅ **Calls 1, 2, 3, 5, 6 and 7 as recommended.** *"i agree with all except:"*
+
+⏸️ **Call 4 became a question:** *"if there are people working alongside the master fisher, do they learn it from the master?"*
+Today, no: a learner beside a master learns the **trade** twice as fast, but a technique lives only in **masters** — the
+learner carries it only once they master fishing themselves. Proposed back: for a technique that cannot be written down, a
+villager who has worked beside a master who knows it for some years carries it too, before they master the trade (stored
+per villager, sparse, hashed). His yes and the years first.
+
+⏸️ **The shelf note became a building:** *"the full library (we'll need to come up with a better name) should unlock after the
+3rd library has been built when the 11th technique has been learned - whether or not any other libraries have been built."*
+⚠️ §7's *"a full library"* meant a library whose shelves are full, not a building — his idea is new and worth having: a
+bigger library, unlocked when the village has learned every technique (eleven, the number three five-shelf libraries
+would be needed for). Read back to him before it is specced: which condition unlocks it, what it holds, whether it is a
+gift or built, and its name. It adds a building row and an icon for the art lane.
 
 **And one that is yours but needs no answer now:** the library holds **five** techniques a building. With seven new ones the
 village can know eleven, so a full library refusing a shelf becomes a real moment — the reason its own note gave for the
