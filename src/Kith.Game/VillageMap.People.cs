@@ -313,6 +313,15 @@ public partial class VillageMap
             {
                 (key, motion) = ForestKeyAndMotion(still, fm);
             }
+
+            // ⭐ The other outdoor trades, in phrases (A297): strokes, a breather, a motion of their own.
+            RhythmMoment? rhythm = villager.Alive && poses && still.Hold == FigureHold.Tool && !still.Walking
+                ? RhythmAt(still.Trade, villager.State, villager.Id, _peopleClock) : null;
+            if (rhythm is RhythmMoment rm)
+            {
+                key = still with { Beat = rm.Beat };
+                motion = rm.Motion;
+            }
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             int drawnBeat = key.Beat;
             if (held is not null)
@@ -374,6 +383,11 @@ public partial class VillageMap
             var rect = new Rect2(-(new Vector2(f.FeetX, f.FeetY) * scale), new Vector2(f.Width, f.Height) * scale);
             DrawTextureRect(held.Texture, rect, tile: false, modulate: faded);
             DrawSetTransformMatrix(Transform2D.Identity);
+            if (rhythm is RhythmMoment rd)
+            {
+                DrawTheRhythm(still.Trade, villager.State, rd, feet, tall, villager.Id);
+            }
+
             if (cast is Cast over)
             {
                 DrawTheLineAndTheCatch(over, feet, tall, drawnBeat);
@@ -429,7 +443,8 @@ public partial class VillageMap
     /// </summary>
     private void KeepTheOtherPoses(FigureKey key, ulong frame)
     {
-        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter or JobKind.Forester ? PersonPainter.MostBeats : 2;
+        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter or JobKind.Forester
+            or JobKind.Farmer or JobKind.Herdsman ? PersonPainter.MostBeats : 2;
         for (int b = 0; b <= most; b++)
         {
             if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))

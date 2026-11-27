@@ -345,6 +345,17 @@ internal static class PersonPainter
                 Tool = Tool.Hammer;
             }
 
+            // The sower's basket in the fork's place, the herdsman's fork in the crook's (A297).
+            if (Tool == Tool.Fork && f.Beat is SowReach or SowToss)
+            {
+                Tool = Tool.Basket;
+            }
+
+            if (Tool == Tool.Crook && f.Beat is HayLift or HayPitch)
+            {
+                Tool = Tool.Fork;
+            }
+
             // The forester's axe for felling, in the spade's place (A296).
             if (Tool == Tool.Spade && f.Beat is FellRaise or FellStrike or FellRest)
             {
@@ -1377,6 +1388,13 @@ internal static class PersonPainter
         (Tool.Axe, FellRaise) => (-0.04f, -0.30f, 28f),
         (Tool.Axe, FellStrike) => (-0.13f, 0.10f, -150f),
         (Tool.Axe, FellRest) => (0.02f, 0.06f, -12f),
+
+        // ⭐ The other outdoor trades (A297): the sower's seed basket in the farmer's fork's place — reached into, then the toss up
+        // and out; the herdsman's fork in the crook's place for hay — the fork's own two poses.
+        (Tool.Basket, SowReach) => (-0.02f, 0.06f, 0f),
+        (Tool.Basket, SowToss) => (0.05f, -0.12f, 0f),
+        (Tool.Fork, HayLift) => (0f, -0.12f, 14f),
+        (Tool.Fork, HayPitch) => (0f, 0.05f, -22f),
         (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
         (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
         (Tool.Saw, 1) => (0.05f, -0.02f, 0f),
@@ -1399,8 +1417,14 @@ internal static class PersonPainter
     /// <summary>The forester felling (A296): the axe raised and struck, and its breather — the spade swapped for the axe.</summary>
     internal const int FellRaise = 14, FellStrike = 15, FellRest = 16;
 
+    /// <summary>The sower (A297): the seed basket reached into and the toss — the basket swapped in for the fork.</summary>
+    internal const int SowReach = 17, SowToss = 18;
+
+    /// <summary>The herdsman at hay (A297): the fork lifted and pitched — the fork swapped in for the crook.</summary>
+    internal const int HayLift = 19, HayPitch = 20;
+
     /// <summary>The highest beat any person is painted in.</summary>
-    internal const int MostBeats = FellRest;
+    internal const int MostBeats = HayPitch;
 
     /// <summary>
     /// ⭐ Pure: where the rod's tip is in a beat, in figure units from the feet (x to the right, unmirrored; up negative) — the
