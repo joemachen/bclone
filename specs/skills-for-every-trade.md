@@ -7,8 +7,8 @@ buff that allows crops to last into winter days"*), D391/D392 (the founding draw
 catalogue), D754 (the teacher has no skill).
 **Workplan:** `systems-complete.md §5.1` W5 — *"a row each; a technique each for the trades with a master's craft,
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
-**Status:** 📝 **specced; ✅ calls 1–3 and 5–7 as recommended (D921, Joe: *"i agree with all except"*); ⏸️ two of his open:** call 4 (does someone fishing beside the master learn *reading the water*?) and his new library that unlocks at the
-eleventh technique (§7a). Nothing built.** On `slice/w5-skills`.
+**Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
+skill rows, burying through `BeginWork`.** Steps 2–9 to come (§9).
 
 ---
 
@@ -57,7 +57,7 @@ never from the catalogue, so new rows move nobody's founding. A novice is today'
 | 15 | quarrying | quarrier | digs in half: 4 → 2 | *as a quarrier* | *{0} has cut the village's stone for {1} years. The rock splits where it is asked to.* |
 | 16 | mining | miner | digs in half: 6 → 3 | *as a miner* | *{0} has worked the mine for {1} years. The ore is followed by feel in the dark.* |
 | 17 | herding | herdsman | cuts hay, feeds and culls in half: 3 → 2, 3 → 2, 8 → 4 | *as a herdsman* | *{0} has kept the herd for {1} years. Every beast is known by its walk.* |
-| 18 | trading post | merchant | nothing faster (§3) | *as a merchant* | *{0} has kept the trading post for {1} years. Every boat's master is an old acquaintance.* |
+| 18 | bartering | merchant | nothing faster (§3) | *as a merchant* | *{0} has kept the trading post for {1} years. Every boat's master is an old acquaintance.* |
 | 19 | tavern keeping | tavern keeper | nothing faster (§3) | *as a tavern keeper* | *{0} has kept the tavern for {1} years. Every regular's cup is filled before they ask.* |
 | 20 | grave keeping | groundskeeper | buries in half the time: 12 → 6 | *as a groundskeeper* | *{0} has kept the cemetery for {1} years. Every grave is known, and whose it is.* |
 
@@ -198,6 +198,17 @@ bigger library, unlocked when the village has learned every technique (eleven, t
 would be needed for). Read back to him before it is specced: which condition unlocks it, what it holds, whether it is a
 gift or built, and its name. It adds a building row and an icon for the art lane.
 
+✅ **Both read-backs confirmed (D922, Joe: *"Yes to both"*):**
+- **Fishing's technique is carried by the people beside the master.** A technique that cannot be written down
+  (`recordable: false` — *reading the water* only) is **carried** by a villager who has worked **five years** at the same
+  workplace as a living master who knows it, before they master the trade themselves. Carried is stored on the villager
+  (sparse, hashed, saved), never lost while they live; their card names it and who it was learned beside. The technique
+  stays known while any master *or carrier* of it lives. Written techniques are unchanged: masters hold them, a shelf keeps them.
+- **The great library** (working name, Joe's to change) — a second kind of library: **a gift when the village has learned
+  every technique there is** (eleven today; read off the catalogue, never typed), however many libraries stand. It holds **a
+  shelf for every technique**. A building row and an icon for the art lane. ⚠️ Once it stands nothing written is lost again;
+  what stays mortal is every person's years and the one technique that cannot be written.
+
 **And one that is yours but needs no answer now:** the library holds **five** techniques a building. With seven new ones the
 village can know eleven, so a full library refusing a shelf becomes a real moment — the reason its own note gave for the
 number (`library_shelves`: *"the shelf is a decision again the day the tree passes five"*). ⭐ **Recommended: five stays**;
@@ -217,9 +228,11 @@ the measurement in §9 says how often a second library is wanted, and the number
 1. The nine skill rows (§2); the groundskeeper's burying through `BeginWork`.
 2. Technique rows 4, 5, 7, 8, 9 (yield) and the herd's hay through `YieldFor`.
 3. Tempering — `tool_uses_bonus_percent`, read where a villager takes up a tool.
+3b. *Carried beside a master* — the five years for an unwritable technique (D922).
 4. `recordable` on `TechniqueRow` and the library's refusal (if call 4 is yes).
 5. The crop that stands into winter — `after_years`, `stands_into_winter_days`, `CropSystem` rotting on the day, and the
    reap's autumn gate asked as *may this crop be reaped today?*
+5b. The great library — its row, the gift at every technique, a shelf for each (D922).
 6. The card lines checked in the view (the probe; Joe's eyes).
 7. **The measurement** on harness centuries: masters reached per new trade and the age they reach it, techniques
    discovered and lost, how often a library is full, and food, stone, iron and hay against `main` — survival should not move

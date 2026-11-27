@@ -6239,7 +6239,11 @@ public sealed partial class BehaviorSystem : ISimSystem
             if (villager.Tile == cemetery.Tile)
             {
                 villager.State = VillagerState.Burying;
-                villager.ActionTicksRemaining = world.Config.GraveDigTicks + world.Config.GraveFillTicks;
+
+                // ⭐ Through `BeginWork` since W5 (`skills-for-every-trade.md §2`): a master groundskeeper buries in half the
+                // time. The groundskeeper's row carries no tool, so mastery is the only thing this changes.
+                villager.ActionTicksRemaining = world.BeginWork(
+                    villager, JobKind.Groundskeeper, world.Config.GraveDigTicks + world.Config.GraveFillTicks);
                 return true;
             }
 

@@ -5313,19 +5313,93 @@ public sealed record SimConfig
                 + "The mash is judged by its smell.",
         },
 
-        // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
-        // the founders' trades are drawn from `founding_trades`, a stated list, never from this
-        // catalogue's length — so adding a row moves no founding (`FoodChainTests.
-        // NoFoundingMovesWithTheNewSkillRows`). The note below is the history, kept.
-        //
-        // ⛔ NO ROW FOR THE SMITH — NOR FOR THE FISHER OR THE HUNTER — AND THE REASON IS
-        // MEASURED (D391). The founders' trades are drawn from THIS list with the run's `Rng`
-        // (`SimWorld.GiveTheFoundersTheirTrades`: `NextInt(0, available.Count)`), so a seventh
-        // row reshuffles which trade every founder in every seed has mastered — the fixture's
-        // stores read full where they had read 2,424 held, and three food-limit guards went red
-        // for a village that had never seen a tool. D344's trap, one catalogue over: a draw
-        // whose range is a content count is a seed contract. A skill for the three trades
-        // wants the founding's trades drawn from a stated list, or a per-stage seed, first.
+        // ⭐⭐ W5 (`skills-for-every-trade.md §2`, D919–): EVERY WORKING TRADE BUT THE TEACHER (D754) GROWS A SKILL. The rows
+        // are all it takes — `BeginWork` asks `SkillGrownBy`, so a master casts, hunts, forges, digs, herds and buries in half
+        // the time. The merchant and the tavern keeper have no action with a length: years, tiers and the line, and no speed
+        // (call 2). ⭐ SAFE SINCE D392: the founders, nomads and a re-founding draw from `founding_trades`, never from this
+        // catalogue's length, so these rows move no founding (`TradeSkillTests.NoFoundingMovesWithTheTradeRows`). Until W5
+        // this said *"no row for the smith, nor the fisher or the hunter"*, for the seed contract D392 then removed.
+        new SkillRow
+        {
+            Id = 12,
+            Name = "fishing",
+            GrownBy = JobKind.Fisher,
+            YearsPhrase = "as a fisher",
+            MasteryLine = "{0} has fished this river for {1} years. "
+                + "The water is read before the line goes in.",
+        },
+        new SkillRow
+        {
+            Id = 13,
+            Name = "hunting",
+            GrownBy = JobKind.Hunter,
+            YearsPhrase = "as a hunter",
+            MasteryLine = "{0} has hunted these woods for {1} years. "
+                + "The game is found where it was always going to be.",
+        },
+        new SkillRow
+        {
+            Id = 14,
+            Name = "smithing",
+            GrownBy = JobKind.Smith,
+            YearsPhrase = "as a smith",
+            MasteryLine = "{0} has worked the village's forge for {1} years. "
+                + "The iron is struck at the right heat, every time.",
+        },
+        new SkillRow
+        {
+            Id = 15,
+            Name = "quarrying",
+            GrownBy = JobKind.Quarrier,
+            YearsPhrase = "as a quarrier",
+            MasteryLine = "{0} has cut the village's stone for {1} years. "
+                + "The rock splits where it is asked to.",
+        },
+        new SkillRow
+        {
+            Id = 16,
+            Name = "mining",
+            GrownBy = JobKind.Miner,
+            YearsPhrase = "as a miner",
+            MasteryLine = "{0} has worked the mine for {1} years. "
+                + "The ore is followed by feel in the dark.",
+        },
+        new SkillRow
+        {
+            Id = 17,
+            Name = "herding",
+            GrownBy = JobKind.Herdsman,
+            YearsPhrase = "as a herdsman",
+            MasteryLine = "{0} has kept the herd for {1} years. "
+                + "Every beast is known by its walk.",
+        },
+        new SkillRow
+        {
+            Id = 18,
+            Name = "bartering",
+            GrownBy = JobKind.Merchant,
+            YearsPhrase = "as a merchant",
+            MasteryLine = "{0} has kept the trading post for {1} years. "
+                + "Every boat's master is an old acquaintance.",
+        },
+        new SkillRow
+        {
+            Id = 19,
+            Name = "tavern keeping",
+            GrownBy = JobKind.TavernKeeper,
+            YearsPhrase = "as a tavern keeper",
+            MasteryLine = "{0} has kept the tavern for {1} years. "
+                + "Every regular's cup is filled before they ask.",
+        },
+        new SkillRow
+        {
+            Id = 20,
+            Name = "grave keeping",
+            GrownBy = JobKind.Groundskeeper,
+            YearsPhrase = "as a groundskeeper",
+            MasteryLine = "{0} has kept the cemetery for {1} years. "
+                + "Every grave is known, and whose it is.",
+        },
     };
 
     /// <summary>
