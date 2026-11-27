@@ -258,6 +258,14 @@ internal sealed class ValleyTexture
     /// <summary>The ground's mix (<see cref="_weights"/>), or null for a bake that did not ask for it.</summary>
     internal ImageTexture? WeightsTexture => _weightsTexture;
 
+    /// <summary>The mix's and the shares' bytes as last uploaded — read (never written) by the ground's fade (A300).</summary>
+    internal byte[]? WeightsBytes => _weights;
+
+    internal byte[]? SharesBytes => _shares;
+
+    /// <summary>How many times the mix has gone up: the ground's fade starts when it moves (A300) — a counter, never a diff.</summary>
+    internal int WeightsUploads { get; private set; }
+
     /// <summary>The young and iron shares (<see cref="_shares"/>), or null for a bake that did not ask for it.</summary>
     internal ImageTexture? SharesTexture => _sharesTexture;
 
@@ -441,6 +449,7 @@ internal sealed class ValleyTexture
             _sharesTexture!.Update(_sharesImage);
         }
 
+        WeightsUploads++;
         LastWeightsUploadMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
     }
 

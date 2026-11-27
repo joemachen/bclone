@@ -560,6 +560,7 @@ public partial class VillageMap
         if (!on)
         {
             _pathsWorld = null;
+            _groundOf = null;   // the ground's fade (A300) likewise: on again, the floor is drawn as it is
         }
 
         if (on)
@@ -1206,6 +1207,7 @@ public partial class VillageMap
         material.SetShaderParameter("valley_colour", _valley.Texture!);
         material.SetShaderParameter("ground_map", _valley.WeightsTexture!);
         material.SetShaderParameter("ground_map_shares", _valley.SharesTexture!);
+        FadeTheGround(material, _world.Tick + _alpha);
         material.SetShaderParameter("ground_map_tiles", new Vector2(config.MapWidth, config.MapHeight));
         material.SetShaderParameter("valley_origin_px", valley.Position);
         material.SetShaderParameter("valley_size_px", valley.Size);
