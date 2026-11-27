@@ -11210,7 +11210,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 - ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** (D932, 2026-11-27; Joe: *"systems: start W6
   in a new session"*). 🔨 **being built on `slice/w6-health`** (cut from `main` at `72d21cf`). 📏📝 **Measured and specced (D934,
-  `specs/health.md`); ⏸️ TEN CALLS HIS (§10), nothing of health built** — three pieces (the diet; fever with the herbalist; the
+  `specs/health.md`); ✅ every call his answered (D935: all as recommended, poultry its own group, the meal rule kept), nothing of
+  health built** — three pieces (the diet; fever with the herbalist; the
   infirmary), told at a year on one food and run down at three, bread first left alone. 🐞 **D933, fixed on the slice: every save
   he made before W5 was refused by `main`** (*"a different list of techniques"*); call 10 is whether it goes to `main` now.
 - ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,

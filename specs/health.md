@@ -1,7 +1,7 @@
 # Spec: Health — diet first, then fever, the herbalist and the infirmary (W6)
 
-> Status: **📏 MEASURED AND 📝 SPECCED (D933, 2026-11-27) ON `slice/w6-health`; ⏸️ JOE'S CALLS (§10) BEFORE ANY CODE.** Nothing
-> of health is built. Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
+> Status: **📏 MEASURED AND 📝 SPECCED (D934, 2026-11-27) ON `slice/w6-health`; ✅ EVERY CALL JOE'S ANSWERED (D935, §10): all as
+> recommended, poultry its own group, the meal rule kept for later (§5.7).** Nothing of health is built; piece 1 next. Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
 > Found on the way, and fixed on this slice as its own commit (D933): **every save Joe had was refused by `main`** (§4.1).
 >
 > Phase 6, W6 of the workplan (`systems-complete.md §5.1`). Its blocker is answered (§4.1 there; D520). It comes before W8,
@@ -128,9 +128,12 @@ person-years had all four groups at 10 % or more, and none was one food. The six
 
 ### 5.1 Food groups — a column on the good
 
-`GoodRow.FoodGroup` (`food_group` in the data file): `grain`, `fish`, `meat`, `forage`. Every edible good names one; an edible
-good without one is refused at load (the D277 shape: a fact about the good lives on the good, so a modder's new food lands in
-its group without code). Wheat, barley and bread are **grain**; forage stands for fruit, nuts and herbs (D357's fourth group).
+`GoodRow.FoodGroup` (`food_group` in the data file): **`grain`, `meat`, `poultry`, `fish`, `forage`** — five, poultry its own
+(Joe, D935: *"poultry is its own group"*). Every edible good names one; an edible good without one is refused at load (the D277
+shape: a fact about the good lives on the good, so a modder's new food lands in its group without code). Wheat, barley and bread
+are **grain**; forage stands for fruit, nuts and herbs (D357's fourth group); the hunter's and the herd's meat are **meat**.
+**Nothing is poultry yet** — the group waits for chickens, pheasants or wildfowl, so today a village has four to vary among.
+⭐ A group is not a nutrition: beef and venison, if they ever part, are both *meat* and may be worth different amounts.
 
 ### 5.2 What a person ate this season
 
@@ -181,7 +184,16 @@ Since D522 a plate takes **the best food first, all of it that is needed**, so a
 alone while it lasts — which, with diet counted, could make a baking village's plenty a plain diet. **Measured (§4.2): it
 barely does** — 11 plain seasons of grain in his villages against 226 of fish. **Proposed: leave the plate as it is** (his D522
 call 4 stands, no golden moves for it), and revisit only if play shows bread-only households. The alternative, kept for him to
-choose: a share of every group first, the best within each (meal and fetch together, D523).
+choose: a share of every group first, the best within each (meal and fetch together, D523). ✅ **Joe: bread first stays for now
+(D935), on condition that §5.7's rule comes in later.**
+
+### 5.7 ⭐ The meal rule meals will follow — kept, built later (Joe, D935: *"as long as we include the meal rule at some point"*)
+
+Once foods are worth different amounts and diet counts, a plate eats **what does the eater most good**, in two rules a card
+can say: **(1) the group they have had least of this season first; (2) within it, the most filling food first** (bread before
+wheat). *"Ate fish — she had had none this season."* ⛔ Never a hidden score weighing fullness against variety (§1.1). Meal and
+fetch together (D523). **Built at the latest with the first food whose nutrition differs from its group's** (Phase 7's variety,
+or the cook's hot meal, whichever comes first); today it would change almost nothing (§4.2) and move every golden.
 
 ## 6. Piece 2 — fever, herbs and the herbalist (direction now, numbers measured in the piece)
 
@@ -243,7 +255,12 @@ Specced after piece 2 is played, because what it is for depends on how fever pla
 6. Measured on his saves and the harness: who goes run down and when, days in bed a year, survival unmoved (the guard's 25 %).
 7. The view: the bed (a stand-in), the state's word. Played by Joe.
 
-## 10. Joe's calls — each with a recommendation
+## 10. Joe's calls — each with a recommendation — ✅ ANSWERED (D935, 2026-11-27)
+
+**Joe:** *"poultry is its own group … i agree on the ten W6 calls as long as we include the meal rule at some point"*, then
+*"yes, merge it"* (call 10 a). So: all ten as recommended, **call 2 his — five groups, poultry its own**; call 7 bread first
+stays, with §5.7 kept for later.
+
 
 1. **Split W6 into three pieces, each played and merged before the next:** (1) the diet — people wear down on one food and fall
    ill now and then, never fatally; (2) fever, herbs and the herbalist, together, because fever can kill; (3) the infirmary.
