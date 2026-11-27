@@ -298,6 +298,13 @@ public partial class VillageMap
             {
                 (key, motion) = FaceKeyAndMotion(still, d);
             }
+
+            // ⭐ At the block: the split's beats, the round set, struck and split (A292).
+            Splitting? split = villager.Alive && poses && cast is null && dig is null ? SplittingOf(world, villager, still) : null;
+            if (split is Splitting sp)
+            {
+                (key, motion) = SplitKeyAndMotion(still, sp.Moment);
+            }
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             int drawnBeat = key.Beat;
             if (held is not null)
@@ -347,6 +354,11 @@ public partial class VillageMap
             if (dig is Dig at)
             {
                 DrawTheStackAndTheWedge(at, feet, tall);
+            }
+
+            if (split is Splitting round)
+            {
+                DrawTheRound(round, feet, tall);
             }
 
             // The person, lifted, leaned and squashed about their feet as the motion says.
@@ -409,7 +421,7 @@ public partial class VillageMap
     /// </summary>
     private void KeepTheOtherPoses(FigureKey key, ulong frame)
     {
-        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner ? PersonPainter.MostBeats : 2;
+        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter ? PersonPainter.MostBeats : 2;
         for (int b = 0; b <= most; b++)
         {
             if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))
