@@ -4723,6 +4723,27 @@ public sealed record SimConfig
             ExtentWidth = 2,
             ExtentHeight = 2,
         },
+
+        // ⭐⭐ THE GREAT LIBRARY (W5, D922; Joe: *"should unlock … when the 11th technique has been learned - whether or not any
+        // other libraries have been built"*). A gift when the village knows every technique there is, with a shelf for each —
+        // eleven today; the validator holds it to the catalogue. One, ever. ⚠️ Once it stands nothing written is lost again:
+        // what stays mortal is every person's years and the one technique that cannot be written (D922).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.GreatLibrary,
+            Name = "great library",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GreatLibraryLogs),
+                new MaterialCost(World.Goods.Stone, GreatLibraryStone),
+            },
+            WorkTicks = GreatLibraryWorkTicks,
+            Shelves = 11,
+            HoldsEveryTechnique = true,
+            Singleton = true,
+            ExtentWidth = 3,
+            ExtentHeight = 3,
+        },
         new BuildingRow
         {
             Id = (int)BuildingKind.TownHall,
@@ -5459,6 +5480,19 @@ public sealed record SimConfig
     /// <summary>Ticks of work a library takes, once the materials are on site.</summary>
     [JsonPropertyName("library_work_ticks")]
     public int LibraryWorkTicks { get; init; } = 55;
+
+    /// <summary>Logs a great library takes — ⚠️ a placeholder: the first is a gift (D922), so only a second pays it.</summary>
+    [JsonPropertyName("great_library_logs")]
+    public int GreatLibraryLogs { get; init; } = 70;
+
+    /// <summary>Stone a great library takes — a placeholder, as its logs.</summary>
+    [JsonPropertyName("great_library_stone")]
+    public int GreatLibraryStone { get; init; } = 90;
+
+    /// <summary>Ticks of work a great library takes — the gift covers the materials, never the work (D232), so every village
+    /// given one pays this.</summary>
+    [JsonPropertyName("great_library_work_ticks")]
+    public int GreatLibraryWorkTicks { get; init; } = 110;
 
     /// <summary>
     /// How many techniques one library can hold records of.
@@ -7252,6 +7286,16 @@ public sealed record SimConfig
             {
                 throw new SimConfigException(
                     $"techniques[{t}] ({Techniques[t].Name}) has after_years {Techniques[t].AfterYears}; leave it out to work it out at mastery.");
+            }
+        }
+
+        foreach (World.BuildingRow row in BuildingRows)
+        {
+            if (row.HoldsEveryTechnique && row.Shelves < Techniques.Count)
+            {
+                throw new SimConfigException(
+                    $"buildings: the {row.Name} holds every technique, and has {row.Shelves} shelves for {Techniques.Count} "
+                    + "techniques. Give it a shelf for each.");
             }
         }
 

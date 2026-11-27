@@ -249,6 +249,14 @@ public sealed record BuildingRow
     public int Shelves { get; init; }
 
     /// <summary>
+    /// Whether this library holds a shelf for every technique there is — <b>the great library</b> (W5, D922). Validated at
+    /// load: its <see cref="Shelves"/> are at least the catalogue's techniques, so a modder adding one is told to raise them.
+    /// It is its own gift, never the first library's.
+    /// </summary>
+    [JsonPropertyName("holds_every_technique")]
+    public bool HoldsEveryTechnique { get; init; }
+
+    /// <summary>
     /// ⭐ Graves (W4, `cemetery.md §5.2`) — above zero, the row is a cemetery: learned at the village's first death, its
     /// dead laid in numbered places one a tile, so the validator holds it to the extent's width × height. The row with the
     /// fewest is the first death's gift (Joe, D906: <i>"first free"</i>).

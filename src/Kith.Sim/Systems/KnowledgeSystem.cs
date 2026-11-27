@@ -203,6 +203,8 @@ public sealed class KnowledgeSystem : ISimSystem
             // longer in any list the scan can reach.
             world.Narrate(Said(technique.LostLine, world.LastKnowerOf(id)), LogCategory.Discovery);
         }
+
+        world.NoticeIfEveryTechniqueIsKnown();
     }
 
     /// <summary>

@@ -745,6 +745,17 @@ public static class StateHash
             hash = MixByte(hash, 0x5F);
         }
 
+        // ⭐ The great library (W5, D922): learned, and its gift — each a tag byte when true.
+        if (world.GreatLibraryLearned)
+        {
+            hash = MixByte(hash, 0x6B);
+        }
+
+        if (world.AFreeGreatLibraryIsOwed)
+        {
+            hash = MixByte(hash, 0x6C);
+        }
+
         // W4 (D905): the dead before this tick are gone — sparse, so a new village (0) hashes as it did before W4.
         if (world.BurialsFromTick != 0)
         {
@@ -926,6 +937,13 @@ public static class StateHash
                 // for. **Mixing it would move every golden with a library for a field that
                 // cannot make two runs of one seed differ.**
                 hash = MixUInt32(hash, (uint)library.Records[r].TechniqueId);
+            }
+
+            // The great library (W5) — its wear is read off its own row. Sparse: a library mixes nothing.
+            if (library.Kind != BuildingKind.Library)
+            {
+                hash = MixByte(hash, 0x67);
+                hash = MixUInt32(hash, (uint)library.Kind);
             }
 
             // When it was raised and last mended (D552).

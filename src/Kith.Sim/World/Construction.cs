@@ -459,6 +459,12 @@ public enum BuildingKind
 
     /// <inheritdoc cref="CemeterySmall"/>
     CemeteryLarge = 36,
+
+    /// <summary>
+    /// ⭐ The great library (W5, `skills-for-every-trade.md §7a`, D922; Joe's, working name his to change) — a library with
+    /// a shelf for every technique, given when the village has learned every technique there is. <b>Appended at 37.</b>
+    /// </summary>
+    GreatLibrary = 37,
 }
 
 /// <summary>One material a building costs, and how much of it.</summary>

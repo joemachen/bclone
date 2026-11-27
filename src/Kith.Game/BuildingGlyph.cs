@@ -74,7 +74,7 @@ public sealed partial class BuildingGlyph : Control
         BuildingKind.Pile => VillageMap.StoneTone,
         // ⭐ Each house its own tier's colour (`house-tiers.md §6`, D722) — the map's walls, one fact.
         BuildingKind.Home or BuildingKind.Cottage or BuildingKind.Manor => VillageMap.DwellingColourOf(kind),
-        BuildingKind.Library => VillageMap.LibraryTone,
+        BuildingKind.Library or BuildingKind.GreatLibrary => VillageMap.LibraryTone,
         BuildingKind.TownHall => VillageMap.CivicTone,
         BuildingKind.Well => VillageMap.WellTone,
 
@@ -325,6 +325,7 @@ public sealed partial class BuildingGlyph : Control
 
             // A book, open: two leaves and the spine between them.
             case BuildingKind.Library:
+            case BuildingKind.GreatLibrary:
                 DrawRect(new Rect2(s * 0.10f, s * 0.26f, s * 0.36f, s * 0.50f), ink);
                 DrawRect(new Rect2(s * 0.54f, s * 0.26f, s * 0.36f, s * 0.50f), ink);
                 DrawLine(new Vector2(s * 0.50f, s * 0.20f), new Vector2(s * 0.50f, s * 0.82f), ink, 1.6f);

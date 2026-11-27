@@ -135,6 +135,9 @@ public partial class VillageMap
         BuildingKind.Cottage => new(RoofForm.Roof, RoofMaterial.Shingle, Chimneys: 1, Yard: YardKind.Cottage),
         BuildingKind.Manor => new(RoofForm.Roof, RoofMaterial.Slate, Chimneys: 2, UpperStorey: true, Lift: 1.4f, Yard: YardKind.Manor),
         BuildingKind.Library => new(RoofForm.Roof, RoofMaterial.Slate, Yard: YardKind.Library),
+
+        // ⭐ The great library (W5): a stand-in until the art lane paints one — the library's slate, a storey up.
+        BuildingKind.GreatLibrary => new(RoofForm.Roof, RoofMaterial.Slate, UpperStorey: true, Lift: 1.4f, Yard: YardKind.Library),
         BuildingKind.TownHall => new(RoofForm.Roof, RoofMaterial.StoneSlab, Turret: true, Lift: 1.5f, Yard: YardKind.TownHall),
         BuildingKind.Well => new(RoofForm.Well, RoofMaterial.StoneSlab, Yard: YardKind.Well),
         _ => new(RoofForm.Roof, RoofMaterial.Shingle),

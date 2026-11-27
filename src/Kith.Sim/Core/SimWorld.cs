@@ -385,6 +385,15 @@ public sealed partial class SimWorld : IObstacles
     /// </summary>
     public bool AFreeSmithyIsOwed { get; internal set; }
 
+    /// <summary>
+    /// ⭐ Whether the village has learned every technique there is, once (W5, D922) — the latch the great library is learned
+    /// on. Never cleared: a technique lost afterwards does not take the building back.
+    /// </summary>
+    public bool GreatLibraryLearned { get; internal set; }
+
+    /// <summary>The great library's gift, unplaced — the library's shape: materials free, work owed, exactly one (D922).</summary>
+    public bool AFreeGreatLibraryIsOwed { get; internal set; }
+
     /// <summary>Whether the village log has already said the first path wore through (D358). Once, ever.</summary>
     /// <remarks>Hashed sparsely: a village whose grass is still whole mixes nothing.</remarks>
     public bool AFirstPathHasWorn { get; internal set; }
@@ -4133,6 +4142,11 @@ public sealed partial class SimWorld : IObstacles
         // should unlock together. it doesnt make sense to mill something … and then unlock the bakery"*).
         // ⭐ THE BREWERY AND THE TAVERN ARE LEARNED WITH BARLEY, AT THE FORAGER'S FIND (W3, Joe's call 2A, D834) — the latch,
         // never the counter, as the workshop's: it is what is hashed.
+        // ⭐ THE GREAT LIBRARY IS LEARNED WHEN THE VILLAGE KNOWS EVERY TECHNIQUE THERE IS (W5, D922) — the latch, never the count.
+        BuildingKind.GreatLibrary when !GreatLibraryLearned =>
+            $"The great library waits until the village knows every technique there is — it knows {TechniquesKnown()} of "
+            + $"{TechniquesCatalog.Count}.",
+
         BuildingKind.Brewery or BuildingKind.Tavern when !BarleyLearned =>
             "Nobody here brews yet — it comes with barley, once the foragers find it growing wild "
             + $"({FoodEverProducedOf(Goods.Produce)} of the {Config.BarleyUnlockForage} gathered).",
@@ -8861,9 +8875,9 @@ public sealed partial class SimWorld : IObstacles
             return BuildingKindOf(store);
         }
 
-        if (LibraryCovering(tile) is not null)
+        if (LibraryCovering(tile) is Library library)
         {
-            return BuildingKind.Library;
+            return library.Kind;
         }
 
         if (TownHallCovers(tile))
@@ -10096,11 +10110,20 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ THE GIFT IS SPENT HERE, ON THE FIRST ONE MARKED. The villagers gathered the materials;
         // the crew still raise it, so the work stands and only the cost falls away.
-        if (AFreeLibraryIsOwed && BuildingsCatalog[kind]?.Shelves > 0)
+        if (AFreeLibraryIsOwed && BuildingsCatalog[kind] is { Shelves: > 0, HoldsEveryTechnique: false })
         {
             AFreeLibraryIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ AND THE GREAT LIBRARY'S (W5, D922): asked of the row, as the library's is.
+        if (AFreeGreatLibraryIsOwed && BuildingsCatalog[kind]?.HoldsEveryTechnique == true)
+        {
+            AFreeGreatLibraryIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate($"The timber and stone for the {BuildingsCatalog[kind]!.Name} were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
@@ -11390,6 +11413,7 @@ public sealed partial class SimWorld : IObstacles
             {
                 Position = position,
                 Name = name,
+                Kind = kind,
                 Shelves = row.Shelves,
                 RaisedAtTick = Tick,
                 Facing = facing,
@@ -15577,6 +15601,8 @@ public sealed partial class SimWorld : IObstacles
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
             ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
+            ["great_library_learned"] = GreatLibraryLearned ? true : null,
+            ["a_free_great_library_is_owed"] = AFreeGreatLibraryIsOwed ? true : null,
             ["burials_from"] = SaveWriter.Hex(BurialsFromTick),
             ["a_free_cemetery_is_owed"] = AFreeCemeteryIsOwed,
             ["a_first_path_has_worn"] = AFirstPathHasWorn,
@@ -15781,6 +15807,8 @@ public sealed partial class SimWorld : IObstacles
         FoodEverEaten = save.Int("food_ever_eaten");
         AFreeLibraryIsOwed = save.Bool("a_free_library_is_owed");
         AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
+        GreatLibraryLearned = save.HasValue("great_library_learned") && save.Bool("great_library_learned");
+        AFreeGreatLibraryIsOwed = save.HasValue("a_free_great_library_is_owed") && save.Bool("a_free_great_library_is_owed");
         // W4 (D905): a save from before has no mark, and every death in it is before its own tick — those dead are gone.
         BurialsFromTick = save.HasValue("burials_from") ? save.ULong("burials_from") : Tick;
 

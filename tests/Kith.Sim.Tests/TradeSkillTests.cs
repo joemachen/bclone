@@ -459,4 +459,136 @@ public sealed class TradeSkillTests
         Assert.Contains(world.Moments, m => m.Body.Contains(farmer.Name, StringComparison.Ordinal)
             && m.Body.Contains("thirty years", StringComparison.Ordinal));
     }
+
+    // -----------------------------------------------------------------
+    //  §7a (D922) — the great library
+    // -----------------------------------------------------------------
+
+    /// <summary>Every skill with a technique, mastered here — and farming at thirty years, so the village knows them all.</summary>
+    private static void KnowEveryTechnique(SimLoop loop)
+    {
+        SimWorld world = loop.World;
+        List<Villager> people = world.Villagers.Where(v => v.Alive && v.CanWork).ToList();
+        var skills = world.TechniquesCatalog.Count == 0 ? new List<int>()
+            : Enumerable.Range(0, world.TechniquesCatalog.Count).Select(id => world.TechniquesCatalog[id].Skill).Distinct().ToList();
+        foreach (int skill in skills)
+        {
+            SkillRow row = world.Config.Skills.First(r => r.Id == skill);
+            SkillProgress progress = people[0].ProgressIn(skill);
+            progress.Work = world.Config.MasteryWorkFor(row);
+            progress.Ticks = 30 * world.Config.TicksPerYear;
+            progress.Mastered = true;
+            progress.MasteredHere = true;
+        }
+
+        loop.Step(1);
+    }
+
+    /// <summary>⭐ A shelf for every technique there is, held to the catalogue at load.</summary>
+    [Fact]
+    public void TheGreatLibraryHasAShelfForEveryTechnique()
+    {
+        SimConfig config = ShippedConfig.Load();
+        BuildingRow row = config.BuildingRows.Single(b => b.HoldsEveryTechnique);
+        Assert.Equal((int)BuildingKind.GreatLibrary, row.Id);
+        Assert.True(row.Shelves >= config.Techniques.Count, $"{row.Shelves} shelves for {config.Techniques.Count} techniques.");
+        Assert.True(row.Singleton);
+
+        var fewer = config.BuildingRows.Select(b => b.HoldsEveryTechnique ? b with { Shelves = config.Techniques.Count - 1 } : b).ToList();
+        SimConfigException blew = Assert.Throws<SimConfigException>(() => (config with { Buildings = fewer }).Validate());
+        Assert.Contains("a shelf for each", blew.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// ⭐ Learned and given the first time the village knows every technique there is — however many libraries stand — and
+    /// not before; said once, as a moment.
+    /// </summary>
+    [Fact]
+    public void KnowingEveryTechniqueTeachesTheGreatLibraryAndGivesIt()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(VillageFixtures.Village, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Assert.False(world.IsUnlocked(BuildingKind.GreatLibrary));
+        Assert.Contains($"0 of {world.TechniquesCatalog.Count}", world.WhyNotYet(BuildingKind.GreatLibrary)!, StringComparison.Ordinal);
+        Assert.Empty(world.Libraries);
+
+        KnowEveryTechnique(loop);
+
+        Assert.Equal(world.TechniquesCatalog.Count, world.TechniquesKnown());
+        Assert.True(world.GreatLibraryLearned);
+        Assert.True(world.AFreeGreatLibraryIsOwed);
+        Assert.True(world.IsUnlocked(BuildingKind.GreatLibrary));
+        Assert.Single(world.Moments, m => m.Title == "The village knows every technique there is");
+
+        // ⛔ A technique lost afterwards does not take it back, and nothing is said twice.
+        foreach (Villager v in world.Villagers)
+        {
+            v.Alive = false;
+        }
+
+        loop.Step(1);
+        Assert.True(world.TechniquesKnown() < world.TechniquesCatalog.Count);
+        Assert.True(world.IsUnlocked(BuildingKind.GreatLibrary));
+        Assert.Single(world.Moments, m => m.Title == "The village knows every technique there is");
+    }
+
+    /// <summary>⭐ Its gift is its own: the first library's gift is never spent on it, nor its on a library.</summary>
+    [Fact]
+    public void TheGreatLibrarysGiftIsItsOwnAndRaisesALibraryOfEveryShelf()
+    {
+        SimConfig config = ShippedConfig.Established() with { LiteracyYears = 0 };
+        SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        Raise(world, BuildingKind.Granary, FirstBuildable(world, BuildingKind.Granary));
+        loop.Step(1);
+        Assert.True(world.HasLiteracy, "The premise: a granary teaches writing at once (literacy_years 0).");
+        KnowEveryTechnique(loop);
+        world.AFreeLibraryIsOwed = true;
+
+        GridPos at = FirstBuildable(world, BuildingKind.GreatLibrary);
+        Assert.True(world.Mark(BuildingKind.GreatLibrary, at).Allowed);
+        Assert.False(world.AFreeGreatLibraryIsOwed);
+        Assert.True(world.AFreeLibraryIsOwed, "The first library's gift went on the great library.");
+        Workplace site = world.Workplaces.Last(w => w.IsSite && w.Construction!.Kind == BuildingKind.GreatLibrary);
+        Assert.Equal(0, site.Construction!.Recipe.TotalMaterials);
+
+        Finish(world, site);
+        Library great = world.Libraries.Single(l => l.Kind == BuildingKind.GreatLibrary);
+        Assert.True(great.Shelves >= world.TechniquesCatalog.Count);
+        Assert.Equal(BuildingKind.GreatLibrary, world.WhatStandsAt(great.Tile));
+    }
+
+    private static void Raise(SimWorld world, BuildingKind kind, GridPos at)
+    {
+        Assert.True(world.Mark(kind, at).Allowed);
+        Finish(world, world.Workplaces.Last(w => w.IsSite && w.Construction!.Kind == kind));
+    }
+
+    private static void Finish(SimWorld world, Workplace site)
+    {
+        BuildFixtures.StockTheSite(site);
+        for (int t = 0; t <= site.Construction!.Recipe.WorkTicks; t++)
+        {
+            site.Construction.Work();
+        }
+
+        world.Complete(site);
+    }
+
+    private static GridPos FirstBuildable(SimWorld world, BuildingKind kind)
+    {
+        for (int y = 0; y < world.Map.Height; y++)
+        {
+            for (int x = 0; x < world.Map.Width; x++)
+            {
+                var at = new GridPos(x, y);
+                if (world.Map.TerrainAt(at) == Terrain.Grass && world.CanBuildAt(kind, at).Allowed)
+                {
+                    return at;
+                }
+            }
+        }
+
+        throw new InvalidOperationException("No buildable ground.");
+    }
 }

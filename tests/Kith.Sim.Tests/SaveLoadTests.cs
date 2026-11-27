@@ -318,7 +318,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Tick", "Rng", "Moments", "Libraries", "TownHall", "Wells", "FirstGranaryTick", "SaidTheyCanWrite",
             "FoodProducedThisYear", "FoodProducedLastYear", "FoodLedgerYears", "FoodEatenThisYear", "FoodEatenLastYear",
-            "FoodEverProduced", "FoodEverBroughtIn", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed",
+            "FoodEverProduced", "FoodEverBroughtIn", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed", "GreatLibraryLearned", "AFreeGreatLibraryIsOwed",
             "AFirstPathHasWorn", "ATownHallIsOwed", "SaidTheFoundersAreGone", "KnowledgeStates", "LastKnowerIds",
             "Villagers", "Households", "TravelCost", "Map", "Zones", "Paths", "StockLimits", "JobLimits",
             "VillageSharesOutWork", "Workplaces", "StoreBuildings", "GroundStacks", "_waitingOnTheGround",
@@ -488,7 +488,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
-        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),
+        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed", "Kind" }), // kind written only for the great library (W5)
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
         (typeof(TradeBoat), Kept.Saved, new[] { "NeighbourId", "AppearsAtTick", "DocksAtTick", "LeavesAtTick" }),
         (typeof(NeighbourStock), Kept.Saved, new[] { "Held", "Animals" }),

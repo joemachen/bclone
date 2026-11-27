@@ -182,9 +182,9 @@ public sealed class ToolsTests
             (JobKind.Farmer, 3, 2, 1),
             (JobKind.Forester, 4, 2, 2),
             (JobKind.Woodcutter, 4, 2, 2),
-            // No skill row (§6): the tool alone, master or not.
-            (JobKind.Fisher, 10, 10, 7),
-            (JobKind.Hunter, 15, 15, 10),
+            // Skill rows since W5 (D923): until then the tool alone, master or not (10, 10, 7 and 15, 15, 10).
+            (JobKind.Fisher, 10, 5, 4),
+            (JobKind.Hunter, 15, 8, 5),
         };
 
         foreach ((JobKind trade, int baseTicks, int mastered, int both) in table)

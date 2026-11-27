@@ -22,6 +22,9 @@ public partial class Main
     private static readonly string[] ArtAwaited =
     {
         "buildings/small-cemetery", "buildings/cemetery", "buildings/large-cemetery", "trades/groundskeeper",
+
+        // ⏳ W5 (D927): the great library, its icon and its owed version (`skills-for-every-trade.md §8`).
+        "buildings/great-library",
     };
 
     private string TheIconsArePainted()

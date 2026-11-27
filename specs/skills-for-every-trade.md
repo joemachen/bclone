@@ -9,7 +9,8 @@ catalogue), D754 (the teacher has no skill).
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
 **Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
 skill rows, burying through `BeginWork`; ✅ steps 2–3 (D924): techniques 4–9, tempering, the hay through `YieldFor`; ✅ step 3b (D925): reading the water
-unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter.** Steps 5b–9 to come (§9).
+unwritable, carried by five years beside a master; ✅ step 5 (D926): the crop that stands into winter; ✅ step 5b (D927): the great library, its button and a stand-in roof.**
+Steps 6–9 to come (§9).
 
 ---
 
@@ -217,7 +218,9 @@ the measurement in §9 says how often a second library is wanted, and the number
 
 ## 8. The art lane's list (D774)
 
-**Nothing new to draw.** New lines on cards and in the log only. Two notes for the lane:
+**One new building since D922: the great library** — its build-bar icon and its owed version (`buildings/great-library`,
+on `Main.UiIconsProbe.ArtAwaited` until painted), and its roof on the map (a stand-in today: the library's slate, a storey
+up, 3×3). Otherwise new lines on cards and in the log only. Two notes for the lane:
 - **A master fisher's cast is half as long**, and `VillageMap.Fishing` already reads its length from `WorkTicksFor`
   (A275–A277), so the cast animation shortens for a master without a change. Worth a look in play.
 - **A ripe field in winter's first five days** draws as the ripe field it is, under the winter wash. No stooks-in-snow

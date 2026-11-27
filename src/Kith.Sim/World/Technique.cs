@@ -336,6 +336,12 @@ public sealed class Library
 
     public int ExtentHeight { get; init; } = 1;
 
+    /// <summary>
+    /// What was raised — the library, or the great library (W5, D922): the row its wear is read from and the view draws.
+    /// Saved only when not the library, so a save from before W5 reads as one.
+    /// </summary>
+    public BuildingKind Kind { get; init; } = BuildingKind.Library;
+
     public Footprint Footprint => new()
     {
         Origin = _position,
@@ -420,6 +426,7 @@ public sealed class Library
             ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
             ["closed"] = Closed,
             ["records"] = records,
+            ["kind"] = Kind == BuildingKind.Library ? null : SaveWriter.Enum(Kind),
         };
     }
 
@@ -436,6 +443,7 @@ public sealed class Library
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
             Closed = save.HasValue("closed") && save.Bool("closed"),
+            Kind = save.HasValue("kind") ? save.Enum<BuildingKind>("kind") : BuildingKind.Library,
         };
 
         foreach (SaveReader record in save.Objects("records"))

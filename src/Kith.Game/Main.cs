@@ -2233,6 +2233,8 @@ public partial class Main : Control
     /// way: the village is paused behind it and nothing else is competing for the space.
     /// </remarks>
     private Button? _libraryButton;
+    private Button? _greatLibraryButton;
+    private bool _greatLibraryKnown;
     private Button? _townHallButton;
     private Button? _quarryButton;
     private Button? _mineButton;
@@ -2537,6 +2539,31 @@ public partial class Main : Control
     /// Show the smithy once the village has dug its iron, gold and ★ while the gift is unplaced
     /// (D444) — the library button's three rules, one gift over.
     /// </summary>
+    /// <summary>⭐ The great library's button (W5, D922): shown once every technique is known, starred while its gift is owed.</summary>
+    private void RefreshTheGreatLibraryButton(SimWorld world)
+    {
+        bool known = world.IsUnlocked(BuildingKind.GreatLibrary);
+        if (_greatLibraryKnown != known)
+        {
+            _greatLibraryKnown = known;
+            RefreshTheStrip();
+        }
+
+        if (_greatLibraryButton is null)
+        {
+            return;
+        }
+
+        if (world.AFreeGreatLibraryIsOwed || !_greatLibraryButton.HasMeta(NewMeta))
+        {
+            UiLook.Tint(_greatLibraryButton, world.AFreeGreatLibraryIsOwed ? UiLook.Owed : UiLook.Text);
+        }
+        UiIcons.MarkOwed(_greatLibraryButton, world.AFreeGreatLibraryIsOwed);
+        _greatLibraryButton.Text = world.AFreeGreatLibraryIsOwed
+            ? Titled(world.BuildingsCatalog.NameOf(BuildingKind.GreatLibrary)) + " ★"
+            : Titled(world.BuildingsCatalog.NameOf(BuildingKind.GreatLibrary));
+    }
+
     private void RefreshTheSmithyButton(SimWorld world)
     {
         bool known = world.IsUnlocked(BuildingKind.Smithy);
@@ -3249,6 +3276,7 @@ public partial class Main : Control
         RefreshTheTownHallButton(world);
         RefreshTheQuarryButton(world);
         RefreshTheSmithyButton(world);
+        RefreshTheGreatLibraryButton(world);
         RefreshTheCemeteryButtons(world);
         RefreshTheTree(world);
 
@@ -7996,6 +8024,10 @@ public partial class Main : Control
             {
                 _libraryButton = button;
             }
+            else if (kind == BuildingKind.GreatLibrary)
+            {
+                _greatLibraryButton = button;
+            }
             else if (kind == BuildingKind.TownHall)
             {
                 _townHallButton = button;
@@ -8279,6 +8311,7 @@ public partial class Main : Control
             // here is about producing or keeping goods; a library keeps *techniques*, and it is
             // the first building the village raises for a reason other than eating.
             BuildingKind.Library => BuildCategory.Knowledge,
+            BuildingKind.GreatLibrary => BuildCategory.Knowledge,
 
             // The school beside the library that teaches it (D755): what it keeps is what the young know.
             BuildingKind.School => BuildCategory.Knowledge,
@@ -8378,6 +8411,9 @@ public partial class Main : Control
     private bool EarnedYet(BuildingKind? kind) => kind switch
     {
         BuildingKind.Library => _literacy,
+
+        // ⛔ The great library's arm (W5) — without it `_ => true` offers it at the founding.
+        BuildingKind.GreatLibrary => _greatLibraryKnown,
         BuildingKind.TownHall => _foundersGone,
 
         // ⭐ The sim's one gate (D434, `quarry.md §3.3`) — the same answer `Mark` gives, so the
