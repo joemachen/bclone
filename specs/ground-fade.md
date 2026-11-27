@@ -1,6 +1,6 @@
 # The trees' extras: the hand-back and the ground's fade (A300)
 
-> **Status: ✅ BUILT (A300, 2026-11-26), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`), not pushed — at Joe's *"just power through all these, im going to approve them all"*
+> **Status: ✅ BUILT (A300, 2026-11-26), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`); pushed at his word (A303, *"Push main"*) — at Joe's *"just power through all these, im going to approve them all"*
 > (A295): the recommended option taken without a mock.** Art lane, branch `art`; the art queue's piece 6 ("tree extras"). View only. **The ground's fade is built; the crowns' hand-back was
 > tried, filmed, measured worse and taken out (§2).**
 > ⚠️ **One file outside the lane's table:** `ValleyTexture.cs` gains two read-only accessors and an upload counter (§3) — his review.

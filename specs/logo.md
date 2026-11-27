@@ -76,7 +76,7 @@ icon is the `.ico` when one is made.
 ## 6. Next, not built
 
 - ~~**A wordmark lockup** — "Kith" in Grenze Gotisch beside the seal, for store pages and trailers. At Joe's word.~~ →
-  ✅ **built (A301, 2026-11-26, the art queue's piece 7, at his *"just power through all these"*), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`), not pushed** — §10.
+  ✅ **built (A301, 2026-11-26, the art queue's piece 7, at his *"just power through all these"*), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`); pushed at his word (A303, *"Push main"*)** — §10.
 - **The splash** (`screens/splash.png`, A104) carries the blank seal, *"the name goes on when it is chosen"*. Not wired,
   so not repainted here.
 
