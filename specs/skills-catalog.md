@@ -7,6 +7,9 @@ D156 (an uneducated child works at twelve), D168 (a new kind of thing should be 
 Neighbours: **`tech-tree.md` (this is its missing substrate — §6)**, `professions.md §4` (the
 roles a skill attaches to), `labour-allocation.md` (who gets the job), `clothing.md` and
 `livestock.md` (parked, and both add skills when they land).
+**⭐ W5 (D919–):** the nine trades without a skill, their techniques and Joe's crop that stands into winter are specced in
+`specs/skills-for-every-trade.md` — ⏸️ his calls. ⚠️ §4.2's *builder* and *trading* rows promise speed the code does not give
+(§6 there).
 **Status:** ✅ **COMPLETE — all three landings, the at-risk line and apprenticeship are built**
 (D181, D187, D190, D195, D202), on `phase/3-skill-and-apprenticeship`, **merged to `main` 2026-08-23** (§4's
 Phase 3 line; this said *unmerged* until D640).
