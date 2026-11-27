@@ -1,6 +1,6 @@
 # Varied work, trade by trade — the quarrier first (A280)
 
-> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The woodcutter ✅ BUILT (A292) on `art`, UNPLAYED — Joe: *"B, as recommended"*. The forester next; the other trades not started.** Art lane (CLAUDE.md *Two tracks*), branch
+> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The woodcutter ✅ BUILT (A292), played and merged into `main` at Joe's word (A293, *"Played it, merge"*, `60d5df8`); not pushed. Joe: *"B, as recommended"*. The forester next; the other trades not started.** Art lane (CLAUDE.md *Two tracks*), branch
 > `art`; the art queue's piece 3, *Animations*, after fishing (`fishing-animation.md`). View only: nothing in `Kith.Sim`, `data/`
 > or `tests/` changes. Mock: `D:\Projects\brushes\animations\quarry_options.gif` (and `quarry_contact.jpg`).
 
