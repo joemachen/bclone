@@ -1,6 +1,6 @@
 # The trees in a gentle wind (A299)
 
-> **Status: ✅ BUILT (A299, 2026-11-26) on `art`, UNREVIEWED — at Joe's *"just power through all these, im going to approve them all"*
+> **Status: ✅ BUILT (A299, 2026-11-26), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`), not pushed — at Joe's *"just power through all these, im going to approve them all"*
 > (A295): the recommended option taken without a mock.** Art lane, branch `art`; the art queue's piece 5. View only. Film:
 > `D:\Projects\brushes\animals\sway_built.gif`, `sway_check.jpg` (two frames and what differs: only the crowns).
 

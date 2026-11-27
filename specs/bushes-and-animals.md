@@ -1,6 +1,6 @@
 # Bushes and animals — the cattle, the woods' game, the berry patches (A298)
 
-> **Status: ✅ BUILT (A298, 2026-11-26) on `art`, UNREVIEWED — at Joe's *"just power through all these, im going to approve them
+> **Status: ✅ BUILT (A298, 2026-11-26), played and merged into `main` at Joe's word (A302, *"Played it, merge"*, `1ce7364`), not pushed — at Joe's *"just power through all these, im going to approve them
 > all"* (A295): the recommended option taken without a mock.** Art lane, branch `art`; the art queue's piece 4. View only: nothing in
 > `Kith.Sim`, `data/` or `tests/` changes. Film: `D:\Projects\brushes\animals\animals_built.gif`.
 
