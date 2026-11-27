@@ -872,18 +872,27 @@ public partial class VillageMap
     /// dropped — <c>DrawHeaps</c> already owns the single-square shape. Their arrangement
     /// comes off the tile's own seed, so no two patches are laid out alike and none of them move.
     /// </remarks>
+    private static readonly Color BushLeaf = new("#4f7a3a"), BushLeafLight = new("#62904a"), BushShade = new("#2f4a24", 0.45f);
+
+    /// <summary>
+    /// ⭐ A berry patch as a bush (A298, `bushes-and-animals.md`): three leafy clumps, a shade under them, and six berries on them —
+    /// A86's were three bare berry discs on the ground. Still meshed with the woods' chunk on the terrain counter (D366).
+    /// </summary>
     private static void BerryPatch(MeshBuilder into, Vector2 home, uint seed, float radius, Color colour)
     {
         for (int i = 0; i < 3; i++)
         {
-            double angle = (((seed >> (i * 5)) % 628) / 100.0) + (i * 2.1);
-            float spread = 0.16f + (((seed >> (i * 3)) % 10) / 100f);
+            double angle = (((seed >> (i * 4)) % 628) / 100.0) + (i * 2.1);
+            var at = new Vector2(home.X + ((float)System.Math.Cos(angle) * 0.12f), home.Y + ((float)System.Math.Sin(angle) * 0.1f));
+            into.Disc(at + new Vector2(0.02f, 0.03f), radius * 2.3f, BushShade);
+            into.Disc(at, radius * 2.2f, i == 1 ? BushLeafLight : BushLeaf);
+        }
 
-            var at = new Vector2(
-                home.X + ((float)System.Math.Cos(angle) * spread),
-                home.Y + ((float)System.Math.Sin(angle) * spread));
-
-            into.Disc(at, radius, colour);
+        for (int i = 0; i < 6; i++)
+        {
+            double angle = (((seed >> (i * 3)) % 628) / 100.0) + (i * 1.05);
+            float spread = 0.06f + (((seed >> (i * 2)) % 14) / 100f);
+            into.Disc(new Vector2(home.X + ((float)System.Math.Cos(angle) * spread), home.Y + ((float)System.Math.Sin(angle) * spread)), radius * 0.6f, colour);
         }
     }
 
