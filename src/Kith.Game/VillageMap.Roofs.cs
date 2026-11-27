@@ -560,6 +560,8 @@ public partial class VillageMap
                 _paintedSteps.Remove(door.Tile);
             }
 
+            _choppingBlocks.Remove(at); // and its chopping block (A292)
+
             _roofCache.Remove(at);
         }
     }

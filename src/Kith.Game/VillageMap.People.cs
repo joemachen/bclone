@@ -95,6 +95,13 @@ public partial class VillageMap
     {
         bool working = AtWork(state);
         bool moving = heading.LengthSquared() > 1e-6f;
+
+        // ⭐ At a face the load is the stack at their side, not in their arms, and the pick stays in hand (A282,
+        // `varied-work.md §2`): stone is no shoulder load, and from the second dig on they stood hugging it.
+        if (AtAFace(state))
+        {
+            good = null;
+        }
         FigurePose pose = FigurePose.Front;
         bool flip = false;
         if (moving)
@@ -284,6 +291,20 @@ public partial class VillageMap
                 key = still with { Beat = c.Moment.Beat, Flip = c.Flip };
                 motion = new PersonMotion(c.Moment.Beat, 0f, 0f, 0f, 1f);
             }
+
+            // ⭐ At a face: the dig's beats, the block lifted onto the stack at its end (A282).
+            Dig? dig = villager.Alive && poses && cast is null ? DigOf(world, villager, still) : null;
+            if (dig is Dig d)
+            {
+                (key, motion) = FaceKeyAndMotion(still, d);
+            }
+
+            // ⭐ At the block: the split's beats, the round set, struck and split (A292).
+            Splitting? split = villager.Alive && poses && cast is null && dig is null ? SplittingOf(world, villager, still) : null;
+            if (split is Splitting sp)
+            {
+                (key, motion) = SplitKeyAndMotion(still, sp.Moment);
+            }
             PersonCache? held = CachedPerson(key, frame, _bakesThisFrame < PersonBakesPerFrame);
             int drawnBeat = key.Beat;
             if (held is not null)
@@ -328,6 +349,16 @@ public partial class VillageMap
             if (cast is Cast under)
             {
                 DrawTheCastOnTheWater(under, feet, tall);
+            }
+
+            if (dig is Dig at)
+            {
+                DrawTheStackAndTheWedge(at, feet, tall);
+            }
+
+            if (split is Splitting round)
+            {
+                DrawTheRound(round, feet, tall);
             }
 
             // The person, lifted, leaned and squashed about their feet as the motion says.
@@ -390,7 +421,7 @@ public partial class VillageMap
     /// </summary>
     private void KeepTheOtherPoses(FigureKey key, ulong frame)
     {
-        int most = key.Trade == JobKind.Fisher ? PersonPainter.MostBeats : 2;
+        int most = key.Trade is JobKind.Fisher or JobKind.Quarrier or JobKind.Miner or JobKind.Woodcutter ? PersonPainter.MostBeats : 2;
         for (int b = 0; b <= most; b++)
         {
             if (b != key.Beat && _people.TryGetValue(key with { Beat = b }, out PersonCache? other))

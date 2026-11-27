@@ -339,6 +339,12 @@ internal static class PersonPainter
                 Tool = Tool.Rod;
             }
 
+            // The wedge's mallet in the pick's place (A282), and the maul in the axe's at the block (A292).
+            if (Tool is Tool.Pick or Tool.Axe && f.Beat is MalletRaise or MalletStrike)
+            {
+                Tool = Tool.Hammer;
+            }
+
             RodLine = f.Beat < RodBack;
             RodShown = f.Beat != NetThrow;
             CoatOn = f.Coat;
@@ -1354,6 +1360,12 @@ internal static class PersonPainter
         (Tool.Rod, RodBent) => (-0.02f, -0.05f, -18f),
         (Tool.Rod, RodHaul) => (-0.01f, -0.03f, -14f),
         (Tool.Rod, NetThrow) => (0f, -0.04f, 0f),
+
+        // ⭐ At a face (A282, `varied-work.md §3`, Joe: "B, as recommended"): the wedge driven with a mallet — the hammer's own two
+        // poses, the body stooped by the map — and a breather, the pick lowered and the weight back.
+        (Tool.Hammer, MalletRaise) => (-0.02f, -0.24f, 22f),
+        (Tool.Hammer, MalletStrike) => (-0.09f, 0.03f, -105f),
+        (Tool.Pick or Tool.Axe, Breather) => (0.02f, 0.06f, -12f),
         (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
         (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
         (Tool.Saw, 1) => (0.05f, -0.02f, 0f),
@@ -1370,8 +1382,11 @@ internal static class PersonPainter
     /// the map draws the line out to the float.</summary>
     internal const int RodBack = 3, RodForward = 4, RodWait = 5, RodDip = 6, RodStrike = 7, RodBent = 8, RodHaul = 9, NetThrow = 10;
 
+    /// <summary>At a face (A282): the mallet raised and struck (the pick swapped for the mallet), and the breather.</summary>
+    internal const int MalletRaise = 11, MalletStrike = 12, Breather = 13;
+
     /// <summary>The highest beat any person is painted in.</summary>
-    internal const int MostBeats = NetThrow;
+    internal const int MostBeats = Breather;
 
     /// <summary>
     /// ⭐ Pure: where the rod's tip is in a beat, in figure units from the feet (x to the right, unmirrored; up negative) — the

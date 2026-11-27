@@ -256,7 +256,7 @@ public partial class VillageMap
                 faults.Add($"the cache: the same person {(ReferenceEquals(firstHeld, secondHeld) ? "kept" : "painted again")}, {_personBakes - bakesBefore} paintings (want kept, 1), mipmapped and drawn with mipmaps");
             }
 
-            string moving = ThePeopleMoveHold() + "\n" + TheDoorsAndTheSmokeHold() + "\n" + TheBrewerAndKeeperHold() + "\n" + ThePaperInHandHolds() + "\n" + TheFishingHolds();
+            string moving = ThePeopleMoveHold() + "\n" + TheDoorsAndTheSmokeHold() + "\n" + TheBrewerAndKeeperHold() + "\n" + ThePaperInHandHolds() + "\n" + TheFishingHolds() + "\n" + TheFaceWorkHolds() + "\n" + TheWoodcutterHolds();
             return faults.Count == 0
                 ? $"[widths] painted villagers: ✅ painted only with the tick; cloaks in seven dyes by household, in founding order, none on the coatless (A143); resting at home, at school and teaching indoors and not drawn, resting in the open before the first house on the map (a founder asked); toward, away, from the side and mirrored for the left, at work facing us with the tool out and walking with it between the work, cold hugging, a load in the arms or on the shoulder, idle talking, an elder's stick, no tool for a child; every trade and the labourer painted in four poses 110 × 100 with the feet at (54.4, 84.48), {bakeMs:F1} ms a painting; the same key the same bytes and another person different; a child 0.62 of an adult; walking left {mirrored:P0} the mirror of walking right; {alike.Count} of 171 trade pairs alike by the gown ({string.Join(", ", alike)}); painted once and kept, mipmapped\n{moving}"
                 : $"[widths] painted villagers: ⛔ {string.Join("; ", faults)}\n{moving}";

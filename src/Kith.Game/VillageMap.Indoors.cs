@@ -99,6 +99,12 @@ public partial class VillageMap
             return FishingSpotOf(world, viewTile) is (Vector2 spot, _) ? spot - new Vector2(0f, PersonTiles * PersonPointUp) : viewTile;
         }
 
+        // ⭐ Splitting, at the yard's chopping block (A292, `varied-work.md §7`): the sim's place is the hut's roof.
+        if (state == VillagerState.MakingFirewood)
+        {
+            return BlockAt(viewTile) is Vector2 block ? block + FromTheBlock - new Vector2(0f, PersonTiles * PersonPointUp) : viewTile;
+        }
+
         var tile = new GridPos(Mathf.RoundToInt(viewTile.X), Mathf.RoundToInt(viewTile.Y));
         if (world.DoorCovering(tile) is not Door { Shut: false } door)
         {
@@ -123,6 +129,7 @@ public partial class VillageMap
     /// <summary>Kept as a roof is laid: its door's painted step, the centre of its <c>step</c> piece (A86's).</summary>
     private void KeepTheStep(RoofSignature signature, List<RoofPiece> pieces)
     {
+        KeepTheBlock(signature, pieces);
         if (signature.Door is not Door door)
         {
             return;
