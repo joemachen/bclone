@@ -3561,6 +3561,26 @@ public sealed partial class SimWorld : IObstacles
         return true;
     }
 
+    /// <summary>
+    /// The uses a tool of this kind starts with when a villager takes it up — its row's, and a quarter more while the
+    /// village knows tempering (W5, `skills-for-every-trade.md §4`; <see cref="TechniqueRow.ToolUsesBonusPercent"/>).
+    /// </summary>
+    /// <remarks>Integer and rounded down (D2); every known technique with the column counts, in id order.</remarks>
+    public int ToolUsesWhenTaken(Goods kind)
+    {
+        int uses = GoodsCatalog[kind].ToolUses;
+        int bonus = 0;
+        for (int id = 0; id < TechniquesCatalog.Count; id++)
+        {
+            if (TechniquesCatalog[id] is { ToolUsesBonusPercent: > 0 } row && KnowledgeStates[id] != KnowledgeState.Unknown)
+            {
+                bonus += row.ToolUsesBonusPercent;
+            }
+        }
+
+        return bonus <= 0 ? uses : uses + (uses * bonus / 100);
+    }
+
     public int YieldWithTechnique(JobKind trade, int baseAmount)
     {
         if (baseAmount <= 0)

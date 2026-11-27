@@ -7105,7 +7105,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             }
 
             villager.ToolGood = kind;
-            villager.ToolUses = world.GoodsCatalog[kind].ToolUses;
+            villager.ToolUses = world.ToolUsesWhenTaken(kind); // tempering's quarter, once known (W5)
             world.ToolsEverTaken++;
             if (world.Logs(LogLevel.Debug))
             {

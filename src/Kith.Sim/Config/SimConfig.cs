@@ -5604,6 +5604,71 @@ public sealed record SimConfig
             LostLine = "The tended patches are going back to wild. {0} was the last who knew "
                 + "which they were.",
         },
+
+        // ⭐⭐ W5 (`skills-for-every-trade.md §4`, D924): ONE EACH FOR THE NEW TRADES THAT MAKE SOMETHING. Proposals until the
+        // measurement (§9 step 7). The smallest outputs set the shape: a dig of iron is 5, so 15 % rounds to nothing and
+        // mining takes 20 %; a dig of stone is 10, so 10 % is the smallest step it can show; a forge makes one tool, so
+        // tempering lengthens a tool's life instead of adding to a forge's yield.
+        new TechniqueRow
+        {
+            Id = 4,
+            Name = "reading the water",
+            Skill = 12,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has fished this river long enough to know where the fish lie and when they run. "
+                + "Every cast brings in more now.",
+            LostLine = "Nobody reads the water now. {0} was the last who knew where the fish lie.",
+        },
+        new TechniqueRow
+        {
+            Id = 5,
+            Name = "tracking",
+            Skill = 13,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has hunted these woods long enough to read a trail a day old. "
+                + "The hunters come home heavier now.",
+            LostLine = "The trails go unread again. {0} was the last who could follow them.",
+        },
+        new TechniqueRow
+        {
+            Id = 6,
+            Name = "tempering",
+            Skill = 14,
+            ToolUsesBonusPercent = 25,
+            DiscoveryLine = "{0} has worked the forge long enough to quench the iron at the right moment. "
+                + "The village's tools last longer now.",
+            LostLine = "The tools are quenched anyhow again. {0} was the last who knew the moment.",
+        },
+        new TechniqueRow
+        {
+            Id = 7,
+            Name = "reading the bed",
+            Skill = 15,
+            YieldBonusPercent = 10,
+            DiscoveryLine = "{0} has cut stone long enough to see how the bed lies before the wedge goes in. "
+                + "Every dig gives more stone now.",
+            LostLine = "The stone is broken anyhow again. {0} was the last who could read the bed.",
+        },
+        new TechniqueRow
+        {
+            Id = 8,
+            Name = "following the vein",
+            Skill = 16,
+            YieldBonusPercent = 20,
+            DiscoveryLine = "{0} has worked the mine long enough to follow the vein where it turns. "
+                + "Every dig brings up more ore now.",
+            LostLine = "The miners dig blind again. {0} was the last who could follow the vein.",
+        },
+        new TechniqueRow
+        {
+            Id = 9,
+            Name = "good hay",
+            Skill = 17,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has kept the herd long enough to cut the grass at its best and turn it dry. "
+                + "The same pasture fills the barn fuller now.",
+            LostLine = "The hay is cut anyhow again. {0} was the last who knew when.",
+        },
     };
 
     /// <summary>

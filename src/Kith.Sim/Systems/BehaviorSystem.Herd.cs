@@ -128,7 +128,7 @@ public sealed partial class BehaviorSystem
                 }
 
                 world.PassTheCutTile(barn, cut);
-                int hay = world.WithTool(villager, JobKind.Herdsman, world.Config.HayPerTile) * villager.Vigour / 100;
+                int hay = world.YieldFor(villager, JobKind.Herdsman, world.Config.HayPerTile) * villager.Vigour / 100; // good hay (W5)
                 villager.Carried.Receive(Goods.Hay, hay < 1 ? 1 : hay);
                 villager.State = VillagerState.HaulingToStore;
                 HaulOrSetDown(world, villager);

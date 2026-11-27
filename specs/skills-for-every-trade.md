@@ -8,7 +8,8 @@ catalogue), D754 (the teacher has no skill).
 **Workplan:** `systems-complete.md §5.1` W5 — *"a row each; a technique each for the trades with a master's craft,
 including Joe's crop that stands into winter."* Kind A, size M, independent of everything else.
 **Status:** 📝 **specced; ✅ every call answered (D921–D922, §7a); 🔨 building on `slice/w5-skills` — ✅ step 1 (D923): the nine
-skill rows, burying through `BeginWork`.** Steps 2–9 to come (§9).
+skill rows, burying through `BeginWork`; ✅ steps 2–3 (D924): techniques 4–9, tempering, the hay through `YieldFor`.** Steps
+3b–9 to come (§9).
 
 ---
 

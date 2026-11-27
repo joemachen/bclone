@@ -115,6 +115,19 @@ public sealed record TechniqueRow
     public int YieldBonusPercent { get; init; }
 
     /// <summary>
+    /// How much longer a tool lasts once the village knows this, as a percentage of its uses — <b>tempering</b>
+    /// (W5, `skills-for-every-trade.md §4`). Zero: no effect.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ Its own column because a forge makes ONE tool</b>, and 15 % of one rounds to nothing: a yield bonus there would be
+    /// a technique that fires its discovery line and changes nothing (D56's shape). Uses live on the villager, set when a
+    /// tool is taken up (<see cref="Core.SimWorld.ToolUsesWhenTaken"/>), so the village's better way reaches every tool taken
+    /// while it is known — the cart's too — and a tool already in hand keeps the uses it was taken with.
+    /// </remarks>
+    [JsonPropertyName("tool_uses_bonus_percent")]
+    public int ToolUsesBonusPercent { get; init; }
+
+    /// <summary>
     /// What the village log says the first time anybody works it out. <c>{0}</c> is the person.
     /// </summary>
     /// <remarks>
