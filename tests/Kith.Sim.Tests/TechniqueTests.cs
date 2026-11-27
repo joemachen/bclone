@@ -61,7 +61,9 @@ public sealed class TechniqueTests
         SimConfig config = VillageFixtures.Village;
         var catalogue = new TechniquesCatalog(config.Techniques, config.Skills);
 
-        Assert.Equal(4, catalogue.Count);
+        // Four until W5 (D924), which added one for each new trade that makes something.
+        Assert.Equal(config.Techniques.Count, catalogue.Count);
+        Assert.True(catalogue.Count >= 10, $"{catalogue.Count} techniques: W5's rows are missing.");
 
         for (int id = 0; id < catalogue.Count; id++)
         {
@@ -70,8 +72,12 @@ public sealed class TechniqueTests
             // ⭐ Found by asking the catalogue the question the sim asks: *which technique does a
             // master of this skill work out?* A row whose skill nothing claims would sit at Unknown
             // for three centuries and read exactly like one whose masters never appeared.
-            Assert.Equal(id, catalogue.FromSkill(row.Skill));
-            Assert.True(row.YieldBonusPercent > 0, $"{row.Name} does nothing.");
+            // A skill's techniques are FromSkill's lowest id first (W5's second farming technique is not the yield's).
+            int first = catalogue.FromSkill(row.Skill);
+            Assert.True(first >= 0 && first <= id, $"{row.Name}: no master of skill {row.Skill} would work it out.");
+            Assert.True(
+                row.YieldBonusPercent > 0 || row.ToolUsesBonusPercent > 0 || row.StandsIntoWinterDays > 0,
+                $"{row.Name} does nothing.");
             Assert.NotEqual(string.Empty, row.DiscoveryLine);
             Assert.NotEqual(string.Empty, row.LostLine);
         }
@@ -86,7 +92,7 @@ public sealed class TechniqueTests
         {
             new TechniqueRow
             {
-                Id = 4,
+                Id = config.Techniques.Max(t => t.Id) + 1,
                 Name = "glassblowing",
                 Skill = 99,
                 YieldBonusPercent = 10,

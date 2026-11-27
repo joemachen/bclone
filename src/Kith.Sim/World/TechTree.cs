@@ -79,6 +79,12 @@ public enum TechCondition
     /// derived). Not learned by doing: its moment is the first death's, and it never introduces the map.
     /// </summary>
     SomebodyDied,
+
+    /// <summary>
+    /// ⭐ Every technique there is known (W5, D922) — the latch is <see cref="SimWorld.GreatLibraryLearned"/>; the bar counts
+    /// the techniques known now of the catalogue's.
+    /// </summary>
+    EveryTechniqueKnown,
 }
 
 /// <summary>Where a node stands for this village (`tech-tree-map.md §3.2`).</summary>
@@ -163,6 +169,13 @@ public static class TechTree
         {
             Id = "library", Name = "The library", Unlocks = BuildingKind.Library, Condition = TechCondition.KeptGranaryYears,
             Says = "Keep a granary's count for long enough, and the counting becomes writing.",
+        },
+        new TechNodeRow
+        {
+            // ⭐ W5 (D922). One sentence: the tree's card is 160 tall (`tech tree:`).
+            Id = "great-library", Name = "The great library", Unlocks = BuildingKind.GreatLibrary,
+            Condition = TechCondition.EveryTechniqueKnown, Requires = new[] { "library" },
+            Says = "Know every technique there is, and the village raises a library with a shelf for each.",
         },
         new TechNodeRow
         {
@@ -291,6 +304,7 @@ public static class TechTree
             TechCondition.LibraryStands => world.SchoolLearned,
             TechCondition.ForageGathered => world.BarleyLearned,
             TechCondition.LongWalk => world.MarketStallLearned,
+            TechCondition.EveryTechniqueKnown => world.GreatLibraryLearned,
             _ => of > 0 && progress >= of,
         };
 
@@ -340,6 +354,8 @@ public static class TechTree
                 return (world.LogsEverFelled, world.Config.WorkshopUnlockLogs);
             case TechCondition.ForageGathered:
                 return (world.FoodEverProducedOf(Goods.Produce), world.Config.BarleyUnlockForage);
+            case TechCondition.EveryTechniqueKnown:
+                return (world.TechniquesKnown(), world.TechniquesCatalog.Count);
             case TechCondition.SomebodyDied:
                 return (Math.Min(world.DeathsEver, 1), 1);
             case TechCondition.LongWalk:

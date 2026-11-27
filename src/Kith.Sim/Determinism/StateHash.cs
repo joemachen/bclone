@@ -745,6 +745,17 @@ public static class StateHash
             hash = MixByte(hash, 0x5F);
         }
 
+        // ⭐ The great library (W5, D922): learned, and its gift — each a tag byte when true.
+        if (world.GreatLibraryLearned)
+        {
+            hash = MixByte(hash, 0x6B);
+        }
+
+        if (world.AFreeGreatLibraryIsOwed)
+        {
+            hash = MixByte(hash, 0x6C);
+        }
+
         // W4 (D905): the dead before this tick are gone — sparse, so a new village (0) hashes as it did before W4.
         if (world.BurialsFromTick != 0)
         {
@@ -928,6 +939,13 @@ public static class StateHash
                 hash = MixUInt32(hash, (uint)library.Records[r].TechniqueId);
             }
 
+            // The great library (W5) — its wear is read off its own row. Sparse: a library mixes nothing.
+            if (library.Kind != BuildingKind.Library)
+            {
+                hash = MixByte(hash, 0x67);
+                hash = MixUInt32(hash, (uint)library.Kind);
+            }
+
             // When it was raised and last mended (D552).
             hash = MixUInt64(hash, library.RaisedAtTick);
             hash = MixUInt64(hash, library.RepairedAtTick);
@@ -1075,6 +1093,13 @@ public static class StateHash
             hash = MixByte(hash, 0x6E);
             hash = MixUInt32(hash, (uint)world.BandsEverKnocked);
             hash = MixUInt32(hash, (uint)world.NextKnockYear);
+        }
+
+        // The day the frost takes a crop standing into winter (W5, `skills-for-every-trade.md §5`) — the reap reads it. Sparse.
+        if (world.CropStandsUntilDay != 0)
+        {
+            hash = MixByte(hash, 0xC5);
+            hash = MixUInt32(hash, (uint)world.CropStandsUntilDay);
         }
 
         // How many times the valley has been re-founded (D567) — the next wait is hashed on it. Sparse.
@@ -1576,6 +1601,14 @@ public static class StateHash
             if (progress.MasteredHere)
             {
                 hash = MixByte(hash, 1);
+            }
+
+            // ⭐ And the years beside a master that carry an unwritable technique (W5, D922) — sparse, tagged: the sim
+            // reads it to decide who keeps reading the water alive.
+            if (progress.BesideAMaster > 0)
+            {
+                hash = MixByte(hash, 0xB5);
+                hash = MixUInt32(hash, (uint)progress.BesideAMaster);
             }
         }
 

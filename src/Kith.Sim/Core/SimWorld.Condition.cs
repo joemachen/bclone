@@ -42,7 +42,7 @@ public sealed partial class SimWorld
 
     /// <summary>⚠️ A library carries no kind; the shipped library's row is read (`building-condition.md §4.5`).</summary>
     public Condition ConditionOf(Library library) =>
-        BuildingsCatalog[BuildingKind.Library] is BuildingRow row ? ConditionRules.Of(library.RaisedAtTick, library.RepairedAtTick, Tick, row, Config) : Condition.Sound;
+        BuildingsCatalog[library.Kind] is BuildingRow row ? ConditionRules.Of(library.RaisedAtTick, library.RepairedAtTick, Tick, row, Config) : Condition.Sound;
 
     public Condition ConditionOf(Well well) =>
         BuildingsCatalog[well.Kind] is BuildingRow row ? ConditionRules.Of(well.RaisedAtTick, well.RepairedAtTick, Tick, row, Config) : Condition.Sound;
@@ -73,7 +73,7 @@ public sealed partial class SimWorld
         RowOf(store) is BuildingRow row ? Report(store.RaisedAtTick, store.RepairedAtTick, row) : null;
 
     public WearReport? WearOf(Library library) =>
-        BuildingsCatalog[BuildingKind.Library] is BuildingRow row ? Report(library.RaisedAtTick, library.RepairedAtTick, row) : null;
+        BuildingsCatalog[library.Kind] is BuildingRow row ? Report(library.RaisedAtTick, library.RepairedAtTick, row) : null;
 
     public WearReport? WearOf(Well well) =>
         BuildingsCatalog[well.Kind] is BuildingRow row ? Report(well.RaisedAtTick, well.RepairedAtTick, row) : null;
@@ -230,7 +230,7 @@ public sealed partial class SimWorld
         for (int i = 0; i < Libraries.Count; i++)
         {
             Library library = Libraries[i];
-            if (BuildingsCatalog[BuildingKind.Library] is not BuildingRow row)
+            if (BuildingsCatalog[library.Kind] is not BuildingRow row)
             {
                 continue;
             }

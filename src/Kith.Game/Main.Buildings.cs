@@ -337,7 +337,7 @@ public partial class Main
         for (int i = 0; i < world.Libraries.Count; i++)
         {
             Library library = world.Libraries[i];
-            Row(CardKind.Library, i, library.Name, catalogue.NameOf(BuildingKind.Library), world.ConditionOf(library), library.Tile);
+            Row(CardKind.Library, i, library.Name, catalogue.NameOf(library.Kind), world.ConditionOf(library), library.Tile);
         }
 
         if (world.TownHall is TownHall hall)

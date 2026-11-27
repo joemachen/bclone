@@ -285,14 +285,36 @@ public sealed class SkillProgress
     /// </remarks>
     public bool MasteredHere { get; set; }
 
-    internal JsonObject ToSave() => new()
+    /// <summary>
+    /// Ticks spent holding this trade at the same workplace as a living master of it, while a technique of it that cannot
+    /// be written down is known — <b>what carries such a technique to somebody who is not yet a master</b> (W5, D922).
+    /// </summary>
+    /// <remarks>
+    /// Counted only for a skill with an unwritable technique (<see cref="TechniquesCatalog.HasUnwritableFor"/>) and only
+    /// until mastery, so every other progress entry stays 0 and mixes nothing (sparse, as <see cref="MasteredHere"/>).
+    /// <c>technique_carried_after_years</c> of it and the villager carries the technique (<see cref="Core.SimWorld.Carries"/>).
+    /// </remarks>
+    public int BesideAMaster { get; set; }
+
+    internal JsonObject ToSave()
     {
-        ["skill"] = SkillId,
-        ["ticks"] = Ticks,
-        ["work"] = Work,
-        ["mastered"] = Mastered,
-        ["mastered_here"] = MasteredHere,
-    };
+        var saved = new JsonObject
+        {
+            ["skill"] = SkillId,
+            ["ticks"] = Ticks,
+            ["work"] = Work,
+            ["mastered"] = Mastered,
+            ["mastered_here"] = MasteredHere,
+        };
+
+        // Sparse: a save from before W5 has no key, and reads 0.
+        if (BesideAMaster > 0)
+        {
+            saved["beside_a_master"] = BesideAMaster;
+        }
+
+        return saved;
+    }
 
     internal static SkillProgress FromSave(SaveReader save) => new()
     {
@@ -301,5 +323,6 @@ public sealed class SkillProgress
         Work = save.Int("work"),
         Mastered = save.Bool("mastered"),
         MasteredHere = save.Bool("mastered_here"),
+        BesideAMaster = save.Has("beside_a_master") ? save.Int("beside_a_master") : 0,
     };
 }

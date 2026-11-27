@@ -535,6 +535,43 @@ public sealed class CemeteryTests
         Assert.Contains(sink.Entries, e => e.Message.StartsWith($"{first.FullName} was buried", StringComparison.Ordinal));
     }
 
+    /// <summary>
+    /// ⭐ W5 (`skills-for-every-trade.md §2`): a master groundskeeper buries in half the time — the burial begins through
+    /// <c>BeginWork</c> now, as every other action does, so the grave-keeping row reaches it. A novice's is today's 12.
+    /// </summary>
+    [Theory]
+    [InlineData(false, 12)]
+    [InlineData(true, 6)]
+    public void AMasterGroundskeeperBuriesInHalfTheTime(bool master, int ticks)
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        List<Villager> people = world.Villagers.Where(v => v.Alive && v.CanWork).OrderBy(v => v.Id).ToList();
+        Workplace cemetery = StandACemetery(loop);
+        world.BurialsFromTick = world.Tick;
+        world.RebuildTheUnburied();
+        Dies(loop, people[1]);
+        Villager keeper = Keep(world, cemetery);
+        SkillRow skill = world.SkillGrownBy(JobKind.Groundskeeper)!;
+        if (master)
+        {
+            keeper.ProgressIn(skill.Id).Work = Config.MasteryWorkFor(skill);
+        }
+
+        int longest = 0;
+        for (int i = 0; i < 4000 && world.Unburied.Count > 0; i++)
+        {
+            loop.Step(1);
+            if (keeper.State == VillagerState.Burying)
+            {
+                longest = Math.Max(longest, keeper.ActionTicksRemaining);
+            }
+        }
+
+        Assert.Empty(world.Unburied);
+        Assert.Equal(ticks, longest);
+    }
+
     /// <summary>A small cemetery kept, the unlock's dead buried in place 0; then a stranger, so the lowest free place is never beside.</summary>
     private static (SimLoop Loop, Workplace Cemetery, Villager Keeper, List<Villager> Adults) AKeptCemeteryWithAStranger()
     {
@@ -1372,5 +1409,5 @@ public sealed class CemeteryTests
     }
 
     /// <summary>Taken 2026-11-26 (D916), on its first run.</summary>
-    private const ulong BuryingGolden = 10431254814961408444UL;
+    private const ulong BuryingGolden = 12492588746476946015UL; // 10431254814961408444 until W5 (D928): the new trades grow skill — ablated, it returns
 }

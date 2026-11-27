@@ -4068,7 +4068,7 @@ public partial class VillageMap : Control
             Condition worn = world.ConditionOf(library);
             Color paint = Weathered(LibraryColour, worn);
             // ⭐ Painted with the watercolour tick (A85, `building-roofs.md`); the rectangle otherwise, as it always was.
-            if (!DrawPaintedBuilding(RoofOf(BuildingKind.Library), centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, paint, worn, world.DoorOf(library), i))
+            if (!DrawPaintedBuilding(RoofOf(library.Kind), centre, library.ExtentWidth * 0.8f, library.ExtentHeight * 0.8f, library.Facing.Raw, paint, worn, world.DoorOf(library), i))
             {
                 DrawFootprint(
                     centre,

@@ -16,6 +16,10 @@
 >
 > **⚠️ CORRECTED 2026-08-24.** This header said the proficiency model *"does not exist in the sim"* for a phase after it shipped. **Phase 3 built all five items of `skills-catalog.md §6`'s contract** (D181–D202): per-villager per-skill proficiency, a stated novice floor, years-in-practice, a live `Recordable` column, and `SimWorld.KnowledgeAtRiskNote` as the *who still knows this and how old are they* query. **A spec that lies about its own status is worse than no spec** (D159, which found five of them) — and this one was read at exactly the moment a session was orienting.
 >
+> **⭐ W5 (D923–D927): eleven techniques are built now** — the first four, and seven for the trades that had none, including
+> the first that cannot be written down (*reading the water*, carried beside a master — §3b made real) and Joe's crop that stands
+> into winter; and **the great library**, a gift when the village knows every technique there is. `skills-for-every-trade.md`.
+>
 > **⭐ §9 now has real content** — 39 named techniques from Joe (`TECH-EXAMPLE.md`, D206), each attached to a building and each **diegetic, not picked from a menu.** ⛔ **§9a lists what did not come across cleanly and is still his to settle.**
 > Format per `METHODOLOGY.md §2`. Written ahead of the build phase so there is settled content to implement against rather than content invented mid-implementation.
 >

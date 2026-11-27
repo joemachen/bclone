@@ -318,7 +318,7 @@ public sealed class SaveLoadTests : IDisposable
         {
             "Tick", "Rng", "Moments", "Libraries", "TownHall", "Wells", "FirstGranaryTick", "SaidTheyCanWrite",
             "FoodProducedThisYear", "FoodProducedLastYear", "FoodLedgerYears", "FoodEatenThisYear", "FoodEatenLastYear",
-            "FoodEverProduced", "FoodEverBroughtIn", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed",
+            "FoodEverProduced", "FoodEverBroughtIn", "_foodEverProducedOf", "FoodEverEaten", "AFreeLibraryIsOwed", "AFreeSmithyIsOwed", "GreatLibraryLearned", "AFreeGreatLibraryIsOwed",
             "AFirstPathHasWorn", "ATownHallIsOwed", "SaidTheFoundersAreGone", "KnowledgeStates", "LastKnowerIds",
             "Villagers", "Households", "TravelCost", "Map", "Zones", "Paths", "StockLimits", "JobLimits",
             "VillageSharesOutWork", "Workplaces", "StoreBuildings", "GroundStacks", "_waitingOnTheGround",
@@ -327,7 +327,7 @@ public sealed class SaveLoadTests : IDisposable
             "LogsEverFelled", "LogsEverSplit", "StoneEverDug", "IronEverDug", "ToolsEverForged", "IronToolsEverForged",
             "ToolsEverTaken", "WorkActionsBegun", "Seed", "WheatEverReaped", "FlourEverGround", "BreadEverBaked", "LeatherEverHeld", "CoatsEverSewn",
             "HandcartsEverMade", "WorkshopLearned", "MarketStallLearned", "HouseholdsThatWalkedFar", "BarleyLearned", "SchoolLearned", "SchoolsAreFull", "CottageLearned", "ManorLearned", "HomesBuiltAs", "RebuildsOlderHomes",
-            "Bridges", "BridgeCrossings", "BandsEverKnocked", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
+            "Bridges", "BridgeCrossings", "BandsEverKnocked", "CropStandsUntilDay", "NextKnockYear", "Refoundings", "NomadsEnabled", "LettersEnabled",
             "TradeKeep", "TradeBuy", "Boat", "BoatsEverCame", "NeighbourStocks", "RegionAwakeSince", "TradeBuyHead",
             // W4 (D905): the dead before it are gone — `burials_from`, written in every save (`CemeteryTests`).
             "BurialsFromTick", "AFreeCemeteryIsOwed",
@@ -481,14 +481,14 @@ public sealed class SaveLoadTests : IDisposable
             "_routeCost", "_routeCostBuiltAt",
         }),
         (typeof(Stockpile), Kept.Saved, new[] { "_held", "_produced", "Capacity" }),
-        (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere" }),
+        (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere", "BesideAMaster" }), // beside_a_master written only when set (W5, D922)
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed", "Marks" }),
         (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
         (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
-        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed" }),
+        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed", "Kind" }), // kind written only for the great library (W5)
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
         (typeof(TradeBoat), Kept.Saved, new[] { "NeighbourId", "AppearsAtTick", "DocksAtTick", "LeavesAtTick" }),
         (typeof(NeighbourStock), Kept.Saved, new[] { "Held", "Animals" }),

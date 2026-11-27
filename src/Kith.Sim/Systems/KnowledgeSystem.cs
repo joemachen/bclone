@@ -82,7 +82,8 @@ public sealed class KnowledgeSystem : ISimSystem
                 was = KnowledgeState.Known;
             }
 
-            Villager? knower = FirstLivingMasterOf(world, technique.Skill);
+            Villager? knower = FirstLivingMasterOf(world, technique.Skill)
+                ?? (technique.Recordable ? null : FirstLivingCarrierOf(world, technique));
 
             // ⭐⭐ DISCOVERY IS AN EVENT; PERSISTENCE IS A SCAN — and they ask different questions
             // (Joe, 2026-08-26, from play). A technique the village has never had is worked out by
@@ -93,7 +94,13 @@ public sealed class KnowledgeSystem : ISimSystem
             // being worked out on **tick one**, before the village had a house. *"Unlock by doing"*
             // with nothing done. **A founding master is skilled and did not have the moment here.**
             bool nobodyHasEverHadIt = was == KnowledgeState.Unknown;
-            if (nobodyHasEverHadIt && !AnybodyMasteredItHere(world, technique.Skill))
+            if (nobodyHasEverHadIt && technique.AfterYears is int years)
+            {
+                // ⭐ W5 (call 5): a technique with years of its own is worked out by a home-grown master with that many
+                // years on the task — and it is they the line names.
+                knower = FirstWhoWorkedItOutHere(world, technique.Skill, years);
+            }
+            else if (nobodyHasEverHadIt && !AnybodyMasteredItHere(world, technique.Skill))
             {
                 knower = null;
             }
@@ -123,7 +130,8 @@ public sealed class KnowledgeSystem : ISimSystem
             // or the log would fill with it for ever.
             if (now == KnowledgeState.Known && !world.IsWrittenDown(id))
             {
-                Library? shelved = world.WriteDown(id, knower?.Name ?? world.LastKnowerOf(id));
+                // ⛔ One that cannot be written down is never shelved (W5, D922): it lives in people, and the moment says so.
+                Library? shelved = technique.Recordable ? world.WriteDown(id, knower?.Name ?? world.LastKnowerOf(id)) : null;
                 if (shelved is not null)
                 {
                     world.KnowledgeStates[id] = KnowledgeState.Established;
@@ -195,6 +203,8 @@ public sealed class KnowledgeSystem : ISimSystem
             // longer in any list the scan can reach.
             world.Narrate(Said(technique.LostLine, world.LastKnowerOf(id)), LogCategory.Discovery);
         }
+
+        world.NoticeIfEveryTechniqueIsKnown();
     }
 
     /// <summary>
@@ -248,6 +258,22 @@ public sealed class KnowledgeSystem : ISimSystem
     /// <b>The discovery half of the rule.</b> Asked only when nobody has ever had the technique —
     /// once the village has it, <see cref="FirstLivingMasterOf"/>'s looser question keeps it alive.
     /// </remarks>
+    /// <summary>The first living home-grown master, by id, with this many years on the task — or null (W5).</summary>
+    private static Villager? FirstWhoWorkedItOutHere(SimWorld world, int skillId, int years)
+    {
+        long needed = (long)years * world.Config.TicksPerYear;
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (villager.Alive && villager.FindProgressIn(skillId) is { MasteredHere: true } progress && progress.Ticks >= needed)
+            {
+                return villager;
+            }
+        }
+
+        return null;
+    }
+
     private static bool AnybodyMasteredItHere(SimWorld world, int skillId)
     {
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -260,6 +286,20 @@ public sealed class KnowledgeSystem : ISimSystem
         }
 
         return false;
+    }
+
+    /// <summary>The first living villager, by id, who carries this technique without having mastered its skill (D922).</summary>
+    private static Villager? FirstLivingCarrierOf(SimWorld world, TechniqueRow technique)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            if (world.Carries(world.Villagers[i], technique))
+            {
+                return world.Villagers[i];
+            }
+        }
+
+        return null;
     }
 
     private static Villager? FirstLivingMasterOf(SimWorld world, int skillId)
@@ -303,6 +343,12 @@ public sealed class KnowledgeSystem : ISimSystem
     private static string Kept(
         SimWorld world, TechniqueRow technique, Villager knower, Library? shelved)
     {
+        if (!technique.Recordable)
+        {
+            return $"It cannot be written down: it lives in {knower.Name}'s hands, and in the hands of anybody who works "
+                + $"beside a master of it for {world.Config.TechniqueCarriedAfterYears} years.";
+        }
+
         if (shelved is not null)
         {
             int free = shelved.Shelves - shelved.Records.Count;

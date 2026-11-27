@@ -115,6 +115,61 @@ public sealed record TechniqueRow
     public int YieldBonusPercent { get; init; }
 
     /// <summary>
+    /// How much longer a tool lasts once the village knows this, as a percentage of its uses — <b>tempering</b>
+    /// (W5, `skills-for-every-trade.md §4`). Zero: no effect.
+    /// </summary>
+    /// <remarks>
+    /// <b>⭐ Its own column because a forge makes ONE tool</b>, and 15 % of one rounds to nothing: a yield bonus there would be
+    /// a technique that fires its discovery line and changes nothing (D56's shape). Uses live on the villager, set when a
+    /// tool is taken up (<see cref="Core.SimWorld.ToolUsesWhenTaken"/>), so the village's better way reaches every tool taken
+    /// while it is known — the cart's too — and a tool already in hand keeps the uses it was taken with.
+    /// </remarks>
+    [JsonPropertyName("tool_uses_bonus_percent")]
+    public int ToolUsesBonusPercent { get; init; }
+
+    /// <summary>
+    /// Whether a library can write this down — <b>false for knowledge only a person can carry</b> (`tech-tree.md §3b`:
+    /// *"knowing when the fish run"*; W5, D922).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Refused a shelf, by name</b> (<see cref="Systems.KnowledgeSystem"/>), and so never <see cref="KnowledgeState.Established"/>.
+    /// It lives while somebody living carries it: a master of its skill, or — Joe's call, D922 — a villager who has worked
+    /// <c>technique_carried_after_years</c> at the same workplace as a master (<see cref="SkillProgress.BesideAMaster"/>,
+    /// <see cref="Core.SimWorld.Carries"/>). *"If there are people working alongside the master fisher, do they learn it
+    /// from the master?"* — for this kind, yes.
+    /// </para>
+    /// <para>
+    /// On the technique and not the skill: a library writes techniques. <see cref="SkillRow.Recordable"/> stays the inert
+    /// column it has always been.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("recordable")]
+    public bool Recordable { get; init; } = true;
+
+    /// <summary>
+    /// Days a crop not reaped by winter's first day stands on, reapable, before the frost takes it — <b>Joe's crop that
+    /// stands into winter</b> (DESIGN §5, D300; W5 call 5). Zero: no effect.
+    /// </summary>
+    /// <remarks>
+    /// <b>A buff to the deadline, not the yield</b>: the crop still rots, on the day after its last
+    /// (<see cref="Systems.CropSystem"/>), and the turn of winter says which day (<see cref="Core.SimWorld.CropStandsUntilDay"/>).
+    /// </remarks>
+    [JsonPropertyName("stands_into_winter_days")]
+    public int StandsIntoWinterDays { get; init; }
+
+    /// <summary>
+    /// Years on the task — the calendar fact, <see cref="SkillProgress.Ticks"/> — before a home-grown master works this out,
+    /// or null to work it out at mastery as every other technique does (W5, call 5: farming's second, at thirty).
+    /// </summary>
+    /// <remarks>
+    /// Discovery only: once known, any living master of the skill keeps it, as with every technique. ⚠️ The row's
+    /// discovery line says the years in words, so the two move together.
+    /// </remarks>
+    [JsonPropertyName("after_years")]
+    public int? AfterYears { get; init; }
+
+    /// <summary>
     /// What the village log says the first time anybody works it out. <c>{0}</c> is the person.
     /// </summary>
     /// <remarks>
@@ -151,6 +206,7 @@ public sealed class TechniquesCatalog
 {
     private readonly TechniqueRow[] _rows;
     private readonly int[] _bySkill;
+    private readonly bool[] _unwritableBySkill;
 
     /// <summary>Build the catalogue from config rows, and index them by the skill that yields them.</summary>
     public TechniquesCatalog(IReadOnlyList<TechniqueRow> rows, IReadOnlyList<SkillRow> skills)
@@ -200,7 +256,21 @@ public sealed class TechniquesCatalog
                 _bySkill[row.Skill] = id;
             }
         }
+
+        // Built once: `SkillSystem` asks it of every worker every tick, so the answer is an index, never a scan.
+        _unwritableBySkill = new bool[widest];
+        for (int id = 0; id < _rows.Length; id++)
+        {
+            if (_rows[id] is { Recordable: false } row && row.Skill >= 0 && row.Skill < widest)
+            {
+                _unwritableBySkill[row.Skill] = true;
+            }
+        }
     }
+
+    /// <summary>Whether any technique of this skill cannot be written down — and so is carried beside its master (D922).</summary>
+    public bool HasUnwritableFor(int skillId) =>
+        skillId >= 0 && skillId < _unwritableBySkill.Length && _unwritableBySkill[skillId];
 
     /// <summary>How many techniques exist.</summary>
     public int Count => _rows.Length;
@@ -265,6 +335,12 @@ public sealed class Library
     public int ExtentWidth { get; init; } = 1;
 
     public int ExtentHeight { get; init; } = 1;
+
+    /// <summary>
+    /// What was raised — the library, or the great library (W5, D922): the row its wear is read from and the view draws.
+    /// Saved only when not the library, so a save from before W5 reads as one.
+    /// </summary>
+    public BuildingKind Kind { get; init; } = BuildingKind.Library;
 
     public Footprint Footprint => new()
     {
@@ -350,6 +426,7 @@ public sealed class Library
             ["repaired_at"] = SaveWriter.Hex(RepairedAtTick),
             ["closed"] = Closed,
             ["records"] = records,
+            ["kind"] = Kind == BuildingKind.Library ? null : SaveWriter.Enum(Kind),
         };
     }
 
@@ -366,6 +443,7 @@ public sealed class Library
             RaisedAtTick = save.ULong("raised_at"),
             RepairedAtTick = save.ULong("repaired_at"),
             Closed = save.HasValue("closed") && save.Bool("closed"),
+            Kind = save.HasValue("kind") ? save.Enum<BuildingKind>("kind") : BuildingKind.Library,
         };
 
         foreach (SaveReader record in save.Objects("records"))

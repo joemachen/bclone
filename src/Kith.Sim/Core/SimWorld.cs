@@ -385,6 +385,15 @@ public sealed partial class SimWorld : IObstacles
     /// </summary>
     public bool AFreeSmithyIsOwed { get; internal set; }
 
+    /// <summary>
+    /// ⭐ Whether the village has learned every technique there is, once (W5, D922) — the latch the great library is learned
+    /// on. Never cleared: a technique lost afterwards does not take the building back.
+    /// </summary>
+    public bool GreatLibraryLearned { get; internal set; }
+
+    /// <summary>The great library's gift, unplaced — the library's shape: materials free, work owed, exactly one (D922).</summary>
+    public bool AFreeGreatLibraryIsOwed { get; internal set; }
+
     /// <summary>Whether the village log has already said the first path wore through (D358). Once, ever.</summary>
     /// <remarks>Hashed sparsely: a village whose grass is still whole mixes nothing.</remarks>
     public bool AFirstPathHasWorn { get; internal set; }
@@ -2671,7 +2680,7 @@ public sealed partial class SimWorld : IObstacles
         // and since 2026-09-05 that season is AUTUMN, not spring: the limit gates the
         // harvest now, and sowing goes ahead regardless so the year is not thrown away in
         // April on the strength of a number that may be false by August.
-        if (SeasonRules.IsReaping(Clock.Season) && GrainHeldBackAt(farm) is Goods grown)
+        if (MayReapToday() && GrainHeldBackAt(farm) is Goods grown)
         {
             return $"{farm.Name} has stopped reaping — you asked the village to keep "
                 + $"{StockLimits.For(grown)} {GoodsCatalog.NameOf(grown)} and it has {HeldAgainstItsLimit(grown)} stored. "
@@ -2682,7 +2691,7 @@ public sealed partial class SimWorld : IObstacles
         // method that is about a loss rather than about idleness, and it is the reason the
         // method is worth having: winter takes what is left, and this is the last window in
         // which the player can do anything about it.
-        if (SeasonRules.IsReaping(Clock.Season) && StandingCropSixteenths(farm) > 0)
+        if (MayReapToday() && StandingCropSixteenths(farm) > 0)
         {
             return $"{farm.Name} has a crop standing and nobody reaping it — winter will "
                 + "take what is left.";
@@ -3512,6 +3521,25 @@ public sealed partial class SimWorld : IObstacles
     /// with years they have not spent.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Whether this villager carries this technique: a master of its skill — or, for one that cannot be written down, a
+    /// villager with <c>technique_carried_after_years</c> beside a master (W5, D922). Not whether the village knows it.
+    /// </summary>
+    public bool Carries(Villager villager, TechniqueRow technique)
+    {
+        ArgumentNullException.ThrowIfNull(villager);
+        ArgumentNullException.ThrowIfNull(technique);
+        if (!villager.Alive || villager.FindProgressIn(technique.Skill) is not { } progress)
+        {
+            return false;
+        }
+
+        return progress.Mastered
+            || (!technique.Recordable
+                && Config.TechniqueCarriedAfterYears > 0
+                && progress.BesideAMaster >= Config.TechniqueCarriedAfterYears * Config.TicksPerYear);
+    }
+
     public List<TechniqueRow> TechniquesCarriedBy(Villager villager)
     {
         ArgumentNullException.ThrowIfNull(villager);
@@ -3525,8 +3553,7 @@ public sealed partial class SimWorld : IObstacles
         for (int id = 0; id < TechniquesCatalog.Count; id++)
         {
             TechniqueRow row = TechniquesCatalog[id];
-            if (KnowledgeStates[id] != KnowledgeState.Unknown
-                && villager.FindProgressIn(row.Skill) is { Mastered: true })
+            if (KnowledgeStates[id] != KnowledgeState.Unknown && Carries(villager, row))
             {
                 carried.Add(row);
             }
@@ -3550,15 +3577,33 @@ public sealed partial class SimWorld : IObstacles
         for (int i = 0; i < Villagers.Count; i++)
         {
             Villager other = Villagers[i];
-            if (other.Alive
-                && other.Id != villager.Id
-                && other.FindProgressIn(technique.Skill) is { Mastered: true })
+            if (other.Alive && other.Id != villager.Id && Carries(other, technique))
             {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// The uses a tool of this kind starts with when a villager takes it up — its row's, and a quarter more while the
+    /// village knows tempering (W5, `skills-for-every-trade.md §4`; <see cref="TechniqueRow.ToolUsesBonusPercent"/>).
+    /// </summary>
+    /// <remarks>Integer and rounded down (D2); every known technique with the column counts, in id order.</remarks>
+    public int ToolUsesWhenTaken(Goods kind)
+    {
+        int uses = GoodsCatalog[kind].ToolUses;
+        int bonus = 0;
+        for (int id = 0; id < TechniquesCatalog.Count; id++)
+        {
+            if (TechniquesCatalog[id] is { ToolUsesBonusPercent: > 0 } row && KnowledgeStates[id] != KnowledgeState.Unknown)
+            {
+                bonus += row.ToolUsesBonusPercent;
+            }
+        }
+
+        return bonus <= 0 ? uses : uses + (uses * bonus / 100);
     }
 
     public int YieldWithTechnique(JobKind trade, int baseAmount)
@@ -4097,6 +4142,11 @@ public sealed partial class SimWorld : IObstacles
         // should unlock together. it doesnt make sense to mill something … and then unlock the bakery"*).
         // ⭐ THE BREWERY AND THE TAVERN ARE LEARNED WITH BARLEY, AT THE FORAGER'S FIND (W3, Joe's call 2A, D834) — the latch,
         // never the counter, as the workshop's: it is what is hashed.
+        // ⭐ THE GREAT LIBRARY IS LEARNED WHEN THE VILLAGE KNOWS EVERY TECHNIQUE THERE IS (W5, D922) — the latch, never the count.
+        BuildingKind.GreatLibrary when !GreatLibraryLearned =>
+            $"The great library waits until the village knows every technique there is — it knows {TechniquesKnown()} of "
+            + $"{TechniquesCatalog.Count}.",
+
         BuildingKind.Brewery or BuildingKind.Tavern when !BarleyLearned =>
             "Nobody here brews yet — it comes with barley, once the foragers find it growing wild "
             + $"({FoodEverProducedOf(Goods.Produce)} of the {Config.BarleyUnlockForage} gathered).",
@@ -5588,7 +5638,7 @@ public sealed partial class SimWorld : IObstacles
         }
 
         bool sowing = SeasonRules.IsSowing(Clock.Season);
-        bool reaping = SeasonRules.IsReaping(Clock.Season);
+        bool reaping = MayReapToday();
         if (!sowing && !reaping)
         {
             return null;
@@ -8825,9 +8875,9 @@ public sealed partial class SimWorld : IObstacles
             return BuildingKindOf(store);
         }
 
-        if (LibraryCovering(tile) is not null)
+        if (LibraryCovering(tile) is Library library)
         {
-            return BuildingKind.Library;
+            return library.Kind;
         }
 
         if (TownHallCovers(tile))
@@ -10060,11 +10110,20 @@ public sealed partial class SimWorld : IObstacles
 
         // ⭐ THE GIFT IS SPENT HERE, ON THE FIRST ONE MARKED. The villagers gathered the materials;
         // the crew still raise it, so the work stands and only the cost falls away.
-        if (AFreeLibraryIsOwed && BuildingsCatalog[kind]?.Shelves > 0)
+        if (AFreeLibraryIsOwed && BuildingsCatalog[kind] is { Shelves: > 0, HoldsEveryTechnique: false })
         {
             AFreeLibraryIsOwed = false;
             recipe = new BuildingRecipe(recipe.WorkTicks);
             Narrate("The timber and stone for the library were gathered by the village. "
+                + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+
+        // ⭐ AND THE GREAT LIBRARY'S (W5, D922): asked of the row, as the library's is.
+        if (AFreeGreatLibraryIsOwed && BuildingsCatalog[kind]?.HoldsEveryTechnique == true)
+        {
+            AFreeGreatLibraryIsOwed = false;
+            recipe = new BuildingRecipe(recipe.WorkTicks);
+            Narrate($"The timber and stone for the {BuildingsCatalog[kind]!.Name} were gathered by the village. "
                 + $"{Clock.SeasonAndYear()}.", LogCategory.Discovery);
         }
 
@@ -11354,6 +11413,7 @@ public sealed partial class SimWorld : IObstacles
             {
                 Position = position,
                 Name = name,
+                Kind = kind,
                 Shelves = row.Shelves,
                 RaisedAtTick = Tick,
                 Facing = facing,
@@ -15541,6 +15601,8 @@ public sealed partial class SimWorld : IObstacles
             ["food_ever_eaten"] = FoodEverEaten,
             ["a_free_library_is_owed"] = AFreeLibraryIsOwed,
             ["a_free_smithy_is_owed"] = AFreeSmithyIsOwed,
+            ["great_library_learned"] = GreatLibraryLearned ? true : null,
+            ["a_free_great_library_is_owed"] = AFreeGreatLibraryIsOwed ? true : null,
             ["burials_from"] = SaveWriter.Hex(BurialsFromTick),
             ["a_free_cemetery_is_owed"] = AFreeCemeteryIsOwed,
             ["a_first_path_has_worn"] = AFirstPathHasWorn,
@@ -15588,6 +15650,7 @@ public sealed partial class SimWorld : IObstacles
             ["tools_ever_taken"] = ToolsEverTaken,
             ["work_actions_begun"] = SaveWriter.Ints(WorkActionsBegun),
             ["bands_ever_knocked"] = BandsEverKnocked,
+            ["crop_stands_until_day"] = CropStandsUntilDay,
             ["next_knock_year"] = NextKnockYear,
             ["refoundings"] = Refoundings,
             ["nomads_enabled"] = NomadsEnabled,
@@ -15744,6 +15807,8 @@ public sealed partial class SimWorld : IObstacles
         FoodEverEaten = save.Int("food_ever_eaten");
         AFreeLibraryIsOwed = save.Bool("a_free_library_is_owed");
         AFreeSmithyIsOwed = save.Bool("a_free_smithy_is_owed");
+        GreatLibraryLearned = save.HasValue("great_library_learned") && save.Bool("great_library_learned");
+        AFreeGreatLibraryIsOwed = save.HasValue("a_free_great_library_is_owed") && save.Bool("a_free_great_library_is_owed");
         // W4 (D905): a save from before has no mark, and every death in it is before its own tick — those dead are gone.
         BurialsFromTick = save.HasValue("burials_from") ? save.ULong("burials_from") : Tick;
 
@@ -15812,6 +15877,7 @@ public sealed partial class SimWorld : IObstacles
         ToolsEverTaken = save.Int("tools_ever_taken");
         WorkActionsBegun = save.Ints("work_actions_begun").ToArray();
         BandsEverKnocked = save.Int("bands_ever_knocked");
+        CropStandsUntilDay = save.Has("crop_stands_until_day") ? save.Int("crop_stands_until_day") : 0; // W5; older saves 0
         NextKnockYear = save.Int("next_knock_year");
         Refoundings = save.HasValue("refoundings") ? save.Int("refoundings") : 0;
         NomadsEnabled = save.Bool("nomads_enabled");

@@ -4723,6 +4723,27 @@ public sealed record SimConfig
             ExtentWidth = 2,
             ExtentHeight = 2,
         },
+
+        // ⭐⭐ THE GREAT LIBRARY (W5, D922; Joe: *"should unlock … when the 11th technique has been learned - whether or not any
+        // other libraries have been built"*). A gift when the village knows every technique there is, with a shelf for each —
+        // eleven today; the validator holds it to the catalogue. One, ever. ⚠️ Once it stands nothing written is lost again:
+        // what stays mortal is every person's years and the one technique that cannot be written (D922).
+        new BuildingRow
+        {
+            Id = (int)BuildingKind.GreatLibrary,
+            Name = "great library",
+            Materials = new[]
+            {
+                new MaterialCost(World.Goods.Logs, GreatLibraryLogs),
+                new MaterialCost(World.Goods.Stone, GreatLibraryStone),
+            },
+            WorkTicks = GreatLibraryWorkTicks,
+            Shelves = 11,
+            HoldsEveryTechnique = true,
+            Singleton = true,
+            ExtentWidth = 3,
+            ExtentHeight = 3,
+        },
         new BuildingRow
         {
             Id = (int)BuildingKind.TownHall,
@@ -5313,19 +5334,93 @@ public sealed record SimConfig
                 + "The mash is judged by its smell.",
         },
 
-        // ⭐ THE MILLER'S AND THE BAKER'S ROWS ARE SAFE SINCE D392 (Joe, `food-chain.md §9` call 3):
-        // the founders' trades are drawn from `founding_trades`, a stated list, never from this
-        // catalogue's length — so adding a row moves no founding (`FoodChainTests.
-        // NoFoundingMovesWithTheNewSkillRows`). The note below is the history, kept.
-        //
-        // ⛔ NO ROW FOR THE SMITH — NOR FOR THE FISHER OR THE HUNTER — AND THE REASON IS
-        // MEASURED (D391). The founders' trades are drawn from THIS list with the run's `Rng`
-        // (`SimWorld.GiveTheFoundersTheirTrades`: `NextInt(0, available.Count)`), so a seventh
-        // row reshuffles which trade every founder in every seed has mastered — the fixture's
-        // stores read full where they had read 2,424 held, and three food-limit guards went red
-        // for a village that had never seen a tool. D344's trap, one catalogue over: a draw
-        // whose range is a content count is a seed contract. A skill for the three trades
-        // wants the founding's trades drawn from a stated list, or a per-stage seed, first.
+        // ⭐⭐ W5 (`skills-for-every-trade.md §2`, D919–): EVERY WORKING TRADE BUT THE TEACHER (D754) GROWS A SKILL. The rows
+        // are all it takes — `BeginWork` asks `SkillGrownBy`, so a master casts, hunts, forges, digs, herds and buries in half
+        // the time. The merchant and the tavern keeper have no action with a length: years, tiers and the line, and no speed
+        // (call 2). ⭐ SAFE SINCE D392: the founders, nomads and a re-founding draw from `founding_trades`, never from this
+        // catalogue's length, so these rows move no founding (`TradeSkillTests.NoFoundingMovesWithTheTradeRows`). Until W5
+        // this said *"no row for the smith, nor the fisher or the hunter"*, for the seed contract D392 then removed.
+        new SkillRow
+        {
+            Id = 12,
+            Name = "fishing",
+            GrownBy = JobKind.Fisher,
+            YearsPhrase = "as a fisher",
+            MasteryLine = "{0} has fished this river for {1} years. "
+                + "The water is read before the line goes in.",
+        },
+        new SkillRow
+        {
+            Id = 13,
+            Name = "hunting",
+            GrownBy = JobKind.Hunter,
+            YearsPhrase = "as a hunter",
+            MasteryLine = "{0} has hunted these woods for {1} years. "
+                + "The game is found where it was always going to be.",
+        },
+        new SkillRow
+        {
+            Id = 14,
+            Name = "smithing",
+            GrownBy = JobKind.Smith,
+            YearsPhrase = "as a smith",
+            MasteryLine = "{0} has worked the village's forge for {1} years. "
+                + "The iron is struck at the right heat, every time.",
+        },
+        new SkillRow
+        {
+            Id = 15,
+            Name = "quarrying",
+            GrownBy = JobKind.Quarrier,
+            YearsPhrase = "as a quarrier",
+            MasteryLine = "{0} has cut the village's stone for {1} years. "
+                + "The rock splits where it is asked to.",
+        },
+        new SkillRow
+        {
+            Id = 16,
+            Name = "mining",
+            GrownBy = JobKind.Miner,
+            YearsPhrase = "as a miner",
+            MasteryLine = "{0} has worked the mine for {1} years. "
+                + "The ore is followed by feel in the dark.",
+        },
+        new SkillRow
+        {
+            Id = 17,
+            Name = "herding",
+            GrownBy = JobKind.Herdsman,
+            YearsPhrase = "as a herdsman",
+            MasteryLine = "{0} has kept the herd for {1} years. "
+                + "Every beast is known by its walk.",
+        },
+        new SkillRow
+        {
+            Id = 18,
+            Name = "bartering",
+            GrownBy = JobKind.Merchant,
+            YearsPhrase = "as a merchant",
+            MasteryLine = "{0} has kept the trading post for {1} years. "
+                + "Every boat's master is an old acquaintance.",
+        },
+        new SkillRow
+        {
+            Id = 19,
+            Name = "tavern keeping",
+            GrownBy = JobKind.TavernKeeper,
+            YearsPhrase = "as a tavern keeper",
+            MasteryLine = "{0} has kept the tavern for {1} years. "
+                + "Every regular's cup is filled before they ask.",
+        },
+        new SkillRow
+        {
+            Id = 20,
+            Name = "grave keeping",
+            GrownBy = JobKind.Groundskeeper,
+            YearsPhrase = "as a groundskeeper",
+            MasteryLine = "{0} has kept the cemetery for {1} years. "
+                + "Every grave is known, and whose it is.",
+        },
     };
 
     /// <summary>
@@ -5386,6 +5481,19 @@ public sealed record SimConfig
     [JsonPropertyName("library_work_ticks")]
     public int LibraryWorkTicks { get; init; } = 55;
 
+    /// <summary>Logs a great library takes — ⚠️ a placeholder: the first is a gift (D922), so only a second pays it.</summary>
+    [JsonPropertyName("great_library_logs")]
+    public int GreatLibraryLogs { get; init; } = 70;
+
+    /// <summary>Stone a great library takes — a placeholder, as its logs.</summary>
+    [JsonPropertyName("great_library_stone")]
+    public int GreatLibraryStone { get; init; } = 90;
+
+    /// <summary>Ticks of work a great library takes — the gift covers the materials, never the work (D232), so every village
+    /// given one pays this.</summary>
+    [JsonPropertyName("great_library_work_ticks")]
+    public int GreatLibraryWorkTicks { get; init; } = 110;
+
     /// <summary>
     /// How many techniques one library can hold records of.
     /// </summary>
@@ -5406,6 +5514,11 @@ public sealed record SimConfig
     /// argued with it. The ratio note above stands as the thing to watch: with four techniques
     /// today a library holds everything, and the shelf is a decision again the day the tree
     /// passes five — the full-library guard poses three shelves for itself.
+    /// </para>
+    /// <para>
+    /// <b>⭐ AND IT PASSED FIVE AT W5 (D924–D926): eleven techniques, ten of them writable.</b> Five stays (Joe's call, D921):
+    /// a full library refusing a shelf is a real moment now, and the great library (D927) is the answer once the village
+    /// knows every one.
     /// </para>
     /// </remarks>
     [JsonPropertyName("library_shelves")]
@@ -5530,6 +5643,90 @@ public sealed record SimConfig
             LostLine = "The tended patches are going back to wild. {0} was the last who knew "
                 + "which they were.",
         },
+
+        // ⭐⭐ W5 (`skills-for-every-trade.md §4`, D924): ONE EACH FOR THE NEW TRADES THAT MAKE SOMETHING. Proposals until the
+        // measurement (§9 step 7). The smallest outputs set the shape: a dig of iron is 5, so 15 % rounds to nothing and
+        // mining takes 20 %; a dig of stone is 10, so 10 % is the smallest step it can show; a forge makes one tool, so
+        // tempering lengthens a tool's life instead of adding to a forge's yield.
+        new TechniqueRow
+        {
+            Id = 4,
+            Name = "reading the water",
+            Skill = 12,
+            YieldBonusPercent = 15,
+
+            // ⭐ THE FIRST THAT CANNOT BE WRITTEN DOWN (call 4; D922): *"knowing when the fish run"* (`tech-tree.md §3b`). It
+            // lives in masters, and in those who have fished five years beside one.
+            Recordable = false,
+            DiscoveryLine = "{0} has fished this river long enough to know where the fish lie and when they run. "
+                + "Every cast brings in more now.",
+            LostLine = "Nobody reads the water now. {0} was the last who knew where the fish lie.",
+        },
+        new TechniqueRow
+        {
+            Id = 5,
+            Name = "tracking",
+            Skill = 13,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has hunted these woods long enough to read a trail a day old. "
+                + "The hunters come home heavier now.",
+            LostLine = "The trails go unread again. {0} was the last who could follow them.",
+        },
+        new TechniqueRow
+        {
+            Id = 6,
+            Name = "tempering",
+            Skill = 14,
+            ToolUsesBonusPercent = 25,
+            DiscoveryLine = "{0} has worked the forge long enough to quench the iron at the right moment. "
+                + "The village's tools last longer now.",
+            LostLine = "The tools are quenched anyhow again. {0} was the last who knew the moment.",
+        },
+        new TechniqueRow
+        {
+            Id = 7,
+            Name = "reading the bed",
+            Skill = 15,
+            YieldBonusPercent = 10,
+            DiscoveryLine = "{0} has cut stone long enough to see how the bed lies before the wedge goes in. "
+                + "Every dig gives more stone now.",
+            LostLine = "The stone is broken anyhow again. {0} was the last who could read the bed.",
+        },
+        new TechniqueRow
+        {
+            Id = 8,
+            Name = "following the vein",
+            Skill = 16,
+            YieldBonusPercent = 20,
+            DiscoveryLine = "{0} has worked the mine long enough to follow the vein where it turns. "
+                + "Every dig brings up more ore now.",
+            LostLine = "The miners dig blind again. {0} was the last who could follow the vein.",
+        },
+        new TechniqueRow
+        {
+            Id = 9,
+            Name = "good hay",
+            Skill = 17,
+            YieldBonusPercent = 15,
+            DiscoveryLine = "{0} has kept the herd long enough to cut the grass at its best and turn it dry. "
+                + "The same pasture fills the barn fuller now.",
+            LostLine = "The hay is cut anyhow again. {0} was the last who knew when.",
+        },
+
+        // ⭐⭐ JOE'S CROP THAT STANDS INTO WINTER (DESIGN §5; W5 call 5, D926): *"unless the user 'unlocks' a buff that allows
+        // crops to last into winter days."* Farming's second technique — the deadline moves, the yield does not. Worked out
+        // at thirty years in the fields, ten past mastery, so the two farming discoveries land a decade apart.
+        new TechniqueRow
+        {
+            Id = 10,
+            Name = "standing into winter",
+            Skill = 4,
+            StandsIntoWinterDays = 5,
+            AfterYears = 30,
+            DiscoveryLine = "{0} has farmed these fields for thirty years, and has learned to leave a standing crop "
+                + "stooked against the frost. What is not reaped by winter keeps a few days longer now.",
+            LostLine = "The first frost takes the standing crop again. {0} was the last who knew how to keep it.",
+        },
     };
 
     /// <summary>
@@ -5603,6 +5800,14 @@ public sealed record SimConfig
     /// </remarks>
     [JsonPropertyName("skill_work_per_idle_tick")]
     public int SkillWorkPerIdleTick { get; init; } = 100;
+
+    /// <summary>
+    /// Years at the same workplace as a master that carry a technique which cannot be written down (W5, D922; Joe:
+    /// <i>"if there are people working alongside the master fisher, do they learn it from the master?"</i>). Five.
+    /// </summary>
+    /// <remarks>Zero: nobody but a master carries it. Validated at load: not negative.</remarks>
+    [JsonPropertyName("technique_carried_after_years")]
+    public int TechniqueCarriedAfterYears { get; init; } = 5;
 
     /// <summary>
     /// Extra work a learner gets per tick for standing beside a <b>master of the same trade at
@@ -7073,6 +7278,37 @@ public sealed record SimConfig
         }
         ValidateSkills();
         ValidateTechniques();
+        for (int t = 0; t < Techniques.Count; t++)
+        {
+            if (Techniques[t].StandsIntoWinterDays < 0 || Techniques[t].StandsIntoWinterDays >= DaysPerSeason)
+            {
+                throw new SimConfigException(
+                    $"techniques[{t}] ({Techniques[t].Name}) stands {Techniques[t].StandsIntoWinterDays} days into winter; it must be "
+                    + $"0 to {DaysPerSeason - 1}, so the frost still takes the crop inside the winter (days_per_season {DaysPerSeason}).");
+            }
+
+            if (Techniques[t].AfterYears is <= 0)
+            {
+                throw new SimConfigException(
+                    $"techniques[{t}] ({Techniques[t].Name}) has after_years {Techniques[t].AfterYears}; leave it out to work it out at mastery.");
+            }
+        }
+
+        foreach (World.BuildingRow row in BuildingRows)
+        {
+            if (row.HoldsEveryTechnique && row.Shelves < Techniques.Count)
+            {
+                throw new SimConfigException(
+                    $"buildings: the {row.Name} holds every technique, and has {row.Shelves} shelves for {Techniques.Count} "
+                    + "techniques. Give it a shelf for each.");
+            }
+        }
+
+        if (TechniqueCarriedAfterYears < 0)
+        {
+            throw new SimConfigException(
+                $"technique_carried_after_years cannot be negative (got {TechniqueCarriedAfterYears}); zero means only a master carries it.");
+        }
         ValidateBatchRows();
     }
 

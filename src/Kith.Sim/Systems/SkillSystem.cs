@@ -115,7 +115,74 @@ public sealed class SkillSystem : ISimSystem
             // per-pair screen would be the slotting UI §2.2 exists to delete. **The player's
             // lever is staffing**, and §7's at-risk line is what tells them to use it.
             Grow(world, villager, skill, config, worth + ApprenticeBonus(world, villager, skill, worth));
+            CarryBesideAMaster(world, villager, skill, config);
         }
+    }
+
+    /// <summary>
+    /// ⭐ W5 (D922): a year beside a master of a skill whose technique cannot be written down counts toward carrying it —
+    /// <c>technique_carried_after_years</c> of them, and the villager reads the water as the master does.
+    /// </summary>
+    /// <remarks>
+    /// Gated by the catalogue's index (<see cref="TechniquesCatalog.HasUnwritableFor"/>), so a trade with no such technique
+    /// pays nothing per tick; and counted only while one is known, before mastery, beside a living master at this workplace.
+    /// </remarks>
+    private static void CarryBesideAMaster(SimWorld world, Villager learner, SkillRow skill, SimConfig config)
+    {
+        if (config.TechniqueCarriedAfterYears <= 0 || !world.TechniquesCatalog.HasUnwritableFor(skill.Id))
+        {
+            return;
+        }
+
+        SkillProgress? progress = learner.FindProgressIn(skill.Id);
+        int needed = config.TechniqueCarriedAfterYears * config.TicksPerYear;
+        if (progress is null || progress.Mastered || progress.BesideAMaster >= needed)
+        {
+            return;
+        }
+
+        TechniqueRow? known = null;
+        TechniquesCatalog catalogue = world.TechniquesCatalog;
+        for (int id = 0; id < catalogue.Count && known is null; id++)
+        {
+            if (catalogue[id] is { Recordable: false } row && row.Skill == skill.Id
+                && world.KnowledgeStates[id] != KnowledgeState.Unknown)
+            {
+                known = row;
+            }
+        }
+
+        if (known is null || MasterBeside(world, learner, skill) is not Villager master)
+        {
+            return;
+        }
+
+        progress.BesideAMaster++;
+        if (progress.BesideAMaster == needed)
+        {
+            world.Narrate(
+                $"{learner.Name} has worked beside {master.Name} for {config.TechniqueCarriedAfterYears} years "
+                + $"{skill.YearsPhrase}, and knows {known.Name} now. "
+                + $"{world.Clock.SeasonAndYear()}.", LogCategory.Discovery);
+        }
+    }
+
+    /// <summary>A living master of this skill at the learner's workplace, the first by id, or null.</summary>
+    private static Villager? MasterBeside(SimWorld world, Villager learner, SkillRow skill)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager other = world.Villagers[i];
+            if (other.Alive
+                && other.Id != learner.Id
+                && other.WorkplaceId == learner.WorkplaceId
+                && other.FindProgressIn(skill.Id) is { Mastered: true })
+            {
+                return other;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

@@ -1634,8 +1634,8 @@ public sealed class SkillTests
         SimConfig plain = VillageFixtures.Village;
 
         var noSuchRow = Assert.Throws<SimConfigException>(
-            () => (plain with { FoundingTrades = new[] { "foraging", "smithing" } }).Validate());
-        Assert.Contains("smithing", noSuchRow.Message, StringComparison.Ordinal);
+            () => (plain with { FoundingTrades = new[] { "foraging", "glassblowing" } }).Validate()); // "smithing" until W5 made it a row
+        Assert.Contains("glassblowing", noSuchRow.Message, StringComparison.Ordinal);
 
         Assert.Throws<SimConfigException>(
             () => (plain with { FoundingTrades = new[] { "foraging", "foraging" } }).Validate());
