@@ -339,8 +339,8 @@ internal static class PersonPainter
                 Tool = Tool.Rod;
             }
 
-            // The wedge's mallet in the pick's place (A282).
-            if (Tool == Tool.Pick && f.Beat is MalletRaise or MalletStrike)
+            // The wedge's mallet in the pick's place (A282), and the maul in the axe's at the block (A292).
+            if (Tool is Tool.Pick or Tool.Axe && f.Beat is MalletRaise or MalletStrike)
             {
                 Tool = Tool.Hammer;
             }
@@ -1365,7 +1365,7 @@ internal static class PersonPainter
         // poses, the body stooped by the map — and a breather, the pick lowered and the weight back.
         (Tool.Hammer, MalletRaise) => (-0.02f, -0.24f, 22f),
         (Tool.Hammer, MalletStrike) => (-0.09f, 0.03f, -105f),
-        (Tool.Pick, Breather) => (0.02f, 0.06f, -12f),
+        (Tool.Pick or Tool.Axe, Breather) => (0.02f, 0.06f, -12f),
         (Tool.Basket, 1) => (-0.02f, 0.06f, 0f),
         (Tool.Basket, 2) => (-0.05f, 0.16f, 0f),
         (Tool.Saw, 1) => (0.05f, -0.02f, 0f),

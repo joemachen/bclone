@@ -1,6 +1,6 @@
 # Varied work, trade by trade — the quarrier first (A280)
 
-> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The other trades not started; the woodcutter next.** Art lane (CLAUDE.md *Two tracks*), branch
+> **Status: the quarrier and the miner ✅ BUILT (A282, 2026-11-26), played and merged into `main` at Joe's word (A283, *"Played it, merge"*, `59ec81a`); pushed at his word (A284, *"Push main"*). Joe: *"B, as recommended"*. Mocked A281. The woodcutter ✅ BUILT (A292) on `art`, UNPLAYED — Joe: *"B, as recommended"*. The forester next; the other trades not started.** Art lane (CLAUDE.md *Two tracks*), branch
 > `art`; the art queue's piece 3, *Animations*, after fishing (`fishing-animation.md`). View only: nothing in `Kith.Sim`, `data/`
 > or `tests/` changes. Mock: `D:\Projects\brushes\animations\quarry_options.gif` (and `quarry_contact.jpg`).
 
@@ -71,3 +71,46 @@ dig's end, the shuffle is the same on a second ask.
 - **Probe `face work:`** (`VillageMap.FaceWorkProbe.cs`, printed with the people's lines): red-checked, 10 mutants, 9 red (the load back in the arms; the stack rounding down; no lift, before and after the threshold's fix; quick digs off; never the wedge; the shuffle blind to the dig; the lift not stooping; the first build's 3.5 s threshold, a skilled quarrier never lifting). The 10th, the mallet not swapped in for the pick, scored 0: the line compares the mallet's pose with the raised pick, not the tool painted — kept, and the zero written down.
 - Filmed on a scratch copy of his nettle-beck Elderwood with the stone limit raised (the quarry had stopped at it):
   `D:\Projects\brushes\animations\q2\`, `quarry_built.gif`.
+
+## 7. The woodcutter — mocked (A291); ✅ Joe: *"B, as recommended"* — B, at the block, the forester next (A292)
+
+**What the sim gives:** the woodcutter splits logs at the hut (`MakingFirewood`): a split is `split_ticks` (4, about 5 s at 1×),
+`logs_per_split` (6) out of the warehouse beside the hut and `firewood_per_split` (12) back into it, `splits_per_stint` (4);
+nothing is carried. ⚠️ **Where they stand today: on the hut's own spot — its roof** (the sim's place; `Travel` to the hut's
+position). The yard already paints a chopping block, a log on a sawhorse, the log pile while it works and chips (A86).
+
+Mocked on his spruce-mill Ashbourne at the closest zoom (`D:\Projects\brushes\woodcutter\woodcutter_options.gif`), one stint
+of four splits:
+
+- **Today** — on the roof, the axe's raise and strike.
+- **A** — at the chopping block, the same swing.
+- ⭐ **B** — at the block, each split: the round set on the block (a stoop), the strokes, the split — the halves fall either
+  side and lie until the next round; shuffled by the person and the split: a clean one-stroke split, a knotty round taking two
+  or three, or a wedge and maul (the quarrier's mallet beat); a breather now and then — the face's rules, one trade over.
+- **C** — B, with chips flying at each stroke.
+
+**Calls — Joe's:** (1) ⭐ B; A; C. (2) ⭐ standing at the block while splitting (view only; the sim keeps them at the hut, as
+the fisher's dock). (3) Next: ⭐ **the forester** — found while reading: the forester fells trees on its ground (`Cutting`) with
+the painter's spade, so today a tree is felled with a spade; or the builder.
+
+**Wiring, when he answers — every file the art lane's:** `VillageMap.Yards.cs` (keep the block's place when the yard is laid,
+as a door's step is kept), `VillageMap.Indoors.cs` (`AtTheDoor`: a splitting woodcutter at the block), `VillageMap.FaceWork.cs`
+(the split's beats from its countdown, beside the dig's), `PersonPainter.cs` (the maul is the mallet's pose), `VillageMap.People.cs`
+(the round, the halves, the wedge). The probe's `face work:` line widened to the woodcutter.
+
+### 7a. As built (A292) — the woodcutter
+
+- **At the block** (`VillageMap.Indoors.cs`, `AtTheDoor`): a splitting woodcutter (`MakingFirewood`) stands `FromTheBlock` (0.21,
+  0.17 tiles on screen) from the yard's chopping block. The block's place is kept as the yard is laid (`KeepTheBlock`, beside
+  `KeepTheStep`, by the roof's key — the hut's position rounded as roofs round it) and forgotten with its roof
+  (`ForgetGoneRoofs`); a yard not laid yet keeps them where the sim has them.
+- **The split** (`VillageMap.Splitting.cs`): pure `SplitAt` from the sim's countdown and length (`split_ticks` through
+  `WorkTicksFor`) — a breather opening one split in six (at most 1.6 s or 30 %), the round set (at most 0.9 s or 20 %), the
+  strokes fitted to what is left (one two in five, two a quarter, three a fifth, the wedge and maul's two a fifth), then the
+  split and the halves apart for the rest; by the person and the split's start tick; under 2 s strokes only.
+- **The painter:** the axe takes the pick's breather pose; the maul is the mallet's pose, swapped in for the axe as for the pick.
+- **The map:** the round on the block, the wedge in it for the maul, the two halves falling either side (`DrawTheRound`).
+- **Probe `woodcutter:`** (`VillageMap.SplittingProbe.cs`): red-checked, 7 mutants, 7 red (the woodcutter not stood at the block; the block not kept as the yard is laid — 0 at first, the probe asking KeepTheBlock directly instead of the game's KeepTheStep, fixed and red; no round set; every split one stroke; quick splits off; no breather pose for the axe; the maul not swapped in).
+- Filmed on his spruce-mill Ashbourne (`D:\Projects\brushes\woodcutter\woodcutter_built.gif`): the woodcutter walks up, works
+  at the block, and walks off as the stint ends. ⚠️ Seen in passing, not this piece's: as a stint ends they are drawn a moment
+  on the hut's own spot (the next state's place, as it always was) before walking away.
