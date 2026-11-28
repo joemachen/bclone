@@ -11230,6 +11230,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   never fatal. ⏸️ **HIS PLAY** (`.\run.bat`): a fresh founding left on forage — at about Year 1 the *A plain diet* notice and
   *Plain diet* on the cards; by Year 3 *Run down*, the strip's count, someone *ill in bed*; then a fishery or a lodge, and the
   cards going back to *Well* within a year. Or his Thornfield / Fernhollow young saves. **Then the merge at his word.**
+  🎨 **Owed once the art lane's A314 is in `main` and `main` is merged into the slice** (its message, 2026-11-27; Joe's picks
+  *"i like pill 2"*, faces *"Yes, as recommended"*): Plain diet's pill `UiLook.PillWarned()` with `UiLook.Warned` words; the faces
+  `textures/ui/icons/health/{plain-diet,run-down,sick}.png` beside the pill for those states; `MomentMark.PlainDiet` / `RunDown`
+  appended and passed on the two warnings. The map's sick face and the strewn home are the art lane's, after piece 1 merges
+  (it has the names: `SickInBed`, `SickDays`, `RestingPlaceOf`, `HomePosition`).
 - ⏸️ 🎨 **W6'S PICTURES — ASKED OF THE ART LANE, NOT CLAIMED** (`health.md §11`). Piece 1: **someone ill in bed** (today they
   are drawn indoors like a rest — a stand-in), and the card's health pill's four words if they want a look of their own. Piece 2,
   later: the herbalist's hut, herbs and remedy, *gathering herbs* and *tending*. Piece 3: the infirmary.
