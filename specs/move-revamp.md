@@ -1,8 +1,8 @@
 # Move, revamped — ask first, show the outline, let it turn
 
-> **Status: ✅ BUILT AND PLAYED; TWO PLAY NOTES FIXED (D948), ⏸️ HIS SECOND PLAY — on `slice/move-revamp` (D945 claim,
-> D947 build, 2026-11-27), cut from `main` at `a92da93`.** Every call Joe's answered (D947: *"Yes, as recommended"* — all
-> eleven). He played D947: *"otherwise everything is good"* (§6). Then the merge at his word.
+> **Status: ✅ SHIPPED — merged into `main` at Joe's word (D949, *"merge"*, `eef67bc`), after his play of D948.** Claimed
+> D945, built D947, his two play notes fixed D948, on `slice/move-revamp` (cut from `main` at `a92da93`, deleted). Every call
+> his answered (D947: *"Yes, as recommended"* — all eleven).
 
 Joe's play note, 2026-11-27: *"I do want to revamp the 'move' function. 1. build in 'are you sure' safeguard prompts
 before moving a building 2. add a 'construction outline' thing to show the placement of the new spot, and allow
