@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✍️ MOCKED (A310, 2026-11-27), ⏸️ FOUR CALLS JOE'S; NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✍️ MOCKED TWICE (A310, A311, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE MARK AND THE HOME HIS (§5); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -43,3 +43,34 @@ zoom, the copy changed only so he is resting indoors; the figure painted by `Per
    asks `UiLook` for the warning look on *Plain diet* (the seam, to be agreed with the systems lane before either side builds it).
 4. **When:** the pill's amber skin can be built now (nothing waits on the sim); the bed is built **after W6 piece 1 merges**, on
    its *sick in bed* state — until then there is nobody to draw.
+
+## 4. ✅ Joe's answer to the first mock (A311)
+
+*"i like pill 2, i dont like the bed. Is there a more novel and innovative way to show a down/sick villager? is there a way to
+decorate the home? a sick face icon above the villager that persists even when they are in buildings (i.e. in their home being
+sick)"* — **pill 2 is his** (*Plain diet* in an amber ribbon, *Run down* and *Sick* in the painted red); **both beds are out.**
+
+## 5. The second mock (A311) — a mark that follows the person, and the home that shows it
+
+Same cabin, same Vorith (`D:/Projects/brushes/sickbed/sickbed_pick2.jpg`, `compose2.py`).
+
+- **The mark:** a parchment seal with a little tail, in the icons' pen and colours, over the person — **over their house while
+  they lie sick indoors** (at the door), over their head when out. Three faces for it: ⭐ **F1** a fevered face — pale, eyes shut,
+  flushed, a damp cloth on the brow; **F2** a face in a kerchief tied round the head; **F3** a bowl of broth (care, not illness).
+- **The home that shows it, in the world:** **H** — straw strewn before the door (the old way of quieting a sickroom), a sprig of
+  herbs hung by the door, and the fire kept in, its smoke in any season while someone lies sick.
+- **Run down:** a smaller mark with an amber edge, out and about — offered, ⭐ **not recommended**: *run down* lasts years, so it
+  would hang over half a forage village all that time (nagging, §1.2); the amber pill and the panel's count say it.
+
+### 5a. Calls — ⏸️ Joe's
+
+1. **The mark's face:** ⭐ F1, F2 or F3 — or none.
+2. **The home (H):** ⭐ yes, with the mark; or alone; or no.
+3. **A mark for *Run down*:** ⭐ no; or the small amber one.
+4. **His OK for the files outside the lane's table:** `VillageMap.Indoors.cs` (who is indoors, and in which building — the mark
+   sits over it), `VillageMap.People.cs` (the mark over a person out of doors), a new `VillageMap.SickMark.cs`, and the home's
+   straw and sprig in `VillageMap.Yards.cs` (the home yard) with the smoke's rule in `VillageMap.Smoke.cs`; the mark itself
+   painted as an icon (`p3_icons.jsx`, a new `textures/ui/icons/marks/sick.png`). For pill 2: `pill-warn.png`, a theme line in
+   `ParchmentLook.cs`, `UiLook.Pill`'s third look. `Main.Cards.cs` stays piece 1's (§3's seam).
+5. **When:** pill 2's skin now; the mark and the home after W6 piece 1 merges (nobody is sick until it does).
+
