@@ -4383,7 +4383,7 @@ public sealed partial class SimWorld : IObstacles
     /// Why this building may not stand here for want of its ground nearby — or null when a tile of it the village can
     /// walk to lies within the rule's reach (D540).
     /// </summary>
-    private string? WhyNotNearItsGround(BuildingKind kind, IReadOnlyList<GridPos> footprint, NearRule near, GridPos village, bool alreadyStanding = false)
+    private string? WhyNotNearItsGround(BuildingKind kind, IReadOnlyList<GridPos> footprint, NearRule near, GridPos village, Footprint? itself = null)
     {
         bool cutOff = false;
         Workplace? heldBy = null;
@@ -4421,7 +4421,7 @@ public sealed partial class SimWorld : IObstacles
             {
                 // ⭐ A SEAM OF ITS OWN (D613): a quarry or a mine claims the seam it stands by, so one another building
                 // holds is no ground for a new one. ⚠️ Not asked of a move — the building's own seam is its own.
-                if (!alreadyStanding && claims && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder)
+                if (claims && HolderOfTheSeam(SeamPatchOf(at)) is Workplace holder && holder.Footprint != itself)
                 {
                     heldBy ??= holder;
                     continue;
@@ -8393,68 +8393,32 @@ public sealed partial class SimWorld : IObstacles
     public PlacementVerdict MarkRelocation(GridPos from, GridPos to) =>
         MarkRelocation(from, WhatStandsAt(from) is BuildingKind kind ? AnchorOn(kind, to) : Point.CentreOf(to));
 
-    /// <summary>Pick a building up and put it down where the player pointed (D229, D329).</summary>
-    public PlacementVerdict MarkRelocation(GridPos from, Point to)
+    /// <summary>Pick a building up and put it down where the player pointed, facing as it faces now (D229, D329).</summary>
+    /// <remarks>
+    /// ⛔⛔ THE FACING TRAVELS WITH THE BUILDING (D328) — a moved granary once arrived at <c>Angle.Zero</c> however it had
+    /// been turned. Read while the building still STANDS (D325's rule). Since D947 the player may turn it on the way.
+    /// </remarks>
+    public PlacementVerdict MarkRelocation(GridPos from, Point to) =>
+        MarkRelocation(from, to, FacingOfWhatStandsAt(from));
+
+    /// <summary>
+    /// ⭐ Pick a building up and put it down where the player pointed, turned as the outline was turned (D947,
+    /// `move-revamp.md §2.1`). <see cref="CanMoveTo"/> is the whole verdict, so the outline and the click cannot disagree.
+    /// </summary>
+    public PlacementVerdict MarkRelocation(GridPos from, Point to, Angle facing)
     {
-        // ⚠️ THE HOUSE IS ASKED ABOUT FIRST, AND THE ORDER IS THE WHOLE ANSWER. A house is not in
-        // the stores, the libraries or the workplaces — it is a position on a household — so
-        // `WhatStandsAt` returns null for one, and asking it first told the player *"there is
-        // nothing there to move"* while they were pointing at somebody's home. **A wrong sentence,
-        // not a wrong outcome**, which is this project's hardest class of bug to notice.
-        if (HouseholdAt(from) is not null)
-        {
-            return PlacementVerdict.No(
-                "A house is not moved by hand. Unpaint the ground under it and paint somewhere "
-                + "else, and the family will rebuild there.");
-        }
-
-        BuildingKind? kind = WhatStandsAt(from);
-        if (kind is null)
-        {
-            return PlacementVerdict.No("There is nothing there to move.");
-        }
-
-        // ⛔ NOR A CEMETERY WITH ANYBODY IN IT (W4, `cemetery.md §5.2`).
-        if (WorkplaceCovering(from) is { Kind: JobKind.Groundskeeper } kept && WhyItStays(kept) is string stays)
-        {
-            return PlacementVerdict.No(stays);
-        }
-
-        // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
-        if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
-        {
-            return PlacementVerdict.No($"{Capitalised(fencedBarn.Name)}'s pasture is fenced — take the fence down to move it.");
-        }
-
-        // ⛔ A FULL STORE CANNOT BE CARRIED, AND THIS IS THE SENTENCE THAT SAYS SO RATHER THAN A
-        // DISABLED CONTROL (D43). Joe named it as the second half of the feature: *"storage
-        // buildings must be 'emptied' first."*
-        if (StoreAt(from) is StoreBuilding store && store.Store.Held > 0)
-        {
-            return PlacementVerdict.No(
-                $"There are {store.Store.Held} goods inside {store.Name}. Empty it first, and "
-                + "the village will carry them to the other stores.");
-        }
-
-        // ⛔⛔ THE FACING TRAVELS WITH THE BUILDING (D328), AND IT DID NOT. A moved granary
-        // silently arrived at `Angle.Zero` however it had been turned — **the same defect D325
-        // fixed for demolition, still live one door down**, and found the same way: by asking
-        // whether the treatment had reached every path rather than the one being worked on.
-        // ⭐ Read while the building still STANDS, which is D325's rule: nothing records a facing
-        // once the thing has become a site.
-        Angle facing = FacingOfWhatStandsAt(from);
-
-        PlacementVerdict verdict = CanBuildAt(kind.Value, to, alreadyStanding: true, facing: facing);
+        PlacementVerdict verdict = CanMoveTo(from, to, facing);
         if (!verdict.Allowed)
         {
             return verdict;
         }
 
-        BuildingRecipe recipe = BuildingsCatalog.RecipeOf(kind.Value);
+        BuildingKind kind = WhatStandsAt(from)!.Value;
+        BuildingRecipe recipe = BuildingsCatalog.RecipeOf(kind);
 
         // ⭐ AND ITS NEW GROUND IS ASKED FOR, AS A MARK'S IS (B5, D497). Nothing was painted here, so
         // a move onto wood waited on the builder alone (D138), one tile at a time.
-        AskForTheGroundUnder(FootprintOf(kind.Value, to, facing));
+        AskForTheGroundUnder(FootprintOf(kind, to, facing));
 
         // A building on the move takes its stamps with it; its repair, if one was queued, is re-asked for
         // next season where it lands (`building-condition.md §7`).
@@ -8466,7 +8430,7 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ WORK BUT NO MATERIALS — the timber and stone walk over with the crew. A relocation
         // that also charged for the building would be a demolition and a rebuild wearing one name.
         RaiseSiteFor(
-            kind.Value,
+            kind,
             to,
             $"{NameOfWhatStandsAt(from)} (being moved)",
             new BuildingRecipe(recipe.WorkTicks),
@@ -8476,6 +8440,133 @@ public sealed partial class SimWorld : IObstacles
 
         Narrate($"{NameOfWhatStandsAt(from)} is being moved to {to}. {Clock.SeasonAndYear()}.", LogCategory.Building);
         return verdict;
+    }
+
+    /// <summary>
+    /// ⭐⭐ Whether the building on <paramref name="from"/> may be moved to <paramref name="to"/>, turned to
+    /// <paramref name="facing"/> — the outline's verdict, asked as the cursor moves (D947, `move-revamp.md §2.1`).
+    /// </summary>
+    /// <remarks>
+    /// Every refusal a move has, then <see cref="CanBuildAt(BuildingKind, Point, bool, Angle)"/> with only the
+    /// building's own footprint left out — so a move lands only where a fresh building could, and may cover its own old
+    /// ground (call 5: turned where it stands). Pure: nothing is marked.
+    /// </remarks>
+    public PlacementVerdict CanMoveTo(GridPos from, Point to, Angle facing) =>
+        WhyItStaysPut(from) is string stays
+            ? PlacementVerdict.No(stays)
+            : CanBuildAt(WhatStandsAt(from)!.Value, to, alreadyStanding: true, facing, itself: FootprintOn(from));
+
+    /// <summary>
+    /// ⭐ Why the building on <paramref name="from"/> cannot be moved anywhere at all, or null if it can (D947) — the
+    /// refusals no spot could change, asked at the pick-up so the player is not handed a building only to be told on the
+    /// second click.
+    /// </summary>
+    public string? WhyItStaysPut(GridPos from)
+    {
+        // ⚠️ THE HOUSE IS ASKED ABOUT FIRST, AND THE ORDER IS THE WHOLE ANSWER. A house is not in
+        // the stores, the libraries or the workplaces — it is a position on a household — so
+        // `WhatStandsAt` returns null for one, and asking it first told the player *"there is
+        // nothing there to move"* while they were pointing at somebody's home. **A wrong sentence,
+        // not a wrong outcome**, which is this project's hardest class of bug to notice.
+        if (HouseholdAt(from) is not null)
+        {
+            return "A house is not moved by hand. Unpaint the ground under it and paint somewhere "
+                + "else, and the family will rebuild there.";
+        }
+
+        BuildingKind? kind = WhatStandsAt(from);
+        if (kind is null)
+        {
+            // ⚠️ A SITE IS NOT "NOTHING" (call 8, D947): it said *"There is nothing there to move"* over a marked-out
+            // granary — the answer right and the reason false, D229's sentence-bug shape again.
+            if (WorkplaceCovering(from) is { IsSite: true } site)
+            {
+                return site.Construction!.MovingFrom is not null
+                    ? $"{Capitalised(site.Construction.Name)} is on its way here. Point Demolish at it to call the move off."
+                    : "That is still being built. Demolish calls it off and gives back what was delivered; then place it again.";
+            }
+
+            return "There is nothing there to move.";
+        }
+
+        // ⛔ NOR A BRIDGE (D947): it is dragged bank to bank (D549), never put down at a point, so there is no outline to
+        // move it by. Before, the move asked `CanBridgeAt` of one point and refused with a bridge-laying sentence.
+        if (BuildingsCatalog[kind.Value]?.SpansWater == true)
+        {
+            return "A bridge is not moved. Pull it down and build another where you want it.";
+        }
+
+        // ⛔ NOR A CEMETERY WITH ANYBODY IN IT (W4, `cemetery.md §5.2`).
+        if (WorkplaceCovering(from) is { Kind: JobKind.Groundskeeper } kept && WhyItStays(kept) is string stays)
+        {
+            return stays;
+        }
+
+        // ⛔ NOR A FENCED BARN (D598): its fence stands round ground the barn's move would leave behind.
+        if (WorkplaceCovering(from) is { Kind: JobKind.Herdsman } fencedBarn && fencedBarn.FencedTiles.Count > 0)
+        {
+            return $"{Capitalised(fencedBarn.Name)}'s pasture is fenced — take the fence down to move it.";
+        }
+
+        // ⛔ A FULL STORE CANNOT BE CARRIED, AND THIS IS THE SENTENCE THAT SAYS SO RATHER THAN A
+        // DISABLED CONTROL (D43). Joe named it as the second half of the feature: *"storage
+        // buildings must be 'emptied' first."*
+        if (StoreAt(from) is StoreBuilding store && store.Store.Held > 0)
+        {
+            return $"There are {store.Store.Held} goods inside {store.Name}. Empty it first, and "
+                + "the village will carry them to the other stores.";
+        }
+
+        // ⛔ NOR ONE ALREADY ON THE MOVE (call 7): a second site would be a second lot of builder work, and whichever
+        // finished last would find nothing left to move.
+        if (MoveUnderWay(from) is not null)
+        {
+            return $"{Capitalised(NameOfWhatStandsAt(from))} is already being moved. Call that off from its card, or point "
+                + "Demolish at its outline.";
+        }
+
+        return null;
+    }
+
+    /// <summary>The site a standing building is being moved to, or null (D947).</summary>
+    /// <remarks>
+    /// ⚠️ Matched by the building's footprint, not the tile: <c>MovingFrom</c> is whichever of its tiles the player
+    /// pointed at, and a 2×2 has four.
+    /// </remarks>
+    public Workplace? MoveUnderWay(GridPos from)
+    {
+        if (WhatStandsAt(from) is null || FootprintOn(from) is not Footprint standing)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < Workplaces.Count; i++)
+        {
+            if (Workplaces[i].Construction is { MovingFrom: GridPos was } && standing.Covers(was))
+            {
+                return Workplaces[i];
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// ⭐ Call off the move of the building on this tile (call 11, the card's <i>Call off the move</i>): its site goes,
+    /// and it stays where it stands. False if it was not being moved.
+    /// </summary>
+    /// <remarks>Nothing is lost: a move's site owes work and no materials, so there is nothing to give back.</remarks>
+    public bool CallOffTheMove(GridPos from)
+    {
+        if (MoveUnderWay(from) is not Workplace site)
+        {
+            return false;
+        }
+
+        string name = NameOfWhatStandsAt(from);
+        CancelConstruction(site);
+        Narrate($"{Capitalised(name)} is to stay where it is. {Clock.SeasonAndYear()}.", LogCategory.Building);
+        return true;
     }
 
     /// <summary>
@@ -8498,11 +8589,11 @@ public sealed partial class SimWorld : IObstacles
     /// terrain, used for the same reason.
     /// </para>
     /// </remarks>
-    private bool MoveWhatStandsAt(GridPos from, Point to)
+    private bool MoveWhatStandsAt(GridPos from, Point to, Angle facing)
     {
         if (StoreAt(from) is StoreBuilding store)
         {
-            store.MoveTo(to);
+            store.MoveTo(to, facing);
             StandingChanged();
             TravelCost.Forget();
             return true;
@@ -8520,7 +8611,7 @@ public sealed partial class SimWorld : IObstacles
         // conversion happened three times already.
         if (LibraryCovering(from) is Library library)
         {
-            library.MoveTo(to);
+            library.MoveTo(to, facing);
             StandingChanged();
             TravelCost.Forget();
             return true;
@@ -8530,7 +8621,7 @@ public sealed partial class SimWorld : IObstacles
         // does not re-offer the gift (`specs/town-hall.md §4`). *The founders only die once.*
         if (TownHall is { } hall && TownHallCovers(from))
         {
-            hall.MoveTo(to);
+            hall.MoveTo(to, facing);
             StandingChanged();
             TravelCost.Forget();
             return true;
@@ -8538,7 +8629,7 @@ public sealed partial class SimWorld : IObstacles
 
         if (WellCovering(from) is Well well)
         {
-            well.MoveTo(to);
+            well.MoveTo(to, facing);
             StandingChanged();
             TravelCost.Forget();
             return true;
@@ -8546,7 +8637,7 @@ public sealed partial class SimWorld : IObstacles
 
         if (StandingWorkplaceCovering(from) is Workplace workplace)
         {
-            workplace.MoveTo(to);
+            workplace.MoveTo(to, facing);
             StandingChanged();
             TravelCost.Forget();
 
@@ -9624,7 +9715,19 @@ public sealed partial class SimWorld : IObstacles
     /// Whether this building may stand here — asked of a real position, not a square (D329).
     /// </summary>
     public PlacementVerdict CanBuildAt(
-        BuildingKind kind, Point where, bool alreadyStanding = false, Angle facing = default)
+        BuildingKind kind, Point where, bool alreadyStanding = false, Angle facing = default) =>
+        CanBuildAt(kind, where, alreadyStanding, facing, itself: null);
+
+    /// <summary>The placement check itself, told the footprint a moving building stands on now.</summary>
+    /// <remarks>
+    /// ⛔⛔ <b><c>itself</c> is the footprint a building being moved stands on now, and the ONLY thing the move may overlook</b>
+    /// (`move-revamp.md §1.1`, D947). <c>alreadyStanding</c> used to skip the overlap, the doorstep, the wall-off and every
+    /// covered tile to stop a moved building refusing itself — and so let one be moved onto another building, onto a
+    /// doorstep, or with a 2×2's far end in the river. <c>alreadyStanding</c> now means only what it says about the
+    /// VILLAGE (the unlock, the singleton, its own seam); the GROUND is asked of a move as of a fresh building, less this.
+    /// </remarks>
+    private PlacementVerdict CanBuildAt(
+        BuildingKind kind, Point where, bool alreadyStanding, Angle facing, Footprint? itself)
     {
         // ⭐ THE TILE IS DERIVED, AND EVERY TILE-INDEXED QUESTION ASKS IT. Terrain, occupancy and
         // the cost field stay tile-indexed for ever (`gridless.md §10.2`); what became continuous
@@ -9658,10 +9761,10 @@ public sealed partial class SimWorld : IObstacles
         // placement was free: **two huts a hair either side of a boundary claim different tiles and
         // stand on top of each other.** `gridless.md §7.3` promised *"collision becomes geometry
         // rather than is this tile taken"*, and this is where that promise is kept.
-        // ⚠️ Skipped when `alreadyStanding` — the same exemption, and for the same reason, as the
-        // covered-tile loop below: a building being MOVED still stands where it was and would
-        // refuse itself.
-        if (!alreadyStanding && SomethingOverlaps(FootprintOf(kind, where, facing)))
+        // ⭐ A building being MOVED still stands where it was and would refuse itself, so its own footprint — and only
+        // that — is left out (D947). Until then `alreadyStanding` skipped the whole test, and a move could land on another
+        // building.
+        if (SomethingOverlaps(FootprintOf(kind, where, facing), except: itself))
         {
             return PlacementVerdict.No("Something already stands there.");
         }
@@ -9707,9 +9810,8 @@ public sealed partial class SimWorld : IObstacles
             }
 
             // ⛔ NOR IN FRONT OF A DOOR (D622, `doors.md §4.5`): the tile a building's door opens onto is kept clear, said
-            // by name before the sweep has to find it. Not asked of a move, which keeps its own old doorstep in the index
-            // and skips the sweep for the same reason.
-            if (!alreadyStanding && WhoseDoorstep(onTheGround[i]) is string doorOf)
+            // by name before the sweep has to find it. A move may cover its own old doorstep, never another's (D947).
+            if (WhoseDoorstep(onTheGround[i], except: itself) is string doorOf)
             {
                 return PlacementVerdict.No($"That is in front of {doorOf}'s door.");
             }
@@ -9727,10 +9829,9 @@ public sealed partial class SimWorld : IObstacles
         // about the ANCHOR only, which was the whole truth while every building was one tile and
         // became a hole the day one was three: a longhouse could be marked with its far end in the
         // river, over a neighbour, or off the map, and nothing would object until it stood there.
-        // ⚠️ Skipped when `alreadyStanding`, because a building being MOVED already covers its own
-        // tiles and would refuse itself — the same exemption the singleton check makes two checks
-        // further down, and for the same reason.
-        if (!alreadyStanding)
+        // ⭐ Asked of a move too since D947: this loop only asks the GROUND (the map's edge, the water), and a building's
+        // own old ground is neither, so the exemption it carried was never needed here — and it let a 2×2 be moved with
+        // its far end in the river.
         {
             // ⛔⛔ AT THE ANGLE IT WILL ACTUALLY STAND (D328). This defaulted the facing to zero
             // while `Mark`, `FootprintOf` and the ghost all carried one — **so for a turned
@@ -9879,7 +9980,7 @@ public sealed partial class SimWorld : IObstacles
         // asked of a reach like the lodge's. ⚠️ Counted only where the village can walk (D110/D111): rock across
         // the river is not near, it is cut off, and the sentence says which mistake it is.
         if (BuildingsCatalog[kind]?.MustBeNear is NearRule near
-            && WhyNotNearItsGround(kind, onTheGround, near, village, alreadyStanding) is string notNear)
+            && WhyNotNearItsGround(kind, onTheGround, near, village, itself) is string notNear)
         {
             return PlacementVerdict.No(notNear);
         }
@@ -9930,9 +10031,9 @@ public sealed partial class SimWorld : IObstacles
         // frame, so the reason shows before the click. ⚠️ LAST, after every cheaper refusal: a
         // guard's scan of the bank for a fishing-hut site asks this of thousands of tiles, and
         // paying twenty thousand steps for each before the water rule had its say made the
-        // fishery guards eight times slower. ⚠️ Not for a building being moved: the index still
-        // holds it at its old spot, and that is its own question.
-        if (!alreadyStanding && WhatThisWouldWallOff(FootprintOf(kind, where, facing)) is string walledOff)
+        // fishery guards eight times slower. ⭐ Asked of a move too since D947, less its own old footprint and door: the
+        // index still holds it at its old spot, so its old ground stays closed in both sweeps (the cautious reading).
+        if (WhatThisWouldWallOff(FootprintOf(kind, where, facing), except: itself) is string walledOff)
         {
             return PlacementVerdict.No(walledOff);
         }
@@ -11238,7 +11339,7 @@ public sealed partial class SimWorld : IObstacles
         {
             RetireWorkplace(site);
 
-            if (!MoveWhatStandsAt(from, site.Position))
+            if (!MoveWhatStandsAt(from, site.Position, site.Facing))
             {
                 // ⚠️ SAID OUT LOUD RATHER THAN SWALLOWED. The player can demolish the source while
                 // the crew are still working, and a site that then raised a fresh building would
@@ -13566,11 +13667,14 @@ public sealed partial class SimWorld : IObstacles
     /// per building; this walks them once.
     /// </para>
     /// </remarks>
-    internal bool SomethingOverlaps(Footprint shape)
+    internal bool SomethingOverlaps(Footprint shape, Footprint? except = null)
     {
+        // ⭐ `except` is a moving building's own footprint (D947): the one shape a move may cover.
+        bool Hits(Footprint standing) => standing != except && standing.Overlaps(shape);
+
         for (int i = 0; i < Households.Count; i++)
         {
-            if (HomeFootprintOf(Households[i]) is Footprint home && home.Overlaps(shape))
+            if (HomeFootprintOf(Households[i]) is Footprint home && Hits(home))
             {
                 return true;
             }
@@ -13580,7 +13684,7 @@ public sealed partial class SimWorld : IObstacles
         {
             // A bridge's site is not a shape on the ground (see `StandingShapes`); its ends refuse a
             // building through `SomethingStandsAt`.
-            if (!IsABridgeSite(Workplaces[i]) && !StandsOnABuilding(Workplaces[i]) && Workplaces[i].Footprint.Overlaps(shape))
+            if (!IsABridgeSite(Workplaces[i]) && !StandsOnABuilding(Workplaces[i]) && Hits(Workplaces[i].Footprint))
             {
                 return true;
             }
@@ -13588,20 +13692,20 @@ public sealed partial class SimWorld : IObstacles
 
         for (int i = 0; i < Libraries.Count; i++)
         {
-            if (Libraries[i].Footprint.Overlaps(shape))
+            if (Hits(Libraries[i].Footprint))
             {
                 return true;
             }
         }
 
-        if (TownHall?.Footprint.Overlaps(shape) == true)
+        if (TownHall is not null && Hits(TownHall.Footprint))
         {
             return true;
         }
 
         for (int i = 0; i < Wells.Count; i++)
         {
-            if (Wells[i].Footprint.Overlaps(shape))
+            if (Hits(Wells[i].Footprint))
             {
                 return true;
             }
@@ -13609,7 +13713,7 @@ public sealed partial class SimWorld : IObstacles
 
         for (int i = 0; i < StoreBuildings.Count; i++)
         {
-            if (StoreBuildings[i].Footprint.Overlaps(shape))
+            if (Hits(StoreBuildings[i].Footprint))
             {
                 return true;
             }
@@ -13931,10 +14035,13 @@ public sealed partial class SimWorld : IObstacles
     /// would shut a neighbour in is refused before anybody sees it — and says so in those words.
     /// </para>
     /// </remarks>
-    internal string? WhatThisWouldWallOff(Footprint proposed, IReadOnlyDictionary<GridPos, byte>? fence = null)
+    // ⭐ `except` is a moving building's own footprint (D947): it is leaving, so being shut in is not its trouble, and nor
+    // is its own door. ⚠️ Its old ground stays closed in both sweeps — the cautious reading, since it stands there until
+    // the builders finish.
+    internal string? WhatThisWouldWallOff(Footprint proposed, IReadOnlyDictionary<GridPos, byte>? fence = null, Footprint? except = null)
     {
         List<GridPos> covered = proposed.CoveredTiles();
-        return WhatWouldBeWalledOff(covered, fence, covered);
+        return WhatWouldBeWalledOff(covered, fence, covered, except);
     }
 
     /// <summary>
@@ -13944,7 +14051,7 @@ public sealed partial class SimWorld : IObstacles
     internal string? WhatAFenceWouldWallOff(IReadOnlyDictionary<GridPos, byte> fence, GridPos gateFront) =>
         WhatWouldBeWalledOff(new List<GridPos>(), fence, new List<GridPos> { gateFront });
 
-    private string? WhatWouldBeWalledOff(List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, List<GridPos> mustStayReached)
+    private string? WhatWouldBeWalledOff(List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, List<GridPos> mustStayReached, Footprint? except = null)
     {
         // ⚠️ AGAINST TODAY, NOT AGAINST PERFECTION. A shape nothing reaches today — a hut the
         // generator put across the water (seed 42's forager's hut) — is not something this
@@ -13966,6 +14073,11 @@ public sealed partial class SimWorld : IObstacles
 
         for (int i = 0; i < _standingFootprints.Count; i++)
         {
+            if (except is Footprint leaving && leaving.Covers(_standingFootprints[i][0]))
+            {
+                continue;
+            }
+
             if (HasAReachedNeighbour(before, _standingFootprints[i], null)
                 && !HasAReachedNeighbour(after, _standingFootprints[i], fence))
             {
@@ -13983,7 +14095,7 @@ public sealed partial class SimWorld : IObstacles
         // ⭐ AND NO DOOR IN USE IS SHUT (D622, `doors.md §4.5`): not covered, not fenced across, not left in a pocket —
         // though another side of the building would still be open. After the walled-off check, whose sentence is the
         // stronger truth when both hold.
-        if (WhatDoorThisWouldShut(after, proposedTiles, fence) is string shutsADoor)
+        if (WhatDoorThisWouldShut(after, proposedTiles, fence, except) is string shutsADoor)
         {
             return shutsADoor;
         }
