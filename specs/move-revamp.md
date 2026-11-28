@@ -1,8 +1,8 @@
 # Move, revamped — ask first, show the outline, let it turn
 
-> **Status: 📝 SPECCED, NOTHING BUILT — 🔨 claimed on `slice/move-revamp` (D945, 2026-11-27), cut from `main` at
-> `a92da93`.** Drafted while `slice/w6-health` was open (D710: one systems branch at a time), and moved here in the claim
-> commit once W6 merged (D944). ⏸️ **Eleven calls are Joe's (§4); no code is written until he answers.**
+> **Status: ✅ BUILT, UNPLAYED — on `slice/move-revamp` (D945 claim, D947 build, 2026-11-27), cut from `main` at
+> `a92da93`.** Every call Joe's answered (D947: *"Yes, as recommended"* — all eleven). ⏸️ **His play** (`.\run.bat`),
+> then the merge at his word.
 
 Joe's play note, 2026-11-27: *"I do want to revamp the 'move' function. 1. build in 'are you sure' safeguard prompts
 before moving a building 2. add a 'construction outline' thing to show the placement of the new spot, and allow
@@ -93,18 +93,27 @@ opens beside it** (call 1). Mock: `move-revamp-mock.html`, shown to Joe from the
   at its outline to call that off."*
 - **A construction site gets a true sentence** (call 8): *"That is still being built. Demolish calls it off and gives
   back what was delivered; then place it again."*
-- **The hint line** for Move gains the turning keys: *"Click a building to move it. R turns it, as a new building does.
-  …"*
+- **The hint line** for Move gains the turning keys while a building is held: *"Click where it should stand. R turns it
+  (shift: square), middle-drag: fine. Right-click lets go."*, or the sim's reason over a refused spot.
+- **Refused at the pick-up** (D947, built): what no spot could change — a house, graves, a fenced barn, a full store, a
+  site, a building already on the move, a bridge — is said on the first click (`SimWorld.WhyItStaysPut`), so the
+  player is not handed a building only to be told on the second.
+- ⚠️ **A bridge is not moved** (D947, built; not one of the eleven calls, so it is named here for Joe's eye): it is dragged
+  bank to bank (D549) and has no outline to move by. Before, Move asked `CanBridgeAt` of a single point and refused with a
+  bridge-laying sentence; now it says *"A bridge is not moved. Pull it down and build another where you want it."*
+- ⚠️ **The outline is judged again after a turn, for a fresh building too** (D947, built): the verdict waited for the next
+  mouse motion, so a ghost turned into the river by R stayed green until the cursor moved. A move's outline is drawn from
+  that verdict, which made the lag worth fixing for both.
 
 ## 3. What is NOT changing
 
 - What a move costs and does (D229): the full work, no materials, the same building arriving.
 - Houses still move by the land brush (D228). Graves and fences still hold a building down.
-- No save change: a site already stores its facing and `MovingFrom`. No new data rows. **No golden is expected to
-  move**, because no golden is known to run a relocation. *Not yet checked: the goldens grep and a `git diff` decide it,
-  not this sentence.*
+- No save change: a site already stores its facing and `MovingFrom`, and every building already saves its own facing.
+  No new data rows. **No golden moved**: 463 golden-length numbers in the tests before and after, and the diff touches
+  none of them (D947).
 
-## 4. ⏸️ Joe's calls, in plain words
+## 4. ✅ Joe's calls — all eleven as recommended (D947, *"Yes, as recommended"*)
 
 | # | The question | Recommended | The other way |
 |---|---|---|---|
@@ -120,18 +129,37 @@ opens beside it** (call 1). Mock: `move-revamp-mock.html`, shown to Joe from the
 | 10 | **The hole in §1.1 (a move can land on another building, a doorstep, or in the river)** | **Fix it first.** Moves that "worked" onto bad ground will be refused from now on. | Leave it alone. Not recommended, because the new outline would show green over ground the sim never checked. |
 | 11 | **While a building is on the move, does its card say so?** | **Yes: "Being moved — Call off the move", a button on its card.** It is cheaper to find than the outline. | No: Demolish on the outline stays the only way to call it off. |
 
-## 5. Build plan, once the calls are in (each its own commit)
+## 5. Build plan — ✅ built (D947)
 
 1. ✅ **Claim (D945)**: `slice/move-revamp` from `main`. HANDOFF's ⏸️ line *"🔨 being built on `slice/move-revamp`"*, the next free
    D, and this file moved into `specs/move-revamp.md`. `building-placement.md §11.3` is annotated: its *"No moving
    (Joe, 2026-07-28)"* has been void since D229 and still says so.
-2. **Sim, test first** (`RelocateTests.cs`): `AMoveCannotLandOnAnotherBuilding`, `AMoveCannotPutALonghousesFarEndInTheRiver`,
-   `AMoveCannotStandOnADoorstep`, `ABuildingMayTurnWhereItStands`, `ABuildingAlreadyOnTheMoveIsRefusedByName`,
-   `ASiteIsToldItIsStillBeingBuilt`, `AMoveArrivesAtTheFacingAskedFor`, `CanMoveToAgreesWithMarkRelocation`. Each one
-   red-checked, with the reds counted (D326). Then `CanMoveTo`, the self-only exemption, and the `facing` parameter.
+2. ✅ **Sim, test first** (`RelocateTests.cs`, eight guards). `AMoveLandsOnlyWhereAFreshBuildingCould` sweeps 29×29 tiles
+   round the village at two facings and holds a move to a fresh granary's verdict wherever the outline does not touch its
+   own ground: **1,652 spots, 160 on a building, 254 in the water, 0 that disagree** (it stands in for the three planned
+   *"cannot land on a building / in the river / on a doorstep"* guards, and reaches the wall-off too).
+   `AMoveOntoAnotherBuildingIsRefusedAndRaisesNoSite`, `ABuildingMayTurnWhereItStands`, `ABuildingMayStepOntoItsOwnDoorstep`,
+   `AMoveArrivesAtTheFacingAskedFor`, `ABuildingAlreadyOnTheMoveIsRefusedByName`, `ASiteIsToldItIsStillBeingBuilt`,
+   `AMoveCanBeCalledOffFromTheBuilding`. Built: `CanMoveTo`, `WhyItStaysPut`, `MarkRelocation(from, to, facing)`,
+   `MoveUnderWay`, `CallOffTheMove`; `CanBuildAt`'s `itself` (the only shape a move may overlook — in the overlap, the
+   doorstep, the wall-off and its doors; the covered-tile loop asks a move too); every building's `MoveTo(to, facing)`.
+   **Red-checked, eleven mutants, every one biting** (D326): overlap skipped 2 red; covered tiles skipped 1; doorstep
+   skipped 1; wall-off skipped 1; a second move allowed 1; the facing dropped 1; its own footprint not exempt 2; the site
+   sentence gone 1; call-off a no-op 1; its own door not exempt 1; its own doorstep not exempt 1. ⚠️ **Two scored ZERO
+   first, and that is written down:** the facing test asked for the facing the granary already had (a fresh one faces the
+   nearest store), and the own-door exemption had no test that reached it — both fixed, then red. Two mutants did not
+   compile at first (an unused parameter; a value compared with itself) and were rewritten until they did.
+3. ✅ **View** (`VillageMap.cs`, `Main.MoveQuestion.cs`, `Main.Cards.cs`, `Main.cs`): the picked-up kind held as
+   `_building`; the old spot outlined pale; the ghost, R, shift+R and the middle-drag as for a fresh building; the box
+   beside the outline (Enter / Esc); right-click and Esc step back one thing at a time (`LetGoFirst`); the card's
+   *Being moved — n% of the work done · Call off the move*. Probe line `[widths] move:` (`VillageMap.MoveProbe.cs`): ✅ —
+   a posed library (the probe's valley has nothing standing that may move), picked up at its own facing, turned by R,
+   refused with no question, asked with the box up and the outline still, *Not here* keeping it in hand, *Move it* marking a
+   site at the turn (called off), right-click letting go and then putting the tool down. **Red-checked twice:** the kind not
+   held, and right-click putting the tool down at once — each turns the line ⛔.
 3. **View**: hold the kind, draw the ghost, wire the turn keys, add the box, the right-click rule, the hint, the card
    button if call 11 is yes. A probe line, `[widths] move:`: picking up a granary holds its kind and facing; R turns it;
    a refused spot opens no box; a green one does; Not here keeps it in hand; Move it marks a site at the turned facing.
-4. **All four verification lines.** The suite runs, since `src/Kith.Sim` changes. Then the goldens grep, the view build
-   read line by line, and the probe with `bar height` at 110. Then Joe plays it with `.\run.bat`. Merge and push only at
-   his word.
+4. ✅ **All four verification lines (D947):** suite 2419 / 0 / 5 of 2424 in 20m04s (after one rename in the save table);
+   view build 0 warnings; probe 183 ✅, 0 ⛔, bar 110; goldens 463 before and after, none moved. ⏸️ Then Joe plays it with
+   `.\run.bat`. Merge and push only at his word.

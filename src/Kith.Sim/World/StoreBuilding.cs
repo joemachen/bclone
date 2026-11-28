@@ -197,10 +197,12 @@ public sealed class StoreBuilding
     public GridPos Tile => _position.ToTile();
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(Point to) => _position = to;
+    internal void MoveTo(Point to, Angle facing) => (_position, _facing) = (to, facing);
 
     /// <summary>Which way this store is turned (gridless 2b, D320).</summary>
-    public Angle Facing { get; init; }
+    public Angle Facing { get => _facing; init => _facing = value; }
+
+    private Angle _facing;
 
     /// <summary>
     /// The building it was raised as, or null for the founders' stores and the cart (D455).

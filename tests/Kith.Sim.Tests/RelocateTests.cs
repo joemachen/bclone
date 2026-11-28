@@ -545,4 +545,229 @@ public sealed class RelocateTests
         Assert.Null(world.StoreAt(to));
         Assert.Equal(stores - 1, world.StoreBuildings.Count);
     }
+
+    // -----------------------------------------------------------------
+    //  The revamp (`specs/move-revamp.md`, D947): the outline asks the sim first, and may turn.
+    // -----------------------------------------------------------------
+
+    /// <summary>A hut stood and finished near the village, for something to be in the way.</summary>
+    private static GridPos StandAHut(SimWorld world, params GridPos[] avoid)
+    {
+        GridPos at = Buildable(world, avoid);
+        Assert.True(world.Mark(BuildingKind.ForesterHut, at).Allowed);
+        Finish(world, at);
+        Assert.NotNull(world.WhatStandsAt(at));
+        return at;
+    }
+
+    /// <summary>
+    /// ⛔⛔ A move lands only where a fresh building could stand — the hole `move-revamp.md §1.1` found.
+    /// </summary>
+    /// <remarks>
+    /// <b><c>alreadyStanding</c> skipped the overlap, the doorstep, the wall-off and every covered tile</b>, to stop a
+    /// moved building refusing itself — so it could be moved onto another building, onto a doorstep, or with a 2×2's
+    /// far end in the river. Swept over the ground round the village at two facings: wherever the outline does not touch
+    /// its own old ground and a fresh granary's refusal does not name the granary itself, the move and the fresh build
+    /// must say the same thing. ⚠️ And the sweep must reach the shapes it is about, or it proves nothing (D423): it
+    /// counts its overlaps and its water.
+    /// </remarks>
+    [Fact]
+    public void AMoveLandsOnlyWhereAFreshBuildingCould()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos from);
+        StandAHut(world, from);
+        Footprint own = granary.Footprint;
+
+        GridPos centre = world.Map.FoundingSite;
+        var mismatches = new List<string>();
+        int overlaps = 0, water = 0, compared = 0;
+        foreach (Angle facing in new[] { Angle.Zero, Angle.FromTurnFraction(1, 8) })
+        {
+            for (int dy = -14; dy <= 14; dy++)
+            {
+                for (int dx = -14; dx <= 14; dx++)
+                {
+                    var tile = new GridPos(centre.X + dx, centre.Y + dy);
+                    if (!world.Map.Contains(tile))
+                    {
+                        continue;
+                    }
+
+                    Point at = world.AnchorOn(BuildingKind.Granary, tile);
+                    if (world.FootprintOf(BuildingKind.Granary, at, facing).Overlaps(own))
+                    {
+                        continue;
+                    }
+
+                    PlacementVerdict fresh = world.CanBuildAt(BuildingKind.Granary, at, facing: facing);
+                    if (!fresh.Allowed && fresh.Reason.Contains(granary.Name, System.StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    PlacementVerdict moved = world.CanMoveTo(from, at, facing);
+                    compared++;
+                    overlaps += fresh.Reason == "Something already stands there." ? 1 : 0;
+                    water += fresh.Reason.Contains("water", System.StringComparison.Ordinal) ? 1 : 0;
+                    if (moved.Allowed != fresh.Allowed || (!fresh.Allowed && moved.Reason != fresh.Reason))
+                    {
+                        mismatches.Add($"{tile} at {facing.Raw}: fresh {(fresh.Allowed ? "yes" : fresh.Reason)}, move {(moved.Allowed ? "yes" : moved.Reason)}");
+                    }
+                }
+            }
+        }
+
+        _output.WriteLine($"{compared} spots compared, {overlaps} on a building, {water} in the water, {mismatches.Count} that disagree");
+        foreach (string line in mismatches.Take(12))
+        {
+            _output.WriteLine(line);
+        }
+
+        Assert.True(overlaps > 0, "the sweep never put the outline on another building");
+        Assert.True(water > 0, "the sweep never reached the water");
+        Assert.Empty(mismatches);
+    }
+
+    /// <summary>⛔ Onto another building is refused, and the refusal raises nothing.</summary>
+    [Fact]
+    public void AMoveOntoAnotherBuildingIsRefusedAndRaisesNoSite()
+    {
+        SimWorld world = Loop().World;
+        StandAGranary(world, out GridPos from);
+        GridPos hut = StandAHut(world, from);
+        int sites = world.Workplaces.Count(w => w.IsSite);
+
+        PlacementVerdict refused = world.MarkRelocation(from, hut);
+
+        _output.WriteLine(refused.Reason);
+        Assert.False(refused.Allowed);
+        Assert.Equal("Something already stands there.", refused.Reason);
+        Assert.Equal(sites, world.Workplaces.Count(w => w.IsSite));
+    }
+
+    /// <summary>⭐ A building may be turned where it stands (call 5) — its own old ground is the one thing it may cover.</summary>
+    [Fact]
+    public void ABuildingMayTurnWhereItStands()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos from);
+        Angle quarter = granary.Facing + Angle.FromTurnFraction(1, 4);
+
+        PlacementVerdict turned = world.CanMoveTo(from, granary.Position, quarter);
+
+        Assert.True(turned.Allowed, turned.Reason);
+    }
+
+    /// <summary>⭐ It arrives facing the way the outline was turned (D229 kept the old facing, and nothing could change it).</summary>
+    [Fact]
+    public void AMoveArrivesAtTheFacingAskedFor()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos from);
+        GridPos to = Buildable(world, from);
+
+        // ⚠️ A quarter ON FROM ITS OWN, not a quarter: a fresh granary faces the nearest store (`doors.md §12.3`), and the
+        // first version of this asked for the facing it already had — the red check that dropped the facing scored zero.
+        Angle quarter = granary.Facing + Angle.FromTurnFraction(1, 4);
+
+        PlacementVerdict moved = world.MarkRelocation(from, world.AnchorOn(BuildingKind.Granary, to), quarter);
+        Assert.True(moved.Allowed, moved.Reason);
+        Finish(world, to);
+
+        Assert.Same(granary, world.StoreAt(to));
+        Assert.Equal(quarter, granary.Facing);
+    }
+
+    /// <summary>
+    /// ⭐ A building may step onto its own old doorstep — its door goes with it, so its own door is not in its way.
+    /// </summary>
+    /// <remarks>
+    /// The sweep above never covers its own ground, so without this the door's exemption scored zero. ⚠️ The granary is
+    /// stood where its doorstep, and the ground it would step onto, is no other building's: the first one stepped onto the
+    /// founders' forager's hut's doorstep too, and that is rightly refused.
+    /// </remarks>
+    [Fact]
+    public void ABuildingMayStepOntoItsOwnDoorstep()
+    {
+        SimWorld world = Loop().World;
+        var tried = new List<GridPos>();
+        StoreBuilding? granary = null;
+        GridPos from = default;
+        Door door = default;
+        while (granary is null && tried.Count < 40)
+        {
+            GridPos at = Buildable(world, tried.ToArray());
+            tried.Add(at);
+            Assert.True(world.Mark(BuildingKind.Granary, at).Allowed);
+            Finish(world, at);
+            StoreBuilding stood = world.StoreAt(at)!;
+            if (world.DoorCovering(at) is Door d && world.WhoseDoorstep(d.Doorstep) == stood.Name
+                && world.FootprintOf(BuildingKind.Granary, world.AnchorOn(BuildingKind.Granary, d.Doorstep), stood.Facing)
+                    .CoveredTiles().TrueForAll(t => world.WhoseDoorstep(t) is null || world.WhoseDoorstep(t) == stood.Name))
+            {
+                (granary, from, door) = (stood, at, d);
+            }
+        }
+
+        Assert.NotNull(granary);
+
+        Point onto = world.AnchorOn(BuildingKind.Granary, door.Doorstep);
+        Assert.True(world.FootprintOf(BuildingKind.Granary, onto, granary.Facing).Covers(door.Doorstep));
+
+        PlacementVerdict stepped = world.CanMoveTo(from, onto, granary.Facing);
+
+        _output.WriteLine(stepped.Allowed ? "allowed" : stepped.Reason);
+        Assert.True(stepped.Allowed, stepped.Reason);
+    }
+
+    /// <summary>⛔ A building already on the move is refused by name (call 7), so no builder's work is wasted on a second site.</summary>
+    [Fact]
+    public void ABuildingAlreadyOnTheMoveIsRefusedByName()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos from);
+        GridPos first = Buildable(world, from);
+        Assert.True(world.MarkRelocation(from, first).Allowed);
+
+        PlacementVerdict again = world.CanMoveTo(from, world.AnchorOn(BuildingKind.Granary, Buildable(world, from, first)), granary.Facing);
+
+        _output.WriteLine(again.Reason);
+        Assert.False(again.Allowed);
+        Assert.Contains("already being moved", again.Reason, System.StringComparison.Ordinal);
+        Assert.Contains(granary.Name, again.Reason, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>⚠️ A site is told it is still being built (call 8), not that there is nothing there.</summary>
+    [Fact]
+    public void ASiteIsToldItIsStillBeingBuilt()
+    {
+        SimWorld world = Loop().World;
+        GridPos at = Buildable(world);
+        Assert.True(world.Mark(BuildingKind.Granary, at).Allowed);
+
+        PlacementVerdict refused = world.MarkRelocation(at, Buildable(world, at));
+
+        _output.WriteLine(refused.Reason);
+        Assert.False(refused.Allowed);
+        Assert.Contains("still being built", refused.Reason, System.StringComparison.Ordinal);
+    }
+
+    /// <summary>⭐ A move can be called off from the building (call 11): the site goes, the building stays.</summary>
+    [Fact]
+    public void AMoveCanBeCalledOffFromTheBuilding()
+    {
+        SimWorld world = Loop().World;
+        StoreBuilding granary = StandAGranary(world, out GridPos from);
+        GridPos to = Buildable(world, from);
+        Assert.True(world.MarkRelocation(from, to).Allowed);
+        Assert.NotNull(world.MoveUnderWay(from));
+
+        Assert.True(world.CallOffTheMove(from));
+
+        Assert.Null(world.MoveUnderWay(from));
+        Assert.DoesNotContain(world.Workplaces, w => w.IsSite && w.Construction!.MovingFrom == from);
+        Assert.Same(granary, world.StoreAt(from));
+        Assert.False(world.CallOffTheMove(from));
+    }
 }

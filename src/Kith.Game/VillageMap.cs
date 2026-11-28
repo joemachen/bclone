@@ -469,6 +469,9 @@ public partial class VillageMap : Control
     // Lines, marks and the villagers' dots: dark, hue kept (D637). The selection is violet, a hue nothing else on the map
     // uses — gold went the full-store ring's brown when darkened (ΔE 8).
     private static readonly Color GhostFine = new("#004c1b");
+
+    /// <summary>The outline round a building picked up to move, where it stands (D947): pale, so the ghost is the thing aimed.</summary>
+    private static readonly Color MovingFromEdge = new("#f3e6b0");
     private static readonly Color GhostWarned = new("#523e01");
     private static readonly Color GhostRefused = new("#7e1b1d");
     internal static readonly Color AdultColour = new("#454135");
@@ -1056,6 +1059,11 @@ public partial class VillageMap : Control
         _destroying = tool is MapTool.Destroying or MapTool.Undestroying;
         _moveFrom = null;
         _bridgeFrom = null;
+        if (_moveAsked is not null)
+        {
+            _moveAsked = null;
+            MoveQuestionChanged?.Invoke(null);
+        }
 
         Tool = tool;
 
@@ -1260,6 +1268,11 @@ public partial class VillageMap : Control
             return;
         }
 
+        if (_moveAsked is not null)
+        {
+            return;
+        }
+
         // Raw steps per pixel: a full turn is 65,536, and a degree is 65,536/360.
         float perPixel = 65536f / 360f * (fine ? 0.1f : 1f);
 
@@ -1284,6 +1297,7 @@ public partial class VillageMap : Control
         {
             _ghostFacing += Angle.FromRaw(unchecked((ushort)steps));
             _ghostTurned = true;
+            JudgeTheGhostAfterATurn();
         }
 
         QueueRedraw();
@@ -1302,7 +1316,7 @@ public partial class VillageMap : Control
             return;
         }
 
-        if (_building is null)
+        if (_building is null || _moveAsked is not null)
         {
             return;
         }
@@ -1339,6 +1353,7 @@ public partial class VillageMap : Control
         }
 
         _ghostTurned = true;
+        JudgeTheGhostAfterATurn();
         QueueRedraw();
     }
 
@@ -1427,6 +1442,129 @@ public partial class VillageMap : Control
     private GridPos? _moveFrom;
     private bool _moving;
     private bool _emptying;
+
+    /// <summary>
+    /// ⭐ Where a move was clicked, and turned, while its question is up (`move-revamp.md §2.2`, D947) — null when no
+    /// question is open. The outline stays here, frozen, until <see cref="ConfirmTheMove"/> or <see cref="LetGoFirst"/>.
+    /// </summary>
+    private (Point At, Angle Facing)? _moveAsked;
+
+    /// <summary>The move's question (call 1): its title, its words, and the screen point it is asked beside.</summary>
+    public sealed record MoveQuestion(string Title, string Body, Vector2 Near);
+
+    /// <summary>Raised with the question when a move is clicked onto good ground, and with null when it goes.</summary>
+    public event System.Action<MoveQuestion?>? MoveQuestionChanged;
+
+    /// <summary>Whether a move's question is up — for the shell's Enter key and the probe.</summary>
+    public bool AMoveIsAsked => _moveAsked is not null;
+
+    /// <summary>
+    /// ⭐ Step back one thing (call 6, D947): an open question closes and the building stays in hand; a building in hand
+    /// is let go, back to <i>"click a building to move"</i>. False when there was nothing to step back from, so the
+    /// caller puts the tool down — the bridge's rule (D549's <c>_bridgeFrom</c>).
+    /// </summary>
+    public bool LetGoFirst()
+    {
+        if (_moveAsked is not null)
+        {
+            _moveAsked = null;
+            MoveQuestionChanged?.Invoke(null);
+            Announce();
+            QueueRedraw();
+            return true;
+        }
+
+        if (_moveFrom is not null)
+        {
+            _moveFrom = null;
+            _building = null;
+            _ghostClaim = new List<Vector2[]>();
+            _verdict = PlacementVerdict.Fine;
+            PlacementMessageChanged?.Invoke("Click a building to move it.");
+            Announce();
+            QueueRedraw();
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// ⭐ <i>Move it</i> (or Enter): mark the move the question was about, turned as it was asked. Refused — the ground
+    /// changed under the question — it says why and the building stays in hand.
+    /// </summary>
+    public void ConfirmTheMove()
+    {
+        if (_moveFrom is not GridPos from || _moveAsked is not (Point to, Angle facing))
+        {
+            return;
+        }
+
+        string name = _world!.NameOnTheTile(from);
+        PlacementVerdict moved = _world.MarkRelocation(from, to, facing);
+        _moveAsked = null;
+        MoveQuestionChanged?.Invoke(null);
+        PlacementMessageChanged?.Invoke(moved.Allowed ? $"{Capitalised(name)} is being moved." : moved.Reason);
+
+        // Only let go of the building once the move is actually under way, so a refusal leaves them still holding it.
+        if (moved.Allowed)
+        {
+            _moveFrom = null;
+            _building = null;
+            _ghostClaim = new List<Vector2[]>();
+            _verdict = PlacementVerdict.Fine;
+        }
+
+        Announce();
+        QueueRedraw();
+    }
+
+    /// <summary>The question's words (call 2): what it costs, what goes with it, and anything the ground warns of.</summary>
+    private MoveQuestion AskAboutTheMove(GridPos from, Point to, PlacementVerdict verdict)
+    {
+        string name = _world!.NameOnTheTile(from);
+        var body = new List<string>
+        {
+            "The builders will take it down and put it up again — the same work as building it, and no materials.",
+            "It keeps working where it stands until they finish; then its workers, its name and what it holds go with it.",
+        };
+
+        // ⭐ A building with painted ground leaves it where it was painted (D86): the ground is the building's by id.
+        if (_world.StandingWorkplaceCovering(from) is Workplace works && _world.Zones.WorkGroundOf(works.Id).Count > 0)
+        {
+            body.Add("Its ground stays where it is painted.");
+        }
+
+        if (verdict.HasWarning)
+        {
+            body.Add(verdict.Warning);
+        }
+
+        return new MoveQuestion($"Move {name} here?", string.Join("\n", body), GetGlobalTransformWithCanvas() * ToScreen(to));
+    }
+
+    private static string Capitalised(string name) => name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..];
+
+    /// <summary>The ghost's verdict: a move asks <see cref="SimWorld.CanMoveTo"/>, a fresh building <c>CanBuildAt</c> (D947).</summary>
+    private PlacementVerdict JudgeTheGhost() => _moveFrom is GridPos from
+        ? _world!.CanMoveTo(from, _hoveredPoint, _ghostFacing)
+        : _world!.CanBuildAt(_building!.Value, _hoveredPoint, facing: _ghostFacing);
+
+    /// <summary>
+    /// ⭐ Judged again after a turn (D947): the verdict waited for the next mouse motion, so a ghost turned into the river by R
+    /// stayed green until the cursor moved. A move's outline is drawn from it now, which made the lag a lie worth fixing for
+    /// both.
+    /// </summary>
+    private void JudgeTheGhostAfterATurn()
+    {
+        if (_building is null || HoldsABridge || _world is null || !_world.Map.Contains(_hovered))
+        {
+            return;
+        }
+
+        _verdict = JudgeTheGhost();
+        Announce();
+    }
 
     /// <summary>Pick a building up and put it down somewhere else (D229).</summary>
     public void BeginMoving() => SetTool(MapTool.Moving);
@@ -1520,6 +1658,12 @@ public partial class VillageMap : Control
 
         if (@event is InputEventMouseMotion motion && IsPlacing)
         {
+            // ⭐ The outline stays where it was clicked while its question is up (D947).
+            if (_moveAsked is not null)
+            {
+                return;
+            }
+
             Vector2 tile = ToTile(motion.Position);
             var over = new GridPos(Mathf.RoundToInt(tile.X), Mathf.RoundToInt(tile.Y));
 
@@ -1569,7 +1713,8 @@ public partial class VillageMap : Control
                     // ⭐ AT THE ANGLE IN YOUR HAND (D328). The ghost has been drawn with
                     // `_ghostFacing` since D320 and the verdict was computed without it, so a
                     // turned longhouse could be shown green over ground the sim had never checked.
-                    _verdict = _world.CanBuildAt(_building.Value, _hoveredPoint, facing: _ghostFacing);
+                    // ⭐ And a move's outline asks the move (D947, `move-revamp.md §2.1`).
+                    _verdict = JudgeTheGhost();
 
                     // ⭐ AND THE SEAM IT WOULD CLAIM, BEFORE THE CLICK (D613) — the sim's own preview, asked here as the ghost
                     // moves, so the drawing is what completion will take.
@@ -1625,7 +1770,12 @@ public partial class VillageMap : Control
 
         if (IsPlacing && click.ButtonIndex == MouseButton.Right)
         {
-            PutTheToolDown();
+            // ⭐ A building picked up to move is let go first (call 6, D947); a second right-click puts the tool down.
+            if (!LetGoFirst())
+            {
+                PutTheToolDown();
+            }
+
             AcceptEvent();
             return;
         }
@@ -2007,36 +2157,60 @@ public partial class VillageMap : Control
         // question rather than duplicate the rules.
         if (_moving)
         {
+            // ⭐⭐ PICKED UP, IT IS THE BUILDING IN YOUR HAND (D947, `move-revamp.md §2.1`): `_building` is its kind, so the
+            // fresh build's ghost, R, shift+R and the middle-drag all apply with no second placement system. It starts at
+            // the way it faces now (call 4), counted as turned so it does not swing round to the nearest store.
             if (_moveFrom is not GridPos from)
             {
-                if (_world!.WhatStandsAt(where) is null && _world.HouseholdAt(where) is null)
+                // Refused at the pick-up for what no spot could change (a house, graves, a full store, a site, already
+                // moving), so the player is not handed a building only to be told on the second click.
+                if (_world!.WhyItStaysPut(where) is string stays)
                 {
-                    PlacementMessageChanged?.Invoke("There is nothing there to move.");
+                    PlacementMessageChanged?.Invoke(stays);
                     return;
                 }
 
                 _moveFrom = where;
+                _building = _world.WhatStandsAt(where);
+                _ghostFacing = _world.FootprintOn(where)?.Facing ?? Angle.Zero;
+                _ghostTurned = true;
+                _ghostClaim = new List<Vector2[]>();
+                _hovered = where;
+                _hoveredPoint = WhereItWouldStand(at);
+                _verdict = JudgeTheGhost();
                 PlacementMessageChanged?.Invoke(
-                    $"Moving {_world.NameOnTheTile(where)} — click where it should stand.");
+                    $"Moving {_world.NameOnTheTile(where)} — click where it should stand. R turns it.");
+                Announce();
                 QueueRedraw();
+                return;
+            }
+
+            // A click while the question is up is "Not here": the question goes, the building stays in hand.
+            if (_moveAsked is not null)
+            {
+                LetGoFirst();
                 return;
             }
 
             // ⭐ Where the cursor is, not the middle of the square under it (D330) — the same
             // freedom placing a building has, because putting one down and moving one are the
             // same act with a different starting point.
-            PlacementVerdict moved = _world!.MarkRelocation(from, WhereItWouldStand(at));
-            PlacementMessageChanged?.Invoke(moved.Allowed
-                ? $"{_world.NameOnTheTile(where)} is being moved."
-                : moved.Reason);
-
-            // Only let go of the building once the move is actually under way, so a refused
-            // destination leaves them still holding it rather than starting over.
-            if (moved.Allowed)
+            // ⭐⭐ AND ASKED BEFORE IT IS MARKED (call 1, D947): a refused spot says why and opens nothing; a good one opens
+            // the question beside the outline, which stays put until Move it or Not here.
+            Point to = WhereItWouldStand(at);
+            PlacementVerdict could = _world!.CanMoveTo(from, to, _ghostFacing);
+            if (!could.Allowed)
             {
-                _moveFrom = null;
+                PlacementMessageChanged?.Invoke(could.Reason);
+                QueueRedraw();
+                return;
             }
 
+            _hoveredPoint = to;
+            _verdict = could;
+            _moveAsked = (to, _ghostFacing);
+            MoveQuestionChanged?.Invoke(AskAboutTheMove(from, to, could));
+            Announce();
             QueueRedraw();
             return;
         }
@@ -2174,6 +2348,22 @@ public partial class VillageMap : Control
 
         if (_moving)
         {
+            // ⭐ Holding one (D947): what the sim says of the spot, or how to put it down and turn it.
+            if (_moveAsked is not null)
+            {
+                return "Move it, or Not here — Esc or right-click keeps it in your hand.";
+            }
+
+            if (_moveFrom is not null)
+            {
+                return _verdict switch
+                {
+                    { Allowed: false } => _verdict.Reason,
+                    { HasWarning: true } => _verdict.Warning,
+                    _ => "Click where it should stand. R turns it (shift: square), middle-drag: fine. Right-click lets go.",
+                };
+            }
+
             return "Click a building to move, then click where it should stand. A store must be "
                 + "empty first, and houses move by the land brush. Right-click or Esc to stop.";
         }
@@ -3851,6 +4041,12 @@ public partial class VillageMap : Control
             }
 
             DrawPolyline(onScreen, AtNight(PalisadeEdge with { A = 0.45f }, GhostClaimAtNight), Mathf.Max(1.5f, _pixelsPerTile * 0.07f), antialiased: true);
+        }
+
+        // ⭐ What is picked up, outlined where it stands (D947, `move-revamp.md §2.1`) — the ghost is where it is going.
+        if (_moveFrom is GridPos movingFrom && world.FootprintOn(movingFrom) is Footprint was)
+        {
+            DrawFootprint(ToScreen(was.Origin), was.Width * 1.04f, was.Height * 1.04f, was.Facing.Raw, Colors.Transparent, AtNight(MovingFromEdge));
         }
 
         Footprint shape = world.FootprintOf(_building.Value, _hoveredPoint, _ghostFacing);

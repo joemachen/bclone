@@ -720,6 +720,7 @@ public partial class Main : Control
         // ⭐ The doors (`doors.md §12.6`), twelve years in, when every kind that has one stands.
         GD.Print(_map.EveryDoorIsDrawnOnItsWall());
         GD.Print(_map.TheGhostStartsTowardTheStore());
+        GD.Print(_map.TheMoveIsAskedAndTurns(() => TheMoveQuestionShows));
         GD.Print(TheCardSaysWhereItsDoorIs());
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheDialsHundredIsWhatSeventyFiveWas());
@@ -2126,6 +2127,9 @@ public partial class Main : Control
             // shipped that way, and D227's standing rule is that a sim feature is not done until
             // something in the view calls it.
             case Key.R: _map.TurnTheGhost(toTheQuarter: key.ShiftPressed); break;
+
+            // ⭐ ENTER IS "MOVE IT" WHILE A MOVE'S QUESTION IS UP (D947, `move-revamp.md §2.2`); Esc is "Not here", below.
+            case Key.Enter or Key.KpEnter when _map.AMoveIsAsked: _map.ConfirmTheMove(); break;
             case Key.Home: _map.CentreOnTheVillage(); break;
 
             // ⭐⭐ ESC IS THE CANCEL FOR EVERY TOOL (D327). Right-click used to be, and it is a
@@ -2142,9 +2146,13 @@ public partial class Main : Control
                 {
                     CloseTheFlyout();
                 }
+                // ⭐ A move steps back first (call 6, D947): the question closes, then the building is let go, then the tool.
                 else if (_map.IsPlacing)
                 {
-                    _map.PutTheToolDown();
+                    if (!_map.LetGoFirst())
+                    {
+                        _map.PutTheToolDown();
+                    }
                 }
                 else if (_whatsHerePanel.Visible)
                 {
@@ -4672,6 +4680,7 @@ public partial class Main : Control
 
         BuildTheMomentPanel();
         BuildThePassingPanel();
+        BuildTheMoveQuestion();
 
         // Start on Selected, and set the button's label from the same switch that the
         // key binding uses — two places writing that text would eventually disagree.
