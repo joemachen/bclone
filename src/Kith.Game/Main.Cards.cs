@@ -224,6 +224,9 @@ public partial class Main
         public required VBoxContainer SchoolSection { get; init; }
         public required Label SchoolText { get; init; }
         public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
+
+        /// <summary>W6's face beside the health pill (A314): fed up, queasy or fevered; hidden while they are well.</summary>
+        public required TextureRect HealthFace { get; init; }
         public required VBoxContainer SkillsSection { get; init; }
         public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
         public required Button Find { get; init; }
@@ -2262,6 +2265,22 @@ public partial class Main
             _ => "Well",
         }, world.HealthNoteFor(villager) ?? $"{villager.Name} is well.");
 
+        // A314 (Joe's "pill 2"): a plain diet is a warning that does nothing yet — the amber pill and ochre words between the
+        // working and the stopped; run down and sick keep the unmet look. Beside it, the state's face; none while well.
+        if (health == HealthState.PlainDiet)
+        {
+            p.Needs[5].Pill.AddThemeStyleboxOverride("panel", UiLook.PillWarned());
+            UiLook.Tint(p.Needs[5].Text, UiLook.Warned);
+        }
+
+        UiIcons.Show(p.HealthFace, "health", world.Config.HealthOn ? health switch
+        {
+            HealthState.PlainDiet => "plain-diet",
+            HealthState.RunDown => "run-down",
+            HealthState.Sick => "sick",
+            _ => null,
+        } : null);
+
         // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
         var trades = TheirTrades(world, villager);
         p.SkillsSection.Visible = trades.Count > 0;
@@ -2556,6 +2575,11 @@ public partial class Main
             needs[i] = (pill, text);
         }
 
+        // ⭐ The health pill's face (A314, Joe: "beside the pill on the card"), after the sixth pill, hidden while well.
+        TextureRect healthFace = UiIcons.Slot();
+        healthFace.Visible = false;
+        needsRow.AddChild(healthFace);
+
         needsSection.AddChild(needsRow);
         box.AddChild(needsSection);
 
@@ -2588,6 +2612,7 @@ public partial class Main
             SchoolSection = schoolSection,
             SchoolText = schoolText,
             Needs = needs,
+            HealthFace = healthFace,
             SkillsSection = skillsSection,
             Skills = new(),
             Find = find,

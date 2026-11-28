@@ -215,6 +215,7 @@ public sealed class HealthTests
         Assert.Equal(1, Said("A plain diet"));
         Moment told = world.Moments.Single(m => m.Title == "A plain diet");
         Assert.False(told.WaitsToBeDismissed);
+        Assert.Equal(new[] { MomentMark.PlainDiet }, told.Marks);
         Assert.Contains("nothing but forage for a year", told.Body, StringComparison.Ordinal);
         Assert.Contains("a farm, a hunter's lodge or a fishery", told.Body, StringComparison.Ordinal);
 
@@ -228,6 +229,7 @@ public sealed class HealthTests
 
         APlainSeason();
         Assert.Equal(1, Said("Run down"));
+        Assert.Equal(new[] { MomentMark.RunDown }, world.Moments.Single(m => m.Title == "Run down").Marks);
         Assert.Equal(v.Length - 1, world.RunDownCount());
         Assert.Equal(HealthState.PlainDiet, world.HealthOf(late));
 

@@ -11,8 +11,8 @@ namespace Kith.Sim.Systems;
 /// <remarks>
 /// <para>
 /// ⛔ <b>D207's two refusals, held here too:</b> nothing in this system slows anyone's work, and a diet erodes from
-/// <b>variety, never quantity</b> — a hungry village is not made sicker by being hungry, so hunger and illness cannot feed each
-/// other. ⛔ <b>One cause, one system (D797):</b> it reads what people ate and nothing of contentment's.
+/// <b>variety, never quantity</b> — a hungry village is not made sicker by being hungry, so hunger never makes anyone ill (the
+/// other way it costs work: a few days in bed a year, ). ⛔ <b>One cause, one system (D797):</b> it reads what people ate and nothing of contentment's.
 /// </para>
 /// <para>
 /// Step 6d of the tick order, after the hearths and the herds and before anyone decides what to do: a meal eaten on the

@@ -11230,7 +11230,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   never fatal. ⏸️ **HIS PLAY** (`.\run.bat`): a fresh founding left on forage — at about Year 1 the *A plain diet* notice and
   *Plain diet* on the cards; by Year 3 *Run down*, the strip's count, someone *ill in bed*; then a fishery or a lodge, and the
   cards going back to *Well* within a year. Or his Thornfield / Fernhollow young saves. **Then the merge at his word.**
-  🎨 **Owed once the art lane's A314 is in `main` and `main` is merged into the slice** (its message, 2026-11-27; Joe's picks
+  ✅ **Built (D942) — `main` (A314) merged into the slice; the two warnings' moment faces still on `ArtAwaited` until the art
+  lane's `moments/plain-diet.png` and `run-down.png` merge.** *(Read "🎨 Owed once …" until D942:)* 🎨 **Owed once the art lane's A314 is in `main` and `main` is merged into the slice** (its message, 2026-11-27; Joe's picks
   *"i like pill 2"*, faces *"Yes, as recommended"*): Plain diet's pill `UiLook.PillWarned()` with `UiLook.Warned` words; the faces
   `textures/ui/icons/health/{plain-diet,run-down,sick}.png` beside the pill for those states; `MomentMark.PlainDiet` / `RunDown`
   appended and passed on the two warnings. The map's sick face and the strewn home are the art lane's, after piece 1 merges

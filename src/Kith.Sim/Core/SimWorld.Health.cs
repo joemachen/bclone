@@ -95,7 +95,8 @@ public sealed partial class SimWorld
             $"{who} eaten nothing but {FoodGroups.Word(food)} for a year. {after} they will start to wear down — "
                 + $"{Answers(food)} would give them something else.",
             stops: false,
-            LogCategory.Warning);
+            LogCategory.Warning,
+            new[] { MomentMark.PlainDiet });
     }
 
     /// <summary>
@@ -111,7 +112,8 @@ public sealed partial class SimWorld
             $"{who} eaten nothing but {FoodGroups.Word(food)} for {YearsWord(Config.HealthRunDownSeasons)}, and it's telling. "
                 + $"{Capitalised(Answers(food))} would give them something else.",
             stops: false,
-            LogCategory.Warning);
+            LogCategory.Warning,
+            new[] { MomentMark.RunDown });
     }
 
     /// <summary>The log's line when a run-down person falls ill (§5.5): <i>"Ada Fern has taken to bed — run down after three years of nothing but forage."</i></summary>

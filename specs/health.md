@@ -183,6 +183,10 @@ stone-ridge would have for thirteen.
 - **The village, at the season's turn when anyone first passes 4**: one log line and one notice — *"Nine people in Fernhollow
   have eaten nothing but forage for a year. In two more they will start falling ill — a fishery, a hunter's lodge or a farm
   would give them something else."* Said again, once, at the turn anyone first goes *Run down*. Never every season.
+- **Its look (A314, Joe's picks — `sickbed-art.md §8`; built D942):** *Well* the met pill; *Plain diet* the amber pill
+  (`UiLook.PillWarned()`) in ochre words; *Run down* and *Sick* the unmet. Beside it the state's face — fed up, queasy,
+  fevered (`icons/health/`); none while well. The two warnings carry the same faces (`MomentMark.PlainDiet`, `RunDown`).
+  No mark over anyone's head for a plain diet or run down (they last years); *Sick* on the map is the art lane's, after piece 1.
 - **A count on the village panel** (*"2 run down"*), so a glance says whether it is one person or the village.
 
 ### 5.5 Falling ill (piece 1: never fatal)
