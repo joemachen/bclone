@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), PUSHED (A319). ✅ SICK ON THE MAP BUILT ON `art` (A321, §10), UNMERGED — Joe: *"Yes, as recommended"*; ⏸️ HIS PLAY. Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), PUSHED (A319). ✅ SICK ON THE MAP BUILT (A321, §10), PLAYED AND MERGED INTO `main` AT JOE'S WORD (A322, *"Played it, merge"*, `16a51c2`), NOT PUSHED. Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
