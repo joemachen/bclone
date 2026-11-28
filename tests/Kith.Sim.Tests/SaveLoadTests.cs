@@ -388,6 +388,9 @@ public sealed class SaveLoadTests : IDisposable
 
             // Laid to rest (W4) — `buried_at`, written only when set (`CemeteryTests.LaidToRestLeavesTheListAndIsSavedAndHashed`).
             "BuriedAtTick", "GraveAt", "GravePlace", "CarryingTheDead", "LastGraveVisitTick",
+
+            // Health (W6) — saved only when set, so a save from before reads everybody well (`HealthTests.TheHealthFieldsAreSaved`).
+            "AteThisSeason", "MealsThisSeason", "PlainSeasons", "PlainOn",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 

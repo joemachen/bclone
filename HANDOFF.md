@@ -11177,6 +11177,9 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **What a person ate is kept nowhere** (D933): `tools/harness/ZzDiet.cs` reads it off the meal — copy every villager's arms and
   larder before the step, and where hunger fell, take `FoodToTake` from the copy (arms first if they held a meal). A household
   that changed in the step was not copied: skip that meal, or the harness throws.
+- **Git Bash rewrites an argument that begins with `//`** (D939, MSYS path conversion): a red-check mutant passed as
+  `'// MUT6'` reached the file as `/ MUT6` and scored *did not compile*. Give a mutant a replacement that does not start with a
+  slash (`hash += 0; // MUT6`), and treat any *did not compile* as no verdict.
 - **Founding-day saves stepped unattended starve** (D933, D447): 96 of his 128 openable newest saves are Year 1 with four
   people. Filter to lived-in villages before reading anything about how a village lives.
 

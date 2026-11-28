@@ -649,6 +649,25 @@ public sealed class Villager
     /// </summary>
     public ulong? LastGraveVisitTick { get; set; }
 
+    /// <summary>
+    /// ⭐ W6 (`health.md §5.2`): what they ate this season, in units, a slot a food group (<see cref="FoodGroups.Slot"/>) —
+    /// read and cleared at the season's turn. Saved when anything is in it (`ate_this_season`); hashed sparsely.
+    /// </summary>
+    public int[] AteThisSeason { get; init; } = new int[FoodGroups.Count];
+
+    /// <summary>Meals eaten this season (W6) — a season with fewer than <c>health_read_min_meals</c> is not read. Saved; hashed sparsely.</summary>
+    public int MealsThisSeason { get; set; }
+
+    /// <summary>
+    /// ⭐ W6 (`health.md §5.3`): the plain seasons behind them — one added for each, <c>health_recover_seasons</c> (2) taken off
+    /// for each varied one, never below nought. At <c>health_plain_diet_seasons</c> (4) the card says <i>Plain diet</i>; at
+    /// <c>health_run_down_seasons</c> (12) they are <i>run down</i>. ⛔ No percentage, no hidden number: the card says the words.
+    /// </summary>
+    public int PlainSeasons { get; set; }
+
+    /// <summary>The food group their last plain season was eaten from — <i>"nothing but forage"</i>. Saved; hashed sparsely.</summary>
+    public FoodGroup PlainOn { get; set; }
+
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
 
@@ -1147,6 +1166,11 @@ public sealed class Villager
             ["grave_place"] = GraveAt == 0 ? null : GravePlace,
             ["carrying_the_dead"] = CarryingTheDead == 0 ? null : CarryingTheDead,
             ["last_grave_visit"] = LastGraveVisitTick is null ? null : SaveWriter.Hex(LastGraveVisitTick),
+            // W6's (`health.md §8`) — optional keys, so a save from before reads everybody well.
+            ["ate_this_season"] = System.Array.Exists(AteThisSeason, static x => x != 0) ? SaveWriter.Ints(AteThisSeason) : null,
+            ["meals_this_season"] = MealsThisSeason != 0 ? MealsThisSeason : null,
+            ["plain_seasons"] = PlainSeasons != 0 ? PlainSeasons : null,
+            ["plain_on"] = PlainOn != FoodGroup.None ? SaveWriter.Enum(PlainOn) : null,
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1227,6 +1251,10 @@ public sealed class Villager
             GravePlace = save.HasValue("grave_place") ? save.Int("grave_place") : 0,
             CarryingTheDead = save.HasValue("carrying_the_dead") ? save.Int("carrying_the_dead") : 0,
             LastGraveVisitTick = save.HasValue("last_grave_visit") ? save.NullableULong("last_grave_visit") : null,
+            AteThisSeason = AteFrom(save),
+            MealsThisSeason = save.HasValue("meals_this_season") ? save.Int("meals_this_season") : 0,
+            PlainSeasons = save.HasValue("plain_seasons") ? save.Int("plain_seasons") : 0,
+            PlainOn = save.HasValue("plain_on") ? save.Enum<FoodGroup>("plain_on") : FoodGroup.None,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),
@@ -1273,5 +1301,24 @@ public sealed class Villager
         }
 
         return villager;
+    }
+
+    /// <summary>The season's plate by group from a save (W6) — empty for a save from before, or with nothing eaten.</summary>
+    private static int[] AteFrom(SaveReader save)
+    {
+        var ate = new int[FoodGroups.Count];
+        if (save.HasValue("ate_this_season"))
+        {
+            List<int> read = save.Ints("ate_this_season");
+            if (read.Count != ate.Length)
+            {
+                throw new SaveDataException("a different list of food groups",
+                    $"{save.Path}.ate_this_season: {read.Count} groups where this game has {ate.Length}.");
+            }
+
+            read.CopyTo(ate);
+        }
+
+        return ate;
     }
 }

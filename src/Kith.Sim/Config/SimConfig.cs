@@ -3427,6 +3427,35 @@ public sealed record SimConfig
     [JsonPropertyName("contentment_leaving_seasons")]
     public int ContentmentLeavingSeasons { get; init; } = 8;
 
+    // ---- Health (W6, `specs/health.md`; Joe's calls, D935) ----
+
+    /// <summary>
+    /// ⭐ A season is <i>plain</i> when one food group made at least this share of what someone ate (W6 §5.2) — <b>90</b> (Joe's
+    /// call 3: his mixed villages never come near it, his one-food villages are at 97–100). <b>0 turns health off.</b>
+    /// </summary>
+    [JsonPropertyName("health_plain_percent")]
+    public int HealthPlainPercent { get; init; } = 90;
+
+    /// <summary>A season with fewer meals than this is not read (a birth, an arrival) — <b>3</b>, about half a season's.</summary>
+    [JsonPropertyName("health_read_min_meals")]
+    public int HealthReadMinMeals { get; init; } = 3;
+
+    /// <summary>What a varied season takes off the plain count — <b>2</b>, getting better twice as quick as wearing down (call 5).</summary>
+    [JsonPropertyName("health_recover_seasons")]
+    public int HealthRecoverSeasons { get; init; } = 2;
+
+    /// <summary>Plain seasons before the card says <i>Plain diet</i> and the village is told — <b>4</b>, a year (call 4).</summary>
+    [JsonPropertyName("health_plain_diet_seasons")]
+    public int HealthPlainDietSeasons { get; init; } = 4;
+
+    /// <summary>Plain seasons before a person is <i>run down</i> — <b>12</b>, three years (Joe's call 4 b).</summary>
+    [JsonPropertyName("health_run_down_seasons")]
+    public int HealthRunDownSeasons { get; init; } = 12;
+
+    /// <summary>Whether health is read at all (<see cref="HealthPlainPercent"/> above nought).</summary>
+    [JsonIgnore]
+    public bool HealthOn => HealthPlainPercent > 0;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -6829,6 +6858,21 @@ public sealed record SimConfig
             throw new SimConfigException(
                 $"contentment_leaving_seasons must be 0 (off) or above contentment_thinking_of_leaving_seasons, which must be above 0 "
                 + $"(got leaving {ContentmentLeavingSeasons}, thinking {ContentmentThinkingOfLeavingSeasons}) — nobody leaves without a warning.");
+        }
+
+        // W6 (`health.md §5.3`): a plain share is a majority or off, and the warning comes before the bite.
+        if (HealthPlainPercent != 0 && (HealthPlainPercent <= 50 || HealthPlainPercent > 100))
+        {
+            throw new SimConfigException(
+                $"health_plain_percent must be 0 (off) or above 50 and at most 100 (got {HealthPlainPercent}) — a plain season is one food's.");
+        }
+
+        if (HealthReadMinMeals < 1 || HealthRecoverSeasons < 1 || HealthPlainDietSeasons < 1 || HealthRunDownSeasons <= HealthPlainDietSeasons)
+        {
+            throw new SimConfigException(
+                "health_read_min_meals, health_recover_seasons and health_plain_diet_seasons must each be at least 1, and "
+                + $"health_run_down_seasons above health_plain_diet_seasons (got {HealthReadMinMeals}, {HealthRecoverSeasons}, "
+                + $"{HealthPlainDietSeasons}, {HealthRunDownSeasons}) — a village is told before it bites.");
         }
 
         var contentmentSeen = new HashSet<ContentmentCause>();

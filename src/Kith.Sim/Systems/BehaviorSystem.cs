@@ -3001,7 +3001,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         // code could not see.
         if (world.FoodIn(villager.Carried) >= mealCost)
         {
-            world.TakeAMealFrom(villager.Carried, mealCost, out int armsWorth, out Goods armsBest);
+            world.TakeAMealFrom(villager.Carried, mealCost, villager, out int armsWorth, out Goods armsBest);
             Feed(villager, config, mealCost, armsWorth, armsBest);
             world.LogVillager(LogLevel.Debug, villager, "needs",
                 $"ate {mealCost} from their own arms (hunger was {villager.Hunger})");
@@ -3014,7 +3014,7 @@ public sealed partial class BehaviorSystem : ISimSystem
             return false;
         }
 
-        if (!world.TakeAMealFrom(larder, mealCost, out int worth, out Goods best))
+        if (!world.TakeAMealFrom(larder, mealCost, villager, out int worth, out Goods best))
         {
             // Unreachable given the check above; if it ever fires, something else
             // is mutating the stockpile and we want to know loudly.

@@ -1566,6 +1566,17 @@ public static class StateHash
 
         hash = MixSparse(hash, 28u, villager.CarryingTheDead);
 
+        // ⭐ HEALTH (W6, `health.md §8`): the season's plate by group, its meals, the plain seasons and their food — sparse and
+        // tagged, so a body with nothing counted hashes as it did before health existed.
+        for (int g = 0; g < villager.AteThisSeason.Length; g++)
+        {
+            hash = MixSparse(hash, 30u + (uint)g, villager.AteThisSeason[g]);
+        }
+
+        hash = MixSparse(hash, 35u, villager.MealsThisSeason);
+        hash = MixSparse(hash, 36u, villager.PlainSeasons);
+        hash = MixSparse(hash, 37u, (int)villager.PlainOn);
+
         // The family at the grave (W4 step 5): sparse, so nobody who has never stood at one hashes as before.
         if (villager.LastGraveVisitTick is ulong visited)
         {
