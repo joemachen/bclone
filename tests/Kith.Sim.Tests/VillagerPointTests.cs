@@ -375,7 +375,10 @@ public sealed class VillagerPointTests
         // ⚠️ RE-PINNED (D782), not for the clock: a jar is low at five days' drink and the trip is asked whenever an adult is at
         // their door (Joe: "any time at home") — 48 trips, the 1st/10th/20th at 20 / 141 / 494. Proven by ablation: with D781's
         // rule put back the old 49 at 20 / 141 / 507 return. Were 49 at 20 / 141 / 507.
-        Assert.Equal(48, entries);
+        // ⚠️ RE-PINNED (D941), not for the clock: W6's health — the founders eat forage alone, so a plain diet is read each season
+        // and the run down take to bed — 49 trips, the 1st/10th/20th at 20 / 141 / 494. Proven by ablation: with health off where
+        // it is read (`SimConfig.HealthOn`) the old 48 at 20 / 141 / 494 return. Were 48 at 20 / 141 / 494.
+        Assert.Equal(49, entries);
         Assert.Equal(new ulong[] { 20, 141, 494 }, at);
     }
 
