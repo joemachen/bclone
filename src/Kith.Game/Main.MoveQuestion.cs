@@ -84,17 +84,110 @@ public partial class Main
 
     /// <summary>
     /// ⭐ A building on the move says so on its card, with the button that calls it off (call 11) — cheaper to find than the
-    /// outline Demolish is pointed at. Hidden when it is not being moved.
+    /// outline Demolish is pointed at. Says which tile; <c>ShowCard</c> shows or hides the row once, after every writer.
     /// </summary>
     private static void MovingLine(Card card, SimWorld world, GridPos tile)
     {
         Workplace? site = world.MoveUnderWay(tile);
-        card.MoveRow.Visible = site is not null;
         card.MovingFrom = site is null ? null : tile;
         if (site?.Construction is ConstructionSite plan)
         {
             int owed = System.Math.Max(1, plan.Recipe.WorkTicks);
             card.MoveNote.Text = $"Being moved — {System.Math.Min(100, plan.WorkDone * 100 / owed)}% of the work done.";
         }
+    }
+
+    /// <summary>
+    /// ⭐ The card's <i>Call off the move</i> holds still while the card refreshes, and calls the move off on one press — <b>a
+    /// probe line</b> (D948, Joe: <i>"it needed a lot of click attempts"</i>). Every refresh used to hide the row and show it
+    /// again, and a button hidden between the press and the release loses the click. A library is posed, moved, its card
+    /// opened and refreshed, the button pressed, and all of it taken away again.
+    /// </summary>
+    private string TheCallOffHoldsStill()
+    {
+        SimWorld world = _loop.World;
+        GridPos centre = world.Map.FoundingSite;
+        Library? posed = null;
+        for (int r = 3; r < 20 && posed is null; r++)
+        {
+            foreach ((int dx, int dy) in new[] { (r, 0), (-r, 0), (0, r), (0, -r) })
+            {
+                var tile = new GridPos(centre.X + dx, centre.Y + dy);
+                if (world.Map.Contains(tile) && world.CanBuildAt(BuildingKind.Library, tile, alreadyStanding: true).Allowed)
+                {
+                    posed = new Library { Position = world.AnchorOn(BuildingKind.Library, tile), Name = "the probe's library", Shelves = 3 };
+                    break;
+                }
+            }
+        }
+
+        if (posed is null)
+        {
+            return "[widths] call off the move: ⛔ nowhere to pose a library";
+        }
+
+        world.Libraries.Add(posed);
+        GridPos from = posed.Tile;
+        var faults = new List<string>();
+        Card? card = null;
+        try
+        {
+            GridPos? to = null;
+            for (int r = 3; r < 16 && to is null; r++)
+            {
+                foreach ((int dx, int dy) in new[] { (r, 0), (-r, 0), (0, r), (0, -r) })
+                {
+                    var tile = new GridPos(from.X + dx, from.Y + dy);
+                    if (world.Map.Contains(tile) && world.CanMoveTo(from, world.AnchorOn(BuildingKind.Library, tile), posed.Facing).Allowed)
+                    {
+                        to = tile;
+                        break;
+                    }
+                }
+            }
+
+            if (to is not GridPos there || !world.MarkRelocation(from, there).Allowed)
+            {
+                return "[widths] call off the move: ⛔ nowhere to move the posed library";
+            }
+
+            OpenCard(new CardSubject(CardKind.Library, world.Libraries.IndexOf(posed)));
+            card = _selectedCard!;
+            int flickers = 0;
+            void Count() => flickers++;
+            card.MoveRow.VisibilityChanged += Count;
+            for (int i = 0; i < 6; i++)
+            {
+                RefreshCards(world);
+            }
+
+            card.MoveRow.VisibilityChanged -= Count;
+            if (!card.MoveRow.Visible || flickers != 0)
+            {
+                faults.Add($"the row shown {card.MoveRow.Visible}, and it changed {flickers} times over six refreshes with the move under way");
+            }
+
+            Button? callOff = card.MoveRow.GetChildren().OfType<Button>().FirstOrDefault();
+            callOff?.EmitSignal(BaseButton.SignalName.Pressed);
+            if (callOff is null || world.MoveUnderWay(from) is not null || card.MoveRow.Visible)
+            {
+                faults.Add($"one press of Call off the move left the move {(world.MoveUnderWay(from) is null ? "off" : "on")}, the row shown {card.MoveRow.Visible}");
+            }
+        }
+        finally
+        {
+            world.CallOffTheMove(from);
+            if (card is not null)
+            {
+                CloseCard(card);
+            }
+
+            world.Libraries.Remove(posed);
+            RefreshCards(world);
+        }
+
+        return faults.Count == 0
+            ? "[widths] call off the move: ✅ the card's row stood still over six refreshes with a move under way, and one press called it off"
+            : $"[widths] call off the move: ⛔ {string.Join("; ", faults)}";
     }
 }

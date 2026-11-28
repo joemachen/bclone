@@ -166,9 +166,9 @@ public partial class VillageMap
             Click(yes);
             ConfirmTheMove();
             Workplace? site = world.MoveUnderWay(from);
-            if (site is null || site.Facing != turned || _moveFrom is not null || AMoveIsAsked)
+            if (site is null || site.Facing != turned || _moveFrom is not null || AMoveIsAsked || Tool != MapTool.None)
             {
-                faults.Add($"Move it marked {(site is null ? "no site" : $"a site facing {site.Facing.Raw}")}, want {turned.Raw}; still holding {_moveFrom}");
+                faults.Add($"Move it marked {(site is null ? "no site" : $"a site facing {site.Facing.Raw}")}, want {turned.Raw}; still holding {_moveFrom}; the tool {Tool}, want it down");
             }
 
             if (!world.CallOffTheMove(from) || world.MoveUnderWay(from) is not null)
@@ -177,6 +177,7 @@ public partial class VillageMap
             }
 
             // Right-click lets go first, and only the second one puts the tool down.
+            BeginMoving();
             Click(from);
             Click(from, MouseButton.Right);
             bool letGo = _moveFrom is null && Tool == MapTool.Moving;
@@ -199,7 +200,7 @@ public partial class VillageMap
 
         return faults.Count == 0
             ? $"[widths] move: ✅ {(posed is null ? world.NameOnTheTile(from) : "a posed library")} picked up at its own facing and turned by R; refused at {refused} with no question; "
-                + $"asked at {allowed}, the box up and the outline still; Not here kept it in hand; Move it marked a site at the turn (called off); "
+                + $"asked at {allowed}, the box up and the outline still; Not here kept it in hand; Move it marked a site at the turn and put the tool down (called off); "
                 + "right-click let go, then put the tool down"
             : $"[widths] move: ⛔ {string.Join("; ", faults)}";
     }

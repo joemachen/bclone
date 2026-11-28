@@ -1506,13 +1506,13 @@ public partial class VillageMap : Control
         MoveQuestionChanged?.Invoke(null);
         PlacementMessageChanged?.Invoke(moved.Allowed ? $"{Capitalised(name)} is being moved." : moved.Reason);
 
-        // Only let go of the building once the move is actually under way, so a refusal leaves them still holding it.
+        // ⭐ AND THE TOOL GOES DOWN ONCE THE MOVE IS UNDER WAY (D948, Joe: *"Yes, put it down"*): with Move still in hand, a
+        // left-click on the building tried to pick it up again rather than open its card, and the card is where the move
+        // is called off. A refusal leaves them still holding it.
         if (moved.Allowed)
         {
-            _moveFrom = null;
-            _building = null;
-            _ghostClaim = new List<Vector2[]>();
-            _verdict = PlacementVerdict.Fine;
+            PutTheToolDown();
+            return;
         }
 
         Announce();

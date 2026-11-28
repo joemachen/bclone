@@ -721,6 +721,7 @@ public partial class Main : Control
         GD.Print(_map.EveryDoorIsDrawnOnItsWall());
         GD.Print(_map.TheGhostStartsTowardTheStore());
         GD.Print(_map.TheMoveIsAskedAndTurns(() => TheMoveQuestionShows));
+        GD.Print(TheCallOffHoldsStill());
         GD.Print(TheCardSaysWhereItsDoorIs());
         GD.Print(TheSettingsComeBackAsTheyWent());
         GD.Print(TheDialsHundredIsWhatSeventyFiveWas());

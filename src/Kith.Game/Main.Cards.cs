@@ -888,7 +888,10 @@ public partial class Main
         card.Wear.Visible = false;
         card.Established.Visible = false;
         card.Door.Visible = false;
-        card.MoveRow.Visible = false;
+
+        // ⛔ NOT HIDDEN HERE, ONLY FORGOTTEN (Joe, playing D947: *"calling off the move eventually worked, but it needed a lot
+        // of click attempts"*). This reset runs on every refresh, and a button hidden and shown again between the press and
+        // the release loses the click — so the row's visibility is set once, after the writers, and only when it changes.
         card.MovingFrom = null;
         card.House.Visible = false;
         card.Cart.Visible = false;
@@ -916,6 +919,13 @@ public partial class Main
             // homes)"*). Per refresh, because a retargeted card changes kind.
             card.Edit.Visible = card.Subject.Kind is CardKind.Store or CardKind.Workplace;
             ShowSettings(world, card);
+        }
+
+        // The move's row, set once per refresh and only when it changes (D947) — see the reset above.
+        bool moving = shown && card.MovingFrom is not null;
+        if (card.MoveRow.Visible != moving)
+        {
+            card.MoveRow.Visible = moving;
         }
 
         return shown;

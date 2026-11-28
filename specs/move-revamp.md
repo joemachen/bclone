@@ -1,8 +1,8 @@
 # Move, revamped — ask first, show the outline, let it turn
 
-> **Status: ✅ BUILT, UNPLAYED — on `slice/move-revamp` (D945 claim, D947 build, 2026-11-27), cut from `main` at
-> `a92da93`.** Every call Joe's answered (D947: *"Yes, as recommended"* — all eleven). ⏸️ **His play** (`.\run.bat`),
-> then the merge at his word.
+> **Status: ✅ BUILT AND PLAYED; TWO PLAY NOTES FIXED (D948), ⏸️ HIS SECOND PLAY — on `slice/move-revamp` (D945 claim,
+> D947 build, 2026-11-27), cut from `main` at `a92da93`.** Every call Joe's answered (D947: *"Yes, as recommended"* — all
+> eleven). He played D947: *"otherwise everything is good"* (§6). Then the merge at his word.
 
 Joe's play note, 2026-11-27: *"I do want to revamp the 'move' function. 1. build in 'are you sure' safeguard prompts
 before moving a building 2. add a 'construction outline' thing to show the placement of the new spot, and allow
@@ -104,6 +104,17 @@ opens beside it** (call 1). Mock: `move-revamp-mock.html`, shown to Joe from the
 - ⚠️ **The outline is judged again after a turn, for a fresh building too** (D947, built): the verdict waited for the next
   mouse motion, so a ghost turned into the river by R stayed green until the cursor moved. A move's outline is drawn from
   that verdict, which made the lag worth fixing for both.
+
+## 2.4 Joe's play of D947, and what changed (D948)
+
+- *"calling off the move eventually worked, but it needed a lot of click attempts. it felt unresponsive."* — **Fixed.** The
+  card's refresh hid every row and let each writer show its own again, every refresh; a button hidden and shown between the
+  press and the release loses the click. The move's row is now set once, after the writers, and only when it changes.
+  Probe line `[widths] call off the move:`; red-checked (the per-refresh hide put back: 12 changes over six refreshes, ⛔).
+- *"i also dont like having to right-click to get to that window when previously it was a left click."* — read back to him
+  as: with Move still in hand after *Move it*, a left-click on the building tried to pick it up again instead of opening its
+  card. **His call: *"Yes, put it down"*** — the tool goes down once a move is under way, so the next left-click opens the
+  card. A second move is Move again. Red-checked (the tool kept in hand: `move:` ⛔).
 
 ## 3. What is NOT changing
 
