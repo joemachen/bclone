@@ -1,6 +1,6 @@
 # The herbalist's pictures — the hut on the map, its icon, herbs, the remedy and the trade (A324)
 
-> **Status: ✍️ MOCKED (A325, 2026-11-27), nothing built. ⏸️ Six calls Joe's (§4).** Claimed A324. Art lane (CLAUDE.md
+> **Status: ✅ BUILT (A326, 2026-11-27) on `art`, unmerged — Joe: *"All as recommended"* (§5). Nothing shows in play until W6 piece 2 adds the rows of §3.** Mocked A325; claimed A324. Art lane (CLAUDE.md
 > *Two tracks*), branch `art`. W6 piece 2's ask of the lane (`health.md §11`), painted **ahead of the systems lane**: no
 > `BuildingKind`, `JobKind`, good or job for the herbalist, herbs or remedy exists yet — W6 piece 2 makes them on its own slice.
 > Mocks: `D:\Projects\brushes\herbalist\` (`herbalist_pick.jpg`; renders in `out\`, the scratch game in `game\`; `mock.py` and
@@ -92,3 +92,13 @@ theirs):
 6. **His OK to build the yard ahead** in `VillageMap.Yards.cs` (a new `YardKind.Herbalist`, its layout and things) and its probe
    line, outside the lane's table like the tavern's and the great library's — nothing in `data/` or the sim, so the suite stays
    skipped by D846. The rows that name `JobKind.Herbalist` stay the slice's.
+
+## 5. Built (A326) — all six as recommended
+
+His answer, said back before building: **the map look A, the hut's icon A, herbs the tied bunch, the remedy the plum jar, lavender / sage / plum, and his OK for `VillageMap.Yards.cs` and the probe line.**
+
+- **The yard:** `YardKind.Herbalist` (`VillageMap.Yards.cs`: the enum, `LayoutOf`'s case, `YardUnder`'s case); everything else in the new `VillageMap.Herbalist.cs`. The hut at the back of its plot (0.44 of the depth), the garden in front across the door's way: **seven slots, the path in the one nearest the door and a bed in each of the other six**, so the garden keeps its six beds wherever the door is (the mock's beds followed the door and lost two at an end); sage, lavender, calendula, yarrow, mint and borage in that order; the wattle on three sides with a gate at the path; five bundles on a rack by the wall; **the remedies two jars a level (`YardState.Stock`), to six, on a shelf only when there is one** — plum jars, cream covers. It reads the stock it is given: until the slice adds `StockReadOf`'s row it is 0 (an empty shelf), as any yard with no read.
+- **The icons**, painted by `D:/Projects/brushes/herbalist/p3_icons_herb.jsx` (a copy of `p3_icons.jsx` with the herbalist's shapes; the shared painter untouched), 80 × 80, mipmapped: `buildings/herbalists-hut` and `-owed` (the owed medallion at (205, 208) on the 256 grid, measured as the great library's was), `goods/herbs`, `goods/remedy`, `trades/herbalist`. Found by name, so they wait harmlessly for their rows.
+- **The probe:** `herbalist's hut:`, riding on `building yards:` after the tavern's (trap 73), draws the row §3 gives the slice itself: the hut behind and under half the plot with the garden in front at four doors; six beds, the path within half a slot of the door at five doors and no bed on it, the wattle, five bundles; the jars two a level to six, the shelf only with a jar; every thing on its ground at four turns, at 2 × 2 and at 2 × 1. ⚠️ Its first run found a real fault: the path took the slot the door would have at −1…1 where the slots span −0.84…0.84, so an end door's path sat a slot inward. Red-checked: 11 mutants, 11 red (a bed on the path too went red by the exception the line catches — a seventh bed runs past the six colours).
+- **For the slice, besides §3:** `building yards:`'s §2 table wants a row for `YardKind.Herbalist` once `StockReadOf` reads the remedy — `(YardKind.Herbalist, StockRead.Remedy, StockRead.None, false)` — or that line goes red.
+- **Seen:** `herbalist_built.jpg` (on his Hollowmere, the hut drawn by the built code through a scratch stand-in for §3's row; the shelf empty and full).

@@ -40,6 +40,9 @@ internal enum YardKind
 
     /// <summary>W3's tavern (A199, §3.2): its sign, trestle and benches, its ale by the door.</summary>
     Tavern,
+
+    /// <summary>W6 piece 2's herbalist's hut (A326, `herbalist-art.md`): its herb garden in front, its remedies by the door.</summary>
+    Herbalist,
 }
 
 /// <summary>
@@ -386,6 +389,9 @@ public partial class VillageMap
                 float yardDepth = (fd - inner) / 2f;
                 return new YardLayout(roofAt, roofHw, roofHd, way * (inner + yardDepth), across, fw, yardDepth);
             }
+
+            case YardKind.Herbalist:
+                return HerbalistLayout(fw, fd, doorOut, doorLocal, gap);
 
             case YardKind.Mill:
             {
@@ -1651,6 +1657,10 @@ public partial class VillageMap
 
             case YardKind.Tavern:
                 TavernYard(k, l, s, seed);
+                break;
+
+            case YardKind.Herbalist:
+                HerbalistYard(k, l, s, seed);
                 break;
 
             case YardKind.Well:
