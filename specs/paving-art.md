@@ -1,6 +1,6 @@
 # Spec: Paving's pictures — gravel and cobble (W9, art lane)
 
-> **Status: ✍️ MOCKED (A335, 2026-11-28), nothing built; ⏸️ five calls Joe's (§4).** Claimed A334 at Joe's *"W9 paving"* (to
+> **Status: ✍️ MOCKED (A335, 2026-11-28; the unused road's ageing A336), nothing built; ⏸️ six calls Joe's (§4); ✅ the unlocks his (A336, §3.1).** Claimed A334 at Joe's *"W9 paving"* (to
 > the coordinator, asked what the art lane should mock ahead while the herbalist's poses wait on `slice/w6-fever`). W9's
 > mechanic is **not specced or built** (`systems-complete.md` W9; `DESIGN.md §2.6`): everything here is the look, made ahead,
 > with the seams the systems lane will need set out as **its** calls (§3), not decided. Art lane. Neighbours:
@@ -46,7 +46,15 @@ What the view needs, however W9 is built; each is the slice's to name.
 | S4 | **Which tiles can be paved**: packed only, or any worn tile. | A lightly worn tile is drawn as a narrow trail; paved, it is drawn at the packed width. |
 | S5 | **The change counter.** Paving a stretch and laying each tile move `PathWear.Generation` (or a counter beside it the view also watches). | The path field is rebaked once per change, never per frame (`CLAUDE.md`; `painted-paths.md §4`). |
 
+| S6 | **How used a paved tile still is.** Recommended: wear keeps counting and fading under the stone — paving stops it **removing** the path, not stop it being measured — so the view ages a paved tile whose wear has faded (§4 call 6), and a road walked again comes back clean. No new data. | The ageing: grass in the joints, moss, the grit greening, the edges softened — never gone. |
+| S7 | **Taking paving up**: whether the player can lift a stretch (some stone back), as a deliberate act. Recommended: yes, never on its own. | The stretch goes back to the worn track it was, by the crossfade (`path-crossfade.md`). |
+| S8 | **Building over it**: whether a paved tile can be built on, or must be lifted first. Recommended: lifted first. | Nothing new: a lifted tile is a track again. |
+
 The **grade names** the view will key on, whatever S1 says: *gravel*, *cobble*, and *planned* (S2).
+
+### 3.1 Joe's answers on W9's design (A336) — for the slice, written here so they are not lost
+
+Joe, asked how paving fits paths that change with the village: *"yes, i love all of this"* — the fossil rule as `DESIGN.md §2.6` has it (a paved road stays, and the cap on its discount means people still wear new dirt tracks beside it when it no longer goes where they go), the unused road ageing (§4 call 6), S6–S8 asked of the slice. Then on the unlock: ✅ **Joe: *"gravel unlocked once a quarry exists and cobble once the village has a master builder." approved*** — gravel is the quarry's chippings; laying cobbles is what a master builder knows (`DESIGN.md §2.7`, knowledge in a person: with no master builder left the village can still gravel, and the cobbles already laid stay), which also gives the builder's skill its first use (`skills-for-every-trade.md §6`). ⏸️ **Who lays it — recommended, not yet answered: the builders**, a paving order being a site along the path, its stone hauled to it like any site's (which is S3's answer: the heap is the site's stone).
 
 ## 4. The calls — Joe's
 
@@ -62,7 +70,10 @@ The **grade names** the view will key on, whatever S1 says: *gravel*, *cobble*, 
    **B unmarked**: only the heap and a few strayed stones (needs neither S2 nor anything on the waiting stretch).
 5. **The files, when built** (his OK): the art lane's `valley_terrain.gdshader`, `VillageMap.PaintedPaths.cs`,
    `ValleyWatercolourLook.cs` and `looks/valley_watercolour.tres`, a probe line; and in the systems lane's column,
-   **`VillageMap.cs`'s trail grade read** (`TrailGradeAt` and the network's build) for S1–S2.
+   **`VillageMap.cs`'s trail grade read** (`TrailGradeAt` and the network's build) for S1–S2 (and S6's wear on paved tiles).
+6. **A paved road nobody walks any more** (A336, sheet `D:\Projects\brushes\paving\paving_ageing.jpg`) — ⭐ **A it ages**:
+   grass in the joints, then moss on some stones and the gravel greening in patches, the edges softened — at its oldest still
+   plainly a road, half in the turf; or **B it stays as laid**, forever.
 
 ## 5. The build (after Joe's picks and W9's code)
 
