@@ -1,6 +1,6 @@
 # Spec: Paving's pictures — gravel and cobble (W9, art lane)
 
-> **Status: ✍️ MOCKED (A335, 2026-11-28; the unused road's ageing A336), nothing built; ⏸️ six calls Joe's (§4); ✅ the unlocks his (A336, §3.1).** Claimed A334 at Joe's *"W9 paving"* (to
+> **Status: ✍️ MOCKED (A335, 2026-11-28; the unused road's ageing A336), nothing built; ✅ **Joe: *"All as recommended"* (A337) — all six calls (§4.1) and the builders laying it (§3.1); the unlocks his (A336). The build waits for W9's code (§5).** Claimed A334 at Joe's *"W9 paving"* (to
 > the coordinator, asked what the art lane should mock ahead while the herbalist's poses wait on `slice/w6-fever`). W9's
 > mechanic is **not specced or built** (`systems-complete.md` W9; `DESIGN.md §2.6`): everything here is the look, made ahead,
 > with the seams the systems lane will need set out as **its** calls (§3), not decided. Art lane. Neighbours:
@@ -54,7 +54,7 @@ The **grade names** the view will key on, whatever S1 says: *gravel*, *cobble*, 
 
 ### 3.1 Joe's answers on W9's design (A336) — for the slice, written here so they are not lost
 
-Joe, asked how paving fits paths that change with the village: *"yes, i love all of this"* — the fossil rule as `DESIGN.md §2.6` has it (a paved road stays, and the cap on its discount means people still wear new dirt tracks beside it when it no longer goes where they go), the unused road ageing (§4 call 6), S6–S8 asked of the slice. Then on the unlock: ✅ **Joe: *"gravel unlocked once a quarry exists and cobble once the village has a master builder." approved*** — gravel is the quarry's chippings; laying cobbles is what a master builder knows (`DESIGN.md §2.7`, knowledge in a person: with no master builder left the village can still gravel, and the cobbles already laid stay), which also gives the builder's skill its first use (`skills-for-every-trade.md §6`). ⏸️ **Who lays it — recommended, not yet answered: the builders**, a paving order being a site along the path, its stone hauled to it like any site's (which is S3's answer: the heap is the site's stone).
+Joe, asked how paving fits paths that change with the village: *"yes, i love all of this"* — the fossil rule as `DESIGN.md §2.6` has it (a paved road stays, and the cap on its discount means people still wear new dirt tracks beside it when it no longer goes where they go), the unused road ageing (§4 call 6), S6–S8 asked of the slice. Then on the unlock: ✅ **Joe: *"gravel unlocked once a quarry exists and cobble once the village has a master builder." approved*** — gravel is the quarry's chippings; laying cobbles is what a master builder knows (`DESIGN.md §2.7`, knowledge in a person: with no master builder left the village can still gravel, and the cobbles already laid stay), which also gives the builder's skill its first use (`skills-for-every-trade.md §6`). ✅ **Who lays it — the builders (Joe: *"All as recommended"*, A337)**, a paving order being a site along the path, its stone hauled to it like any site's (which is S3's answer: the heap is the site's stone).
 
 ## 4. The calls — Joe's
 
@@ -74,6 +74,10 @@ Joe, asked how paving fits paths that change with the village: *"yes, i love all
 6. **A paved road nobody walks any more** (A336, sheet `D:\Projects\brushes\paving\paving_ageing.jpg`) — ⭐ **A it ages**:
    grass in the joints, then moss on some stones and the gravel greening in patches, the edges softened — at its oldest still
    plainly a road, half in the turf; or **B it stays as laid**, forever.
+
+### 4.1 Joe's answer (A337)
+
+*"All as recommended"*, said back: **gravel a fine pale grit; cobbles to the edge with the pen, snow in the joints in winter; a clean join where one grade meets the next; a stretch being paved staked out with string and pegs and a heap of stone at its front; an unused road that ages but never goes; his OK for the files in call 5, `VillageMap.cs`'s trail grade read among them; and the builders lay it, a paving order being a site its stone is hauled to.**
 
 ## 5. The build (after Joe's picks and W9's code)
 
