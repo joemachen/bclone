@@ -206,13 +206,17 @@ public partial class Main
             faults.Add($"the warned pill wears {warnFile} with words {look.GetColor("warned", t).ToHtml(false)} (want pill-warn.png, ochre)");
         }
 
-        foreach (string face in new[] { "plain-diet", "run-down", "sick" })
+        // A317: and the two warnings' faces (W6's MomentMark.PlainDiet and .RunDown), at the moments' 104 master.
+        foreach ((string dir, string face, int size) in new[]
         {
-            string path = $"res://textures/ui/icons/health/{face}.png";
+            ("health", "plain-diet", 128), ("health", "run-down", 128), ("health", "sick", 128), ("moments", "plain-diet", 104), ("moments", "run-down", 104),
+        })
+        {
+            string path = $"res://textures/ui/icons/{dir}/{face}.png";
             Texture2D? texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
-            if (texture is null || texture.GetWidth() != 128 || texture.GetHeight() != 128 || texture.GetImage() is not { } img || !img.HasMipmaps())
+            if (texture is null || texture.GetWidth() != size || texture.GetHeight() != size || texture.GetImage() is not { } img || !img.HasMipmaps())
             {
-                faults.Add($"the {face} face is {(texture is null ? "missing" : $"{texture.GetWidth()}x{texture.GetHeight()} or unmipmapped")} (want 128x128, mipmapped)");
+                faults.Add($"the {dir} {face} face is {(texture is null ? "missing" : $"{texture.GetWidth()}x{texture.GetHeight()} or unmipmapped")} (want {size}x{size}, mipmapped)");
             }
         }
         foreach ((string role, Color want) in new[] { ("held", ParchmentLook.Lapis), ("selected_edge", ParchmentLook.LapisFill) })
@@ -291,7 +295,7 @@ public partial class Main
 
         return faults.Count == 0
             ? "[widths] ui colours: ✅ the five lapis and rubric controls and the amber pill load at their masters with mipmaps; the warned "
-              + "pill wears its own painting, its words ochre; W6's three faces at 128, mipmapped; held, selected, every "
+              + "pill wears its own painting, its words ochre; W6's three faces at 128 and the warnings' two at 104, mipmapped; held, selected, every "
               + "pressed font and swash and the ticked seal are lapis; stopped, refused and deaths stay rubric; a card's pin is painted, lapis when pinned"
             : $"[widths] ui colours: ⛔ {string.Join("; ", faults)}";
     }

@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), NOT PUSHED — Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), NOT PUSHED — Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -140,4 +140,14 @@ files OK'd.
   words, and the three faces at 128 with mipmaps; `ui contrast:` now reads 22 roles. **Red-checked: 5 mutants, 5 red** (the
   warned pill in the unmet painting; its words rubric; no warned pill in the theme; its words too pale — on `ui contrast:`; the
   sick face missing).
+
+### 8a. The sim's names (W6, D938–D941) and the warnings' faces (A317)
+
+From the W6 session: `VillagerState.SickInBed` (in bed; `Villager.SickDays` > 0 is ill, on the way home or in bed);
+`SimWorld.HealthOf(v)` → `HealthState.Well / PlainDiet / RunDown / Sick`; where they lie, `world.RestingPlaceOf(v)` (a housed
+family's door tile), the house `world.HouseholdOf(v).HomePosition` (null with no roof — they lie where they sleep); the view
+already draws `SickInBed` indoors when housed (`VillageMap.Indoors`). The card's sentence `HealthNoteFor(v)`; the count
+`RunDownCount()`. The two warnings are moments *"A plain diet"* and *"Run down"* with `MomentMark.PlainDiet` / `.RunDown`
+(appended sim-side by W6) — their pictures `icons/moments/plain-diet.png` and `run-down.png` (A317, 104 master). **Sick on the map
+and the home strewn** build on these once piece 1 merges.
 
