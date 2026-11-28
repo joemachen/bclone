@@ -186,6 +186,9 @@ internal static class UiLook
     /// <summary>Stopped, unmet, wanting — the amber that says something needs a look.</summary>
     internal static Color Stopped => Named("stopped", new Color("#ffc759"));
 
+    /// <summary>A warning, not yet a harm — W6's <i>Plain diet</i> (A314, `sickbed-art.md §4`): ochre, between working and stopped.</summary>
+    internal static Color Warned => Named("warned", new Color("#e0a040"));
+
     /// <summary>The edge of the card being worked with.</summary>
     internal static Color SelectedEdge => Named("selected_edge", new Color("#ffd76a"));
 
@@ -419,6 +422,23 @@ internal static class UiLook
         }
 
         StyleBox skin = NamedBox(key) ?? FlatPill(met ? Working : Stopped);
+        Kept[key] = skin;
+        return skin;
+    }
+
+    /// <summary>
+    /// ⭐ A need's pill in its third look (A314, Joe's pill 2): a warning that does nothing yet — W6's <i>Plain diet</i>, the year's
+    /// heads-up before <i>Run down</i> (which wears <see cref="Pill"/>'s unmet look). Its words take <see cref="Warned"/>.
+    /// </summary>
+    internal static StyleBox PillWarned()
+    {
+        const string key = "pill_warn";
+        if (Kept.TryGetValue(key, out StyleBox? kept))
+        {
+            return kept;
+        }
+
+        StyleBox skin = NamedBox(key) ?? FlatPill(Warned);
         Kept[key] = skin;
         return skin;
     }

@@ -172,7 +172,7 @@ public partial class Main
         foreach ((string file, int w, int h) in new[]
         {
             ("underline-lapis", 256, 12), ("underline", 256, 12), ("checkbox-ticked-lapis", 56, 56),
-            ("checkbox-ticked-lapis-disabled", 56, 56), ("pin-pinned-lapis", 56, 56),
+            ("checkbox-ticked-lapis-disabled", 56, 56), ("pin-pinned-lapis", 56, 56), ("pill-warn", 96, 64),
         })
         {
             Texture2D? texture = ResourceLoader.Exists(controls + file + ".png") ? GD.Load<Texture2D>(controls + file + ".png") : null;
@@ -197,6 +197,24 @@ public partial class Main
 
         Theme look = ParchmentLook.Build();
         string t = UiLook.Type;
+
+        // ⭐ A314 (`sickbed-art.md §4`): the health pill's third look — the amber label, its own painting, its words in ochre; and W6's
+        // three faces (§7) at their 128 master with mipmaps, waiting for piece 1 to wear them.
+        string warnFile = look.HasStylebox("pill_warn", t) && look.GetStylebox("pill_warn", t) is PaintedPatch warn ? FileOf(warn.Texture) : "nothing";
+        if (warnFile != "pill-warn.png" || !look.GetColor("warned", t).IsEqualApprox(ParchmentLook.OchreInk))
+        {
+            faults.Add($"the warned pill wears {warnFile} with words {look.GetColor("warned", t).ToHtml(false)} (want pill-warn.png, ochre)");
+        }
+
+        foreach (string face in new[] { "plain-diet", "run-down", "sick" })
+        {
+            string path = $"res://textures/ui/icons/health/{face}.png";
+            Texture2D? texture = ResourceLoader.Exists(path) ? GD.Load<Texture2D>(path) : null;
+            if (texture is null || texture.GetWidth() != 128 || texture.GetHeight() != 128 || texture.GetImage() is not { } img || !img.HasMipmaps())
+            {
+                faults.Add($"the {face} face is {(texture is null ? "missing" : $"{texture.GetWidth()}x{texture.GetHeight()} or unmipmapped")} (want 128x128, mipmapped)");
+            }
+        }
         foreach ((string role, Color want) in new[] { ("held", ParchmentLook.Lapis), ("selected_edge", ParchmentLook.LapisFill) })
         {
             if (!look.GetColor(role, t).IsEqualApprox(want))
@@ -272,7 +290,8 @@ public partial class Main
         }
 
         return faults.Count == 0
-            ? "[widths] ui colours: ✅ the five lapis and rubric controls load at their masters with mipmaps; held, selected, every "
+            ? "[widths] ui colours: ✅ the five lapis and rubric controls and the amber pill load at their masters with mipmaps; the warned "
+              + "pill wears its own painting, its words ochre; W6's three faces at 128, mipmapped; held, selected, every "
               + "pressed font and swash and the ticked seal are lapis; stopped, refused and deaths stay rubric; a card's pin is painted, lapis when pinned"
             : $"[widths] ui colours: ⛔ {string.Join("; ", faults)}";
     }
