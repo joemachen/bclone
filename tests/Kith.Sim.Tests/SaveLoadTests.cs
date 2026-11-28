@@ -390,7 +390,7 @@ public sealed class SaveLoadTests : IDisposable
             "BuriedAtTick", "GraveAt", "GravePlace", "CarryingTheDead", "LastGraveVisitTick",
 
             // Health (W6) — saved only when set, so a save from before reads everybody well (`HealthTests.TheHealthFieldsAreSaved`).
-            "AteThisSeason", "MealsThisSeason", "PlainSeasons", "PlainOn",
+            "AteThisSeason", "MealsThisSeason", "PlainSeasons", "PlainOn", "SickDays",
         }),
         (typeof(Villager), Kept.Cache, new[] { "PacedOnTick", "PaceLeft" }),
 

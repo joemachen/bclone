@@ -3452,6 +3452,17 @@ public sealed record SimConfig
     [JsonPropertyName("health_run_down_seasons")]
     public int HealthRunDownSeasons { get; init; } = 12;
 
+    /// <summary>
+    /// The chance a day a run-down person falls ill, as one in this many — <b>120</b>, about once a year, and never the whole
+    /// village on one day (Joe's call 6, `health.md §5.5`). A draw on the world's seeded generator, made only for the run down.
+    /// </summary>
+    [JsonPropertyName("health_fall_ill_one_in_days")]
+    public int HealthFallIllOneInDays { get; init; } = 120;
+
+    /// <summary>Days in bed an illness holds them to — <b>5</b> (call 6). Never fatal in piece 1.</summary>
+    [JsonPropertyName("health_sick_days")]
+    public int HealthSickDays { get; init; } = 5;
+
     /// <summary>Whether health is read at all (<see cref="HealthPlainPercent"/> above nought).</summary>
     [JsonIgnore]
     public bool HealthOn => HealthPlainPercent > 0;
@@ -6865,6 +6876,12 @@ public sealed record SimConfig
         {
             throw new SimConfigException(
                 $"health_plain_percent must be 0 (off) or above 50 and at most 100 (got {HealthPlainPercent}) — a plain season is one food's.");
+        }
+
+        if (HealthFallIllOneInDays < 1 || HealthSickDays < 1)
+        {
+            throw new SimConfigException(
+                $"health_fall_ill_one_in_days and health_sick_days must each be at least 1 (got {HealthFallIllOneInDays}, {HealthSickDays}).");
         }
 
         if (HealthReadMinMeals < 1 || HealthRecoverSeasons < 1 || HealthPlainDietSeasons < 1 || HealthRunDownSeasons <= HealthPlainDietSeasons)

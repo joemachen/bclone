@@ -37,6 +37,32 @@ public sealed class HealthSystem : ISimSystem
         {
             ReadTheSeason(world, config);
         }
+
+        FallIll(world, config);
+    }
+
+    /// <summary>
+    /// ⭐ Each day, a run-down person who is not already ill falls ill with a chance of one in
+    /// <c>health_fall_ill_one_in_days</c> (§5.5): <see cref="Villager.SickDays"/> is set and they go home to bed when they next
+    /// choose what to do. In id order on the world's seeded generator, and a draw only for the run down — so a village with
+    /// nobody run down draws nothing. ⛔ Never fatal in piece 1.
+    /// </summary>
+    private static void FallIll(SimWorld world, SimConfig config)
+    {
+        for (int i = 0; i < world.Villagers.Count; i++)
+        {
+            Villager villager = world.Villagers[i];
+            if (!villager.Alive || villager.SickDays > 0 || world.HealthOf(villager) != HealthState.RunDown)
+            {
+                continue;
+            }
+
+            if (world.Rng.NextInt(0, config.HealthFallIllOneInDays) == 0)
+            {
+                villager.SickDays = config.HealthSickDays;
+                world.SayTheyFellIll(villager);
+            }
+        }
     }
 
     /// <summary>

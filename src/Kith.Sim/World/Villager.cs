@@ -668,6 +668,13 @@ public sealed class Villager
     /// <summary>The food group their last plain season was eaten from — <i>"nothing but forage"</i>. Saved; hashed sparsely.</summary>
     public FoodGroup PlainOn { get; set; }
 
+    /// <summary>
+    /// ⭐ W6 (`health.md §5.5`): the days of bed an illness holds them to — set when a run-down person falls ill, and spent once
+    /// they are home and lying down (<see cref="VillagerState.SickInBed"/>); 0 when well. They finish what they are doing and go
+    /// home first, so no load is dropped and no errand broken. Saved when set; hashed sparsely.
+    /// </summary>
+    public int SickDays { get; set; }
+
     /// <summary>Winters survived — the unit a hard life is measured in.</summary>
     public int WintersSurvived { get; set; }
 
@@ -1074,6 +1081,7 @@ public sealed class Villager
             VillagerState.KeepingTheCemetery => $"keeping {where}",
             VillagerState.WalkingToTheGrave => "walking to the grave of one of their own",
             VillagerState.AtTheGrave => "standing at the grave of one of their own",
+            VillagerState.SickInBed => "ill in bed",
             VillagerState.WalkingToTheRiver => "walking to the river for water",
             VillagerState.DrawingAtTheRiver => "drawing water at the river",
             VillagerState.WalkingOutToTend => $"walking out to tend the wheat at {where}",
@@ -1171,6 +1179,7 @@ public sealed class Villager
             ["meals_this_season"] = MealsThisSeason != 0 ? MealsThisSeason : null,
             ["plain_seasons"] = PlainSeasons != 0 ? PlainSeasons : null,
             ["plain_on"] = PlainOn != FoodGroup.None ? SaveWriter.Enum(PlainOn) : null,
+            ["sick_days"] = SickDays != 0 ? SickDays : null,
             ["winters_survived"] = WintersSurvived,
             ["total_gathers"] = TotalGathers,
             ["gathers_this_season"] = GathersThisSeason,
@@ -1255,6 +1264,7 @@ public sealed class Villager
             MealsThisSeason = save.HasValue("meals_this_season") ? save.Int("meals_this_season") : 0,
             PlainSeasons = save.HasValue("plain_seasons") ? save.Int("plain_seasons") : 0,
             PlainOn = save.HasValue("plain_on") ? save.Enum<FoodGroup>("plain_on") : FoodGroup.None,
+            SickDays = save.HasValue("sick_days") ? save.Int("sick_days") : 0,
             WintersSurvived = save.Int("winters_survived"),
             TotalGathers = save.Int("total_gathers"),
             GathersThisSeason = save.Int("gathers_this_season"),

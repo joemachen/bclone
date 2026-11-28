@@ -383,6 +383,9 @@ public sealed class SkillSystem : ISimSystem
         // The family at the grave (W4 step 5): nobody's trade.
         VillagerState.WalkingToTheGrave => false,
         VillagerState.AtTheGrave => false,
+
+        // Ill in bed (W6): nobody's trade.
+        VillagerState.SickInBed => false,
         VillagerState.WalkingToTheRiver => false,
         VillagerState.DrawingAtTheRiver => false,
 

@@ -1752,6 +1752,13 @@
   "health_recover_seasons": 2,
   "health_plain_diet_seasons": 4,
   "health_run_down_seasons": 12,
+  // A run-down person falls ill on a day with a chance of one in
+  // health_fall_ill_one_in_days -- about once a year, a seeded draw, so a
+  // village that went run down together never takes to bed on one day -- and
+  // lies at home health_sick_days, then gets up still run down. Never fatal
+  // (piece 1; fever and the herbalist come together in piece 2, D935).
+  "health_fall_ill_one_in_days": 120,
+  "health_sick_days": 5,
 
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one

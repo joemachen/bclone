@@ -14,6 +14,9 @@ public enum HealthState
 
     /// <summary>Three years or more on one food: they may fall ill (step 4).</summary>
     RunDown = 2,
+
+    /// <summary>Ill — on their way home to bed, or in it (§5.5).</summary>
+    Sick = 3,
 }
 
 /// <summary>
@@ -26,6 +29,11 @@ public sealed partial class SimWorld
     public HealthState HealthOf(Villager villager)
     {
         ArgumentNullException.ThrowIfNull(villager);
+        if (villager.SickDays > 0 || villager.State == VillagerState.SickInBed)
+        {
+            return HealthState.Sick;
+        }
+
         if (!Config.HealthOn || villager.PlainSeasons < Config.HealthPlainDietSeasons)
         {
             return HealthState.Well;
@@ -49,6 +57,11 @@ public sealed partial class SimWorld
 
         string food = FoodGroups.Word(villager.PlainOn);
         string years = YearsWord(villager.PlainSeasons);
+        if (state == HealthState.Sick)
+        {
+            return $"{villager.Name} is ill — run down after {years} of nothing but {food}. A few days in bed, and up again.";
+        }
+
         return state == HealthState.PlainDiet
             ? $"{villager.Name} has eaten nothing but {food} for {years}. A body wants more than one kind of food."
             : $"{villager.Name} has eaten nothing but {food} for {years}, and it's telling. {Capitalised(OtherFoods(villager.PlainOn))} would set it right.";
@@ -100,6 +113,11 @@ public sealed partial class SimWorld
             stops: false,
             LogCategory.Warning);
     }
+
+    /// <summary>The log's line when a run-down person falls ill (§5.5): <i>"Ada Fern has taken to bed — run down after three years of nothing but forage."</i></summary>
+    internal void SayTheyFellIll(Villager villager) =>
+        Narrate($"{villager.FullName} has taken to bed — run down after {YearsWord(villager.PlainSeasons)} of nothing but "
+            + $"{FoodGroups.Word(villager.PlainOn)}. {Clock.SeasonAndYear()}.");
 
     private static FoodGroup CommonestPlainFood(IReadOnlyList<Villager> newly)
     {

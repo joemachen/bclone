@@ -277,6 +277,7 @@ public sealed class HealthTests
     [InlineData("meals")]
     [InlineData("plain")]
     [InlineData("plain_on")]
+    [InlineData("sick")]
     public void EveryHealthFieldIsHashed(string field)
     {
         SimWorld world = WorldAt(0);
@@ -288,6 +289,7 @@ public sealed class HealthTests
             case "meals": a.MealsThisSeason = 1; break;
             case "plain": a.PlainSeasons = 1; break;
             case "plain_on": a.PlainOn = FoodGroup.Meat; break;
+            case "sick": a.SickDays = 1; break;
             default: throw new ArgumentOutOfRangeException(nameof(field), field, "no such field");
         }
 
@@ -304,13 +306,156 @@ public sealed class HealthTests
         Ate(a, FoodGroup.Grain, 5, meals: 0);
         a.PlainSeasons = 9;
         a.PlainOn = FoodGroup.Fish;
+        a.SickDays = 3;
 
         JsonObject document = SaveGame.Capture(loop, "test", "now", "test");
         SimWorld back = SaveGame.Load(JsonNode.Parse(SaveFile.TextOf(document))!.AsObject(), loop.World.Config).World;
         Villager b = back.Villagers.Single(x => x.Id == a.Id);
         Assert.Equal(a.AteThisSeason, b.AteThisSeason);
-        Assert.Equal((2, 9, FoodGroup.Fish), (b.MealsThisSeason, b.PlainSeasons, b.PlainOn));
+        Assert.Equal((2, 9, FoodGroup.Fish, 3), (b.MealsThisSeason, b.PlainSeasons, b.PlainOn, b.SickDays));
         Villager other = back.Villagers.First(x => x.Id != a.Id);
         Assert.Equal((0, FoodGroup.None), (other.PlainSeasons, other.PlainOn));
+    }
+
+    // ---------------------------------------------------------------
+    //  §5.5 — falling ill, never fatally (step 4)
+    // ---------------------------------------------------------------
+
+    private static void RunDown(Villager v)
+    {
+        v.PlainSeasons = 12;
+        v.PlainOn = FoodGroup.Forage;
+    }
+
+    /// <summary>
+    /// ⭐ A run-down person falls ill about once a year (Joe's call 6) — and a village that went run down together never takes to
+    /// bed on one day: the draw is per person, seeded.
+    /// </summary>
+    [Fact]
+    public void TheRunDownFallIllAboutOnceAYearAndNotAllAtOnce()
+    {
+        int people = 0, fell = 0;
+        for (ulong seed = 1; seed <= 12; seed++)
+        {
+            SimWorld world = SimFactory.CreatePhase0(Config with { Seed = seed }, new InMemoryLogSink()).World;
+            Villager[] v = world.Villagers.Where(x => x.Alive).ToArray();
+            foreach (Villager x in v)
+            {
+                RunDown(x);
+            }
+
+            var dayFell = new Dictionary<int, int>();
+            int days = world.Config.DaysPerSeason * 4;
+            for (int d = 1; d <= days; d++)
+            {
+                world.Tick = (ulong)(d * world.Config.TicksPerDay) + 1UL * (ulong)world.Config.TicksPerDay;
+                Read(world);
+                foreach (Villager x in v)
+                {
+                    if (x.SickDays > 0 && !dayFell.ContainsKey(x.Id))
+                    {
+                        dayFell[x.Id] = d;
+                        Assert.Equal(world.Config.HealthSickDays, x.SickDays);
+                    }
+                }
+            }
+
+            people += v.Length;
+            fell += dayFell.Count;
+            if (v.Length >= 3)
+            {
+                Assert.True(dayFell.Values.Distinct().Count() > 1 || dayFell.Count < v.Length, $"seed {seed}: everybody fell ill on one day");
+            }
+        }
+
+        // One in 120 a day over a year: about 63 % fall ill at least once.
+        Assert.InRange(fell * 100 / people, 40, 85);
+    }
+
+    /// <summary>Only the run down fall ill: a village on a plain diet, or well, draws nothing in years.</summary>
+    [Fact]
+    public void OnlyTheRunDownFallIll()
+    {
+        SimWorld world = WorldAt(1);
+        Villager[] v = world.Villagers.Where(x => x.Alive).ToArray();
+        v[0].PlainSeasons = 11;
+        v[0].PlainOn = FoodGroup.Forage;
+        for (int d = 1; d <= 3 * world.Config.DaysPerSeason * 4; d++)
+        {
+            world.Tick = (ulong)d * (ulong)world.Config.TicksPerDay + 7UL * (ulong)world.Config.TicksPerDay;
+            new HealthSystem().Execute(world);
+            foreach (Villager x in v)
+            {
+                x.MealsThisSeason = 0;  // nothing read: the counts stay where they were posed
+            }
+        }
+
+        Assert.All(v, x => Assert.Equal(0, x.SickDays));
+    }
+
+    /// <summary>
+    /// ⭐ Ill, they finish what they are doing, go home and lie there <c>health_sick_days</c> days — eating, keeping their job —
+    /// then get up still run down. Nobody dies of it.
+    /// </summary>
+    [Fact]
+    public void TheIllGoHomeToBedForFiveDaysAndGetUpStillRunDown()
+    {
+        var log = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config with { HealthFallIllOneInDays = int.MaxValue }, log);
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+        loop.Step(world.Config.TicksPerDay * 10);
+        Villager ada = world.Villagers.First(x => x.Alive && x.CanWork);
+        RunDown(ada);
+        int job = ada.WorkplaceId;
+        ada.SickDays = world.Config.HealthSickDays;
+        Assert.Equal(HealthState.Sick, world.HealthOf(ada));
+        Assert.StartsWith($"{ada.Name} is ill", world.HealthNoteFor(ada), StringComparison.Ordinal);
+
+        int toBed = 0;
+        while (ada.State != VillagerState.SickInBed)
+        {
+            loop.Step(1);
+            Assert.True(++toBed < world.Config.TicksPerDay * 10, "never got home to bed");
+        }
+
+        Assert.Equal(world.RestingPlaceOf(ada), ada.Tile);
+        int inBed = 0;
+        while (ada.State == VillagerState.SickInBed)
+        {
+            loop.Step(1);
+            inBed++;
+        }
+
+        // Five days a-bed, give or take the ticks a meal costs.
+        Assert.InRange(inBed, world.Config.HealthSickDays * world.Config.TicksPerDay, world.Config.HealthSickDays * world.Config.TicksPerDay + 8);
+        Assert.True(ada.Alive);
+        Assert.Equal(0, ada.SickDays);
+        Assert.Equal(HealthState.RunDown, world.HealthOf(ada));
+        Assert.Equal(job, ada.WorkplaceId);
+    }
+
+    /// <summary>A run-down village lives on: three years of nothing but forage, people in bed now and then, nobody dead of it.</summary>
+    [Fact]
+    public void ARunDownVillageFallsIllAndNobodyDiesOfIt()
+    {
+        var log = new InMemoryLogSink();
+        SimLoop loop = SimFactory.CreatePhase0(Config, log);
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+        foreach (Villager x in world.Villagers.Where(x => x.Alive))
+        {
+            RunDown(x);
+        }
+
+        int bedTicks = 0;
+        for (int t = 0; t < world.Config.TicksPerYear * 2; t++)
+        {
+            loop.Step(1);
+            bedTicks += world.Villagers.Count(x => x.State == VillagerState.SickInBed);
+        }
+
+        Assert.True(bedTicks > 0, "nobody took to bed in two years run down");
+        Assert.Contains(log.Entries, e => e.Message.Contains("has taken to bed", StringComparison.Ordinal));
     }
 }

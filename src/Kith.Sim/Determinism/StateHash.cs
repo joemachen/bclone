@@ -1576,6 +1576,7 @@ public static class StateHash
         hash = MixSparse(hash, 35u, villager.MealsThisSeason);
         hash = MixSparse(hash, 36u, villager.PlainSeasons);
         hash = MixSparse(hash, 37u, (int)villager.PlainOn);
+        hash = MixSparse(hash, 38u, villager.SickDays);
 
         // The family at the grave (W4 step 5): sparse, so nobody who has never stood at one hashes as before.
         if (villager.LastGraveVisitTick is ulong visited)

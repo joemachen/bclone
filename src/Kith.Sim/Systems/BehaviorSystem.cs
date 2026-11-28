@@ -163,6 +163,7 @@ public sealed partial class BehaviorSystem : ISimSystem
         VillagerState.KeepingTheCemetery => "keeping the cemetery",
         VillagerState.WalkingToTheGrave => "walking to a grave",
         VillagerState.AtTheGrave => "at a grave",
+        VillagerState.SickInBed => "ill in bed",
         VillagerState.WalkingToTheLibrary => "walking to the library",
         VillagerState.AtTheLibrary => "at the library",
         VillagerState.WalkingOutToTend => "walking out to tend the field",
@@ -2712,6 +2713,14 @@ public sealed partial class BehaviorSystem : ISimSystem
         // guard read 0 % in a spell. The spell is `Decide`'s own (`rest_ticks`).
         if (villager.Tile == RestPointFor(world, villager).ToTile())
         {
+            // ⭐ Home and ill (W6): to bed for the illness's days, before any errand from the door.
+            if (villager.SickDays > 0)
+            {
+                villager.State = VillagerState.SickInBed;
+                villager.ActionTicksRemaining = villager.SickDays * world.Config.TicksPerDay;
+                return;
+            }
+
             // ⭐ A rest at home is where the water trip is offered (D427) — see `TryDrawWater`.
             if (TryDrawWater(world, villager))
             {
@@ -3121,6 +3130,14 @@ public sealed partial class BehaviorSystem : ISimSystem
                 GoHomeWithTheWorksCart(world, villager, worksInHand);
                 return;
             }
+        }
+
+        // ⭐ ILL (W6, `health.md §5.5`): whatever they were doing is done by now — this is a fresh decision — so home to bed.
+        // They fell ill wherever they were; they lie down only once there, so nothing is dropped and no errand broken.
+        if (villager.SickDays > 0)
+        {
+            GoHome(world, villager);
+            return;
         }
 
         // ⭐ AT HOME WITH NOTHING IN HAND, THE JAR IS ASKED BEFORE ANY WORK IS (D782). Until D782 it was asked only where a
@@ -8177,6 +8194,13 @@ public sealed partial class BehaviorSystem : ISimSystem
             // The day at the grave stood (W4 step 5): home, as an evening at the tavern ends.
             case VillagerState.AtTheGrave:
                 GoHome(world, villager);
+                return;
+
+            // ⭐ The illness's days lain (W6, `health.md §5.5`): up again — still run down until they eat something else.
+            case VillagerState.SickInBed:
+                villager.SickDays = 0;
+                world.LogVillager(LogLevel.Debug, villager, "health", "is up again after an illness");
+                Decide(world, villager);
                 return;
 
             // ⭐ The grave filled (W4): laid to rest if there is still a place, set down at the gate if not; then the day goes on.
