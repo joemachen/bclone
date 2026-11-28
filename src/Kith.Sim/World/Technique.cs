@@ -330,7 +330,9 @@ public sealed class Library
     /// kind works the day a modder types it**, rather than being the one building class that
     /// silently ignores its own `extent` column. One tile and unturned today.
     /// </remarks>
-    public Angle Facing { get; init; }
+    public Angle Facing { get => _facing; init => _facing = value; }
+
+    private Angle _facing;
 
     public int ExtentWidth { get; init; } = 1;
 
@@ -351,7 +353,7 @@ public sealed class Library
     };
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(Point to) => _position = to;
+    internal void MoveTo(Point to, Angle facing) => (_position, _facing) = (to, facing);
 
     /// <summary>What the village calls it.</summary>
     public required string Name { get; init; }

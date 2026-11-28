@@ -30,7 +30,9 @@ public sealed class Well
     public GridPos Tile => _position.ToTile();
 
     /// <summary>Which way it is turned.</summary>
-    public Angle Facing { get; init; }
+    public Angle Facing { get => _facing; init => _facing = value; }
+
+    private Angle _facing;
 
     public int ExtentWidth { get; init; } = 1;
 
@@ -45,7 +47,7 @@ public sealed class Well
     };
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(Point to) => _position = to;
+    internal void MoveTo(Point to, Angle facing) => (_position, _facing) = (to, facing);
 
     /// <summary>What the village calls it.</summary>
     public required string Name { get; init; }

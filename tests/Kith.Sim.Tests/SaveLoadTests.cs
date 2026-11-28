@@ -406,7 +406,7 @@ public sealed class SaveLoadTests : IDisposable
         }),
         (typeof(Workplace), Kept.Saved, new[]
         {
-            "Id", "Kind", "_name", "BornAs", "_position", "Facing", "ExtentWidth", "ExtentHeight", "Capacity",
+            "Id", "Kind", "_name", "BornAs", "_position", "_facing", "ExtentWidth", "ExtentHeight", "Capacity",
             "GatheringRadius", "Mode", "ForgeGood", "MakeGood", "Grows", "WorkerIds", "Construction", "Store", "FieldSixteenthsSown",
             "FieldHandsAtAutumn", "FieldTilesLearned", "FieldWalkWhenLearned", "FieldClearedAtTick",
             "FieldProbedThisYear", "FieldProbeFailed", "StaffingOverride", "QueueRank", "RaisedAtTick", "RepairedAtTick", "Closed",
@@ -423,7 +423,7 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(Workplace), Kept.Cache, new[] { "_covered", "CachedWoodedTiles", "CachedAtTerrainGeneration" }),
         (typeof(StoreBuilding), Kept.Saved, new[]
         {
-            "Id", "Kind", "_name", "BornAs", "_position", "Facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
+            "Id", "Kind", "_name", "BornAs", "_position", "_facing", "RaisedAs", "ExtentWidth", "ExtentHeight", "Store",
             "AllowedGoods", "Stocking", "_limits", "RaisedAtTick", "RepairedAtTick", "Closed",
         }),
         // D612: the market's starting limit (config) and the village's knowledge (a hook to SimWorld.KnowsOf), handed to a
@@ -487,11 +487,11 @@ public sealed class SaveLoadTests : IDisposable
         (typeof(SkillProgress), Kept.Saved, new[] { "SkillId", "Ticks", "Work", "Mastered", "MasteredHere", "BesideAMaster" }), // beside_a_master written only when set (W5, D922)
         (typeof(GroundStack), Kept.Saved, new[] { "Position", "Goods", "Amount" }),
         (typeof(Moment), Kept.Saved, new[] { "Title", "Body", "WaitsToBeDismissed", "Marks" }),
-        (typeof(Well), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
+        (typeof(Well), Kept.Saved, new[] { "_position", "_facing", "ExtentWidth", "ExtentHeight", "Name", "Kind", "Draws", "RaisedAtTick", "RepairedAtTick", "Closed" }),
         (typeof(Bridge), Kept.Saved, new[] { "Near", "Far", "Kind", "Name", "RaisedAtTick", "RepairedAtTick", "Crossings", "CrossingsThisYear", "Closed", "KeptOpenBecause" }),
         (typeof(Bridge), Kept.Cache, new[] { "_tiles" }),
-        (typeof(TownHall), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
-        (typeof(Library), Kept.Saved, new[] { "_position", "Facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed", "Kind" }), // kind written only for the great library (W5)
+        (typeof(TownHall), Kept.Saved, new[] { "_position", "_facing", "ExtentWidth", "ExtentHeight", "Name", "RaisedAtTick", "RepairedAtTick" }),
+        (typeof(Library), Kept.Saved, new[] { "_position", "_facing", "ExtentWidth", "ExtentHeight", "Name", "Shelves", "Records", "RaisedAtTick", "RepairedAtTick", "Closed", "Kind" }), // kind written only for the great library (W5)
         (typeof(StockLimits), Kept.Saved, new[] { "_limits" }),
         (typeof(TradeBoat), Kept.Saved, new[] { "NeighbourId", "AppearsAtTick", "DocksAtTick", "LeavesAtTick" }),
         (typeof(NeighbourStock), Kept.Saved, new[] { "Held", "Animals" }),

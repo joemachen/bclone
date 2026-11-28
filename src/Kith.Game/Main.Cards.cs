@@ -78,6 +78,14 @@ public partial class Main
         /// <summary>Where a building's door is when it is not on its front (`doors.md §12.4`). Hidden otherwise, and on a person.</summary>
         public required Label Door { get; init; }
 
+        /// <summary>⭐ <i>Being moved</i> and <i>Call off the move</i> (D947, call 11). Hidden unless the building is on the move.</summary>
+        public required HBoxContainer MoveRow { get; init; }
+
+        public required Label MoveNote { get; init; }
+
+        /// <summary>The tile of the building whose move the row would call off, while it shows.</summary>
+        public GridPos? MovingFrom { get; set; }
+
         /// <summary>A household's house — its tier, the firewood it burns and the days it keeps them without a fire (D722). Hidden on every other kind.</summary>
         public required Label House { get; init; }
 
@@ -474,6 +482,16 @@ public partial class Main
         door.Visible = false;
         column.AddChild(door);
 
+        // ---- a building on the move, and the button that calls it off (D947, `move-revamp.md` call 11) ----
+        var moveRow = new HBoxContainer { Visible = false };
+        moveRow.AddThemeConstantOverride("separation", 8);
+        Label moveNote = Wrapped(Muted(string.Empty));
+        moveNote.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        moveRow.AddChild(moveNote);
+        var callOff = new Button { Text = "Call off the move", TooltipText = "It stays where it stands; nothing is lost." };
+        moveRow.AddChild(callOff);
+        column.AddChild(moveRow);
+
         // ---- a household's house: what it burns and how long it keeps them (`house-tiers.md §6`, D722) ----
         Label house = Wrapped(Muted(string.Empty));
         house.Visible = false;
@@ -602,6 +620,8 @@ public partial class Main
             Wear = wear,
             Established = established,
             Door = door,
+            MoveRow = moveRow,
+            MoveNote = moveNote,
             House = house,
             Cart = cart,
             Water = water,
@@ -656,6 +676,13 @@ public partial class Main
         };
         rename.TextSubmitted += _ => CommitRename(card);
         rename.FocusExited += () => CommitRename(card);
+        callOff.Pressed += () => Act(card, () =>
+        {
+            if (card.MovingFrom is GridPos movingFrom)
+            {
+                _loop.World.CallOffTheMove(movingFrom);
+            }
+        });
         person.Keep.ItemSelected += index => KeepFromTheCard(card, (int)index);
         person.Find.Pressed += () => JumpFromThePerson(card, PersonJump.Find);
         person.Home.Pressed += () => JumpFromThePerson(card, PersonJump.Home);
@@ -861,6 +888,11 @@ public partial class Main
         card.Wear.Visible = false;
         card.Established.Visible = false;
         card.Door.Visible = false;
+
+        // ⛔ NOT HIDDEN HERE, ONLY FORGOTTEN (Joe, playing D947: *"calling off the move eventually worked, but it needed a lot
+        // of click attempts"*). This reset runs on every refresh, and a button hidden and shown again between the press and
+        // the release loses the click — so the row's visibility is set once, after the writers, and only when it changes.
+        card.MovingFrom = null;
         card.House.Visible = false;
         card.Cart.Visible = false;
         card.Water.Visible = false;
@@ -887,6 +919,13 @@ public partial class Main
             // homes)"*). Per refresh, because a retargeted card changes kind.
             card.Edit.Visible = card.Subject.Kind is CardKind.Store or CardKind.Workplace;
             ShowSettings(world, card);
+        }
+
+        // The move's row, set once per refresh and only when it changes (D947) — see the reset above.
+        bool moving = shown && card.MovingFrom is not null;
+        if (card.MoveRow.Visible != moving)
+        {
+            card.MoveRow.Visible = moving;
         }
 
         return shown;
@@ -1568,6 +1607,7 @@ public partial class Main
         }
 
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(store)));
+        MovingLine(card, world, store.Tile);
 
         int used = store.Store.Capacity - store.Store.FreeSpace;
         if (store.Emptying)
@@ -1619,6 +1659,10 @@ public partial class Main
 
         // A site takes the door of what it raises (`doors.md §4.1`), so it says where that door will be.
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(place)));
+        if (!place.IsSite)
+        {
+            MovingLine(card, world, place.Tile);
+        }
 
         if (place.Construction is { IsFinished: false } site)
         {
@@ -2644,6 +2688,7 @@ public partial class Main
         card.Portrait.Paint(_map, library.Position);
         Wear(card, world.WearOf(library), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(library)));
+        MovingLine(card, world, library.Tile);
 
         // ⭐ AND WHO BORROWS (`library-borrowing.md §5.4`, D843's lesson, Joe's addition): the homes in reach, the letters out
         // and the answers waiting — amber when nobody can borrow, but not when the player turned letters off (that is a choice).
@@ -2750,6 +2795,7 @@ public partial class Main
         card.Portrait.Paint(_map, hall.Position);
         Wear(card, world.WearOf(hall), world.Config);
         DoorLine(card, world.SayWhereTheDoorIs(world.DoorOf(hall)));
+        MovingLine(card, world, hall.Tile);
         return true;
     }
 

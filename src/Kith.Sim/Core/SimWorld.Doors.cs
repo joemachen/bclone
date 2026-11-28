@@ -117,10 +117,11 @@ public sealed partial class SimWorld
     }
 
     /// <summary>The name of the building whose door opens onto this tile today, or null (§4.5).</summary>
-    internal string? WhoseDoorstep(GridPos tile)
+    // `except` is a moving building's own footprint (D947): its own doorstep is not in its way.
+    internal string? WhoseDoorstep(GridPos tile, Footprint? except = null)
     {
         DoorIndex doors = DoorsInUse();
-        return doors.Doorstep.TryGetValue(tile, out int owner) ? doors.Doors[owner].Name : null;
+        return doors.Doorstep.TryGetValue(tile, out int owner) && doors.Doors[owner].Shape != except ? doors.Doors[owner].Name : null;
     }
 
     /// <summary>
@@ -157,11 +158,17 @@ public sealed partial class SimWorld
     /// Stricter than D383's any-side test on purpose: a door slides and turns (§4.3), so "it still has a door" is the old
     /// rule again, and the door a building has would move every time a neighbour went up in front of it.
     /// </remarks>
-    private string? WhatDoorThisWouldShut(bool[] after, List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence)
+    private string? WhatDoorThisWouldShut(bool[] after, List<GridPos> proposedTiles, IReadOnlyDictionary<GridPos, byte>? fence, Footprint? except = null)
     {
         List<(Footprint Shape, string Name, Door Door)> doors = DoorsInUse().Doors;
         for (int i = 0; i < doors.Count; i++)
         {
+            // A moving building's own door goes with it (D947).
+            if (doors[i].Shape == except)
+            {
+                continue;
+            }
+
             Door door = doors[i].Door;
             int index = IndexOfTile(door.Doorstep);
             bool covered = proposedTiles.Contains(door.Doorstep);

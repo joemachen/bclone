@@ -11170,6 +11170,33 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   what it does when its building needs nothing. And a trade that declines should **fall through** `Decide`, not `return`: the smith's
   `TryTidyGround || TryHelpWithHarvest || GoHome` idiom skips the rest spell's errands (water, the grave, the tavern) a laborer gets.
 
+## ⛔ THE TRAPS `slice/move-revamp` PAID FOR (D945–)
+
+- **A fresh building is not at `Angle.Zero`** (D947): `Mark` turns an unturned one toward the nearest store (`doors.md §12.3`),
+  so a test that asked a moved granary to arrive "a quarter turned" asked for the facing it already had, and the red check that
+  dropped the facing scored ZERO. Turn by an amount ON FROM `building.Facing`, never to a constant.
+- **A mutant's restore needs a unique anchor too** (D947): a view mutant that replaced a four-line `if` with a bare
+  `PutTheToolDown();` could not be put back by reverse replacement — that line appears a dozen times — and the script stopped
+  with the file broken. Restore by the mutant's surrounding comment, and check the count of the ORIGINAL text afterwards.
+- **The probe's valley twelve years in has nothing movable** (D947): only the founders' cart and a granary still a site, and no
+  builders, so every spot warns *"nothing to raise it with"*. A probe line that needs a standing building poses one (a library,
+  as `Main.Cards`' library line does) and takes it away; one that needs a clean verdict must accept a warned one.
+- **Giving an auto-property a named backing field renames the field the save guard reads** (D947): `Facing { get; init; }`
+  became `Facing { get => _facing; init => _facing = value; }` on five buildings so a move could turn them, and
+  `SaveLoadTests.EveryFieldIsSavedOrNamed` went red — its table names `"Facing"`, the reflection now finds `"_facing"`. Nothing
+  about the save changed; rename the row. ⚠️ Found 4½ minutes into a 20-minute suite: run `SaveLoadTests` first when a sim
+  class gains a field.
+- **A button on a card loses its click if the refresh hides it and shows it again** (D948): `ShowCard` resets every row to
+  hidden and lets the writers show their own, every refresh — fine for a label, and Joe needed *"a lot of click attempts"* to
+  call a move off. A row with a button in it is set once, after the writers, only when it changes. *A probe can count it:
+  `VisibilityChanged` over a few `RefreshCards`.*
+- **A guard can be right and its fixture wrong in a way only a refusal shows** (D947): `ABuildingMayStepOntoItsOwnDoorstep`'s
+  first granary stood with its doorstep beside the forager's hut's, so stepping onto it was refused for the hut's door — the
+  right answer. Pick the fixture so that nothing else is in the way, and say why in the test.
+
+- **An exemption written for "it would refuse itself" can switch off the whole check** (D945): `CanBuildAt(alreadyStanding: true)` exists so a building being moved does not collide with its own old footprint, and it skips the overlap, the doorstep, the wall-off and every covered tile — so a move could land on another building or half in the river, and nothing said so because the move had no outline to go red. **When a flag means "except me", make it exclude the one thing, and test the move onto something else.**
+- **A sim feature with no preview can hide a wrong verdict for months** (D945): Move had no ghost since D229, so `CanBuildAt`'s answer for a move was only ever seen as a hint line after the click. Wiring a preview to an existing verdict is the moment to red-check that verdict against the shapes it will now be drawn over.
+
 ## ⛔ THE TRAPS `slice/w6-health` PAID FOR (D932–)
 
 - **An appended row in a list the save writes must be read as a prefix, or every older save is refused** (D933): W5 appended
@@ -11221,7 +11248,8 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
-- ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** — ⭐ **PIECE 1 MERGED INTO `main` AT HIS WORD (D944, *"merge"*, `fc0d810`), NOT PUSHED; `slice/w6-health` deleted; piece 2 next on its own slice** (D932, 2026-11-27; Joe: *"systems: start W6
+- ✅ **MOVE, REVAMPED — AN OUTLINE THAT TURNS, AND A QUESTION BEFORE THE MOVE — ⭐ MERGED INTO `main` AT HIS WORD (D949, *"merge"*, `eef67bc`); ⬆️ PUSHED AT HIS WORD (D950, *"Push main"*, `origin/main` `66b2e90..c8aa410`); `slice/move-revamp` DELETED.** *(Read "🔨 being built … HIS SECOND PLAY" until D949:)* (D945, 2026-11-27; Joe's play note: *"build in 'are you sure' safeguard prompts before moving a building … add a 'construction outline' … and allow rotating, just like a fresh construction"*). 🔨 **being built on `slice/move-revamp`** (cut from `main` at `a92da93`). 📝 **Specced (`specs/move-revamp.md`); ✅ every call his answered (D947, *"Yes, as recommended"*); ✅ BUILT (D947); ✅ PLAYED (*"otherwise everything is good"*), his two notes fixed (D948): *Call off the move* answers the first click, and the tool goes down after *Move it* (*"Yes, put it down"*).** ⏸️ **HIS SECOND PLAY** — those two first — (`.\run.bat`): Move, click a store or a hut — a pale outline where it stands and its outline on the cursor; R and the middle-drag turn it; a click on good ground opens the box (*Move it* / *Not here*, Enter / Esc); a click on another building or the river says why and opens nothing; right-click lets go, a second puts the tool down; its card says *Being moved — n%* with *Call off the move*. **Then the merge at his word.** The calls, all as recommended: the box beside the outline, game running; its words; every move; the facing it has; turning in place allowed; right-click lets go first; a second move refused; a site told the truth; a full store still refused; **the hole fixed first** (a move skips every "is this spot clear?" check); a *Call off the move* button on the card. Mock: the session notes folder's `move-revamp-mock.html`.
+- ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** — ⭐ **PIECE 1 MERGED INTO `main` AT HIS WORD (D944, *"merge"*, `fc0d810`), PUSHED AT HIS WORD (D946, *"Push main"*, `origin/main` `62b9781..a92da93`); `slice/w6-health` deleted; piece 2 next on its own slice** (D932, 2026-11-27; Joe: *"systems: start W6
   in a new session"*). 🔨 **being built on `slice/w6-health`** (cut from `main` at `72d21cf`; its spec and the save fix merged into `main` at his word, D936, *"yes, merge it"*, not pushed; re-cut from `main` for piece 1). 📏📝 **Measured and specced (D934,
   `specs/health.md`); ✅ every call his answered (D935: all as recommended, poultry its own group, the meal rule kept), nothing of
   health built** — three pieces (the diet; fever with the herbalist; the

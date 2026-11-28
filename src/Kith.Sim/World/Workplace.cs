@@ -333,9 +333,10 @@ public sealed class Workplace
     public GridPos Tile => _position.ToTile();
 
     /// <summary>Move it. Only a finished relocation may.</summary>
-    internal void MoveTo(Point to)
+    internal void MoveTo(Point to, Angle facing)
     {
         _position = to;
+        _facing = facing;
         _covered = null;
     }
 
@@ -358,7 +359,9 @@ public sealed class Workplace
     /// building the player placed. <b>Zero for everything the village raises today</b>, so it costs
     /// nothing until something sets it.
     /// </remarks>
-    public Angle Facing { get; init; }
+    public Angle Facing { get => _facing; init => _facing = value; }
+
+    private Angle _facing;
 
     /// <summary>How many tiles across, before turning — from the building's row.</summary>
     public int ExtentWidth { get; init; } = 1;

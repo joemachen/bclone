@@ -172,7 +172,7 @@ Joe extends the same brush to **which forest to cut** and **where to plant trees
 
 Demolition is how a player corrects a mistake, and it returns some of the materials. **A demolished store should be able to strand its contents** — that is a consequence worth having, and it is the same lesson D34 taught about a dead family's larder.
 
-✅ **Demolish only. No moving (Joe, 2026-07-28).** A building comes down and a new one goes up; relocation is not a separate verb. That keeps a real system out of the game for the price of some materials, and it means a badly-sited granary costs the player something to correct — which is the right amount of consequence for a decision the game warned them about.
+✅ **Demolish only. No moving (Joe, 2026-07-28).** *(void — Joe asked for a relocate function on 2026-08-26 and it shipped as D229, a builder's job; its button came at D233, and the revamp — an outline that turns and a question before the move — is `move-revamp.md`, D945.)* A building comes down and a new one goes up; relocation is not a separate verb. That keeps a real system out of the game for the price of some materials, and it means a badly-sited granary costs the player something to correct — which is the right amount of consequence for a decision the game warned them about.
 
 ### 11.4 Free-form placement, or fenced? ✅ **Free-form, with warnings (Joe, 2026-07-28).**
 
