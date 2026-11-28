@@ -143,6 +143,8 @@ the way in either option. Then:
 
 ### 6.4 What the systems lane should name — for the build (and Joe's OK for the files: call 4)
 
+> ⚠️ **What the art lane asked for, kept as asked. The names the slice settled on are §6.6** — gathering is a state of its own, not the forager's `Gathering`.
+
 The pictures key on the trade and the state, as every trade's do; the names W6 piece 2 would ideally use:
 
 | What | Name | What the view does with it |
@@ -166,3 +168,20 @@ Joe: *"All as recommended"* — **the plum hood; gathering stooped, with the sic
 ⚠️ **A name the art lane asked for was taken** (found A331): `VillagerState.Tending` is the farmhand tending a sown field in summer (`BehaviorSystem`: *"tending the field"*). §6.4 asked the slice for *"a new `VillagerState.Tending`"* and D953 took it as written — it would not compile, and a view keyed on `Tending` would put herbalists in farmers' fields. Sent to the slice: a state of its own (`TendingTheSick` suggested).
 
 ✅ **Taken (A332, the slice's D956):** `VillagerState.TendingTheSick`, housed at the patient's home in `DescribeState` / `ShownOnTheMap`, and `SimWorld.IsTended(Villager)`. The rest as §6.4: `JobKind.Herbalist`, `Goods.Herbs`, `Goods.Remedy`; gathering is `VillagerState.Gathering` with `JobKind.Herbalist`; the walk carries `Goods.Remedy` in `Villager.Carried`. The slice has built step 1 (fever); herbs, the hut and tending are its steps 2–4, and it will say when they are in code.
+
+### 6.6 The final names (A333, the slice's D957) — and the view wiring that is the art lane's
+
+The slice took §6.4's *"or a new state"*: `ErrandKind` reads `Gathering` / `TravelingToFood` as the forager's errand and would recall the herbalist home. New `VillagerState`s, appended after `SickInBed`; the reads and the rows as the slice sent them:
+
+| The sim | What it is | What the view does (**art lane's**, in the build) |
+|---|---|---|
+| `WalkingToTheHerbs` | out to a gatherer's site | `GoingToWork` (`VillageMap.People.cs`): the sickle and the trug in hand |
+| `GatheringHerbs` | at the site | `AtWork`: the sickle's three beats, stooped (§6.2 A); drawn under the canopy as anyone (A36) |
+| `CarryingHerbs` | back to the hut, `Goods.Herbs` in `Villager.Carried` | a load carried, as every haul (the herbs icon's bunch, if the carried-goods painter wants one) |
+| `FetchingARemedy` | to the hut for a remedy | `GoesInByTheDoor` (`VillageMap.Indoors.cs`), as every errand into a store (A141): in at the hut's door |
+| `WalkingToTheSick` | to the patient, `Goods.Remedy` in `Villager.Carried` | the jar in both hands (§6.3) |
+| `TendingTheSick` | a day at the patient's home: stands at `world.RestingPoint(patient)`; the patient is `herbalist.TendingWhom` | `Indoors` when the patient is housed (§6.3 A) — the house is the **patient's**, not the herbalist's; with no roof over the patient, drawn standing by them |
+| `SimWorld.IsTended(villager)` | fevered and `patient.TendedBy != 0` | the remedy jar beside the sick face (`VillageMap.SickMark.cs`) |
+| `HealthOf` → `HealthState.Fever` | a fever | the sick mark's face, as built (A320–A321) |
+
+Unchanged: `JobKind.Herbalist` (21), `BuildingKind.HerbalistsHut` (38), `Goods.Herbs` (18), `Goods.Remedy` (19), a new `StoreKind.Hut` (7), and the rows *"herbalist's hut"*, *"herbs"*, *"remedy"*, *"herbalist"* (the icons A326 built find them by name). ⚠️ **The view's housing of `TendingTheSick` and `GatheringHerbs` is the art lane's, not the slice's** (its words): until the build, a herbalist tending is drawn standing at the patient's resting point, and one gathering is drawn with no work beats. `ShownOnTheMap` asks `AsksForAHouse` of the villager's own household today — tending needs the patient's, through `TendingWhom`.
