@@ -1,6 +1,6 @@
 # The herbalist's pictures — the hut on the map, its icon, herbs, the remedy and the trade (A324)
 
-> **Status: the poses ✍️ MOCKED (A330, §6), four calls Joe's. The hut and icons ✅ BUILT (A326, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A327, *"Yes, merge"*, `51f6fc8`), pushed at his word (A328) — Joe: *"All as recommended"* (§5). Nothing shows in play until W6 piece 2 adds the rows of §3.** Mocked A325; claimed A324. Art lane (CLAUDE.md
+> **Status: the poses ✍️ MOCKED (A330, §6); ✅ Joe: *"All as recommended"* (A331) — the build waits for `slice/w6-fever`'s code (§6.5). The hut and icons ✅ BUILT (A326, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A327, *"Yes, merge"*, `51f6fc8`), pushed at his word (A328) — Joe: *"All as recommended"* (§5). Nothing shows in play until W6 piece 2 adds the rows of §3.** Mocked A325; claimed A324. Art lane (CLAUDE.md
 > *Two tracks*), branch `art`. W6 piece 2's ask of the lane (`health.md §11`), painted **ahead of the systems lane**: no
 > `BuildingKind`, `JobKind`, good or job for the herbalist, herbs or remedy exists yet — W6 piece 2 makes them on its own slice.
 > Mocks: `D:\Projects\brushes\herbalist\` (`herbalist_pick.jpg`; renders in `out\`, the scratch game in `game\`; `mock.py` and
@@ -103,7 +103,7 @@ His answer, said back before building: **the map look A, the hut's icon A, herbs
 - **For the slice, besides §3:** `building yards:`'s §2 table wants a row for `YardKind.Herbalist` once `StockReadOf` reads the remedy — `(YardKind.Herbalist, StockRead.Remedy, StockRead.None, false)` — or that line goes red.
 - **Seen:** `herbalist_built.jpg` (on his Hollowmere, the hut drawn by the built code through a scratch stand-in for §3's row; the shelf empty and full).
 
-## 6. The herbalist's two poses — ✍️ MOCKED (A330), nothing built; ⏸️ four calls Joe's
+## 6. The herbalist's two poses — ✍️ MOCKED (A330); ✅ all four as recommended (A331); not built until the slice's code exists
 
 Joe to the coordinator: *"Yes, mock them now"* (A329's claim). `health.md §11`'s *gathering herbs* and *tending* (kneeling at a
 bedside), mocked before W6 piece 2 (`slice/w6-fever`, D951) has a state for either. Sheet:
@@ -150,9 +150,17 @@ The pictures key on the trade and the state, as every trade's do; the names W6 p
 | the herbalist at a gatherer's site | `VillagerState.Gathering`, with `JobKind.Herbalist` (the forager's state) — or a new `GatheringHerbs` counted by `VillageMap.AtWork` | the sickle's beats, the trug |
 | going there | `TravelingToWork` (today's) | the sickle and trug in hand |
 | walking to the sick with the remedy | carrying `Goods.Remedy` (`Villager.Carried`), any walking state | the jar in both hands (`OnTheShoulder` false) |
-| at the sick person's home | `VillagerState.Tending`, **housed at the patient's home** in `DescribeState` / `ShownOnTheMap` (A320's trap: a state the view does not know is indoors is drawn at a door) | A: indoors; B: kneeling at that door |
+| at the sick person's home | ~~`VillagerState.Tending`~~ ⚠️ **taken — the farmhand's summer state (`Season.cs`), A331:** a state of its own, e.g. `VillagerState.TendingTheSick`, **housed at the patient's home** in `DescribeState` / `ShownOnTheMap` (A320's trap: a state the view does not know is indoors is drawn at a door) | A: indoors; B: kneeling at that door |
 | whether a sick person is tended | a read like `SimWorld.IsTended(Villager)` (or `TendedBy`) | A: the jar beside their face |
 
 **Files the build would touch** (call 4, Joe's OK): `PersonPainter.cs` (the look, `Tool.Sickle`, its beats, the trug, the jar; and B
 the kneel), `VillageMap.SickMark.cs` (A: the jar by the face), `VillageMap.Indoors.cs` (only if the slice's `Tending` needs the view
 to house it), `VillageMap.PeopleProbe.cs` or a new probe file. Nothing in `data/` or the sim: the suite stays skipped by D846.
+
+### 6.5 Joe's answer (A331) and what the build waits for
+
+Joe: *"All as recommended"* — **the plum hood; gathering stooped, with the sickle and trug; tending indoors, the remedy jar beside the sick face while tended; his OK for `PersonPainter.cs`, `VillageMap.SickMark.cs` (and `VillageMap.Indoors.cs` if needed).**
+
+**Not built yet, on purpose:** every picture keys on something W6 piece 2 has not written — `JobKind.Herbalist` (the look, the sickle's beats), `Goods.Remedy` (the jar in the hands), the herbalist's tending state and `SimWorld.IsTended` (the jar by the face). `slice/w6-fever` took §6.4's names into `health.md` §9 step 7 (D953) and is spec-only (D954). The art lane builds when those exist — on `art` after the slice merges into `main`, or from the slice's branch at Joe's word — with the A326 discipline: a probe line of its own, red-checked, the four checks.
+
+⚠️ **A name the art lane asked for was taken** (found A331): `VillagerState.Tending` is the farmhand tending a sown field in summer (`BehaviorSystem`: *"tending the field"*). §6.4 asked the slice for *"a new `VillagerState.Tending`"* and D953 took it as written — it would not compile, and a view keyed on `Tending` would put herbalists in farmers' fields. Sent to the slice: a state of its own (`TendingTheSick` suggested).
