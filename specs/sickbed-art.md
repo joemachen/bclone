@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), NOT PUSHED — Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), PUSHED (A319). ✍️ SICK ON THE MAP MOCKED (A320, §9) — ⏸️ THREE CALLS HIS. Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -150,4 +150,30 @@ already draws `SickInBed` indoors when housed (`VillageMap.Indoors`). The card's
 `RunDownCount()`. The two warnings are moments *"A plain diet"* and *"Run down"* with `MomentMark.PlainDiet` / `.RunDown`
 (appended sim-side by W6) — their pictures `icons/moments/plain-diet.png` and `run-down.png` (A317, 104 master). **Sick on the map
 and the home strewn** build on these once piece 1 merges.
+
+## 9. The map's mock (A320) — Sick over the house, the home strewn, on a real sick villager
+
+W6 piece 1 merged (D944, `a92da93`), so somebody can be sick. A copy of his honey-harrow Hollowmere run forward until a housed
+person took to bed (`D:/Projects/brushes/sickbed/ZzSickSave.cs`, copied into the tests to run and deleted): **Orwin, Year 94,
+winter, in bed at home with 4 days to go** — the other five saves tried had nobody housed fall ill in 8 years. Rendered by the
+built game; Joe's painted `icons/health/sick.png` and the straw and herbs laid on it (`mock320.py`, `sick_map_pick.jpg`).
+
+- ⛔ **Found: the view drew Orwin standing at his door.** `VillageMap.ShownOnTheMap` asks whether someone is housed only while
+  `Resting`, so `Indoors(SickInBed, housed: false)` is false and a person sick in bed at home is drawn outside it. The one-line
+  fix (`Resting or SickInBed`) puts him indoors — measured: the only pixels that change between the two renders are his
+  (`VillageMap.Indoors.cs`, a file Joe OK'd for this, §5a 4). Folded into the build, with a probe guard.
+- **The face, over the roof** (⭐), centred on the house, about a tile across, a soft shadow under it; or **small, by the door**.
+  Out of doors (ill and walking home, or no roof) it rides over the head. ⭐ It keeps its size on screen at every zoom, so a
+  sick house reads from three steps out (panel 5).
+- **The home strewn:** a bed of straw before the door, a sprig of herbs hung beside it. Drawn while somebody in the house lies
+  sick; gone when they are up.
+- ⚠️ **The smoke — taken back.** §5's *"the fire kept in, its smoke in any season"* would put smoke over a house that burns no
+  wood: the sim does not light a fire for the sick, and since A139 smoke means firewood burning (`indoors-and-smoke.md §2`,
+  *true to the sim*). In winter Orwin's hearth smokes anyway. ⭐ Recommended: no smoke of its own.
+
+### 9a. Calls — ⏸️ Joe's
+
+1. **Where the face sits:** ⭐ over the roof (panel 2), or small by the door (panel 3).
+2. **The smoke:** ⭐ dropped (smoke stays the firewood's), or kept in any season as first offered.
+3. **The straw and herbs** as shown, or what to change.
 
