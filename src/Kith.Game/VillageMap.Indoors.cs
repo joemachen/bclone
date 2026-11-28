@@ -69,7 +69,8 @@ public partial class VillageMap
     private bool ShownOnTheMap(SimWorld world, Villager villager)
     {
         VillagerState state = villager.State;
-        bool housed = state == VillagerState.Resting && world.HouseholdOf(villager).HasHome;
+        // ⭐ A321: lying sick asks for the house too — before it, a person in bed at home was drawn standing at their door.
+        bool housed = AsksForAHouse(state) && world.HouseholdOf(villager).HasHome;
         bool inside = GoesInByTheDoor(state) && world.DoorCovering(villager.Tile) is Door { Shut: false };
         bool arrived = !_tiles.TryGetValue(villager.Id, out var known)
             || AtTheDoorAlready(AtTheDoor(known.Previous, state), AtTheDoor(known.Current, state), (float)_alpha);
@@ -303,9 +304,10 @@ public partial class VillageMap
             RoofRun sails = millRuns[turnAt];
             Want(sails.Lines is { } sailLines && RelaidForTheZoom(sails, sailLines, 13f).Turns, "a zoom stops the sails turning");
 
-            return faults.Count == 0
+            // ⭐ A321: the sick on the map, its own line (`sickbed-art.md §9`).
+            return (faults.Count == 0
                 ? "[widths] indoors and smoke: ✅ resting at home, warming by a fire, the smith and the batch trades at work indoors once inside a door; resting in the open and fishers seen; seen walking up to the door and gone on reaching it (within 0.15 tiles); errands into a store in at its door, on the road or at a pile seen (A141); taking paper inside the library, seen walking up to it (A246); a west door's wall at (2.4, -8); a home smokes in winter, lived in, with firewood, and not otherwise; smoke comes and goes over a second, holds while paused; a puff rises and swells from nothing; two chimneys out of step; flues: smithy 1, school 1, manor 2, forager's hut 0; the sails gather way and come to rest, held while paused, a run of their own under the body turned about the hub, nothing turns on a cottage (A145); the smoke darker than A139's, four paintings, a ragged edge, grain in the wash (A145)"
-                : $"[widths] indoors and smoke: ⛔ {string.Join("; ", faults)}";
+                : $"[widths] indoors and smoke: ⛔ {string.Join("; ", faults)}") + "\n" + TheSickOnTheMapHolds();
         }
         catch (Exception e)
         {

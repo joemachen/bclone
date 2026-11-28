@@ -91,6 +91,7 @@ public partial class VillageMap
         _millsWorked.Clear();
         _tavernsLit.Clear();
         _homesLit.Clear();
+        _homesSick.Clear();
         _lampsAreNoted = true;
         _coppersBrewing.Clear();
         for (int i = 0; i < world.Villagers.Count; i++)
@@ -115,6 +116,9 @@ public partial class VillageMap
 
             NoteTheTavernAndTheCopper(world, villager);
             NoteTheHome(world, villager);
+
+            // ⭐ A321: whose home somebody lies sick in — the straw, the herbs and the face over it.
+            NoteTheSick(world, villager);
 
             // A miller grinding: the mill is worked, and its sails turn (A145).
             if (villager.State == VillagerState.WorkingABatch && world.FindWorkplace(villager.WorkplaceId)?.Kind == JobKind.Miller)
