@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✍️ MOCKED FOUR TIMES (A310–A313, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE THREE FACES HIS (§7); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27) on `art`, UNMERGED — Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -118,4 +118,26 @@ upper left. They read at the map's 32 px.
    and Plain diet beside the pill on the card and on the village's two warnings, not over heads (they last years) — or all three
    over heads.
 3. **Files and when**, as §5a 4–5, the faces as `textures/ui/icons/health/*.png`.
+
+## 8. ✅ Built (A314) — the amber pill and the three faces; the map's mark after piece 1
+
+Joe: *"Yes, as recommended"* — the three faces as painted; Sick on the map (over the person, over their house while in bed) with
+the home strewn; Run down and Plain diet beside the pill on the card and on the village's two warnings, never over heads; the
+files OK'd.
+
+- **The amber pill:** `textures/ui/controls/pill-warn.png`, painted by `p2_controls.jsx`'s own pill code in a scratch copy
+  (`D:/Projects/brushes/sickbed/ps/p2_controls_warn.jsx`, item `pillwarn`): the unmet label, drawn on the unmet's seed so its frays
+  are the same, in amber `#c98a1e` with an umber edge. The theme's `pill_warn` (`ParchmentLook`), `UiLook.PillWarned()` (the third
+  look; a flat amber pill on the slate look), its words `UiLook.Warned` — the theme's `warned`, the log's ochre ink, in
+  `ParchmentLook.Words` so the contrast probe measures it.
+- **The faces:** `textures/ui/icons/health/plain-diet.png`, `run-down.png`, `sick.png`, 128 × 128, mipmapped, from
+  `D:/Projects/brushes/sickbed/ps/faces.jsx`.
+- **The seam (sent to the W6 session):** piece 1's pill (step 3, `Main.Cards.cs`, the systems lane's) wears `Pill(met: true)` for
+  *Well*, `PillWarned()` with `Warned` words for *Plain diet*, `Pill(met: false)` for *Run down* and *Sick*, and the face beside it;
+  the village's two warnings carry the face. **The map's Sick mark and the home strewn are this lane's, after piece 1 merges**:
+  the view needs the sick-in-bed state and the home they lie in.
+- **Probe `ui colours:`** wants the amber pill at its 96 × 64 master with mipmaps, the theme's warned pill wearing it with ochre
+  words, and the three faces at 128 with mipmaps; `ui contrast:` now reads 22 roles. **Red-checked: 5 mutants, 5 red** (the
+  warned pill in the unmet painting; its words rubric; no warned pill in the theme; its words too pale — on `ui contrast:`; the
+  sick face missing).
 

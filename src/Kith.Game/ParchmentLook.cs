@@ -47,7 +47,7 @@ internal static class ParchmentLook
         ("text_strong", Ink), ("working", VerdigrisInk), ("stopped", RubricInk), ("owed", GoldInk), ("held", Lapis),
         ("refused", RubricInk), ("saved", VerdigrisInk), ("known", VerdigrisInk), ("stamp", InkDim), ("log_death", RubricInk),
         ("log_life", VerdigrisInk), ("log_discovery", GoldInk), ("log_warning", OchreInk), ("log_building", Lapis),
-        ("log_season", InkMuted), ("log_ordinary", Ink),
+        ("log_season", InkMuted), ("log_ordinary", Ink), ("warned", OchreInk),
     };
 
     private static Texture2D Tex(string path) => GD.Load<Texture2D>(Ui + path);
@@ -105,6 +105,9 @@ internal static class ParchmentLook
 
         theme.SetStylebox("pill_met", t, PaintedPatch.Make(Tex("controls/pill.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
         theme.SetStylebox("pill_unmet", t, PaintedPatch.Make(Tex("controls/pill-unmet.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
+
+        // ⭐ A314 (`sickbed-art.md §4`, Joe's pill 2): the unmet label in amber — a warning that does nothing yet (W6's Plain diet).
+        theme.SetStylebox("pill_warn", t, PaintedPatch.Make(Tex("controls/pill-warn.png"), 0.25f, new Vector4(28, 0, 28, 0), new Vector4(8, 1, 8, 1)));
         theme.SetStylebox("bar_track", t, PaintedPatch.Make(Tex("controls/bar-track.png"), 0.25f, new Vector4(8, 0, 8, 0), Vector4.Zero));
         theme.SetStylebox("bar_fill", t, PaintedPatch.Make(Tex("controls/bar-fill.png"), 0.25f, new Vector4(8, 0, 8, 0), Vector4.Zero));
         theme.SetStylebox("pause_sheet", t, PaintedPatch.Make(Tex("chrome/sheet-large.png"), 0.5f, new Vector4(60, 60, 60, 60), new Vector4(24, 22, 26, 22)));
