@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✍️ MOCKED TWICE (A310, A311, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE MARK AND THE HOME HIS (§5); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✍️ MOCKED THREE TIMES (A310–A312, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE ILLUMINATED TILES HIS (§6); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -73,4 +73,31 @@ Same cabin, same Vorith (`D:/Projects/brushes/sickbed/sickbed_pick2.jpg`, `compo
    painted as an icon (`p3_icons.jsx`, a new `textures/ui/icons/marks/sick.png`). For pill 2: `pill-warn.png`, a theme line in
    `ParchmentLook.cs`, `UiLook.Pill`'s third look. `Main.Cards.cs` stays piece 1's (§3's seam).
 5. **When:** pill 2's skin now; the mark and the home after W6 piece 1 merges (nobody is sick until it does).
+
+## 6. ✅ Joe on the second mock, and the third (A312) — illuminated tiles, painted in Photoshop
+
+*"hate the icons. Use the attached as inspiration to build our own version in photoshop"* — three references of his: gilded,
+jewelled manuscript tiles with a roundel and a Latin ribbon (a bowl of pottage held in two hands; a fevered face with flames; a
+queasy green face). **The F-marks (§5) are out.** Built as our own, never traced (`D:/Projects/brushes/sickbed/ps/tiles.jsx`,
+`health_tiles_pick.jpg`): a worn parchment rim, a gold field mottled with the wash stamps, a double rule, filigree spirals in
+the corners with a light edge, eight set stones (ruby, sapphire, emerald) with pearls at the edges, a gold-ringed roundel, an
+arched ribbon carrying the **pill's own word** in Cormorant Garamond (English, for §1.1; Latin is a word away if he wants it), all
+in the game's pen (drybrush, about 1/40 of the side), light from the upper left. One tile for each state that is not *Well*:
+
+- **Sick** — a flushed face, eyes shut, sweat, flames licking up behind, on deep blue.
+- **Run down** — a queasy green face, eyes squeezed, mouth wavering, the head swimming, on dusk violet.
+- **Plain diet** — a clay bowl of plain pottage held in two hands, steaming, on deep green.
+
+At the map's 40 px the tile reads as a gold square with its subject (the ribbon's word does not). ⭐ Recommended: the **Sick**
+tile over the person (over their house while in bed), with **the home strewn** (§5's H); **Run down** and **Plain diet** not on
+the map (they last years — a sign over half a village), but as the pictures on the village's two warnings (§5.4) and beside
+the pill on the card. A map cut without the ribbon (the subject larger) is offered.
+
+### 6a. Calls — ⏸️ Joe's
+
+1. **The tiles' look:** as painted, or what to change.
+2. **Where each goes:** ⭐ Sick on the map (and the home strewn); Run down and Plain diet on the warnings and the card — or all
+   three on the map.
+3. **The map cut:** the full tile, or ⭐ a cut without the ribbon at map size.
+4. **Files**, as §5a 4, with the tiles as `textures/ui/icons/health/*.png`; **when**, as §5a 5.
 
