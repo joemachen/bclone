@@ -1,6 +1,6 @@
 # The herbalist's pictures — the hut on the map, its icon, herbs, the remedy and the trade (A324)
 
-> **Status: ✅ BUILT (A326, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A327, *"Yes, merge"*, `51f6fc8`), not pushed — Joe: *"All as recommended"* (§5). Nothing shows in play until W6 piece 2 adds the rows of §3.** Mocked A325; claimed A324. Art lane (CLAUDE.md
+> **Status: ✅ BUILT (A326, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A327, *"Yes, merge"*, `51f6fc8`), pushed at his word (A328) — Joe: *"All as recommended"* (§5). Nothing shows in play until W6 piece 2 adds the rows of §3.** Mocked A325; claimed A324. Art lane (CLAUDE.md
 > *Two tracks*), branch `art`. W6 piece 2's ask of the lane (`health.md §11`), painted **ahead of the systems lane**: no
 > `BuildingKind`, `JobKind`, good or job for the herbalist, herbs or remedy exists yet — W6 piece 2 makes them on its own slice.
 > Mocks: `D:\Projects\brushes\herbalist\` (`herbalist_pick.jpg`; renders in `out\`, the scratch game in `game\`; `mock.py` and
