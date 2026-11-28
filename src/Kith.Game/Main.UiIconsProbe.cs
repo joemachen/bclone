@@ -25,8 +25,7 @@ public partial class Main
 
         // ✅ W5's great library (D927) came off here at A306: painted, its owed version with it.
 
-        // W6's two warnings' faces (D942): the art lane is exporting them at the moments' 104 from A314's faces.
-        "moments/plain-diet", "moments/run-down",
+        // ✅ W6's two warnings' faces (D942) came off here at D943: painted (A317).
     };
 
     private string TheIconsArePainted()
