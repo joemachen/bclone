@@ -34,6 +34,9 @@ public partial class VillageMap
         // ⭐ An evening at the tavern, and its keeper at work (W3, `tavern.md §9`): inside, the lit window the art lane draws.
         VillagerState.AtTheTavern or VillagerState.KeepingTheTavern => true,
         VillagerState.Resting => housed,
+
+        // ⭐ Ill in bed (W6, `health.md §5.5`): at home, inside — the house's lit window says somebody is there (stand-in).
+        VillagerState.SickInBed => housed,
         _ => GoesInByTheDoor(state) && inADooredBuilding,
     };
 

@@ -388,7 +388,12 @@ public sealed class ContentmentTests
         // so the effect has every couple to act on, and the village grows enough for second children (the fixture's three
         // households have six or more in forty years, `BirthdayTests`). ⚠️ Leaving off (step 5): unsettled forty years, both
         // villages would empty after two and the wait would have nobody to act on — this guard is the births gate's alone.
-        SimConfig grows = VillageFixtures.Village with { StartingHouseholds = 3, ContentmentUnsettledAt = 1, ContentmentLeavingSeasons = 0 };
+        // ⚠️ Health off (D941): a forage-only village with W6 goes run down, and its days in bed thin the food enough that the
+        // food gate, not the wait, holds both arms' births (18 against 18) — the guard is the wait's, one cause one system (D797).
+        SimConfig grows = VillageFixtures.Village with
+        {
+            StartingHouseholds = 3, ContentmentUnsettledAt = 1, ContentmentLeavingSeasons = 0, HealthPlainPercent = 0,
+        };
         SimConfig on = grows with
         {
             ContentmentCauses = grows.ContentmentCauses
@@ -1081,7 +1086,7 @@ public sealed class ContentmentTests
 
     /// <summary>Taken 2026-11-20 (D808), on its first run: four gone in Year 13, the village still standing at 15.</summary>
     // RE-TAKEN (D825) — barley is learned when the foragers have gathered `barley_unlock_forage` (5,000), a tag byte in the hash and Lore introduced (W7, `barley.md §11`). ⭐ PROVEN BY ABLATION: with the gate set out of reach (`barley_unlock_forage` 2147483647) the old value passes. Was 593170502162136593.
-    private const ulong LeavingGolden = 16825038126313242079UL;
+    private const ulong LeavingGolden = 198699561341603373UL; // 16825038126313242079 until W6 (D941): health — ablated (health off where it is read, `SimConfig.HealthOn`), it returns
 
     /// <summary>⭐ The departure is saved and hashed sparsely (§13.2 item 8); a save without it reads as never gone.</summary>
     [Fact]

@@ -432,6 +432,12 @@ public enum VillagerState
 
     /// <summary>Standing at the grave a day, then home. It changes nothing (§6.3).</summary>
     AtTheGrave,
+
+    /// <summary>
+    /// ⭐ Ill, at home, in bed (W6, `health.md §5.5`) — <c>health_sick_days</c> of it, then up again. A visible absence, never a
+    /// slower pace (D207): they eat as anyone does, keep their job and do none of it.
+    /// </summary>
+    SickInBed,
 }
 
 /// <summary>

@@ -2340,7 +2340,14 @@ public sealed partial class SimWorld : IObstacles
     /// food in it — `food-chain.md §3.2`. Worth equals <paramref name="cost"/> for any meal of foods
     /// worth one.
     /// </summary>
-    public bool TakeAMealFrom(Stockpile store, int cost, out int worth, out Goods best)
+    public bool TakeAMealFrom(Stockpile store, int cost, out int worth, out Goods best) =>
+        TakeAMealFrom(store, cost, null, out worth, out best);
+
+    /// <summary>
+    /// The same meal, eaten by <paramref name="eater"/> — <b>what they ate goes on their season's plate by food group</b> (W6,
+    /// `health.md §5.2`), with one meal counted. Null for a meal nobody is keeping count of.
+    /// </summary>
+    public bool TakeAMealFrom(Stockpile store, int cost, Villager? eater, out int worth, out Goods best)
     {
         ArgumentNullException.ThrowIfNull(store);
 
@@ -2365,7 +2372,17 @@ public sealed partial class SimWorld : IObstacles
 
                 owed -= take;
                 worth += take * GoodsCatalog.NutritionOf(good);
+                if (eater is not null && Config.HealthOn)
+                {
+                    eater.AteThisSeason[FoodGroups.Slot(GoodsCatalog.FoodGroupOf(good))] += take;
+                }
             }
+        }
+
+        // ⭐ Counted only while health is read: with it off nothing of W6 is kept, so a village plays and hashes as before it.
+        if (eater is not null && Config.HealthOn)
+        {
+            eater.MealsThisSeason++;
         }
 
         RecordFoodEaten(cost - owed);

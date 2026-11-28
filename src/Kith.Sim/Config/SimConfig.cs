@@ -3427,6 +3427,46 @@ public sealed record SimConfig
     [JsonPropertyName("contentment_leaving_seasons")]
     public int ContentmentLeavingSeasons { get; init; } = 8;
 
+    // ---- Health (W6, `specs/health.md`; Joe's calls, D935) ----
+
+    /// <summary>
+    /// ⭐ A season is <i>plain</i> when one food group made at least this share of what someone ate (W6 §5.2) — <b>90</b> (Joe's
+    /// call 3: his mixed villages never come near it, his one-food villages are at 97–100). <b>0 turns health off.</b>
+    /// </summary>
+    [JsonPropertyName("health_plain_percent")]
+    public int HealthPlainPercent { get; init; } = 90;
+
+    /// <summary>A season with fewer meals than this is not read (a birth, an arrival) — <b>3</b>, about half a season's.</summary>
+    [JsonPropertyName("health_read_min_meals")]
+    public int HealthReadMinMeals { get; init; } = 3;
+
+    /// <summary>What a varied season takes off the plain count — <b>2</b>, getting better twice as quick as wearing down (call 5).</summary>
+    [JsonPropertyName("health_recover_seasons")]
+    public int HealthRecoverSeasons { get; init; } = 2;
+
+    /// <summary>Plain seasons before the card says <i>Plain diet</i> and the village is told — <b>4</b>, a year (call 4).</summary>
+    [JsonPropertyName("health_plain_diet_seasons")]
+    public int HealthPlainDietSeasons { get; init; } = 4;
+
+    /// <summary>Plain seasons before a person is <i>run down</i> — <b>12</b>, three years (Joe's call 4 b).</summary>
+    [JsonPropertyName("health_run_down_seasons")]
+    public int HealthRunDownSeasons { get; init; } = 12;
+
+    /// <summary>
+    /// The chance a day a run-down person falls ill, as one in this many — <b>120</b>, about once a year, and never the whole
+    /// village on one day (Joe's call 6, `health.md §5.5`). A draw on the world's seeded generator, made only for the run down.
+    /// </summary>
+    [JsonPropertyName("health_fall_ill_one_in_days")]
+    public int HealthFallIllOneInDays { get; init; } = 120;
+
+    /// <summary>Days in bed an illness holds them to — <b>5</b> (call 6). Never fatal in piece 1.</summary>
+    [JsonPropertyName("health_sick_days")]
+    public int HealthSickDays { get; init; } = 5;
+
+    /// <summary>Whether health is read at all (<see cref="HealthPlainPercent"/> above nought).</summary>
+    [JsonIgnore]
+    public bool HealthOn => HealthPlainPercent > 0;
+
     /// <summary>Wood a couple needs before they can build a home of their own.</summary>
     /// <remarks>
     /// <para>
@@ -3785,6 +3825,7 @@ public sealed record SimConfig
             // is untouched. See `GoodRow.Nutrition`: the day two rows carry DIFFERENT non-zero
             // values, `RequiredGatherYield` and `MouthsFedByOneAdult` have to be re-derived first.
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Forage,
         },
         new GoodRow
         {
@@ -3873,6 +3914,7 @@ public sealed record SimConfig
             // Worth what food is worth. A second VALUE throws at load until the survival floor is
             // re-derived against a diet (D277, `GoodRow.Nutrition`).
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Fish,
         },
         new GoodRow
         {
@@ -3885,6 +3927,7 @@ public sealed record SimConfig
             // granaries, so meat that could only go in a warehouse would feed nobody's children.
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Meat,
         },
         new GoodRow
         {
@@ -3910,6 +3953,7 @@ public sealed record SimConfig
 
             // Worth what food is worth, until a diet is derived (D277). See `Goods.Wheat`.
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Grain,
         },
         new GoodRow
         {
@@ -3953,6 +3997,7 @@ public sealed record SimConfig
             // ⭐ THE FIRST FOOD WORTH MORE THAN ONE (`food-chain.md §3`): a meal of bread holds hunger off
             // for what it is worth beyond a plain meal. The floor reads none of it — see `bread_nutrition`.
             Nutrition = BreadNutrition,
+            FoodGroup = World.FoodGroup.Grain,
         },
         new GoodRow
         {
@@ -4012,6 +4057,7 @@ public sealed record SimConfig
             SourceName = "the fields",
             StoredBy = new[] { StoreKind.Granary, StoreKind.Market, StoreKind.Cart },
             Nutrition = 1,
+            FoodGroup = World.FoodGroup.Grain,
         },
 
         // ⭐ ALE (W3, `tavern.md §5.1`, D834) — brewed from barley, drunk at a tavern. ⛔ NOT FOOD: no nutrition, so it never
@@ -6825,6 +6871,27 @@ public sealed record SimConfig
                 + $"(got leaving {ContentmentLeavingSeasons}, thinking {ContentmentThinkingOfLeavingSeasons}) — nobody leaves without a warning.");
         }
 
+        // W6 (`health.md §5.3`): a plain share is a majority or off, and the warning comes before the bite.
+        if (HealthPlainPercent != 0 && (HealthPlainPercent <= 50 || HealthPlainPercent > 100))
+        {
+            throw new SimConfigException(
+                $"health_plain_percent must be 0 (off) or above 50 and at most 100 (got {HealthPlainPercent}) — a plain season is one food's.");
+        }
+
+        if (HealthFallIllOneInDays < 1 || HealthSickDays < 1)
+        {
+            throw new SimConfigException(
+                $"health_fall_ill_one_in_days and health_sick_days must each be at least 1 (got {HealthFallIllOneInDays}, {HealthSickDays}).");
+        }
+
+        if (HealthReadMinMeals < 1 || HealthRecoverSeasons < 1 || HealthPlainDietSeasons < 1 || HealthRunDownSeasons <= HealthPlainDietSeasons)
+        {
+            throw new SimConfigException(
+                "health_read_min_meals, health_recover_seasons and health_plain_diet_seasons must each be at least 1, and "
+                + $"health_run_down_seasons above health_plain_diet_seasons (got {HealthReadMinMeals}, {HealthRecoverSeasons}, "
+                + $"{HealthPlainDietSeasons}, {HealthRunDownSeasons}) — a village is told before it bites.");
+        }
+
         var contentmentSeen = new HashSet<ContentmentCause>();
         foreach (ContentmentCauseRow row in ContentmentCauses)
         {
@@ -7584,6 +7651,16 @@ public sealed record SimConfig
                 throw new SimConfigException(
                     $"goods[{i}] ('{good.Name}') names no category. Say which stock-limit heading it "
                     + "sits under: Food, Materials or FuelAndGoods.");
+            }
+
+            // ⭐ W6 (`health.md §5.1`): a food counts toward one of the five groups, and only a food does.
+            if (good.Edible != (good.FoodGroup != World.FoodGroup.None)
+                || !System.Enum.IsDefined(good.FoodGroup))
+            {
+                throw new SimConfigException(good.Edible
+                    ? $"goods[{i}] ('{good.Name}') can be eaten and names no food_group. Say which it counts toward for a "
+                        + "varied diet: Grain, Meat, Poultry, Fish or Forage."
+                    : $"goods[{i}] ('{good.Name}') names food_group {good.FoodGroup} and nobody can eat it. Only a food has a group.");
             }
 
             if (good.Edible && good.Category != World.GoodCategory.Food)

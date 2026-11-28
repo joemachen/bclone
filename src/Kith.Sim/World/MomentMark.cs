@@ -23,4 +23,10 @@ public enum MomentMark
 
     /// <summary>The insulated manor learned (D894).</summary>
     Manor = 4,
+
+    /// <summary>W6's first warning, a year on one food (`health.md §5.4`) — the art lane's fed-up face (A314).</summary>
+    PlainDiet = 5,
+
+    /// <summary>W6's second, three years on one food — the queasy face (A314).</summary>
+    RunDown = 6,
 }

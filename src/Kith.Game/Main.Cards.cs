@@ -224,6 +224,9 @@ public partial class Main
         public required VBoxContainer SchoolSection { get; init; }
         public required Label SchoolText { get; init; }
         public required (PanelContainer Pill, Label Text)[] Needs { get; init; }
+
+        /// <summary>W6's face beside the health pill (A314): fed up, queasy or fevered; hidden while they are well.</summary>
+        public required TextureRect HealthFace { get; init; }
         public required VBoxContainer SkillsSection { get; init; }
         public required List<(VBoxContainer Row, Label Name, Label Years, ProgressBar Bar)> Skills { get; init; }
         public required Button Find { get; init; }
@@ -2250,6 +2253,34 @@ public partial class Main
         SetNeed(p.Needs[4], !unsettled, unsettled ? "Unsettled" : "Content",
             world.ContentmentNoteFor(villager) ?? $"{villager.Name} is content here.");
 
+        // ⭐ HEALTH (W6, `health.md §5.4`): the body's word, everybody's (a child eats too), amber from a plain diet on; the sim's
+        // sentence is the tooltip — the food named, never a number.
+        HealthState health = world.HealthOf(villager);
+        p.Needs[5].Pill.Visible = world.Config.HealthOn;
+        SetNeed(p.Needs[5], health == HealthState.Well, health switch
+        {
+            HealthState.PlainDiet => "Plain diet",
+            HealthState.RunDown => "Run down",
+            HealthState.Sick => "Sick",
+            _ => "Well",
+        }, world.HealthNoteFor(villager) ?? $"{villager.Name} is well.");
+
+        // A314 (Joe's "pill 2"): a plain diet is a warning that does nothing yet — the amber pill and ochre words between the
+        // working and the stopped; run down and sick keep the unmet look. Beside it, the state's face; none while well.
+        if (health == HealthState.PlainDiet)
+        {
+            p.Needs[5].Pill.AddThemeStyleboxOverride("panel", UiLook.PillWarned());
+            UiLook.Tint(p.Needs[5].Text, UiLook.Warned);
+        }
+
+        UiIcons.Show(p.HealthFace, "health", world.Config.HealthOn ? health switch
+        {
+            HealthState.PlainDiet => "plain-diet",
+            HealthState.RunDown => "run-down",
+            HealthState.Sick => "sick",
+            _ => null,
+        } : null);
+
         // ---- SKILLS: every trade given a year, longest first; the bar is the way to mastery ----
         var trades = TheirTrades(world, villager);
         p.SkillsSection.Visible = trades.Count > 0;
@@ -2534,7 +2565,7 @@ public partial class Main
         var needsRow = new HFlowContainer();
         needsRow.AddThemeConstantOverride("h_separation", 6);
         needsRow.AddThemeConstantOverride("v_separation", 4);
-        var needs = new (PanelContainer, Label)[5]; // fed, warm, housed, water (`water-need.md §5` step 6), content (W2 step 3)
+        var needs = new (PanelContainer, Label)[6]; // fed, warm, housed, water (`water-need.md §5` step 6), content (W2 step 3), health (W6)
         for (int i = 0; i < needs.Length; i++)
         {
             var pill = new PanelContainer { MouseFilter = MouseFilterEnum.Stop };
@@ -2543,6 +2574,11 @@ public partial class Main
             needsRow.AddChild(pill);
             needs[i] = (pill, text);
         }
+
+        // ⭐ The health pill's face (A314, Joe: "beside the pill on the card"), after the sixth pill, hidden while well.
+        TextureRect healthFace = UiIcons.Slot();
+        healthFace.Visible = false;
+        needsRow.AddChild(healthFace);
 
         needsSection.AddChild(needsRow);
         box.AddChild(needsSection);
@@ -2576,6 +2612,7 @@ public partial class Main
             SchoolSection = schoolSection,
             SchoolText = schoolText,
             Needs = needs,
+            HealthFace = healthFace,
             SkillsSection = skillsSection,
             Skills = new(),
             Find = find,
@@ -3361,9 +3398,9 @@ public partial class Main
         p.ToolUses.Text = longestTool;
         foreach ((PanelContainer Pill, Label) need in p.Needs)
         {
-            // "Unsettled" is the longest word the row says (W2 step 3); every pill shown, as an adult's are.
+            // "Plain diet" is the longest word the row says (W6; "Unsettled" until then); every pill shown, as an adult's are.
             need.Pill.Visible = true;
-            SetNeed(need, false, "Unsettled", longest);
+            SetNeed(need, false, "Plain diet", longest);
         }
 
         p.SkillsSection.Visible = true;

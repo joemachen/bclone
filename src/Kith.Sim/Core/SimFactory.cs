@@ -30,6 +30,7 @@ public static class SimFactory
         new HearthSystem(),     // 6. homes burn firewood; cold homes chill their people
         new HerdSystem(),       // 6b. the herds graze, eat their hay, grow and starve (D592) — a day at a time
         new RegionSystem(),     // 6c. the neighbours wake with a trading post and step a season at a time (D594)
+        new HealthSystem(),     // 6d. and at a season's turn, what each body ate (W6, `health.md`) — before anyone decides
         new LabourSystem(),     // 7. villagers take work themselves
         new BehaviorSystem(),   // 8. decide and act
         new MortalitySystem(),  // 9. old age, starvation, or cold

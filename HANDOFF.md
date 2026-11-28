@@ -11177,6 +11177,16 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 - **What a person ate is kept nowhere** (D933): `tools/harness/ZzDiet.cs` reads it off the meal — copy every villager's arms and
   larder before the step, and where hunger fell, take `FoodToTake` from the copy (arms first if they held a meal). A household
   that changed in the step was not copied: skip that meal, or the harness throws.
+- **A guard of one system can start measuring another's** (D941): the tavern's settled valley and the births guard eat forage
+  alone, so with W6 they took to bed and their comparisons (7 against 13; 18 against 18) measured health's days. Read what moved
+  before touching a threshold; if the lever is another system's, pose that system off (one cause, one system), never loosen it.
+- **"Any dead villager holds a job" is not "a dead villager holds a job"** (D941): the vacancy guard scored 2 when two people
+  starved a tick apart. A streak in a guard is per thing, or it is a count of coincidences.
+- **`DiedAtTick` is the tick of the death, and `world.Tick` has moved on by the time `StepOnce` returns** (D941): a harness that
+  matched them found no deaths at all. Diff the living before and after the step.
+- **Git Bash rewrites an argument that begins with `//`** (D939, MSYS path conversion): a red-check mutant passed as
+  `'// MUT6'` reached the file as `/ MUT6` and scored *did not compile*. Give a mutant a replacement that does not start with a
+  slash (`hash += 0; // MUT6`), and treat any *did not compile* as no verdict.
 - **Founding-day saves stepped unattended starve** (D933, D447): 96 of his 128 openable newest saves are Year 1 with four
   people. Filter to lived-in villages before reading anything about how a village lives.
 
@@ -11214,7 +11224,21 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   `specs/health.md`); ✅ every call his answered (D935: all as recommended, poultry its own group, the meal rule kept), nothing of
   health built** — three pieces (the diet; fever with the herbalist; the
   infirmary), told at a year on one food and run down at three, bread first left alone. 🐞 **D933, fixed on the slice: every save
-  he made before W5 was refused by `main`** (*"a different list of techniques"*); call 10 is whether it goes to `main` now.
+  he made before W5 was refused by `main`** (*"a different list of techniques"*); merged and pushed at his word (D936–D937).
+  ✅ **Piece 1, the diet, built on the re-cut slice (D938–D941):** five food groups; the season's plate and the plain seasons;
+  the card's sixth need and the strip's *run down* count; told at a year, run down at three; about once a year five days in bed,
+  never fatal. ⏸️ **HIS PLAY** (`.\run.bat`): a fresh founding left on forage — at about Year 1 the *A plain diet* notice and
+  *Plain diet* on the cards; by Year 3 *Run down*, the strip's count, someone *ill in bed*; then a fishery or a lodge, and the
+  cards going back to *Well* within a year. Or his Thornfield / Fernhollow young saves. **Then the merge at his word.**
+  ✅ **Built (D942) — `main` (A314) merged into the slice; the two warnings' moment faces still on `ArtAwaited` until the art
+  lane's `moments/plain-diet.png` and `run-down.png` merge.** *(Read "🎨 Owed once …" until D942:)* 🎨 **Owed once the art lane's A314 is in `main` and `main` is merged into the slice** (its message, 2026-11-27; Joe's picks
+  *"i like pill 2"*, faces *"Yes, as recommended"*): Plain diet's pill `UiLook.PillWarned()` with `UiLook.Warned` words; the faces
+  `textures/ui/icons/health/{plain-diet,run-down,sick}.png` beside the pill for those states; `MomentMark.PlainDiet` / `RunDown`
+  appended and passed on the two warnings. The map's sick face and the strewn home are the art lane's, after piece 1 merges
+  (it has the names: `SickInBed`, `SickDays`, `RestingPlaceOf`, `HomePosition`).
+- ⏸️ 🎨 **W6'S PICTURES — ASKED OF THE ART LANE, NOT CLAIMED** (`health.md §11`). Piece 1: **someone ill in bed** (today they
+  are drawn indoors like a rest — a stand-in), and the card's health pill's four words if they want a look of their own. Piece 2,
+  later: the herbalist's hut, herbs and remedy, *gathering herbs* and *tending*. Piece 3: the infirmary.
 - ✅ **W5, SKILL FOR THE TRADES WITHOUT ONE, AND THEIR TECHNIQUES — JOE'S CROP THAT STANDS INTO WINTER AMONG THEM** (D919,
   2026-11-26; Joe: *"start w5 in a new session"*). ✅ **merged into `main` at his word (D930, *"Played it, merge"*, `b6aabcc`); pushed at his word (D931, *"Push main"*); `slice/w5-skills` deleted** (cut from `main` at `339f983`). Read off
   the code: 21 trades, 11 skill rows, 4 techniques — **ten trades without a skill**, not the review's seven (the tavern keeper and

@@ -385,7 +385,11 @@ public sealed class TavernTests
     /// </summary>
     private static (SimWorld World, int Comforted, int Thinking, int Evenings) ASettledValley(bool comforts)
     {
-        SimConfig config = comforts ? Config : Config with { ContentmentComforts = Array.Empty<ContentmentComfortRow>() };
+        // ⚠️ Health off (D941): this valley eats forage alone, so with W6 its people go run down and take to bed now and then —
+        // days the comparison below is not about. The guard is the comfort's, one cause one system (D797); health has its own
+        // golden (`HealthTests.TheGoldenThatSeesAVillageRunDown`).
+        SimConfig shared = Config with { HealthPlainPercent = 0 };
+        SimConfig config = comforts ? shared : shared with { ContentmentComforts = Array.Empty<ContentmentComfortRow>() };
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink(), 9UL);
         SimWorld world = loop.World;
         world.BarleyLearned = true;

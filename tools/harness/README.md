@@ -298,3 +298,8 @@ against a number from an older commit.
   ZzW5's `every` opening, `ZZ_SEEDS`, `ZZ_YEARS` 50). ZZD/ZZY: groups' shares and per person-year the top group's share; ZZR:
   the spec's rule run (plain at 90 %, +1/−2, told 4, run down 12) — who is told and run down, and which food the plain seasons
   were. ⚠️ Saves from before D933's fix need the knowledge list padded to open. Copy in, `-c Release --filter ZzDiet`, delete.
+- `ZzHealth.cs` — D941's measurement for `specs/health.md §4.5`: piece 1 on Joe's saves (`ZZ_SAVES` copies, the newest per folder,
+  lived-in only, `ZZ_YEARS` 5) and on the played opening (`ZZ_PLAYED=1`, forage alone, `ZZ_SEEDS`, `ZZ_YEARS` 30), `ZZ_HEALTH=0` the
+  off arm. One ZZH line a run: alive, deaths by cause, told, run down ever and at the end, illnesses, who took to bed, bed-days,
+  the two notices. `ZzHealthWhy.cs` (`ZZ_WHY=1`) reads each starvation: the state, illness, plain seasons and food at the death.
+  Copy in, `-c Release --filter ZzHealth`, delete.

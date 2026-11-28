@@ -24,6 +24,8 @@ public partial class Main
         "buildings/small-cemetery", "buildings/cemetery", "buildings/large-cemetery", "trades/groundskeeper",
 
         // ✅ W5's great library (D927) came off here at A306: painted, its owed version with it.
+
+        // ✅ W6's two warnings' faces (D942) came off here at D943: painted (A317).
     };
 
     private string TheIconsArePainted()
@@ -83,6 +85,12 @@ public partial class Main
 
         Check("moments", nameof(MomentMark.Nomads), 104);
         Check("moments", nameof(MomentMark.Bridge), 104);
+        Check("moments", nameof(MomentMark.PlainDiet), 104);
+        Check("moments", nameof(MomentMark.RunDown), 104);
+        foreach (string face in new[] { "plain-diet", "run-down", "sick" })
+        {
+            Check("health", face, 128);
+        }
 
         // ---- a name with no file keeps its glyph ----
         if (UiIcons.Or("buildings", "a modder's brewery", () => new BuildingGlyph(BuildingKind.Granary, false)) is not BuildingGlyph fallback)

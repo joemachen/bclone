@@ -1,7 +1,7 @@
 # Spec: Health — diet first, then fever, the herbalist and the infirmary (W6)
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D934, 2026-11-27) ON `slice/w6-health`; ✅ EVERY CALL JOE'S ANSWERED (D935, §10): all as
-> recommended, poultry its own group, the meal rule kept for later (§5.7).** Nothing of health is built; piece 1 next. Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
+> recommended, poultry its own group, the meal rule kept for later (§5.7).** 🔨 **Piece 1 on `slice/w6-health`: ✅ step 1 (D938), the five groups on the goods rows; ✅ step 2 (D939), the season's plate, the plain seasons, the card's words and the village's two warnings; ✅ step 4 (D940), falling ill and *sick in bed*; ✅ steps 3, 6 and 7 (D941), the view's stand-ins, measured (§4.5), the goldens moved by ablation and a golden that reaches health. ⏸️ **Joe's play, then the merge at his word.** Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
 > Found on the way, and fixed on this slice as its own commit (D933): **every save Joe had was refused by `main`** (§4.1).
 >
 > Phase 6, W6 of the workplan (`systems-complete.md §5.1`). Its blocker is answered (§4.1 there; D520). It comes before W8,
@@ -54,7 +54,8 @@ bites.** D797 gave health the varied diet outright when contentment was built: *
     multiplier you cannot.
   - **No death spiral.** Contentment refused *sickness and shorter lives* because misery that kills compounds. Health is the
     system that *is* allowed to make people ill — so it carries its own brakes: (a) a diet erodes from **variety, never
-    quantity** — a hungry village is not made sicker by being hungry, so hunger and fever cannot feed each other; (b) illness
+    quantity** — a hungry village is not made sicker by being hungry, so hunger never feeds illness (the other way it costs
+    work: a few days in bed a year, which a village that never answers its diet feels as thinner food — measured, §4.5); (b) illness
     is staggered by a seeded draw, so the founders, who all go run down in the same season, never take to their beds on the
     same day; (c) in piece 1 nobody dies of illness at all; (d) in piece 2 fever kills only the run-down, the old and the
     very young, and only those nobody tends — and the herbalist who tends ships *in the same piece* as the fever (§0.1: a
@@ -118,6 +119,21 @@ biggest village finds four people in fish-only households — the one place it b
 story (*the households by the river eat nothing but fish*) and its answer is already in the game: a market stall or a store
 nearer them holding something else.
 
+### 4.5 Piece 1 as built, measured (D941) — `tools/harness/ZzHealth.cs`, health on against off (`health_plain_percent` 0)
+
+**His saves** (the 32 lived-in, five years from each newest): deaths **identical** on and off in every one; alive at the end
+identical but one (Hollowmere holly-kestrel, 8 on against 7 off). Every one-food village told; **run down in 7 of them, 5–8 people
+each, 8–13 illnesses and 42–65 days in bed in five years** (about 1.5 % of their person-days). The three- and four-food villages
+told 1–22 people (fish households); **Hollowmere honey-harrow, Year 89, 5 run down, 2 illnesses, 10 days in bed**.
+
+**The unattended played opening** (24 valleys, 30 years — forage alone for ever, the worst case: a village that never answers):
+everyone told by about Year 1 and run down by Year 3; **about 2.6 % of person-days in bed**; alive at the end 278 against 288,
+**starved 38 against 22**. ⚠️ Read by death (`ZzHealthWhy.cs`, five of the seeds): the starvations are village-wide famines at
+village food 0, the same shape as health-off's own; 3 of the 38 were ill at the time, one in bed with an empty larder while the
+village held 63 (as healthy villagers starve with 31–56 in the village, off). So illness is not killing people in bed; a few days'
+work lost a year tips a thin village into its famine sooner. ⛔ That is the unattended harness (D447) — no player answers a
+plain diet there — and it is put to Joe in plain words with his play.
+
 ### 4.3 The unattended harness — 21 valleys, 40 years, a lodge, a fishery and a farm raised free
 
 The 15 that lived ate **grain 20 %, fish 24 %, meat 26 %, forage 27 %**, within a point or two in every valley; 95 % of
@@ -167,6 +183,10 @@ stone-ridge would have for thirteen.
 - **The village, at the season's turn when anyone first passes 4**: one log line and one notice — *"Nine people in Fernhollow
   have eaten nothing but forage for a year. In two more they will start falling ill — a fishery, a hunter's lodge or a farm
   would give them something else."* Said again, once, at the turn anyone first goes *Run down*. Never every season.
+- **Its look (A314, Joe's picks — `sickbed-art.md §8`; built D942):** *Well* the met pill; *Plain diet* the amber pill
+  (`UiLook.PillWarned()`) in ochre words; *Run down* and *Sick* the unmet. Beside it the state's face — fed up, queasy,
+  fevered (`icons/health/`); none while well. The two warnings carry the same faces (`MomentMark.PlainDiet`, `RunDown`).
+  No mark over anyone's head for a plain diet or run down (they last years); *Sick* on the map is the art lane's, after piece 1.
 - **A count on the village panel** (*"2 run down"*), so a glance says whether it is one person or the village.
 
 ### 5.5 Falling ill (piece 1: never fatal)
@@ -249,11 +269,12 @@ Specced after piece 2 is played, because what it is for depends on how fever pla
 
 1. `food_group` on the goods rows; refused at load without one. *(no golden moves)*
 2. The season's plate by group, and `PlainSeasons` at the season's turn; saved and hashed. *(goldens move: the hash)*
-3. The card's pill and sentence, the village's two warnings, the panel count. *(view; sim sentences tested)*
+3. ✅ The card's pill and sentence, the village's two warnings, the panel count. *(view; sim sentences tested)* (D939, D941)
 4. Falling ill: the draw, *sick in bed*, the job held, the log line; the save. *(goldens move)*
 5. *(Only if call 7 goes the other way:)* the plate a share of every group first, meal and fetch together. *(goldens move)*
-6. Measured on his saves and the harness: who goes run down and when, days in bed a year, survival unmoved (the guard's 25 %).
-7. The view: the bed (a stand-in), the state's word. Played by Joe.
+6. ✅ Measured on his saves and the harness (§4.5, D941).
+7. ✅ The view: the card's sixth pill (*Well / Plain diet / Run down / Sick*), the strip's *"· N run down"* beside *unhoused*, in
+   bed drawn indoors at home (the stand-in). ⏸️ Played by Joe.
 
 ## 10. Joe's calls — each with a recommendation — ✅ ANSWERED (D935, 2026-11-27)
 

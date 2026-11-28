@@ -1735,6 +1735,31 @@
   "contentment_thinking_of_leaving_seasons": 4,
   "contentment_leaving_seasons": 8,
 
+  // ---- Health (W6, specs/health.md; Joe's calls, D935) ----------------
+  //
+  // The body, never a life (D797): what a person eats, read once a season. A
+  // season is PLAIN when one food group (grain, meat, poultry, fish, forage --
+  // each good's food_group) made health_plain_percent of what they ate; a season
+  // of fewer than health_read_min_meals meals is not read. A plain season adds
+  // one to the count, a varied one takes health_recover_seasons off. At
+  // health_plain_diet_seasons the card says "Plain diet" and the village is told;
+  // at health_run_down_seasons they are run down. Measured on Joe's saves
+  // (D934): at 90 / 4 / 12 every one-food village is told, no two-food village
+  // is, and four people in fish-only households in his Year-89 Hollowmere run
+  // down. It never slows work (D207). 0 for health_plain_percent turns it off.
+  "health_plain_percent": 90,
+  "health_read_min_meals": 3,
+  "health_recover_seasons": 2,
+  "health_plain_diet_seasons": 4,
+  "health_run_down_seasons": 12,
+  // A run-down person falls ill on a day with a chance of one in
+  // health_fall_ill_one_in_days -- about once a year, a seeded draw, so a
+  // village that went run down together never takes to bed on one day -- and
+  // lies at home health_sick_days, then gets up still run down. Never fatal
+  // (piece 1; fever and the herbalist come together in piece 2, D935).
+  "health_fall_ill_one_in_days": 120,
+  "health_sick_days": 5,
+
   // ---- Storage (D30, D32) ------------------------------------
   // Two buildings, not one. Food spoils and timber does not, and one
   // undifferentiated village pile would delete the per-household
