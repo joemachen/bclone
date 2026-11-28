@@ -141,3 +141,13 @@ files OK'd.
   warned pill in the unmet painting; its words rubric; no warned pill in the theme; its words too pale — on `ui contrast:`; the
   sick face missing).
 
+### 8a. The sim's names (W6, D938–D941) and the warnings' faces (A317)
+
+From the W6 session: `VillagerState.SickInBed` (in bed; `Villager.SickDays` > 0 is ill, on the way home or in bed);
+`SimWorld.HealthOf(v)` → `HealthState.Well / PlainDiet / RunDown / Sick`; where they lie, `world.RestingPlaceOf(v)` (a housed
+family's door tile), the house `world.HouseholdOf(v).HomePosition` (null with no roof — they lie where they sleep); the view
+already draws `SickInBed` indoors when housed (`VillageMap.Indoors`). The card's sentence `HealthNoteFor(v)`; the count
+`RunDownCount()`. The two warnings are moments *"A plain diet"* and *"Run down"* with `MomentMark.PlainDiet` / `.RunDown`
+(appended sim-side by W6) — their pictures `icons/moments/plain-diet.png` and `run-down.png` (A317, 104 master). **Sick on the map
+and the home strewn** build on these once piece 1 merges.
+
