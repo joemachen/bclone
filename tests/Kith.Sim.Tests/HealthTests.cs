@@ -257,6 +257,10 @@ public sealed class HealthTests
         ColdStartTests.PlayTheOpening(loop.World);
         loop.Step(loop.World.Config.TicksPerYear * 2);
         Assert.All(loop.World.Villagers, x => Assert.Equal(0, x.PlainSeasons));
+
+        // ⭐ And nothing of it is kept: no plate, no meals counted — so a village with health off hashes as before W6.
+        Assert.All(loop.World.Villagers, x => Assert.Equal(0, x.MealsThisSeason));
+        Assert.All(loop.World.Villagers, x => Assert.All(x.AteThisSeason, a => Assert.Equal(0, a)));
         Assert.DoesNotContain(loop.World.Moments, m => m.Title == "A plain diet");
     }
 
@@ -458,4 +462,40 @@ public sealed class HealthTests
         Assert.True(bedTicks > 0, "nobody took to bed in two years run down");
         Assert.Contains(log.Entries, e => e.Message.Contains("has taken to bed", StringComparison.Ordinal));
     }
+
+    // ---------------------------------------------------------------
+    //  Phase 6 gate item 2 — a golden that reaches health
+    // ---------------------------------------------------------------
+
+    /// <summary>
+    /// ⭐ A GOLDEN THAT REACHES HEALTH (Phase 6 gate item 2, D941): the fixture's founding on the played opening — forage alone,
+    /// as every unattended village eats — six years on. By then the founders have been told of a plain diet, gone run down and
+    /// taken to bed; every other golden either eats several foods or is too short to. Health off, the same village hashes as it
+    /// did before W6 — the guard has teeth both ways.
+    /// </summary>
+    [Fact]
+    public void TheGoldenThatSeesAVillageRunDown()
+    {
+        SimLoop loop = SimFactory.CreatePhase0(Config, new InMemoryLogSink());
+        SimWorld world = loop.World;
+        ColdStartTests.PlayTheOpening(world);
+        int bedTicks = 0;
+        for (int t = 0; t < world.Config.TicksPerYear * 6; t++)
+        {
+            loop.StepOnce();
+            bedTicks += world.Villagers.Count(x => x.State == VillagerState.SickInBed);
+        }
+
+        Assert.Contains(world.Moments, m => m.Title == "A plain diet");
+        Assert.Contains(world.Moments, m => m.Title == "Run down");
+        Assert.True(bedTicks > 0, "nobody took to bed: the golden does not reach the illness");
+        Assert.Equal(RunDownGolden, StateHash.Compute(world));
+
+        SimLoop off = SimFactory.CreatePhase0(Config with { HealthPlainPercent = 0 }, new InMemoryLogSink());
+        ColdStartTests.PlayTheOpening(off.World);
+        off.Step(off.World.Config.TicksPerYear * 6);
+        Assert.NotEqual(RunDownGolden, StateHash.Compute(off.World));
+    }
+
+    private const ulong RunDownGolden = 14704821933836161333UL;
 }

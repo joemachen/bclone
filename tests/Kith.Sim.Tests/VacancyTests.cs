@@ -31,28 +31,28 @@ public sealed class VacancyTests
         SimLoop loop = SimFactory.CreatePhase0(config, new InMemoryLogSink());
         SimWorld world = loop.World;
 
+        // ⭐ Per villager (D941): the claim is that one dead villager never holds a job past a tick. Read as "any dead villager",
+        // two people dying a tick apart in a famine (health's first, W6) scored 2 with nobody holding a job for longer than one.
         int worstStreak = 0;
-        int streak = 0;
+        var streaks = new Dictionary<int, int>();
 
         for (ulong tick = 0; tick < (ulong)config.TicksPerYear * 120UL; tick++)
         {
             loop.StepOnce();
 
-            bool held = false;
             for (int i = 0; i < world.Villagers.Count; i++)
             {
                 Villager villager = world.Villagers[i];
                 if (!villager.Alive && villager.HasJob)
                 {
-                    held = true;
-                    break;
+                    int streak = streaks.GetValueOrDefault(villager.Id) + 1;
+                    streaks[villager.Id] = streak;
+                    worstStreak = Math.Max(worstStreak, streak);
                 }
-            }
-
-            streak = held ? streak + 1 : 0;
-            if (streak > worstStreak)
-            {
-                worstStreak = streak;
+                else
+                {
+                    streaks.Remove(villager.Id);
+                }
             }
         }
 

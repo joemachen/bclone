@@ -2372,14 +2372,15 @@ public sealed partial class SimWorld : IObstacles
 
                 owed -= take;
                 worth += take * GoodsCatalog.NutritionOf(good);
-                if (eater is not null)
+                if (eater is not null && Config.HealthOn)
                 {
                     eater.AteThisSeason[FoodGroups.Slot(GoodsCatalog.FoodGroupOf(good))] += take;
                 }
             }
         }
 
-        if (eater is not null)
+        // ⭐ Counted only while health is read: with it off nothing of W6 is kept, so a village plays and hashes as before it.
+        if (eater is not null && Config.HealthOn)
         {
             eater.MealsThisSeason++;
         }

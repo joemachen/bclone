@@ -402,6 +402,7 @@ public partial class Main
         }
 
         _unhousedLabel.Visible = true;
+        _runDownLabel.Visible = true;
         _foodFigure.Text = "+12,345";
         _runwayLabel.Text = "· lasts over 10 years";
         var cells = new List<Label> { _populationCell, _adultsCell, _childrenCell, _inSchoolCell, _eldersCell, _onTheGround };
@@ -417,10 +418,12 @@ public partial class Main
             mark.Text = "⚠";
         }
 
-        (string clock, string households, string unhoused) texts = (_clockLabel.Text, _householdsLabel.Text, _unhousedLabel.Text);
+        (string clock, string households, string unhoused, string runDown) texts =
+            (_clockLabel.Text, _householdsLabel.Text, _unhousedLabel.Text, _runDownLabel.Text);
         _clockLabel.Text = "Day 30, Autumn, Year 1234";
         _householdsLabel.Text = "·  999 households";
         _unhousedLabel.Text = "12,345 unhoused";
+        _runDownLabel.Text = "·  999 run down";
 
         float one = StripOnOneLine();
         var widths = new List<string>();
@@ -456,7 +459,7 @@ public partial class Main
             cells[i].Text = was[i];
         }
 
-        (_clockLabel.Text, _householdsLabel.Text, _unhousedLabel.Text) = texts;
+        (_clockLabel.Text, _householdsLabel.Text, _unhousedLabel.Text, _runDownLabel.Text) = texts;
 
         var onTheStrip = _topStrip.FindChildren("*", nameof(Label), owned: false).OfType<Label>().Select(l => l.Text)
             .Concat(_topStrip.FindChildren("*", nameof(Button), owned: false).OfType<Button>().Where(b => b.IsVisibleInTree()).Select(b => b.Text)).ToList();

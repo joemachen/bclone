@@ -3351,6 +3351,13 @@ public partial class Main : Control
             unhoused == 1
                 ? "1 person has no roof and the painted land is full — paint more housing"
                 : $"{unhoused} people have no roof and the painted land is full — paint more housing");
+        int runDown = world.RunDownCount();
+        _runDownLabel.Text = $"·  {runDown} run down";
+        _runDownLabel.Visible = runDown > 0;
+        _runDownLabel.TooltipText = runDown == 1
+            ? "1 person has eaten one kind of food for three years and falls ill now and then — a second kind of food sets it right"
+            : $"{runDown} people have eaten one kind of food for three years and fall ill now and then — a second kind of food sets it right";
+        _runDownLabel.MouseFilter = Control.MouseFilterEnum.Stop;
         _clockLabel.Text = world.Clock.ToString();
         _householdsLabel.Text = $"·  {LivingHouseholds(world)} households";
         ShowTheSeason(world.Clock.Season);
@@ -4945,6 +4952,11 @@ public partial class Main : Control
         // tooltip (`NeedsMoreResidentialLand`): a family with a site being raised is a number, not a warning.
         _unhousedLabel = Muted(string.Empty);
         counts.AddChild(_unhousedLabel);
+
+        // ⭐ THE RUN-DOWN COUNT (W6, `health.md §5.4`, Joe's call 8): shown only while anybody is, so a glance says whether it is
+        // one person or the village; its tooltip says why and what answers it.
+        _runDownLabel = Muted(string.Empty);
+        counts.AddChild(_runDownLabel);
         return counts;
     }
 
@@ -4978,6 +4990,7 @@ public partial class Main : Control
     private Label _childrenCell = null!;
     private Label _eldersCell = null!;
     private Label _unhousedLabel = null!;
+    private Label _runDownLabel = null!;
     private CheckBox _nomadsTick = null!;
 
     /// <summary>
