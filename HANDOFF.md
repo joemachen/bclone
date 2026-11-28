@@ -11168,6 +11168,11 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
   what it does when its building needs nothing. And a trade that declines should **fall through** `Decide`, not `return`: the smith's
   `TryTidyGround || TryHelpWithHarvest || GoHome` idiom skips the rest spell's errands (water, the grave, the tavern) a laborer gets.
 
+## ⛔ THE TRAPS `slice/move-revamp` PAID FOR (D945–)
+
+- **An exemption written for "it would refuse itself" can switch off the whole check** (D945): `CanBuildAt(alreadyStanding: true)` exists so a building being moved does not collide with its own old footprint, and it skips the overlap, the doorstep, the wall-off and every covered tile — so a move could land on another building or half in the river, and nothing said so because the move had no outline to go red. **When a flag means "except me", make it exclude the one thing, and test the move onto something else.**
+- **A sim feature with no preview can hide a wrong verdict for months** (D945): Move had no ghost since D229, so `CanBuildAt`'s answer for a move was only ever seen as a hint line after the click. Wiring a preview to an existing verdict is the moment to red-check that verdict against the shapes it will now be drawn over.
+
 ## ⛔ THE TRAPS `slice/w6-health` PAID FOR (D932–)
 
 - **An appended row in a list the save writes must be read as a prefix, or every older save is refused** (D933): W5 appended
@@ -11219,6 +11224,7 @@ recorded (`specs/grass-look.md`, D632–D633); the game's ground is flat parchme
 
 ## ⏸️ OPEN, AND JOE'S TO CALL
 
+- ⏸️ **MOVE, REVAMPED — AN OUTLINE THAT TURNS, AND A QUESTION BEFORE THE MOVE** (D945, 2026-11-27; Joe's play note: *"build in 'are you sure' safeguard prompts before moving a building … add a 'construction outline' … and allow rotating, just like a fresh construction"*). 🔨 **being built on `slice/move-revamp`** (cut from `main` at `a92da93`). 📝 **Specced (`specs/move-revamp.md`), nothing built; ⏸️ eleven calls his (§4)**, each with a recommendation: the box beside the outline, game running; its words; every move; the facing it has; turning in place allowed; right-click lets go first; a second move refused; a site told the truth; a full store still refused; **the hole fixed first** (a move skips every "is this spot clear?" check); a *Call off the move* button on the card. Mock: the session notes folder's `move-revamp-mock.html`.
 - ⏸️ **W6, HEALTH — DIET FIRST, THEN SICKNESS, THE HERBALIST AND THE INFIRMARY** — ⭐ **PIECE 1 MERGED INTO `main` AT HIS WORD (D944, *"merge"*, `fc0d810`), NOT PUSHED; `slice/w6-health` deleted; piece 2 next on its own slice** (D932, 2026-11-27; Joe: *"systems: start W6
   in a new session"*). 🔨 **being built on `slice/w6-health`** (cut from `main` at `72d21cf`; its spec and the save fix merged into `main` at his word, D936, *"yes, merge it"*, not pushed; re-cut from `main` for piece 1). 📏📝 **Measured and specced (D934,
   `specs/health.md`); ✅ every call his answered (D935: all as recommended, poultry its own group, the meal rule kept), nothing of
