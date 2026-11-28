@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✍️ MOCKED THREE TIMES (A310–A312, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE ILLUMINATED TILES HIS (§6); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✍️ MOCKED FOUR TIMES (A310–A313, 2026-11-27); ✅ PILL 2 HIS (A311); ⏸️ THE THREE FACES HIS (§7); NOTHING BUILT.** Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -100,4 +100,22 @@ the pill on the card. A map cut without the ribbon (the subject larger) is offer
    three on the map.
 3. **The map cut:** the full tile, or ⭐ a cut without the ribbon at map size.
 4. **Files**, as §5a 4, with the tiles as `textures/ui/icons/health/*.png`; **when**, as §5a 5.
+
+## 7. ✅ Joe on the tiles, and the fourth mock (A313) — just the faces
+
+*"redo them and pare them down to just the faces. not the border/background, not the banner with text. just the faces (like
+emojis)"*, and *"is there a better visual representation of that than a bowl of broth?"* — **the tiles are out; the bowl is out.**
+Painted in Photoshop (`D:/Projects/brushes/sickbed/ps/faces.jsx`, `health_faces_pick.jpg`): three round faces alone, one family
+getting worse — **Plain diet** fed up (pale wheat, heavy lids, one brow cocked, the mouth flat and pulled aside: *the same food
+again*; it works whatever the one food is, and the card's tooltip names it), **Run down** queasy (green, eyes squeezed, the
+mouth wavering, a bead of sweat), **Sick** fevered (flushed red, eyes shut, brows up, sweat). The game's heavy pen, lit from the
+upper left. They read at the map's 32 px.
+
+### 7a. Calls — ⏸️ Joe's
+
+1. **The three faces:** as painted, or what to change.
+2. **Where each goes:** ⭐ Sick on the map (over the person; over their house while in bed) with the home strewn (§5 H); Run down
+   and Plain diet beside the pill on the card and on the village's two warnings, not over heads (they last years) — or all three
+   over heads.
+3. **Files and when**, as §5a 4–5, the faces as `textures/ui/icons/health/*.png`.
 
