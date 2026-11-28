@@ -1,6 +1,6 @@
 # W6's pictures, piece 1 — a person sick in bed, and the card's health pill (A309)
 
-> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), NOT PUSHED — Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
+> **Status: ✅ THE AMBER PILL AND THE THREE FACES BUILT (A314, 2026-11-27), MERGED INTO `main` AT JOE'S WORD (A315, *"Yes, merge"*, `b6a3a40`), PUSHED (A316); THE WARNINGS' TWO FACES (A317, §8a) MERGED (A318, *"Yes, merge"*, `68adfe6`), PUSHED (A319). ✅ SICK ON THE MAP BUILT ON `art` (A321, §10), UNMERGED — Joe: *"Yes, as recommended"*; ⏸️ HIS PLAY. Joe: *"Yes, as recommended"*. ⏸️ Sick on the map and the home strewn wait for W6 piece 1's sick state (§8).** Mocked A310–A313. Claimed A309. Art lane (CLAUDE.md *Two tracks*),
 > branch `art`. W6's ask of the lane (`health.md §11`, D774), piece 1 only: the herbalist, herbs, remedy and the infirmary
 > (pieces 2 and 3) wait for their own specs. Mocks: `D:/Projects/brushes/sickbed/` (`sickbed_pick.jpg`; `compose.py` lays the
 > beds on the real render, `harness/` paints the figure with the game's own `PersonPainter`, `mock_card.py` and `card.sh` render
@@ -150,4 +150,54 @@ already draws `SickInBed` indoors when housed (`VillageMap.Indoors`). The card's
 `RunDownCount()`. The two warnings are moments *"A plain diet"* and *"Run down"* with `MomentMark.PlainDiet` / `.RunDown`
 (appended sim-side by W6) — their pictures `icons/moments/plain-diet.png` and `run-down.png` (A317, 104 master). **Sick on the map
 and the home strewn** build on these once piece 1 merges.
+
+## 9. The map's mock (A320) — Sick over the house, the home strewn, on a real sick villager
+
+W6 piece 1 merged (D944, `a92da93`), so somebody can be sick. A copy of his honey-harrow Hollowmere run forward until a housed
+person took to bed (`D:/Projects/brushes/sickbed/ZzSickSave.cs`, copied into the tests to run and deleted): **Orwin, Year 94,
+winter, in bed at home with 4 days to go** — the other five saves tried had nobody housed fall ill in 8 years. Rendered by the
+built game; Joe's painted `icons/health/sick.png` and the straw and herbs laid on it (`mock320.py`, `sick_map_pick.jpg`).
+
+- ⛔ **Found: the view drew Orwin standing at his door.** `VillageMap.ShownOnTheMap` asks whether someone is housed only while
+  `Resting`, so `Indoors(SickInBed, housed: false)` is false and a person sick in bed at home is drawn outside it. The one-line
+  fix (`Resting or SickInBed`) puts him indoors — measured: the only pixels that change between the two renders are his
+  (`VillageMap.Indoors.cs`, a file Joe OK'd for this, §5a 4). Folded into the build, with a probe guard.
+- **The face, over the roof** (⭐), centred on the house, about a tile across, a soft shadow under it; or **small, by the door**.
+  Out of doors (ill and walking home, or no roof) it rides over the head. ⭐ It keeps its size on screen at every zoom, so a
+  sick house reads from three steps out (panel 5).
+- **The home strewn:** a bed of straw before the door, a sprig of herbs hung beside it. Drawn while somebody in the house lies
+  sick; gone when they are up.
+- ⚠️ **The smoke — taken back.** §5's *"the fire kept in, its smoke in any season"* would put smoke over a house that burns no
+  wood: the sim does not light a fire for the sick, and since A139 smoke means firewood burning (`indoors-and-smoke.md §2`,
+  *true to the sim*). In winter Orwin's hearth smokes anyway. ⭐ Recommended: no smoke of its own.
+
+### 9a. Calls — ⏸️ Joe's
+
+1. **Where the face sits:** ⭐ over the roof (panel 2), or small by the door (panel 3).
+2. **The smoke:** ⭐ dropped (smoke stays the firewood's), or kept in any season as first offered.
+3. **The straw and herbs** as shown, or what to change.
+
+## 10. ✅ Built (A321) — Sick on the map, as recommended
+
+Joe: *"Yes, as recommended"* — the face over the roof, no smoke of its own, the straw and herbs as shown.
+
+- **The fix:** `VillageMap.ShownOnTheMap` asks for the house when `AsksForAHouse(state)` — resting **or lying sick** — so a
+  person in bed at home is indoors (the house's lamp by night already followed `Indoors`).
+- **New `VillageMap.SickMark.cs`:** whose home somebody lies sick in, noted once a tick where the states change
+  (`NoteTheSick`, called from `NoteTheFires` beside the homes' lamps; `_homesSick`, never hashed). `SickMarkOf` (pure): in bed at
+  home → over the house; ill out of doors (walking home with `SickDays` set, or in bed with no roof) → over the head; well →
+  none. Joe's `icons/health/sick.png` at **30 px on screen at every zoom**, a soft shadow under it, over the house's centre and
+  over the people (`DrawTheSickFacesOverHouses`); over a head beside the other marks. **The straw** (`PaintTheStraw`, 96 px,
+  painted once and kept): a soft gold bed and 170 stalks, thickest by the wall, laid outward from the door's painted step at
+  0.95 tiles; **the sprig** (`PaintTheSprig`, 48 × 64): thirteen stems in three greens, tied in red, hung on the wall beside
+  the door — both over the houses, under the people (`DrawTheSickHomes`). No smoke of its own: a home smokes as it always did.
+- **Hooks, in the files Joe OK'd (§5a 4):** `VillageMap.Indoors.cs` (the fix; the probe's line chained after `indoors and
+  smoke:`), `VillageMap.Smoke.cs` (the note), `VillageMap.People.cs` (the three draws). `VillageMap.Yards.cs` was not needed.
+- ⚠️ **Under the canopy:** drawn in the people's pass, so a house under a painted tree has its face under the leaves too, as a
+  person in the woods is (A36). A hook after the canopy would be `VillageMap.cs`, the systems lane's — not asked.
+- **Probe `sick on the map:`** (its own line): the fix, where the face goes, the face there and its size, the straw gold and
+  thickest by the wall, the sprig green tied in red, no smoke out of winter. **Red-checked: 10 mutants, 8 red (the face missing caught by `ui colours:` first); 2 zero, written down: the live call reverted (`ShownOnTheMap`) and no sick homes noted (`NoteTheSick`) — both need a world with somebody sick, which the probe has not; the render on Orwin is their evidence.**
+- **Seen:** rendered on Orwin's copy at three zooms (`D:/Projects/brushes/sickbed/out/b_z0.png`, `b_z-3.png`, `b_z-7.png`):
+  he is indoors, the face over his roof, the straw and sprig at his door; from far out the face still marks the house.
+  The face over a head out of doors is the probe's and the mock's until play.
 

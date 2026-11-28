@@ -271,6 +271,9 @@ public partial class VillageMap
         float scale = PersonPixels / PersonPainter.BakeHeight;
         bool poses = PersonPixels >= PosesFromPixels;
         PersonCache shadow = TheShadow();
+
+        // ⭐ A321 (`sickbed-art.md §9`): a sick home's straw and herbs, over the houses and under the people.
+        DrawTheSickHomes(world);
         foreach ((_, Villager villager, Vector2 point) in _peopleThisFrame)
         {
             // ⭐ The motion (A130): the pose this frame, and how the picture is moved — the step paid for by the distance
@@ -412,6 +415,12 @@ public partial class VillageMap
                 DrawTheArrivalMark(overHead, r, walking);
             }
 
+            // ⭐ A321: ill out of doors (walking home, or in bed with no roof) — Joe's sick face over the head. Anyone drawn is out.
+            if (SickMarkOf(villager.State, villager.SickDays, housed: false) == SickMarkAt.OverTheHead)
+            {
+                DrawTheSickFace(overHead - new Vector2(0f, SickFacePixels * 0.6f));
+            }
+
             if (_mealShownUntil.TryGetValue(villager.Id, out double until))
             {
                 float left = MealMarkLeft(until, _mealClock);
@@ -425,6 +434,9 @@ public partial class VillageMap
                 }
             }
         }
+
+        // ⭐ A321: the sick face over each house somebody lies sick in — over the people, so nobody walking past hides it.
+        DrawTheSickFacesOverHouses(world);
 
         foreach (int id in _lastPersonKey.Keys.Where(id => !stillAlive.Contains(id)).ToList())
         {
