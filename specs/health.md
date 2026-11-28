@@ -1,7 +1,7 @@
 # Spec: Health — diet first, then fever, the herbalist and the infirmary (W6)
 
 > Status: **📏 MEASURED AND 📝 SPECCED (D934, 2026-11-27) ON `slice/w6-health`; ✅ EVERY CALL JOE'S ANSWERED (D935, §10): all as
-> recommended, poultry its own group, the meal rule kept for later (§5.7).** 🔨 **Piece 1 on `slice/w6-health`: ✅ step 1 (D938), the five groups on the goods rows; ✅ step 2 (D939), the season's plate, the plain seasons, the card's words and the village's two warnings; ✅ step 4 (D940), falling ill and *sick in bed*; ✅ steps 3, 6 and 7 (D941), the view's stand-ins, measured (§4.5), the goldens moved by ablation and a golden that reaches health. ⏸️ **Joe's play, then the merge at his word.** Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
+> recommended, poultry its own group, the meal rule kept for later (§5.7).** 🔨 **Piece 1 on `slice/w6-health`: ✅ step 1 (D938), the five groups on the goods rows; ✅ step 2 (D939), the season's plate, the plain seasons, the card's words and the village's two warnings; ✅ step 4 (D940), falling ill and *sick in bed*; ✅ steps 3, 6 and 7 (D941), the view's stand-ins, measured (§4.5), the goldens moved by ablation and a golden that reaches health. ✅ **Played and approved; ⭐ merged into `main` at his word (D944, `fc0d810`), not pushed.** ▶️ Piece 2 next, its own slice. Measured with `tools/harness/ZzDiet.cs` (§4), on copies of Joe's saves and on 21 unattended valleys.
 > Found on the way, and fixed on this slice as its own commit (D933): **every save Joe had was refused by `main`** (§4.1).
 >
 > Phase 6, W6 of the workplan (`systems-complete.md §5.1`). Its blocker is answered (§4.1 there; D520). It comes before W8,
